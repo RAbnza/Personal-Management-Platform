@@ -19,6 +19,11 @@ type TestIdentity = {
   email: string;
 };
 
+type MutableAggregateState = {
+  version: number;
+  updated_at: Date;
+};
+
 function createTestIdentity(label: string): TestIdentity {
   const userId = randomUUID();
 
@@ -331,6 +336,158 @@ describe("core ownership isolation", () => {
             },
           ),
         ).rejects.toThrow(/permission denied/i);
+      } finally {
+        client.release();
+      }
+    } finally {
+      await removeTestData([identity]);
+    }
+  });
+
+  it("advances mutable aggregate versions and timestamps in PostgreSQL", async () => {
+    const identity = createTestIdentity("MutableAggregate");
+
+    try {
+      await createAuthUser(identity);
+      await provisionCoreOwnership(identity);
+
+      const client = await getDomainPool().connect();
+
+      try {
+        await runScopedTransactionOnClient(
+          client,
+          {
+            userId: identity.userId,
+            workspaceId: identity.workspaceId,
+          },
+          async () => {
+            const initialProfile = await client.query<MutableAggregateState>(
+              `
+                SELECT
+                  version,
+                  updated_at
+                FROM core."user_profile"
+                WHERE user_id = $1
+              `,
+              [identity.userId],
+            );
+
+            const initialWorkspace = await client.query<MutableAggregateState>(
+              `
+                  SELECT
+                    version,
+                    updated_at
+                  FROM core."workspace"
+                  WHERE id = $1
+                `,
+              [identity.workspaceId],
+            );
+
+            const initialPreference = await client.query<MutableAggregateState>(
+              `
+                  SELECT
+                    version,
+                    updated_at
+                  FROM core."workspace_preference"
+                  WHERE workspace_id = $1
+                `,
+              [identity.workspaceId],
+            );
+
+            expect(initialProfile.rows[0]?.version).toBe(1);
+            expect(initialWorkspace.rows[0]?.version).toBe(1);
+            expect(initialPreference.rows[0]?.version).toBe(1);
+
+            const callerSuppliedTimestamp = new Date(
+              "2000-01-01T00:00:00.000Z",
+            );
+
+            const updatedProfile = await client.query<MutableAggregateState>(
+              `
+                  UPDATE core."user_profile"
+                  SET
+                    display_name = $1,
+                    version = 999,
+                    updated_at = $2
+                  WHERE user_id = $3
+                  RETURNING
+                    version,
+                    updated_at
+                `,
+              [
+                "Updated Mutable Aggregate User",
+                callerSuppliedTimestamp,
+                identity.userId,
+              ],
+            );
+
+            expect(updatedProfile.rows[0]?.version).toBe(2);
+            expect(
+              updatedProfile.rows[0]?.updated_at.getTime(),
+            ).toBeGreaterThan(callerSuppliedTimestamp.getTime());
+
+            const updatedWorkspace = await client.query<MutableAggregateState>(
+              `
+                  UPDATE core."workspace"
+                  SET
+                    timezone = 'UTC',
+                    version = 999,
+                    updated_at = $1
+                  WHERE id = $2
+                  RETURNING
+                    version,
+                    updated_at
+                `,
+              [callerSuppliedTimestamp, identity.workspaceId],
+            );
+
+            expect(updatedWorkspace.rows[0]?.version).toBe(2);
+            expect(
+              updatedWorkspace.rows[0]?.updated_at.getTime(),
+            ).toBeGreaterThan(callerSuppliedTimestamp.getTime());
+
+            const updatedPreference = await client.query<MutableAggregateState>(
+              `
+                  UPDATE core."workspace_preference"
+                  SET
+                    theme = 'dark',
+                    version = 999,
+                    updated_at = $1
+                  WHERE workspace_id = $2
+                  RETURNING
+                    version,
+                    updated_at
+                `,
+              [callerSuppliedTimestamp, identity.workspaceId],
+            );
+
+            expect(updatedPreference.rows[0]?.version).toBe(2);
+            expect(
+              updatedPreference.rows[0]?.updated_at.getTime(),
+            ).toBeGreaterThan(callerSuppliedTimestamp.getTime());
+
+            const updatedWorkspaceAgain =
+              await client.query<MutableAggregateState>(
+                `
+                  UPDATE core."workspace"
+                  SET timezone = 'Asia/Manila'
+                  WHERE id = $1
+                  RETURNING
+                    version,
+                    updated_at
+                `,
+                [identity.workspaceId],
+              );
+
+            expect(updatedWorkspaceAgain.rows[0]?.version).toBe(3);
+
+            expect(
+              updatedWorkspaceAgain.rows[0]?.updated_at.getTime(),
+            ).toBeGreaterThanOrEqual(
+              updatedWorkspace.rows[0]?.updated_at.getTime() ?? 0,
+            );
+          },
+        );
       } finally {
         client.release();
       }

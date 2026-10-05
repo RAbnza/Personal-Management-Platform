@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   check,
+  integer,
   smallint,
   text,
   timestamp,
@@ -18,12 +19,19 @@ export const userProfile = coreSchema.table(
   {
     userId: uuid("user_id")
       .primaryKey()
-      .references(() => authUser.id, { onDelete: "restrict" }),
+      .references(() => authUser.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
     displayName: text("display_name").notNull(),
     lifecycle: text("lifecycle").default("active").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    version: integer("version").default(1).notNull(),
     deletionRequestedAt: timestamp("deletion_requested_at", {
       withTimezone: true,
     }),
@@ -47,6 +55,7 @@ export const userProfile = coreSchema.table(
         )
       `,
     ),
+    check("user_profile_version_check", sql`${table.version} > 0`),
   ],
 );
 
@@ -56,7 +65,10 @@ export const workspace = coreSchema.table(
     id: uuid("id").defaultRandom().primaryKey(),
     ownerUserId: uuid("owner_user_id")
       .notNull()
-      .references(() => userProfile.userId, { onDelete: "restrict" }),
+      .references(() => userProfile.userId, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
     kind: text("kind").default("personal").notNull(),
     currency: text("currency").default("PHP").notNull(),
     timezone: text("timezone").default("Asia/Manila").notNull(),
@@ -68,6 +80,10 @@ export const workspace = coreSchema.table(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    version: integer("version").default(1).notNull(),
   },
   (table) => [
     uniqueIndex("workspace_personal_owner_unique")
@@ -90,6 +106,7 @@ export const workspace = coreSchema.table(
       "workspace_financial_revision_check",
       sql`${table.financialRevision} >= 0`,
     ),
+    check("workspace_version_check", sql`${table.version} > 0`),
   ],
 );
 
@@ -98,7 +115,10 @@ export const workspacePreference = coreSchema.table(
   {
     workspaceId: uuid("workspace_id")
       .primaryKey()
-      .references(() => workspace.id, { onDelete: "cascade" }),
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
     locale: text("locale").default("en-PH").notNull(),
     theme: text("theme").default("system").notNull(),
 
@@ -117,11 +137,16 @@ export const workspacePreference = coreSchema.table(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    version: integer("version").default(1).notNull(),
   },
   (table) => [
     check(
       "workspace_preference_theme_check",
       sql`${table.theme} IN ('system', 'light', 'dark')`,
     ),
+    check("workspace_preference_version_check", sql`${table.version} > 0`),
   ],
 );
