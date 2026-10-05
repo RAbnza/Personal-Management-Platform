@@ -7,3 +7,4 @@ build/
 pnpm-lock.yaml
 
 docs/
+src/platform/db/migrations/

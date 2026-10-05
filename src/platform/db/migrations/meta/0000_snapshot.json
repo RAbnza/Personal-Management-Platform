@@ -1,0 +1,26 @@
+{
+  "id": "0baaf57d-3722-4a1f-91c9-17f4cbee041a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {},
+  "enums": {},
+  "schemas": {
+    "audit": "audit",
+    "auth": "auth",
+    "career": "career",
+    "core": "core",
+    "finance": "finance",
+    "ops": "ops",
+    "time": "time"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
