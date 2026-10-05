@@ -20,6 +20,7 @@
     "services:up": "docker compose --env-file .env.docker up -d",
     "services:down": "docker compose --env-file .env.docker down",
     "services:logs": "docker compose --env-file .env.docker logs -f",
+    "email:check": "tsx scripts/email/check-delivery.ts",
     "db:check:bootstrap": "tsx scripts/db/check-bootstrap-connection.ts",
     "db:check:runtime": "tsx scripts/db/check-runtime-connections.ts",
     "db:provision:roles": "tsx scripts/db/provision-roles.ts",
@@ -37,6 +38,7 @@
     "pg": "8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "6.32.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
