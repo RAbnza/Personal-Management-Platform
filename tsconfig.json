@@ -34,7 +34,9 @@
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "drizzle.config.ts",
+    "drizzle.test.config.ts",
     "vitest.config.ts",
+    "vitest.integration.config.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
