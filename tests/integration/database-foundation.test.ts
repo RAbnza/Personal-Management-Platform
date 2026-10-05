@@ -67,7 +67,7 @@ describe("database integration foundation", () => {
     });
   });
 
-  it("applies the foundation migration under migration_owner", async () => {
+  it("applies application migrations under migration_owner", async () => {
     const client = new Client({
       connectionString: getMigrationConnectionString(),
       application_name: "pmp-integration-migration-check",
@@ -170,5 +170,82 @@ describe("database integration foundation", () => {
     } finally {
       client.release();
     }
+  });
+
+  it("allows auth_adapter to perform Better Auth table lifecycle operations", async () => {
+    const client = await getAuthPool().connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const insertedUser = await client.query<{ id: string }>(`
+        INSERT INTO auth."user" (
+          name,
+          email
+        )
+        VALUES (
+          'Integration Auth User',
+          'integration-auth-user@example.test'
+        )
+        RETURNING id
+      `);
+
+      const userId = insertedUser.rows[0]?.id;
+
+      expect(userId).toBeDefined();
+
+      const updatedUser = await client.query<{ name: string }>(
+        `
+          UPDATE auth."user"
+          SET name = $1
+          WHERE id = $2
+          RETURNING name
+        `,
+        ["Updated Integration Auth User", userId],
+      );
+
+      expect(updatedUser.rows[0]?.name).toBe("Updated Integration Auth User");
+
+      const selectedUser = await client.query<{ email: string }>(
+        `
+          SELECT email
+          FROM auth."user"
+          WHERE id = $1
+        `,
+        [userId],
+      );
+
+      expect(selectedUser.rows[0]?.email).toBe(
+        "integration-auth-user@example.test",
+      );
+
+      const deletedUser = await client.query<{ id: string }>(
+        `
+          DELETE FROM auth."user"
+          WHERE id = $1
+          RETURNING id
+        `,
+        [userId],
+      );
+
+      expect(deletedUser.rows[0]?.id).toBe(userId);
+
+      await client.query("ROLLBACK");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
+
+  it("prevents app_domain from reading Better Auth tables", async () => {
+    await expect(
+      getDomainPool().query(`
+        SELECT id
+        FROM auth."user"
+        LIMIT 1
+      `),
+    ).rejects.toThrow();
   });
 });

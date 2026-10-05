@@ -4,10 +4,18 @@ const postgresUrlSchema = z.url({
   protocol: /^postgres(?:ql)?$/,
 });
 
+const httpUrlSchema = z.url({
+  protocol: /^https?$/,
+});
+
 const serverEnvironmentSchema = z
   .object({
     DATABASE_URL: postgresUrlSchema,
     AUTH_DATABASE_URL: postgresUrlSchema,
+    BETTER_AUTH_SECRET: z
+      .string()
+      .min(32, "BETTER_AUTH_SECRET must contain at least 32 characters."),
+    BETTER_AUTH_URL: httpUrlSchema,
   })
   .superRefine((environment, context) => {
     const domainRole = decodeURIComponent(

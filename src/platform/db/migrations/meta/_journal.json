@@ -8,6 +8,20 @@
       "when": 1791233962349,
       "tag": "0000_foundation_namespaces",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791239599270,
+      "tag": "0001_better_auth_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791239798872,
+      "tag": "0002_auth_runtime_grants",
+      "breakpoints": true
     }
   ]
 }
