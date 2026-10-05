@@ -13,7 +13,10 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm lint && pnpm typecheck && pnpm format:check"
+    "check": "pnpm lint && pnpm typecheck && pnpm format:check",
+    "services:up": "docker compose up -d",
+    "services:down": "docker compose down",
+    "services:logs": "docker compose logs -f"
   },
   "dependencies": {
     "next": "16.3.8",
