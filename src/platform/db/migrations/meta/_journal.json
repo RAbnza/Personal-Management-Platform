@@ -22,6 +22,20 @@
       "when": 1791239798872,
       "tag": "0002_auth_runtime_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791240171417,
+      "tag": "0003_core_ownership_root",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791240375228,
+      "tag": "0004_core_ownership_security",
+      "breakpoints": true
     }
   ]
 }
