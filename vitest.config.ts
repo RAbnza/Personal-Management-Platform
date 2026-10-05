@@ -15,6 +15,7 @@ export default defineConfig({
     restoreMocks: true,
     projects: [
       {
+        extends: true,
         test: {
           name: "unit",
           environment: "node",
@@ -22,6 +23,7 @@ export default defineConfig({
         },
       },
       {
+        extends: true,
         test: {
           name: "component",
           environment: "jsdom",

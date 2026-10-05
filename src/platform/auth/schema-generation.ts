@@ -11,6 +11,12 @@ import {
   verification,
 } from "@/platform/db/schema/auth.generated";
 
+import {
+  SESSION_EXPIRY_SECONDS,
+  SESSION_FRESH_AGE_SECONDS,
+  SESSION_REFRESH_AGE_SECONDS,
+} from "./session-policy";
+
 const betterAuthSchema = {
   user,
   session,
@@ -44,6 +50,21 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
+  },
+
+  session: {
+    expiresIn: SESSION_EXPIRY_SECONDS,
+    updateAge: SESSION_REFRESH_AGE_SECONDS,
+    freshAge: SESSION_FRESH_AGE_SECONDS,
+
+    /*
+     * Protected requests must observe database-backed revocation immediately.
+     * Better Auth otherwise keeps cookie caching disabled by default, but the
+     * explicit setting records the project's security requirement here.
+     */
+    cookieCache: {
+      enabled: false,
+    },
   },
 
   rateLimit: {
