@@ -17,7 +17,8 @@
     "services:up": "docker compose --env-file .env.docker up -d",
     "services:down": "docker compose --env-file .env.docker down",
     "services:logs": "docker compose --env-file .env.docker logs -f",
-    "db:check:bootstrap": "tsx scripts/db/check-bootstrap-connection.ts"
+    "db:check:bootstrap": "tsx scripts/db/check-bootstrap-connection.ts",
+    "db:provision:roles": "tsx scripts/db/provision-roles.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.3",
