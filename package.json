@@ -14,25 +14,32 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check",
-    "services:up": "docker compose up -d",
-    "services:down": "docker compose down",
-    "services:logs": "docker compose logs -f"
+    "services:up": "docker compose --env-file .env.docker up -d",
+    "services:down": "docker compose --env-file .env.docker down",
+    "services:logs": "docker compose --env-file .env.docker logs -f",
+    "db:check:bootstrap": "tsx scripts/db/check-bootstrap-connection.ts"
   },
   "dependencies": {
+    "drizzle-orm": "0.45.3",
     "next": "16.3.8",
+    "pg": "8.23.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "eslint-config-prettier": "10.1.8",
     "prettier": "3.9.9",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5"
   },
   "packageManager": "pnpm@12.9.1"
