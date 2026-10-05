@@ -18,6 +18,7 @@
     "services:down": "docker compose --env-file .env.docker down",
     "services:logs": "docker compose --env-file .env.docker logs -f",
     "db:check:bootstrap": "tsx scripts/db/check-bootstrap-connection.ts",
+    "db:check:runtime": "tsx scripts/db/check-runtime-connections.ts",
     "db:provision:roles": "tsx scripts/db/provision-roles.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts"
