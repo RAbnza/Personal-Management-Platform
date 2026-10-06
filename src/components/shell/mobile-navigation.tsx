@@ -4,14 +4,32 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Menu, X } from "lucide-react";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { AppNavigation } from "@/components/shell/app-navigation";
-import { ThemeSelect } from "@/components/theme/theme-select";
+import {
+  WorkspaceThemeSelect,
+  type WorkspaceThemeName,
+} from "@/components/theme/workspace-theme-select";
 
 export interface MobileNavigationProps {
   activePath: string;
+
+  userName: string;
+  userEmail: string;
+
+  workspaceTheme: WorkspaceThemeName;
+  workspacePreferenceVersion: number;
+  gettingStartedDismissed: boolean;
 }
 
-export function MobileNavigation({ activePath }: MobileNavigationProps) {
+export function MobileNavigation({
+  activePath,
+  userName,
+  userEmail,
+  workspaceTheme,
+  workspacePreferenceVersion,
+  gettingStartedDismissed,
+}: MobileNavigationProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -45,7 +63,7 @@ export function MobileNavigation({ activePath }: MobileNavigationProps) {
           ].join(" ")}
         >
           <header className="flex min-h-16 items-center justify-between gap-4 border-b border-border px-4">
-            <div>
+            <div className="min-w-0">
               <Dialog.Title className="text-base font-semibold">
                 Navigation
               </Dialog.Title>
@@ -81,7 +99,23 @@ export function MobileNavigation({ activePath }: MobileNavigationProps) {
           </nav>
 
           <div className="border-t border-border px-4 py-4">
-            <ThemeSelect />
+            <div className="mb-5 min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {userName}
+              </p>
+
+              <p className="mt-0.5 break-all text-xs leading-5 text-muted-foreground">
+                {userEmail}
+              </p>
+            </div>
+
+            <WorkspaceThemeSelect
+              theme={workspaceTheme}
+              version={workspacePreferenceVersion}
+              gettingStartedDismissed={gettingStartedDismissed}
+            />
+
+            <SignOutButton className="mt-4" />
 
             <p className="mt-4 text-xs leading-5 text-muted-foreground">
               Additional modules will appear here as their application

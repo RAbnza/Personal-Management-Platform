@@ -1,13 +1,33 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/shell/app-shell";
 
+vi.mock("@/components/theme/workspace-theme-select", () => ({
+  WorkspaceThemeSelect: () => <div>Workspace theme control</div>,
+}));
+
+vi.mock("@/components/auth/sign-out-button", () => ({
+  SignOutButton: () => <button type="button">Sign out</button>,
+}));
+
+const shellProps = {
+  pageTitle: "Dashboard",
+  activePath: "/",
+
+  userName: "Jane Example",
+  userEmail: "jane@example.com",
+
+  workspaceTheme: "system" as const,
+  workspacePreferenceVersion: 1,
+  gettingStartedDismissed: false,
+};
+
 describe("AppShell", () => {
-  it("provides primary navigation and a main-content skip target", () => {
+  it("provides primary navigation, identity, and a main-content skip target", () => {
     render(
-      <AppShell pageTitle="Dashboard" activePath="/">
+      <AppShell {...shellProps}>
         <h1>Dashboard content</h1>
       </AppShell>,
     );
@@ -19,6 +39,10 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "#main-content");
 
     expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+
+    expect(screen.getByText("Jane Example")).toBeInTheDocument();
+
+    expect(screen.getByText("jane@example.com")).toBeInTheDocument();
 
     const primaryNavigation = screen.getByRole("navigation", {
       name: "Primary",
@@ -36,7 +60,7 @@ describe("AppShell", () => {
     const user = userEvent.setup();
 
     render(
-      <AppShell pageTitle="Dashboard" activePath="/">
+      <AppShell {...shellProps}>
         <h1>Dashboard content</h1>
       </AppShell>,
     );
@@ -58,6 +82,10 @@ describe("AppShell", () => {
         name: "Primary",
       }),
     ).toBeInTheDocument();
+
+    expect(within(dialog).getByText("Jane Example")).toBeInTheDocument();
+
+    expect(within(dialog).getByText("jane@example.com")).toBeInTheDocument();
 
     expect(
       within(dialog).getByRole("link", {
@@ -82,7 +110,7 @@ describe("AppShell", () => {
     const user = userEvent.setup();
 
     render(
-      <AppShell pageTitle="Dashboard" activePath="/">
+      <AppShell {...shellProps}>
         <h1>Dashboard content</h1>
       </AppShell>,
     );

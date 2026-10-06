@@ -1,15 +1,74 @@
+import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   BriefcaseBusiness,
   CalendarDays,
   CircleDollarSign,
+  RotateCcw,
 } from "lucide-react";
 
+import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
+import { AuthCard } from "@/components/auth/auth-card";
 import { AppShell } from "@/components/shell/app-shell";
 import { Panel } from "@/components/ui/panel";
 
-export default function Home() {
+export default async function Home() {
+  const bootstrap = await resolvePrivateAppBootstrap(await headers());
+
+  if (bootstrap.kind === "unauthorized") {
+    redirect("/auth/sign-in");
+  }
+
+  if (bootstrap.kind === "unavailable") {
+    return (
+      <AuthCard
+        eyebrow="Private workspace"
+        title="We couldn't prepare your workspace"
+        description="Your private workspace couldn't be loaded safely. Your application data has not been shown or changed by this screen."
+      >
+        <div className="space-y-5">
+          <div className="rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning">
+            This can happen when authentication or workspace services are
+            temporarily unavailable. Retry before entering any new information.
+          </div>
+
+          <Link
+            href="/"
+            className={[
+              "inline-flex min-h-11 w-full items-center justify-center gap-2",
+              "rounded-button border border-primary-border",
+              "bg-primary px-4 py-2.5",
+              "text-sm font-semibold text-primary-foreground",
+              "transition-colors duration-(--motion-duration-fast) ease-state",
+              "hover:bg-primary-hover active:bg-primary-pressed",
+              "motion-reduce:transition-none",
+            ].join(" ")}
+          >
+            <RotateCcw
+              aria-hidden="true"
+              className="size-5"
+              strokeWidth={1.9}
+            />
+            Retry workspace setup
+          </Link>
+        </div>
+      </AuthCard>
+    );
+  }
+
+  const { user, workspace, preference } = bootstrap;
+
   return (
-    <AppShell pageTitle="Dashboard" activePath="/">
+    <AppShell
+      pageTitle="Dashboard"
+      activePath="/"
+      userName={user.name}
+      userEmail={user.email}
+      workspaceTheme={preference.theme}
+      workspacePreferenceVersion={preference.version}
+      gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
+    >
       <div className="space-y-8">
         <header>
           <p className="text-sm font-medium text-link">Private workspace</p>
@@ -22,6 +81,17 @@ export default function Home() {
             Your dashboard will bring together the records and commitments that
             need your attention while keeping each module&apos;s underlying data
             authoritative.
+          </p>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            Workspace:{" "}
+            <span className="font-medium text-foreground">
+              {workspace.currency}
+            </span>
+            {" · "}
+            <span className="font-medium text-foreground">
+              {workspace.timezone}
+            </span>
           </p>
         </header>
 

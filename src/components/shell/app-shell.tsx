@@ -1,17 +1,38 @@
 import type { ReactNode } from "react";
 import { LockKeyhole } from "lucide-react";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { AppNavigation } from "@/components/shell/app-navigation";
 import { MobileNavigation } from "@/components/shell/mobile-navigation";
-import { ThemeSelect } from "@/components/theme/theme-select";
+import {
+  WorkspaceThemeSelect,
+  type WorkspaceThemeName,
+} from "@/components/theme/workspace-theme-select";
 
 export interface AppShellProps {
   children: ReactNode;
+
   pageTitle: string;
   activePath: string;
+
+  userName: string;
+  userEmail: string;
+
+  workspaceTheme: WorkspaceThemeName;
+  workspacePreferenceVersion: number;
+  gettingStartedDismissed: boolean;
 }
 
-export function AppShell({ children, pageTitle, activePath }: AppShellProps) {
+export function AppShell({
+  children,
+  pageTitle,
+  activePath,
+  userName,
+  userEmail,
+  workspaceTheme,
+  workspacePreferenceVersion,
+  gettingStartedDismissed,
+}: AppShellProps) {
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <a
@@ -53,7 +74,23 @@ export function AppShell({ children, pageTitle, activePath }: AppShellProps) {
         </nav>
 
         <div className="border-t border-border px-5 py-4">
-          <ThemeSelect />
+          <div className="mb-5 min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {userName}
+            </p>
+
+            <p className="mt-0.5 break-all text-xs leading-5 text-muted-foreground">
+              {userEmail}
+            </p>
+          </div>
+
+          <WorkspaceThemeSelect
+            theme={workspaceTheme}
+            version={workspacePreferenceVersion}
+            gettingStartedDismissed={gettingStartedDismissed}
+          />
+
+          <SignOutButton className="mt-4" />
 
           <div className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
             <LockKeyhole
@@ -79,7 +116,14 @@ export function AppShell({ children, pageTitle, activePath }: AppShellProps) {
             "px-4 sm:px-6",
           ].join(" ")}
         >
-          <MobileNavigation activePath={activePath} />
+          <MobileNavigation
+            activePath={activePath}
+            userName={userName}
+            userEmail={userEmail}
+            workspaceTheme={workspaceTheme}
+            workspacePreferenceVersion={workspacePreferenceVersion}
+            gettingStartedDismissed={gettingStartedDismissed}
+          />
 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">

@@ -3,6 +3,10 @@ import { z } from "zod";
 import { readActiveWorkspaceSettings } from "@/modules/core/repositories/workspace-settings-repository";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 
+const workspaceThemeSchema = z.enum(["system", "light", "dark"]);
+
+export type WorkspaceTheme = z.infer<typeof workspaceThemeSchema>;
+
 const getWorkspaceSettingsInputSchema = z
   .object({
     userId: z.uuid(),
@@ -25,7 +29,7 @@ export type GetWorkspaceSettingsResult = {
 
   preference: {
     locale: string;
-    theme: string;
+    theme: WorkspaceTheme;
 
     defaultSalaryAccountId: string | null;
 
@@ -85,7 +89,7 @@ async function executeGetWorkspaceSettings(
 
     preference: {
       locale: stored.locale,
-      theme: stored.theme,
+      theme: workspaceThemeSchema.parse(stored.theme),
 
       defaultSalaryAccountId: stored.defaultSalaryAccountId,
 
