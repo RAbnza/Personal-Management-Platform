@@ -55,3 +55,38 @@ export class PossibleDuplicateJobApplicationError extends Error {
     this.candidates = [...candidates];
   }
 }
+
+export class JobApplicationUnavailableError extends Error {
+  readonly code = "JOB_APPLICATION_UNAVAILABLE";
+
+  constructor() {
+    super("The job application is unavailable in this workspace.");
+
+    this.name = "JobApplicationUnavailableError";
+  }
+}
+
+export class JobApplicationArchivedError extends Error {
+  readonly code = "JOB_APPLICATION_ARCHIVED";
+
+  constructor() {
+    super("An archived job application cannot receive new stage history.");
+
+    this.name = "JobApplicationArchivedError";
+  }
+}
+
+export class JobApplicationVersionConflictError extends Error {
+  readonly code = "STALE_VERSION";
+
+  constructor(
+    readonly expectedVersion: number,
+    readonly currentVersion: number,
+  ) {
+    super(
+      `The job application changed since it was loaded. Expected version ${expectedVersion}, but the current version is ${currentVersion}.`,
+    );
+
+    this.name = "JobApplicationVersionConflictError";
+  }
+}
