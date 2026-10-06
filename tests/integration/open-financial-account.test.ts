@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
+import { FinancialWriteWorkspaceUnavailableError } from "@/modules/finance/repositories/financial-write-repository";
 import {
   openFinancialAccount,
   openFinancialAccountInTransaction,
@@ -432,11 +433,7 @@ describe("open financial account", () => {
           openingCutoffDate: "2026-10-06",
           openingBalanceMinor: "0",
         }),
-      ).rejects.toMatchObject({
-        cause: {
-          code: "42501",
-        },
-      });
+      ).rejects.toBeInstanceOf(FinancialWriteWorkspaceUnavailableError);
     } finally {
       await removeProvisionedTestUser(
         first,

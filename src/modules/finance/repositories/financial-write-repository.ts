@@ -11,17 +11,95 @@ type FinancialRevisionRow = {
   financial_revision: string;
 };
 
+type PostgresErrorLike = {
+  code?: unknown;
+  message?: unknown;
+  cause?: unknown;
+};
+
+export class FinancialWriteWorkspaceUnavailableError extends Error {
+  readonly code = "FINANCIAL_WRITE_WORKSPACE_UNAVAILABLE";
+
+  constructor() {
+    super("The active financial workspace is unavailable for this write.");
+
+    this.name = "FinancialWriteWorkspaceUnavailableError";
+  }
+}
+
+function findPostgresError(error: unknown): {
+  code: string;
+  message: string;
+} | null {
+  let current: unknown = error;
+
+  for (let depth = 0; depth < 5; depth += 1) {
+    if (typeof current !== "object" || current === null) {
+      return null;
+    }
+
+    const candidate = current as PostgresErrorLike;
+
+    if (
+      typeof candidate.code === "string" &&
+      typeof candidate.message === "string"
+    ) {
+      return {
+        code: candidate.code,
+        message: candidate.message,
+      };
+    }
+
+    current = candidate.cause;
+  }
+
+  return null;
+}
+
+function isExpectedFinancialWorkspaceUnavailableError(error: unknown): boolean {
+  const postgresError = findPostgresError(error);
+
+  if (postgresError?.code !== "42501") {
+    return false;
+  }
+
+  return (
+    postgresError.message.includes(
+      "financial write requires an active user profile",
+    ) ||
+    postgresError.message.includes(
+      "financial write requires an active owned workspace",
+    )
+  );
+}
+
 export async function lockActiveFinancialWorkspace(
   transaction: ScopedTransaction,
   workspaceId: string,
 ): Promise<{
   currency: string;
 }> {
-  await transaction.db.execute(sql`
-    SELECT "finance"."lock_active_workspace"(
-      ${workspaceId}::uuid
-    )
-  `);
+  try {
+    await transaction.db.execute(sql`
+      SELECT "finance"."lock_active_workspace"(
+        ${workspaceId}::uuid
+      )
+    `);
+  } catch (error) {
+    /*
+     * The database lock function also uses SQLSTATE 42501 for programming
+     * errors such as missing app.user_id or a workspace that does not match
+     * app.workspace_id.
+     *
+     * Translate only the two expected lifecycle/ownership disappearance cases.
+     * Scope-installation bugs must continue surfacing as unexpected failures.
+     */
+    if (isExpectedFinancialWorkspaceUnavailableError(error)) {
+      throw new FinancialWriteWorkspaceUnavailableError();
+    }
+
+    throw error;
+  }
 
   const result = await transaction.db.execute<FinancialWorkspaceRow>(sql`
     SELECT "currency"
