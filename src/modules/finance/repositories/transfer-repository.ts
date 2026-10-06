@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 
+import { FinancialAccountReferenceUnavailableError } from "@/modules/finance/domain/financial-reference";
 import type { ScopedTransaction } from "@/platform/db";
 
 type TransferFinancialAccountRow = {
@@ -41,9 +42,7 @@ export async function resolveTransferFinancialAccount(
   const account = result.rows[0];
 
   if (!account) {
-    throw new Error(
-      "The transfer financial account does not exist in the active workspace.",
-    );
+    throw new FinancialAccountReferenceUnavailableError("transfer");
   }
 
   return {

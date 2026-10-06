@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { sql } from "drizzle-orm";
 
+import {
+  FinancialAccountReferenceUnavailableError,
+  FinancialCategoryReferenceUnavailableError,
+} from "@/modules/finance/domain/financial-reference";
 import type { ScopedTransaction } from "@/platform/db";
 
 type ReceivingFinancialAccountRow = {
@@ -49,9 +53,7 @@ export async function resolveReceivingFinancialAccount(
   const account = result.rows[0];
 
   if (!account) {
-    throw new Error(
-      "The receiving financial account does not exist in the active workspace.",
-    );
+    throw new FinancialAccountReferenceUnavailableError("receiving");
   }
 
   return {
@@ -80,9 +82,7 @@ export async function ensureActiveIncomeCategory(
     `);
 
   if (!result.rows[0]) {
-    throw new Error(
-      "The selected income category does not exist or is archived.",
-    );
+    throw new FinancialCategoryReferenceUnavailableError("income");
   }
 }
 
