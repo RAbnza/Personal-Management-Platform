@@ -14,7 +14,7 @@ import {
   finalizeActionRevision,
   finalizeJournal,
   lockActiveFinancialWorkspace,
-} from "@/modules/finance/repositories/financial-account-repository";
+} from "@/modules/finance/repositories/financial-write-repository";
 import {
   createIncomeActionRevision,
   createIncomeCashPosting,

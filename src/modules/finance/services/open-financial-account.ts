@@ -2,28 +2,30 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
+import { hashFinancialCommandPayload } from "@/modules/finance/domain/financial-command";
 import {
   claimFinancialCommandReceipt,
   completeFinancialCommandReceipt,
 } from "@/modules/finance/repositories/command-receipt-repository";
 import {
-  advanceWorkspaceFinancialRevision,
   createFinancialAccount,
   createFinancialAction,
   createLedgerAccount,
   createOpeningActionRevision,
   createOpeningJournal,
   createOpeningPosting,
+} from "@/modules/finance/repositories/financial-account-repository";
+import {
+  advanceWorkspaceFinancialRevision,
   createPrivateFinancialRevision,
   enforceDeferredFinancialConstraints,
   finalizeActionRevision,
   finalizeJournal,
   lockActiveFinancialWorkspace,
-} from "@/modules/finance/repositories/financial-account-repository";
-import { hashFinancialCommandPayload } from "@/modules/finance/domain/financial-command";
+} from "@/modules/finance/repositories/financial-write-repository";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
-import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 import { isCalendarDate, parseCalendarDate } from "@/shared/calendar-date";
+import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 
 const OPEN_FINANCIAL_ACCOUNT_COMMAND_TYPE = "finance.open_account";
 
