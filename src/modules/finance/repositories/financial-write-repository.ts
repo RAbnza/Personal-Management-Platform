@@ -150,8 +150,24 @@ export async function advanceWorkspaceFinancialRevision(
   return row.financial_revision;
 }
 
+/**
+ * Surface deferred financial-integrity failures inside the current service
+ * rather than postponing them until transaction COMMIT.
+ *
+ * SET CONSTRAINTS ... IMMEDIATE performs a retroactive check of currently
+ * deferred constraints. If any invariant is broken, PostgreSQL raises here
+ * and the transaction is failed.
+ *
+ * A successful check must restore deferred mode afterward. Financial commands
+ * intentionally rely on DEFERRABLE INITIALLY DEFERRED relationships while
+ * assembling cyclic action/revision graphs. Leaving constraints in IMMEDIATE
+ * mode would make a second financial command in the same transaction fail
+ * while inserting an otherwise valid intermediate state.
+ */
 export async function enforceDeferredFinancialConstraints(
   transaction: ScopedTransaction,
 ): Promise<void> {
   await transaction.db.execute(sql`SET CONSTRAINTS ALL IMMEDIATE`);
+
+  await transaction.db.execute(sql`SET CONSTRAINTS ALL DEFERRED`);
 }
