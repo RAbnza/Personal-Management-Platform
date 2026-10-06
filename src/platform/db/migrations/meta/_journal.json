@@ -78,6 +78,41 @@
       "when": 1791277973149,
       "tag": "0010_s1_financial_recipes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791288588642,
+      "tag": "0011_massive_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791288909832,
+      "tag": "0012_s2_security_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791289463758,
+      "tag": "0013_s2_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791290535540,
+      "tag": "0014_s2_resume_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791291231280,
+      "tag": "0015_normal_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

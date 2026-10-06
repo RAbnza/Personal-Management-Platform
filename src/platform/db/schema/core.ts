@@ -1,11 +1,13 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   customType,
   index,
   integer,
   jsonb,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -25,6 +27,14 @@ const bytea = customType<{
     return "bytea";
   },
 });
+
+export const implementedModuleKeys = ["money", "career", "time"] as const;
+
+export type ImplementedModuleKey = (typeof implementedModuleKeys)[number];
+
+const implementedModuleKeySql = sql.raw(
+  implementedModuleKeys.map((key) => `'${key}'`).join(", "),
+);
 
 export const userProfile = coreSchema.table(
   "user_profile",
@@ -161,6 +171,87 @@ export const workspacePreference = coreSchema.table(
       sql`${table.theme} IN ('system', 'light', 'dark')`,
     ),
     check("workspace_preference_version_check", sql`${table.version} > 0`),
+  ],
+);
+
+export const modulePreference = coreSchema.table(
+  "module_preference",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    moduleKey: text("module_key").notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    agendaVisible: boolean("agenda_visible").default(true).notNull(),
+    remindersEnabled: boolean("reminders_enabled").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "pk_module_preference",
+      columns: [table.workspaceId, table.moduleKey],
+    }),
+    check(
+      "ck_module_preference_key",
+      sql`${table.moduleKey} IN (${implementedModuleKeySql})`,
+    ),
+    check("ck_module_preference_version", sql`${table.version} > 0`),
+  ],
+);
+
+export const onboardingStep = coreSchema.table(
+  "onboarding_step",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+    guideVersion: integer("guide_version").notNull(),
+    stepKey: text("step_key").notNull(),
+    state: text("state").notNull(),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "pk_onboarding_step",
+      columns: [table.workspaceId, table.guideVersion, table.stepKey],
+    }),
+    check("ck_onboarding_step_guide_version", sql`${table.guideVersion} > 0`),
+    check(
+      "ck_onboarding_step_state",
+      sql`${table.state} IN ('pending', 'completed', 'skipped')`,
+    ),
+    check(
+      "ck_onboarding_step_completion",
+      sql`
+        (
+          ${table.state} = 'completed'
+          AND ${table.completedAt} IS NOT NULL
+        )
+        OR
+        (
+          ${table.state} <> 'completed'
+          AND ${table.completedAt} IS NULL
+        )
+      `,
+    ),
   ],
 );
 

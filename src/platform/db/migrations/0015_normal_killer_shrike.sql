@@ -1,0 +1,1 @@
+ALTER TABLE "core"."module_preference" ADD CONSTRAINT "ck_module_preference_key" CHECK ("core"."module_preference"."module_key" IN ('money', 'career', 'time'));
