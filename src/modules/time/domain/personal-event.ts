@@ -11,6 +11,10 @@ export const PERSONAL_EVENT_STATUSES = [
 
 export type PersonalEventStatus = (typeof PERSONAL_EVENT_STATUSES)[number];
 
+export const PERSONAL_EVENT_MUTATIONS = ["edit", "complete", "cancel"] as const;
+
+export type PersonalEventMutation = (typeof PERSONAL_EVENT_MUTATIONS)[number];
+
 export class PersonalEventUnavailableError extends Error {
   readonly code = "PERSONAL_EVENT_UNAVAILABLE";
 
