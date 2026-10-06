@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -13,8 +13,10 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import {
+  findSeededCategoryId,
+  removeProvisionedTestUser,
+} from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
@@ -25,22 +27,6 @@ type FinancialAccountFixture = {
   accountId: string;
   ledgerAccountId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for record-transfer integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -68,60 +54,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-record-transfer-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function createFinancialAccountFixture(
@@ -193,34 +125,6 @@ async function createFinancialAccountFixture(
   };
 }
 
-async function createExpenseCategory(
-  client: PoolClient,
-  user: TestUser,
-  name: string,
-): Promise<string> {
-  const categoryId = randomUUID();
-
-  await client.query(
-    `
-      INSERT INTO core."category" (
-        id,
-        workspace_id,
-        kind,
-        name
-      )
-      VALUES (
-        $1,
-        $2,
-        'expense',
-        $3
-      )
-    `,
-    [categoryId, user.workspaceId, name],
-  );
-
-  return categoryId;
-}
-
 async function getCashLedgerBalance(
   client: PoolClient,
   input: {
@@ -232,16 +136,16 @@ async function getCashLedgerBalance(
     balance_minor: string;
   }>(
     `
-        SELECT
-          COALESCE(
-            sum(amount_minor),
-            0
-          )::text AS balance_minor
-        FROM finance."posting"
-        WHERE
-          workspace_id = $1
-          AND ledger_account_id = $2
-      `,
+      SELECT
+        COALESCE(
+          sum(amount_minor),
+          0
+        )::text AS balance_minor
+      FROM finance."posting"
+      WHERE
+        workspace_id = $1
+        AND ledger_account_id = $2
+    `,
     [input.workspaceId, input.ledgerAccountId],
   );
 
@@ -298,11 +202,10 @@ describe("record transfer", () => {
           openingCutoffDate: "2026-09-01",
         });
 
-        const feeCategoryId = await createExpenseCategory(
-          client,
-          user,
-          "Transaction Fees",
-        );
+        const feeCategoryId = await findSeededCategoryId(client, user, {
+          kind: "expense",
+          code: "transaction_fees",
+        });
 
         const result = await recordTransferInTransaction(transaction, {
           userId: user.userId,
@@ -349,15 +252,15 @@ describe("record transfer", () => {
           withheld_fee_minor: string;
         }>(
           `
-                SELECT
-                  source_principal_minor::text,
-                  destination_principal_minor::text,
-                  withheld_fee_minor::text
-                FROM finance."transfer_detail"
-                WHERE
-                  workspace_id = $1
-                  AND action_revision_id = $2
-              `,
+            SELECT
+              source_principal_minor::text,
+              destination_principal_minor::text,
+              withheld_fee_minor::text
+            FROM finance."transfer_detail"
+            WHERE
+              workspace_id = $1
+              AND action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -377,26 +280,26 @@ describe("record transfer", () => {
           category_id: string | null;
         }>(
           `
-                SELECT
-                  f.label,
-                  f.amount_minor::text
-                    AS amount_minor,
-                  f.treatment,
-                  p.amount_minor::text
-                    AS expense_amount_minor,
-                  p.category_id
-                FROM finance."fee_component" AS f
-                INNER JOIN finance."posting" AS p
-                  ON p.workspace_id =
-                    f.workspace_id
-                  AND p.action_revision_id =
-                    f.action_revision_id
-                  AND p.id =
-                    f.expense_posting_id
-                WHERE
-                  f.workspace_id = $1
-                  AND f.action_revision_id = $2
-              `,
+            SELECT
+              f.label,
+              f.amount_minor::text
+                AS amount_minor,
+              f.treatment,
+              p.amount_minor::text
+                AS expense_amount_minor,
+              p.category_id
+            FROM finance."fee_component" AS f
+            INNER JOIN finance."posting" AS p
+              ON p.workspace_id =
+                f.workspace_id
+              AND p.action_revision_id =
+                f.action_revision_id
+              AND p.id =
+                f.expense_posting_id
+            WHERE
+              f.workspace_id = $1
+              AND f.action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -416,57 +319,57 @@ describe("record transfer", () => {
           expense_total: string;
         }>(
           `
-                SELECT
-                  COALESCE(
-                    sum(
-                      p.amount_minor
-                    ) FILTER (
-                      WHERE
-                        p.cash_flow_kind =
-                          'transfer'
-                        AND p.cash_flow_direction =
-                          'internal'
-                    ),
-                    0
-                  )::text
-                    AS internal_total,
+            SELECT
+              COALESCE(
+                sum(
+                  p.amount_minor
+                ) FILTER (
+                  WHERE
+                    p.cash_flow_kind =
+                      'transfer'
+                    AND p.cash_flow_direction =
+                      'internal'
+                ),
+                0
+              )::text
+                AS internal_total,
 
-                  COALESCE(
-                    sum(
-                      -(p.amount_minor)
-                    ) FILTER (
-                      WHERE
-                        p.cash_flow_kind =
-                          'fee'
-                        AND p.cash_flow_direction =
-                          'out'
-                    ),
-                    0
-                  )::text
-                    AS fee_outflow,
+              COALESCE(
+                sum(
+                  -(p.amount_minor)
+                ) FILTER (
+                  WHERE
+                    p.cash_flow_kind =
+                      'fee'
+                    AND p.cash_flow_direction =
+                      'out'
+                ),
+                0
+              )::text
+                AS fee_outflow,
 
-                  COALESCE(
-                    sum(
-                      p.amount_minor
-                    ) FILTER (
-                      WHERE
-                        l.kind =
-                          'expense'
-                    ),
-                    0
-                  )::text
-                    AS expense_total
+              COALESCE(
+                sum(
+                  p.amount_minor
+                ) FILTER (
+                  WHERE
+                    l.kind =
+                      'expense'
+                ),
+                0
+              )::text
+                AS expense_total
 
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id =
-                    p.workspace_id
-                  AND l.id =
-                    p.ledger_account_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_revision_id = $2
-              `,
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id =
+                p.workspace_id
+              AND l.id =
+                p.ledger_account_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -518,7 +421,7 @@ describe("record transfer", () => {
         });
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-transfer-test-cleanup");
     }
   });
 
@@ -577,18 +480,18 @@ describe("record transfer", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."financial_action" AS a
-                INNER JOIN core."command_receipt" AS r
-                  ON r.workspace_id =
-                    a.workspace_id
-                  AND r.id =
-                    a.original_command_receipt_id
-                WHERE
-                  a.workspace_id = $1
-                  AND r.client_command_id = $2
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."financial_action" AS a
+            INNER JOIN core."command_receipt" AS r
+              ON r.workspace_id =
+                a.workspace_id
+              AND r.id =
+                a.original_command_receipt_id
+            WHERE
+              a.workspace_id = $1
+              AND r.client_command_id = $2
+          `,
           [user.workspaceId, clientCommandId],
         );
 
@@ -598,13 +501,13 @@ describe("record transfer", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."fee_component"
-                WHERE
-                  workspace_id = $1
-                  AND action_revision_id = $2
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."fee_component"
+            WHERE
+              workspace_id = $1
+              AND action_revision_id = $2
+          `,
           [user.workspaceId, first.actionRevisionId],
         );
 
@@ -614,19 +517,19 @@ describe("record transfer", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
         expect(workspace.rows[0]?.financial_revision).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-transfer-test-cleanup");
     }
   });
 
@@ -654,11 +557,10 @@ describe("record transfer", () => {
           },
         );
 
-        const feeCategoryId = await createExpenseCategory(
-          client,
-          user,
-          "Transaction Fees",
-        );
+        const feeCategoryId = await findSeededCategoryId(client, user, {
+          kind: "expense",
+          code: "transaction_fees",
+        });
 
         const result = await recordTransferInTransaction(transaction, {
           userId: user.userId,
@@ -718,15 +620,15 @@ describe("record transfer", () => {
           withheld_fee_minor: string;
         }>(
           `
-                SELECT
-                  source_principal_minor::text,
-                  destination_principal_minor::text,
-                  withheld_fee_minor::text
-                FROM finance."transfer_detail"
-                WHERE
-                  workspace_id = $1
-                  AND action_revision_id = $2
-              `,
+            SELECT
+              source_principal_minor::text,
+              destination_principal_minor::text,
+              withheld_fee_minor::text
+            FROM finance."transfer_detail"
+            WHERE
+              workspace_id = $1
+              AND action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -746,22 +648,22 @@ describe("record transfer", () => {
           bearing_ledger_account_id: string;
         }>(
           `
-                SELECT
-                  label,
-                  amount_minor::text
-                    AS amount_minor,
-                  effective_date::text
-                    AS effective_date,
-                  treatment,
-                  bearing_ledger_account_id
-                FROM finance."fee_component"
-                WHERE
-                  workspace_id = $1
-                  AND action_revision_id = $2
-                ORDER BY
-                  effective_date,
-                  amount_minor
-              `,
+            SELECT
+              label,
+              amount_minor::text
+                AS amount_minor,
+              effective_date::text
+                AS effective_date,
+              treatment,
+              bearing_ledger_account_id
+            FROM finance."fee_component"
+            WHERE
+              workspace_id = $1
+              AND action_revision_id = $2
+            ORDER BY
+              effective_date,
+              amount_minor
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -786,14 +688,14 @@ describe("record transfer", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."journal"
-                WHERE
-                  workspace_id = $1
-                  AND action_revision_id = $2
-                  AND role = 'economic'
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."journal"
+            WHERE
+              workspace_id = $1
+              AND action_revision_id = $2
+              AND role = 'economic'
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -803,22 +705,22 @@ describe("record transfer", () => {
           amount_minor: string;
         }>(
           `
-                SELECT
-                  COALESCE(
-                    sum(p.amount_minor),
-                    0
-                  )::text AS amount_minor
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id =
-                    p.workspace_id
-                  AND l.id =
-                    p.ledger_account_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_revision_id = $2
-                  AND l.kind = 'expense'
-              `,
+            SELECT
+              COALESCE(
+                sum(p.amount_minor),
+                0
+              )::text AS amount_minor
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id =
+                p.workspace_id
+              AND l.id =
+                p.ledger_account_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_revision_id = $2
+              AND l.kind = 'expense'
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -827,7 +729,7 @@ describe("record transfer", () => {
         expect(result.financialRevision).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-transfer-test-cleanup");
     }
   });
 });

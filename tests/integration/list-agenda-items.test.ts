@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { createApplicationEventInTransaction } from "@/modules/career/services/create-application-event";
@@ -18,8 +18,7 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
@@ -28,42 +27,21 @@ type TestUser = {
 
 type DatePersonalEventFixture = {
   title: string;
-
   temporalKind: "date";
-
   eventDate: string;
   endDateExclusive?: string | null;
 };
 
 type TimedPersonalEventFixture = {
   title: string;
-
   temporalKind: "timed";
-
   startsAt: string;
   endsAt?: string | null;
-
   timezone: string;
 };
 
 type PersonalEventFixture =
   DatePersonalEventFixture | TimedPersonalEventFixture;
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for list-agenda-items integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -91,61 +69,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-
-    application_name: "pmp-list-agenda-items-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runTimeTestAndRollback(
@@ -203,38 +126,28 @@ async function insertPersonalEvent(
       INSERT INTO time."personal_event" (
         id,
         workspace_id,
-
         title,
         temporal_kind,
-
         event_date,
         end_date_exclusive,
-
         starts_at,
         ends_at,
         timezone,
-
         status,
-
         recorded_by_user_id,
         actor_kind
       )
       VALUES (
         $1,
         $2,
-
         $3,
         $4,
-
         $5,
         $6,
-
         $7,
         $8,
         $9,
-
         'scheduled',
-
         $10,
         'user'
       )
@@ -242,17 +155,13 @@ async function insertPersonalEvent(
     [
       id,
       user.workspaceId,
-
       input.title,
       input.temporalKind,
-
       eventDate,
       endDateExclusive,
-
       startsAt,
       endsAt,
       timezone,
-
       user.userId,
     ],
   );
@@ -269,7 +178,6 @@ async function createAppliedApplication(
   return createJobApplicationInTransaction(transaction, {
     userId: user.userId,
     workspaceId: user.workspaceId,
-
     clientCommandId: randomUUID(),
 
     companyName: `${label} Company`,
@@ -298,30 +206,30 @@ describe("list Agenda items", () => {
           tomorrow: string;
         }>(
           `
-              SELECT
-                (
-                  (
-                    clock_timestamp()
-                      AT TIME ZONE timezone
-                  )::date - 1
-                )::text AS yesterday,
-
+            SELECT
+              (
                 (
                   clock_timestamp()
                     AT TIME ZONE timezone
-                )::date::text AS today,
+                )::date - 1
+              )::text AS yesterday,
 
+              (
+                clock_timestamp()
+                  AT TIME ZONE timezone
+              )::date::text AS today,
+
+              (
                 (
-                  (
-                    clock_timestamp()
-                      AT TIME ZONE timezone
-                  )::date + 1
-                )::text AS tomorrow
+                  clock_timestamp()
+                    AT TIME ZONE timezone
+                )::date + 1
+              )::text AS tomorrow
 
-              FROM core."workspace"
+            FROM core."workspace"
 
-              WHERE id = $1
-            `,
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -335,7 +243,6 @@ describe("list Agenda items", () => {
 
         const overduePersonalId = await insertPersonalEvent(client, user, {
           title: "Overdue personal task",
-
           temporalKind: "date",
           eventDate: local.yesterday,
         });
@@ -354,7 +261,6 @@ describe("list Agenda items", () => {
             workspaceId: user.workspaceId,
 
             applicationId: application.applicationId,
-
             clientCommandId: randomUUID(),
 
             eventKind: "interview",
@@ -363,7 +269,6 @@ describe("list Agenda items", () => {
             temporalKind: "timed",
 
             startsAt: `${local.today}T09:00:00+08:00`,
-
             endsAt: `${local.today}T10:00:00+08:00`,
 
             timezone: "Asia/Manila",
@@ -372,7 +277,6 @@ describe("list Agenda items", () => {
 
         const futurePersonalId = await insertPersonalEvent(client, user, {
           title: "Upcoming personal task",
-
           temporalKind: "date",
           eventDate: local.tomorrow,
         });
@@ -386,7 +290,6 @@ describe("list Agenda items", () => {
         });
 
         expect(result.workspaceTimezone).toBe("Asia/Manila");
-
         expect(result.today).toBe(local.today);
 
         expect(result.items.map((item) => item.sourceId)).toEqual([
@@ -398,74 +301,56 @@ describe("list Agenda items", () => {
         expect(result.items[0]).toEqual({
           sourceKind: "personal_event",
           sourceId: overduePersonalId,
-
           occurrenceKey: "single",
-
           title: "Overdue personal task",
-
           displayModule: "time",
-
           agendaDate: local.yesterday,
-
           timingState: "overdue",
 
           temporal: {
             kind: "date",
-
             eventDate: local.yesterday,
             endDateExclusive: null,
           },
 
           status: "scheduled",
-
           notificationGeneration: 1,
-
           reminderCapable: true,
           remindersEnabled: true,
-
           sourceVersion: 1,
         });
 
         expect(result.items[1]).toEqual({
           sourceKind: "application_event",
           sourceId: interview.eventId,
-
           occurrenceKey: "single",
-
           title: "Today's interview",
-
           displayModule: "career",
-
           agendaDate: local.today,
-
           timingState: "today",
 
           temporal: {
             kind: "timed",
-
             startsAt: `${local.today}T01:00:00.000Z`,
-
             endsAt: `${local.today}T02:00:00.000Z`,
-
             timezone: "Asia/Manila",
           },
 
           status: "scheduled",
-
           notificationGeneration: 1,
-
           reminderCapable: true,
           remindersEnabled: true,
-
           sourceVersion: 1,
         });
 
         expect(result.items[2]?.timingState).toBe("upcoming");
-
         expect(result.nextCursor).toBeNull();
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-list-agenda-items-test-cleanup",
+      );
     }
   });
 
@@ -488,7 +373,6 @@ describe("list Agenda items", () => {
             workspaceId: user.workspaceId,
 
             applicationId: application.applicationId,
-
             clientCommandId: randomUUID(),
 
             eventKind: "follow_up",
@@ -501,36 +385,35 @@ describe("list Agenda items", () => {
 
         const personalEventId = await insertPersonalEvent(client, user, {
           title: "Personal deadline",
-
           temporalKind: "date",
           eventDate: "2026-11-10",
         });
 
         await client.query(
           `
-              INSERT INTO core."module_preference" (
-                workspace_id,
-                module_key,
-                enabled,
-                agenda_visible,
-                reminders_enabled
+            INSERT INTO core."module_preference" (
+              workspace_id,
+              module_key,
+              enabled,
+              agenda_visible,
+              reminders_enabled
+            )
+            VALUES
+              (
+                $1,
+                'career',
+                false,
+                true,
+                true
+              ),
+              (
+                $1,
+                'time',
+                true,
+                false,
+                true
               )
-              VALUES
-                (
-                  $1,
-                  'career',
-                  false,
-                  true,
-                  true
-                ),
-                (
-                  $1,
-                  'time',
-                  true,
-                  false,
-                  true
-                )
-            `,
+          `,
           [user.workspaceId],
         );
 
@@ -560,12 +443,12 @@ describe("list Agenda items", () => {
 
         await client.query(
           `
-              UPDATE core."module_preference"
-              SET agenda_visible = true
-              WHERE
-                workspace_id = $1
-                AND module_key = 'time'
-            `,
+            UPDATE core."module_preference"
+            SET agenda_visible = true
+            WHERE
+              workspace_id = $1
+              AND module_key = 'time'
+          `,
           [user.workspaceId],
         );
 
@@ -586,7 +469,10 @@ describe("list Agenda items", () => {
         expect(visibleTime.items[0]?.displayModule).toBe("time");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-list-agenda-items-test-cleanup",
+      );
     }
   });
 
@@ -607,7 +493,6 @@ describe("list Agenda items", () => {
           workspaceId: user.workspaceId,
 
           applicationId: application.applicationId,
-
           clientCommandId: randomUUID(),
 
           eventKind: "interview",
@@ -616,7 +501,6 @@ describe("list Agenda items", () => {
           temporalKind: "timed",
 
           startsAt: "2026-10-10T00:30:00+08:00",
-
           endsAt: "2026-10-10T01:30:00+08:00",
 
           timezone: "Asia/Manila",
@@ -627,7 +511,6 @@ describe("list Agenda items", () => {
           workspaceId: user.workspaceId,
 
           applicationId: application.applicationId,
-
           clientCommandId: randomUUID(),
 
           eventKind: "interview",
@@ -636,7 +519,6 @@ describe("list Agenda items", () => {
           temporalKind: "timed",
 
           startsAt: "2026-10-09T23:30:00+08:00",
-
           endsAt: "2026-10-09T23:45:00+08:00",
 
           timezone: "Asia/Manila",
@@ -660,22 +542,21 @@ describe("list Agenda items", () => {
 
         expect(result.items[0]).toMatchObject({
           sourceId: inside.eventId,
-
           agendaDate: "2026-10-10",
 
           temporal: {
             kind: "timed",
-
             startsAt: "2026-10-09T16:30:00.000Z",
-
             endsAt: "2026-10-09T17:30:00.000Z",
-
             timezone: "Asia/Manila",
           },
         });
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-list-agenda-items-test-cleanup",
+      );
     }
   });
 
@@ -691,21 +572,18 @@ describe("list Agenda items", () => {
          */
         const firstEventId = await insertPersonalEvent(client, user, {
           title: "Agenda Page A",
-
           temporalKind: "date",
           eventDate: "2026-12-01",
         });
 
         const secondEventId = await insertPersonalEvent(client, user, {
           title: "Agenda Page B",
-
           temporalKind: "date",
           eventDate: "2026-12-01",
         });
 
         const thirdEventId = await insertPersonalEvent(client, user, {
           title: "Agenda Page C",
-
           temporalKind: "date",
           eventDate: "2026-12-01",
         });
@@ -720,7 +598,6 @@ describe("list Agenda items", () => {
           endDate: "2026-12-01",
 
           modules: ["time"],
-
           pageSize: 2,
         });
 
@@ -737,7 +614,6 @@ describe("list Agenda items", () => {
           modules: ["time"],
 
           pageSize: 2,
-
           cursor: pageOne.nextCursor ?? undefined,
         });
 
@@ -765,7 +641,6 @@ describe("list Agenda items", () => {
             modules: ["career"],
 
             pageSize: 2,
-
             cursor: pageOne.nextCursor ?? undefined,
           });
         } catch (error) {
@@ -775,13 +650,15 @@ describe("list Agenda items", () => {
         expect(cursorError).toBeInstanceOf(InvalidAgendaCursorError);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-list-agenda-items-test-cleanup",
+      );
     }
   });
 
   it("does not allow a scoped transaction to query another user's workspace Agenda", async () => {
     const userA = await createTestUser("AgendaOwnerA");
-
     const userB = await createTestUser("AgendaOwnerB");
 
     try {
@@ -791,7 +668,6 @@ describe("list Agenda items", () => {
         try {
           await listAgendaItemsInTransaction(transaction, {
             userId: userA.userId,
-
             workspaceId: userB.workspaceId,
 
             startDate: "2026-10-01",
@@ -806,8 +682,15 @@ describe("list Agenda items", () => {
         );
       });
     } finally {
-      await removeTestUser(userA);
-      await removeTestUser(userB);
+      await removeProvisionedTestUser(
+        userA,
+        "pmp-list-agenda-items-test-cleanup",
+      );
+
+      await removeProvisionedTestUser(
+        userB,
+        "pmp-list-agenda-items-test-cleanup",
+      );
     }
   });
 });

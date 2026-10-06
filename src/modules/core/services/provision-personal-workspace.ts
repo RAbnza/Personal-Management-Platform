@@ -5,10 +5,12 @@ import { z } from "zod";
 import { withDomainTransaction } from "@/platform/db";
 
 import {
+  createDefaultCategoriesIfMissing,
   createPersonalWorkspaceIfMissing,
   createUserProfileIfMissing,
-  createWorkspacePreference,
+  createWorkspacePreferenceIfMissing,
   findPersonalWorkspaceIdByOwner,
+  installProvisioningWorkspaceContext,
 } from "../repositories/workspace-provisioning-repository";
 
 const provisionPersonalWorkspaceInputSchema = z.object({
@@ -22,22 +24,29 @@ export type ProvisionPersonalWorkspaceResult = {
 };
 
 /**
- * Idempotently provision the S0 ownership root for a verified user.
+ * Idempotently provision the authenticated user's private ownership root and
+ * first-use defaults.
  *
- * A candidate workspace ID is installed as the transaction-local workspace
- * context before insertion. If another request has already created the user's
- * personal workspace, the partial unique owner constraint resolves the race
- * and the existing workspace is returned.
+ * A candidate workspace ID is installed as the initial transaction-local
+ * workspace context. If another request has already created the user's
+ * personal workspace, the unique owner constraint resolves the race and the
+ * existing owned workspace is installed as the remaining transaction scope.
  *
- * New workspace preference creation occurs in the same transaction as the new
- * profile/workspace records, so a successfully provisioned workspace cannot
- * commit without its S0 settings row.
+ * New profile/workspace/settings/category records commit atomically for a
+ * first-time workspace. Re-running provisioning also repairs missing
+ * non-destructive defaults on workspaces created by older application
+ * versions without overwriting existing preferences or category data.
+ *
+ * Module preferences intentionally remain sparse. Absence continues to mean
+ * the documented enabled/agenda-visible/reminders-enabled defaults, as exposed
+ * by the module-preference service.
  */
 export async function provisionPersonalWorkspace(input: {
   userId: string;
   displayName: string;
 }): Promise<ProvisionPersonalWorkspaceResult> {
   const validatedInput = provisionPersonalWorkspaceInputSchema.parse(input);
+
   const candidateWorkspaceId = randomUUID();
 
   return withDomainTransaction(
@@ -59,34 +68,50 @@ export async function provisionPersonalWorkspace(input: {
         },
       );
 
+      let workspaceId: string;
+      let created: boolean;
+
       if (createdWorkspaceId) {
-        await createWorkspacePreference(transaction, createdWorkspaceId);
-
-        return {
-          workspaceId: createdWorkspaceId,
-          created: true,
-        };
-      }
-
-      /*
-       * Another successful provisioning transaction already owns the personal
-       * workspace. Because profile, workspace and preference are committed
-       * atomically, there is no partial preference row to repair here.
-       */
-      const existingWorkspaceId = await findPersonalWorkspaceIdByOwner(
-        transaction,
-        validatedInput.userId,
-      );
-
-      if (!existingWorkspaceId) {
-        throw new Error(
-          "Personal workspace provisioning could not resolve the existing workspace.",
+        workspaceId = createdWorkspaceId;
+        created = true;
+      } else {
+        /*
+         * Another successful request, or an earlier application version,
+         * already owns the user's personal workspace.
+         *
+         * workspace rows are identity-scoped by app.user_id rather than by
+         * app.workspace_id, so resolving this ID does not expose another
+         * user's workspace.
+         */
+        const existingWorkspaceId = await findPersonalWorkspaceIdByOwner(
+          transaction,
+          validatedInput.userId,
         );
+
+        if (!existingWorkspaceId) {
+          throw new Error(
+            "Personal workspace provisioning could not resolve the existing workspace.",
+          );
+        }
+
+        workspaceId = existingWorkspaceId;
+        created = false;
+
+        /*
+         * Child private tables require app.workspace_id to equal their actual
+         * workspace scope. The resolved ID came from the authenticated user's
+         * own RLS-protected workspace row.
+         */
+        await installProvisioningWorkspaceContext(transaction, workspaceId);
       }
+
+      await createWorkspacePreferenceIfMissing(transaction, workspaceId);
+
+      await createDefaultCategoriesIfMissing(transaction, workspaceId);
 
       return {
-        workspaceId: existingWorkspaceId,
-        created: false,
+        workspaceId,
+        created,
       };
     },
   );

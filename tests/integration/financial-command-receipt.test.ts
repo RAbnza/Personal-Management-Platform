@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { Client } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -14,29 +13,12 @@ import {
 } from "@/modules/finance/repositories/command-receipt-repository";
 import { withDomainTransaction } from "@/platform/db";
 import { closeRuntimeDatabasePools, getAuthPool } from "@/platform/db/pools";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for financial command receipt integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(): Promise<TestUser> {
   const userId = randomUUID();
@@ -64,67 +46,6 @@ async function createTestUser(): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-financial-command-receipt-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."command_receipt"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 afterAll(async () => {
@@ -159,6 +80,12 @@ describe("financial command receipts", () => {
 
         expect(claim.kind).toBe("claimed");
 
+        if (claim.kind !== "claimed") {
+          throw new Error(
+            "Expected the initial financial command receipt to be claimed.",
+          );
+        }
+
         await completeFinancialCommandReceipt(transaction, {
           workspaceId: user.workspaceId,
           receiptId: claim.receiptId,
@@ -185,7 +112,10 @@ describe("financial command receipts", () => {
         result: expectedResult,
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-financial-command-receipt-test-cleanup",
+      );
     }
   });
 
@@ -238,7 +168,10 @@ describe("financial command receipts", () => {
         ),
       ).rejects.toBeInstanceOf(FinancialCommandConflictError);
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-financial-command-receipt-test-cleanup",
+      );
     }
   });
 });

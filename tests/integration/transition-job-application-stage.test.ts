@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { JobApplicationVersionConflictError } from "@/modules/career/domain/application";
@@ -14,29 +14,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for transition-job-application-stage integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -64,60 +47,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-transition-job-application-stage-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runCareerTestAndRollback(
@@ -228,17 +157,17 @@ describe("transition job application stage", () => {
           version: number;
         }>(
           `
-              SELECT
-                applied_date::text AS applied_date,
-                current_history_id,
-                current_stage,
-                current_outcome,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              applied_date::text AS applied_date,
+              current_history_id,
+              current_stage,
+              current_outcome,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -260,18 +189,18 @@ describe("transition job application stage", () => {
           effective_order: number;
         }>(
           `
-              SELECT
-                sequence_no,
-                stage,
-                outcome,
-                effective_date::text AS effective_date,
-                effective_order
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-              ORDER BY sequence_no
-            `,
+            SELECT
+              sequence_no,
+              stage,
+              outcome,
+              effective_date::text AS effective_date,
+              effective_order
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+            ORDER BY sequence_no
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -297,16 +226,16 @@ describe("transition job application stage", () => {
           operation: string;
         }>(
           `
-              SELECT
-                subject_version,
-                operation
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-              ORDER BY subject_version
-            `,
+            SELECT
+              subject_version,
+              operation
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+            ORDER BY subject_version
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -325,20 +254,23 @@ describe("transition job application stage", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-                AND sequence_no > 1
-            `,
+            SELECT count(*)::text AS count
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+              AND sequence_no > 1
+          `,
           [user.workspaceId, application.applicationId],
         );
 
         expect(transitionHistoryCount.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-transition-job-application-stage-test-cleanup",
+      );
     }
   });
 
@@ -392,14 +324,14 @@ describe("transition job application stage", () => {
           current_stage: string;
         }>(
           `
-              SELECT
-                applied_date::text AS applied_date,
-                current_stage
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              applied_date::text AS applied_date,
+              current_stage
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -411,7 +343,10 @@ describe("transition job application stage", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-transition-job-application-stage-test-cleanup",
+      );
     }
   });
 
@@ -492,16 +427,16 @@ describe("transition job application stage", () => {
           effective_date: string;
         }>(
           `
-              SELECT
-                id,
-                sequence_no,
-                effective_date::text AS effective_date
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-              ORDER BY sequence_no
-            `,
+            SELECT
+              id,
+              sequence_no,
+              effective_date::text AS effective_date
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+            ORDER BY sequence_no
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -524,7 +459,10 @@ describe("transition job application stage", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-transition-job-application-stage-test-cleanup",
+      );
     }
   });
 
@@ -641,17 +579,17 @@ describe("transition job application stage", () => {
           reason: string | null;
         }>(
           `
-              SELECT
-                sequence_no,
-                stage,
-                outcome,
-                reason
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-              ORDER BY sequence_no
-            `,
+            SELECT
+              sequence_no,
+              stage,
+              outcome,
+              reason
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+            ORDER BY sequence_no
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -677,7 +615,10 @@ describe("transition job application stage", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-transition-job-application-stage-test-cleanup",
+      );
     }
   });
 
@@ -757,19 +698,22 @@ describe("transition job application stage", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
         expect(historyCount.rows[0]?.count).toBe("2");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-transition-job-application-stage-test-cleanup",
+      );
     }
   });
 });

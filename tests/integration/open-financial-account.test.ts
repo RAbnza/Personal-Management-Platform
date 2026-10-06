@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -15,29 +15,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for open-financial-account integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -65,60 +48,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-open-financial-account-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runFinancialTestAndRollback(
@@ -185,16 +114,16 @@ describe("open financial account", () => {
           version: number;
         }>(
           `
-                SELECT
-                  id,
-                  ledger_account_id,
-                  opening_action_id,
-                  version
-                FROM finance."financial_account"
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            SELECT
+              id,
+              ledger_account_id,
+              opening_action_id,
+              version
+            FROM finance."financial_account"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.accountId],
         );
 
@@ -211,11 +140,11 @@ describe("open financial account", () => {
           kind: string;
         }>(
           `
-                SELECT kind
-                FROM finance."ledger_account"
-                WHERE workspace_id = $1
-                ORDER BY kind
-              `,
+            SELECT kind
+            FROM finance."ledger_account"
+            WHERE workspace_id = $1
+            ORDER BY kind
+          `,
           [user.workspaceId],
         );
 
@@ -229,10 +158,10 @@ describe("open financial account", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text AS count
-                FROM finance."financial_action"
-                WHERE workspace_id = $1
-              `,
+            SELECT count(*)::text AS count
+            FROM finance."financial_action"
+            WHERE workspace_id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -243,13 +172,13 @@ describe("open financial account", () => {
           subject_id: string;
         }>(
           `
-                SELECT
-                  subject_kind,
-                  subject_id
-                FROM audit."private_revision"
-                WHERE workspace_id = $1
-                ORDER BY subject_kind
-              `,
+            SELECT
+              subject_kind,
+              subject_id
+            FROM audit."private_revision"
+            WHERE workspace_id = $1
+            ORDER BY subject_kind
+          `,
           [user.workspaceId],
         );
 
@@ -264,12 +193,12 @@ describe("open financial account", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -280,14 +209,14 @@ describe("open financial account", () => {
           result_json: Record<string, unknown>;
         }>(
           `
-                SELECT
-                  state,
-                  result_json
-                FROM core."command_receipt"
-                WHERE
-                  workspace_id = $1
-                  AND client_command_id = $2
-              `,
+            SELECT
+              state,
+              result_json
+            FROM core."command_receipt"
+            WHERE
+              workspace_id = $1
+              AND client_command_id = $2
+          `,
           [user.workspaceId, clientCommandId],
         );
 
@@ -297,7 +226,10 @@ describe("open financial account", () => {
         });
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-open-financial-account-test-cleanup",
+      );
     }
   });
 
@@ -328,14 +260,14 @@ describe("open financial account", () => {
           version: number;
         }>(
           `
-                SELECT
-                  opening_action_id,
-                  version
-                FROM finance."financial_account"
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            SELECT
+              opening_action_id,
+              version
+            FROM finance."financial_account"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.accountId],
         );
 
@@ -350,20 +282,20 @@ describe("open financial account", () => {
           primary_effective_date: string;
         }>(
           `
-                SELECT
-                  r.action_kind,
-                  r.state,
-                  r.primary_effective_date::text
-                    AS primary_effective_date
-                FROM finance."financial_action" AS a
-                INNER JOIN finance."action_revision" AS r
-                  ON r.workspace_id = a.workspace_id
-                  AND r.action_id = a.id
-                  AND r.id = a.current_revision_id
-                WHERE
-                  a.workspace_id = $1
-                  AND a.id = $2
-              `,
+            SELECT
+              r.action_kind,
+              r.state,
+              r.primary_effective_date::text
+                AS primary_effective_date
+            FROM finance."financial_action" AS a
+            INNER JOIN finance."action_revision" AS r
+              ON r.workspace_id = a.workspace_id
+              AND r.action_id = a.id
+              AND r.id = a.current_revision_id
+            WHERE
+              a.workspace_id = $1
+              AND a.id = $2
+          `,
           [user.workspaceId, result.openingActionId],
         );
 
@@ -382,21 +314,21 @@ describe("open financial account", () => {
           cash_flow_direction: string;
         }>(
           `
-                SELECT
-                  l.kind,
-                  p.amount_minor::text
-                    AS amount_minor,
-                  p.cash_flow_kind,
-                  p.cash_flow_direction
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id = p.workspace_id
-                  AND l.id = p.ledger_account_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_id = $2
-                ORDER BY p.line_no
-              `,
+            SELECT
+              l.kind,
+              p.amount_minor::text
+                AS amount_minor,
+              p.cash_flow_kind,
+              p.cash_flow_direction
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id = p.workspace_id
+              AND l.id = p.ledger_account_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_id = $2
+            ORDER BY p.line_no
+          `,
           [user.workspaceId, result.openingActionId],
         );
 
@@ -419,17 +351,17 @@ describe("open financial account", () => {
           count: string;
         }>(
           `
-                SELECT
-                  count(*)::text AS count
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id = p.workspace_id
-                  AND l.id = p.ledger_account_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_id = $2
-                  AND l.kind = 'income'
-              `,
+            SELECT
+              count(*)::text AS count
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id = p.workspace_id
+              AND l.id = p.ledger_account_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_id = $2
+              AND l.kind = 'income'
+          `,
           [user.workspaceId, result.openingActionId],
         );
 
@@ -440,13 +372,13 @@ describe("open financial account", () => {
           subject_id: string;
         }>(
           `
-                SELECT
-                  subject_kind,
-                  subject_id
-                FROM audit."private_revision"
-                WHERE workspace_id = $1
-                ORDER BY subject_kind
-              `,
+            SELECT
+              subject_kind,
+              subject_id
+            FROM audit."private_revision"
+            WHERE workspace_id = $1
+            ORDER BY subject_kind
+          `,
           [user.workspaceId],
         );
 
@@ -465,19 +397,22 @@ describe("open financial account", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
         expect(workspace.rows[0]?.financial_revision).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-open-financial-account-test-cleanup",
+      );
     }
   });
 
@@ -503,8 +438,15 @@ describe("open financial account", () => {
         },
       });
     } finally {
-      await removeTestUser(first);
-      await removeTestUser(second);
+      await removeProvisionedTestUser(
+        first,
+        "pmp-open-financial-account-test-cleanup",
+      );
+
+      await removeProvisionedTestUser(
+        second,
+        "pmp-open-financial-account-test-cleanup",
+      );
     }
   });
 });

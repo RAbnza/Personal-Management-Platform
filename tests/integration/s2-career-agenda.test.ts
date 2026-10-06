@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -10,8 +10,7 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
@@ -57,22 +56,6 @@ type ApplicationEventInput = {
   completedAt?: string | null;
 };
 
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for S2 integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
-
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
   const name = `${label} User`;
@@ -102,89 +85,12 @@ async function createTestUser(label: string): Promise<TestUser> {
   };
 }
 
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-s2-career-agenda-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      /*
-       * Every S2 fixture in this file is created inside a transaction that is
-       * deliberately rolled back. Only the provisioned S0 ownership root
-       * should remain here.
-       */
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
-}
-
-async function installScope(client: PoolClient, user: TestUser) {
-  await client.query(
-    `
-      SELECT
-        set_config('app.user_id', $1, true),
-        set_config('app.workspace_id', $2, true)
-    `,
-    [user.userId, user.workspaceId],
-  );
-}
-
-async function rollbackQuietly(client: PoolClient) {
-  try {
-    await client.query("ROLLBACK");
-  } catch {
-    // Best-effort cleanup after an intentionally rejected database operation.
-  }
-}
-
 async function runScopedTestAndRollback(
   user: TestUser,
   operation: (client: PoolClient) => Promise<void>,
 ) {
   const client = await getDomainPool().connect();
+
   const rollbackMarker = new Error("ROLLBACK_S2_TEST");
 
   try {
@@ -577,7 +483,14 @@ describe("S2 career, guidance and agenda database integrity", () => {
     try {
       await client.query("BEGIN");
 
-      await installScope(client, first);
+      await client.query(
+        `
+          SELECT
+            set_config('app.user_id', $1, true),
+            set_config('app.workspace_id', $2, true)
+        `,
+        [first.userId, first.workspaceId],
+      );
 
       const firstResumeId = await insertResumeVersion(
         client,
@@ -602,7 +515,14 @@ describe("S2 career, guidance and agenda database integrity", () => {
         [first.workspaceId],
       );
 
-      await installScope(client, second);
+      await client.query(
+        `
+          SELECT
+            set_config('app.user_id', $1, true),
+            set_config('app.workspace_id', $2, true)
+        `,
+        [second.userId, second.workspaceId],
+      );
 
       const secondResumeId = await insertResumeVersion(
         client,
@@ -627,7 +547,14 @@ describe("S2 career, guidance and agenda database integrity", () => {
         [second.workspaceId],
       );
 
-      await installScope(client, first);
+      await client.query(
+        `
+          SELECT
+            set_config('app.user_id', $1, true),
+            set_config('app.workspace_id', $2, true)
+        `,
+        [first.userId, first.workspaceId],
+      );
 
       const visibleResumes = await client.query<{ id: string }>(`
         SELECT id
@@ -635,6 +562,7 @@ describe("S2 career, guidance and agenda database integrity", () => {
       `);
 
       expect(visibleResumes.rows).toEqual([{ id: firstResumeId }]);
+
       expect(visibleResumes.rows.some((row) => row.id === secondResumeId)).toBe(
         false,
       );
@@ -645,6 +573,7 @@ describe("S2 career, guidance and agenda database integrity", () => {
       `);
 
       expect(visibleEvents.rows).toEqual([{ id: firstEventId }]);
+
       expect(visibleEvents.rows.some((row) => row.id === secondEventId)).toBe(
         false,
       );
@@ -685,11 +614,23 @@ describe("S2 career, guidance and agenda database integrity", () => {
         code: "42501",
       });
     } finally {
-      await rollbackQuietly(client);
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Best-effort cleanup after an expected transaction error.
+      }
+
       client.release();
 
-      await removeTestUser(first);
-      await removeTestUser(second);
+      await removeProvisionedTestUser(
+        first,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
+
+      await removeProvisionedTestUser(
+        second,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -826,7 +767,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -949,6 +894,7 @@ describe("S2 career, guidance and agenda database integrity", () => {
         const dateEvent = events.rows.find(
           (event) => event.temporal_kind === "date",
         );
+
         const timedEvent = events.rows.find(
           (event) => event.temporal_kind === "timed",
         );
@@ -961,7 +907,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -989,7 +939,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1087,7 +1041,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1138,7 +1096,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1203,7 +1165,10 @@ describe("S2 career, guidance and agenda database integrity", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1221,7 +1186,9 @@ describe("S2 career, guidance and agenda database integrity", () => {
             "Application Resume",
           );
 
-          const beforeUse = await client.query<{ notes: string | null }>(
+          const beforeUse = await client.query<{
+            notes: string | null;
+          }>(
             `
               UPDATE career."resume_version"
               SET notes = 'Corrected before first use'
@@ -1255,7 +1222,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1289,7 +1260,11 @@ describe("S2 career, guidance and agenda database integrity", () => {
       });
     } finally {
       client.release();
-      await removeTestUser(user);
+
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 
@@ -1412,7 +1387,9 @@ describe("S2 career, guidance and agenda database integrity", () => {
           agenda.rows.some((row) => row.source_id === completedPersonalEventId),
         ).toBe(false);
 
-        const nextActionOccurrences = await client.query<{ count: string }>(
+        const nextActionOccurrences = await client.query<{
+          count: string;
+        }>(
           `
             SELECT count(*)::text AS count
             FROM time."agenda_v"
@@ -1425,11 +1402,6 @@ describe("S2 career, guidance and agenda database integrity", () => {
 
         expect(nextActionOccurrences.rows[0]?.count).toBe("1");
 
-        /*
-         * Hiding the Career navigation module does not remove its source rows
-         * from the raw agenda projection. Explicit agenda preference/filtering
-         * remains a query-service concern.
-         */
         expect(
           agenda.rows.some((row) => row.source_id === followUpEventId),
         ).toBe(true);
@@ -1470,7 +1442,10 @@ describe("S2 career, guidance and agenda database integrity", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-s2-career-agenda-test-cleanup",
+      );
     }
   });
 });

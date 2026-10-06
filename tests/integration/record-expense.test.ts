@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -12,8 +12,10 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import {
+  findSeededCategoryId,
+  removeProvisionedTestUser,
+} from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
@@ -24,22 +26,6 @@ type FinancialAccountFixture = {
   accountId: string;
   ledgerAccountId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for record-expense integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -67,60 +53,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-record-expense-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function createFinancialAccountFixture(
@@ -231,16 +163,16 @@ async function getCashLedgerBalance(
     balance_minor: string;
   }>(
     `
-        SELECT
-          COALESCE(
-            sum(amount_minor),
-            0
-          )::text AS balance_minor
-        FROM finance."posting"
-        WHERE
-          workspace_id = $1
-          AND ledger_account_id = $2
-      `,
+      SELECT
+        COALESCE(
+          sum(amount_minor),
+          0
+        )::text AS balance_minor
+      FROM finance."posting"
+      WHERE
+        workspace_id = $1
+        AND ledger_account_id = $2
+    `,
     [input.workspaceId, input.ledgerAccountId],
   );
 
@@ -354,113 +286,113 @@ describe("record expense", () => {
           category_count: string;
         }>(
           `
-                SELECT
-                  d.purchase_minor::text
-                    AS purchase_minor,
-                  d.merchant_name,
+            SELECT
+              d.purchase_minor::text
+                AS purchase_minor,
+              d.merchant_name,
 
-                  (
-                    SELECT count(*)::text
-                    FROM finance."posting" AS p
-                    WHERE
-                      p.workspace_id =
-                        d.workspace_id
-                      AND p.action_revision_id =
-                        d.action_revision_id
-                      AND p.cash_flow_kind =
-                        'purchase'
-                      AND p.cash_flow_direction =
-                        'out'
-                  ) AS funding_count,
-
-                  (
-                    SELECT
-                      COALESCE(
-                        sum(
-                          -(p.amount_minor)
-                        ),
-                        0
-                      )::text
-                    FROM finance."posting" AS p
-                    WHERE
-                      p.workspace_id =
-                        d.workspace_id
-                      AND p.action_revision_id =
-                        d.action_revision_id
-                      AND p.cash_flow_kind =
-                        'purchase'
-                      AND p.cash_flow_direction =
-                        'out'
-                  ) AS funding_total,
-
-                  (
-                    SELECT count(*)::text
-                    FROM finance."posting" AS p
-                    INNER JOIN finance."ledger_account" AS l
-                      ON l.workspace_id =
-                        p.workspace_id
-                      AND l.id =
-                        p.ledger_account_id
-                    WHERE
-                      p.workspace_id =
-                        d.workspace_id
-                      AND p.action_revision_id =
-                        d.action_revision_id
-                      AND l.kind =
-                        'expense'
-                      AND p.expense_class =
-                        'gross'
-                  ) AS expense_count,
-
-                  (
-                    SELECT
-                      COALESCE(
-                        sum(p.amount_minor),
-                        0
-                      )::text
-                    FROM finance."posting" AS p
-                    INNER JOIN finance."ledger_account" AS l
-                      ON l.workspace_id =
-                        p.workspace_id
-                      AND l.id =
-                        p.ledger_account_id
-                    WHERE
-                      p.workspace_id =
-                        d.workspace_id
-                      AND p.action_revision_id =
-                        d.action_revision_id
-                      AND l.kind =
-                        'expense'
-                      AND p.expense_class =
-                        'gross'
-                  ) AS expense_total,
-
-                  (
-                    SELECT count(
-                      p.category_id
-                    )::text
-                    FROM finance."posting" AS p
-                    INNER JOIN finance."ledger_account" AS l
-                      ON l.workspace_id =
-                        p.workspace_id
-                      AND l.id =
-                        p.ledger_account_id
-                    WHERE
-                      p.workspace_id =
-                        d.workspace_id
-                      AND p.action_revision_id =
-                        d.action_revision_id
-                      AND l.kind =
-                        'expense'
-                      AND p.expense_class =
-                        'gross'
-                  ) AS category_count
-
-                FROM finance."purchase_detail" AS d
+              (
+                SELECT count(*)::text
+                FROM finance."posting" AS p
                 WHERE
-                  d.workspace_id = $1
-                  AND d.action_revision_id = $2
-              `,
+                  p.workspace_id =
+                    d.workspace_id
+                  AND p.action_revision_id =
+                    d.action_revision_id
+                  AND p.cash_flow_kind =
+                    'purchase'
+                  AND p.cash_flow_direction =
+                    'out'
+              ) AS funding_count,
+
+              (
+                SELECT
+                  COALESCE(
+                    sum(
+                      -(p.amount_minor)
+                    ),
+                    0
+                  )::text
+                FROM finance."posting" AS p
+                WHERE
+                  p.workspace_id =
+                    d.workspace_id
+                  AND p.action_revision_id =
+                    d.action_revision_id
+                  AND p.cash_flow_kind =
+                    'purchase'
+                  AND p.cash_flow_direction =
+                    'out'
+              ) AS funding_total,
+
+              (
+                SELECT count(*)::text
+                FROM finance."posting" AS p
+                INNER JOIN finance."ledger_account" AS l
+                  ON l.workspace_id =
+                    p.workspace_id
+                  AND l.id =
+                    p.ledger_account_id
+                WHERE
+                  p.workspace_id =
+                    d.workspace_id
+                  AND p.action_revision_id =
+                    d.action_revision_id
+                  AND l.kind =
+                    'expense'
+                  AND p.expense_class =
+                    'gross'
+              ) AS expense_count,
+
+              (
+                SELECT
+                  COALESCE(
+                    sum(p.amount_minor),
+                    0
+                  )::text
+                FROM finance."posting" AS p
+                INNER JOIN finance."ledger_account" AS l
+                  ON l.workspace_id =
+                    p.workspace_id
+                  AND l.id =
+                    p.ledger_account_id
+                WHERE
+                  p.workspace_id =
+                    d.workspace_id
+                  AND p.action_revision_id =
+                    d.action_revision_id
+                  AND l.kind =
+                    'expense'
+                  AND p.expense_class =
+                    'gross'
+              ) AS expense_total,
+
+              (
+                SELECT count(
+                  p.category_id
+                )::text
+                FROM finance."posting" AS p
+                INNER JOIN finance."ledger_account" AS l
+                  ON l.workspace_id =
+                    p.workspace_id
+                  AND l.id =
+                    p.ledger_account_id
+                WHERE
+                  p.workspace_id =
+                    d.workspace_id
+                  AND p.action_revision_id =
+                    d.action_revision_id
+                  AND l.kind =
+                    'expense'
+                  AND p.expense_class =
+                    'gross'
+              ) AS category_count
+
+            FROM finance."purchase_detail" AS d
+            WHERE
+              d.workspace_id = $1
+              AND d.action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -481,23 +413,23 @@ describe("record expense", () => {
           category_id: string | null;
         }>(
           `
-                SELECT
-                  p.amount_minor::text
-                    AS amount_minor,
-                  p.category_id
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id =
-                    p.workspace_id
-                  AND l.id =
-                    p.ledger_account_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_revision_id = $2
-                  AND l.kind =
-                    'expense'
-                ORDER BY p.line_no
-              `,
+            SELECT
+              p.amount_minor::text
+                AS amount_minor,
+              p.category_id
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id =
+                p.workspace_id
+              AND l.id =
+                p.ledger_account_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_revision_id = $2
+              AND l.kind =
+                'expense'
+            ORDER BY p.line_no
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -517,16 +449,16 @@ describe("record expense", () => {
           operation: string;
         }>(
           `
-                SELECT
-                  subject_id,
-                  operation
-                FROM audit."private_revision"
-                WHERE
-                  workspace_id = $1
-                  AND subject_kind =
-                    'financial_action'
-                  AND subject_id = $2
-              `,
+            SELECT
+              subject_id,
+              operation
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind =
+                'financial_action'
+              AND subject_id = $2
+          `,
           [user.workspaceId, result.actionId],
         );
 
@@ -538,7 +470,7 @@ describe("record expense", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-expense-test-cleanup");
     }
   });
 
@@ -556,7 +488,10 @@ describe("record expense", () => {
           },
         );
 
-        const categoryId = await createExpenseCategory(client, user, "Food");
+        const categoryId = await findSeededCategoryId(client, user, {
+          kind: "expense",
+          code: "food",
+        });
 
         const clientCommandId = randomUUID();
 
@@ -597,18 +532,18 @@ describe("record expense", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."financial_action" AS a
-                INNER JOIN core."command_receipt" AS r
-                  ON r.workspace_id =
-                    a.workspace_id
-                  AND r.id =
-                    a.original_command_receipt_id
-                WHERE
-                  a.workspace_id = $1
-                  AND r.client_command_id = $2
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."financial_action" AS a
+            INNER JOIN core."command_receipt" AS r
+              ON r.workspace_id =
+                a.workspace_id
+              AND r.id =
+                a.original_command_receipt_id
+            WHERE
+              a.workspace_id = $1
+              AND r.client_command_id = $2
+          `,
           [user.workspaceId, clientCommandId],
         );
 
@@ -618,12 +553,12 @@ describe("record expense", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -633,23 +568,23 @@ describe("record expense", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."ledger_account"
-                WHERE
-                  workspace_id = $1
-                  AND code =
-                    'expense:shared'
-                  AND kind =
-                    'expense'
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."ledger_account"
+            WHERE
+              workspace_id = $1
+              AND code =
+                'expense:shared'
+              AND kind =
+                'expense'
+          `,
           [user.workspaceId],
         );
 
         expect(sharedExpenseLedger.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-expense-test-cleanup");
     }
   });
 
@@ -691,11 +626,11 @@ describe("record expense", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."financial_action"
-                WHERE workspace_id = $1
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."financial_action"
+            WHERE workspace_id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -705,19 +640,19 @@ describe("record expense", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
         expect(workspace.rows[0]?.financial_revision).toBe("0");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-expense-test-cleanup");
     }
   });
 });

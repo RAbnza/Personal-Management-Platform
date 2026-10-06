@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { PrivateDomainWriteUnavailableError } from "@/modules/core/repositories/private-domain-write-repository";
@@ -18,29 +18,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for onboarding-progress integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -69,78 +52,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-
-    application_name: "pmp-onboarding-progress-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."onboarding_step"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."module_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runCoreTestAndRollback(
@@ -281,7 +192,10 @@ describe("onboarding progress", () => {
         expect(stored.rows[0]?.count).toBe("0");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-onboarding-progress-test-cleanup",
+      );
     }
   });
 
@@ -355,7 +269,10 @@ describe("onboarding progress", () => {
         expect(result.applicableStepCount).toBe(4);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-onboarding-progress-test-cleanup",
+      );
     }
   });
 
@@ -461,7 +378,10 @@ describe("onboarding progress", () => {
         expect(stored.rows[0]?.completed_at).toBeInstanceOf(Date);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-onboarding-progress-test-cleanup",
+      );
     }
   });
 
@@ -544,7 +464,10 @@ describe("onboarding progress", () => {
         expect(receipts.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-onboarding-progress-test-cleanup",
+      );
     }
   });
 
@@ -589,8 +512,15 @@ describe("onboarding progress", () => {
         expect(writeError).toBeInstanceOf(PrivateDomainWriteUnavailableError);
       });
     } finally {
-      await removeTestUser(userA);
-      await removeTestUser(userB);
+      await removeProvisionedTestUser(
+        userA,
+        "pmp-onboarding-progress-test-cleanup",
+      );
+
+      await removeProvisionedTestUser(
+        userB,
+        "pmp-onboarding-progress-test-cleanup",
+      );
     }
   });
 });

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { ApplicationEventVersionConflictError } from "@/modules/career/domain/application-event";
@@ -16,29 +16,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for mutate-application-event integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -66,60 +49,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-mutate-application-event-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runCareerTestAndRollback(
@@ -260,18 +189,18 @@ describe("mutate application event", () => {
           notification_generation: number;
         }>(
           `
-              SELECT
-                starts_at,
-                ends_at,
-                timezone,
-                status,
-                version,
-                notification_generation
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              starts_at,
+              ends_at,
+              timezone,
+              status,
+              version,
+              notification_generation
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, event.eventId],
         );
 
@@ -293,14 +222,14 @@ describe("mutate application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -315,10 +244,10 @@ describe("mutate application event", () => {
           starts_at: Date | null;
         }>(
           `
-              SELECT starts_at
-              FROM time."agenda_v"
-              WHERE source_id = $1
-            `,
+            SELECT starts_at
+            FROM time."agenda_v"
+            WHERE source_id = $1
+          `,
           [event.eventId],
         );
 
@@ -329,7 +258,10 @@ describe("mutate application event", () => {
         );
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-application-event-test-cleanup",
+      );
     }
   });
 
@@ -418,17 +350,17 @@ describe("mutate application event", () => {
           notification_generation: number;
         }>(
           `
-              SELECT
-                status,
-                completed_at,
-                outcome_notes,
-                version,
-                notification_generation
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              status,
+              completed_at,
+              outcome_notes,
+              version,
+              notification_generation
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, event.eventId],
         );
 
@@ -447,14 +379,14 @@ describe("mutate application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -469,10 +401,10 @@ describe("mutate application event", () => {
           source_id: string;
         }>(
           `
-              SELECT source_id
-              FROM time."agenda_v"
-              WHERE source_id = $1
-            `,
+            SELECT source_id
+            FROM time."agenda_v"
+            WHERE source_id = $1
+          `,
           [event.eventId],
         );
 
@@ -482,14 +414,14 @@ describe("mutate application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'application_event'
-                AND subject_id = $2
-                AND operation = 'complete'
-            `,
+            SELECT count(*)::text AS count
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'application_event'
+              AND subject_id = $2
+              AND operation = 'complete'
+          `,
           [user.workspaceId, event.eventId],
         );
 
@@ -499,21 +431,24 @@ describe("mutate application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-                AND operation = 'next_action_clear'
-            `,
+            SELECT count(*)::text AS count
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+              AND operation = 'next_action_clear'
+          `,
           [user.workspaceId, application.applicationId],
         );
 
         expect(clearAuditCount.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-application-event-test-cleanup",
+      );
     }
   });
 
@@ -611,14 +546,14 @@ describe("mutate application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -633,11 +568,11 @@ describe("mutate application event", () => {
           source_id: string;
         }>(
           `
-              SELECT source_id
-              FROM time."agenda_v"
-              WHERE source_id = ANY($1::uuid[])
-              ORDER BY source_id
-            `,
+            SELECT source_id
+            FROM time."agenda_v"
+            WHERE source_id = ANY($1::uuid[])
+            ORDER BY source_id
+          `,
           [[first.eventId, replacement.eventId]],
         );
 
@@ -646,7 +581,10 @@ describe("mutate application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-application-event-test-cleanup",
+      );
     }
   });
 
@@ -731,14 +669,14 @@ describe("mutate application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -750,7 +688,10 @@ describe("mutate application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-application-event-test-cleanup",
+      );
     }
   });
 
@@ -852,15 +793,15 @@ describe("mutate application event", () => {
           notification_generation: number;
         }>(
           `
-              SELECT
-                status,
-                version,
-                notification_generation
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              status,
+              version,
+              notification_generation
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, event.eventId],
         );
 
@@ -877,14 +818,14 @@ describe("mutate application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -896,7 +837,10 @@ describe("mutate application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-application-event-test-cleanup",
+      );
     }
   });
 });

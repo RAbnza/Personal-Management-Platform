@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { PossibleDuplicateJobApplicationError } from "@/modules/career/domain/application";
@@ -17,29 +17,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for create-job-application integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -67,60 +50,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-create-job-application-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runCareerTestAndRollback(
@@ -258,24 +187,24 @@ describe("create job application", () => {
           version: number;
         }>(
           `
-              SELECT
-                id,
-                current_history_id,
-                current_stage,
-                current_outcome,
-                applied_date::text AS applied_date,
-                resume_version_id,
-                salary_min_minor::text AS salary_min_minor,
-                salary_max_minor::text AS salary_max_minor,
-                salary_currency,
-                salary_period,
-                technology_tags,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              id,
+              current_history_id,
+              current_stage,
+              current_outcome,
+              applied_date::text AS applied_date,
+              resume_version_id,
+              salary_min_minor::text AS salary_min_minor,
+              salary_max_minor::text AS salary_max_minor,
+              salary_currency,
+              salary_period,
+              technology_tags,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.applicationId],
         );
 
@@ -306,19 +235,19 @@ describe("create job application", () => {
           effective_order: number;
         }>(
           `
-              SELECT
-                id,
-                application_id,
-                sequence_no,
-                stage,
-                outcome,
-                effective_date::text AS effective_date,
-                effective_order
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-            `,
+            SELECT
+              id,
+              application_id,
+              sequence_no,
+              stage,
+              outcome,
+              effective_date::text AS effective_date,
+              effective_order
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+          `,
           [user.workspaceId, result.applicationId],
         );
 
@@ -342,18 +271,18 @@ describe("create job application", () => {
           effective_date: string | null;
         }>(
           `
-              SELECT
-                subject_kind,
-                subject_id,
-                subject_version,
-                operation,
-                effective_date::text AS effective_date
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-            `,
+            SELECT
+              subject_kind,
+              subject_id,
+              subject_version,
+              operation,
+              effective_date::text AS effective_date
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+          `,
           [user.workspaceId, result.applicationId],
         );
 
@@ -372,14 +301,14 @@ describe("create job application", () => {
           result_json: Record<string, unknown>;
         }>(
           `
-              SELECT
-                state,
-                result_json
-              FROM core."command_receipt"
-              WHERE
-                workspace_id = $1
-                AND client_command_id = $2
-            `,
+            SELECT
+              state,
+              result_json
+            FROM core."command_receipt"
+            WHERE
+              workspace_id = $1
+              AND client_command_id = $2
+          `,
           [user.workspaceId, clientCommandId],
         );
 
@@ -391,7 +320,10 @@ describe("create job application", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-job-application-test-cleanup",
+      );
     }
   });
 
@@ -432,14 +364,14 @@ describe("create job application", () => {
           current_stage: string;
         }>(
           `
-              SELECT
-                applied_date::text AS applied_date,
-                current_stage
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              applied_date::text AS applied_date,
+              current_stage
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.applicationId],
         );
 
@@ -455,14 +387,14 @@ describe("create job application", () => {
           stage: string;
         }>(
           `
-              SELECT
-                effective_date::text AS effective_date,
-                stage
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              effective_date::text AS effective_date,
+              stage
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.initialHistoryId],
         );
 
@@ -474,7 +406,10 @@ describe("create job application", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-job-application-test-cleanup",
+      );
     }
   });
 
@@ -514,10 +449,10 @@ describe("create job application", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."job_application"
-              WHERE workspace_id = $1
-            `,
+            SELECT count(*)::text AS count
+            FROM career."job_application"
+            WHERE workspace_id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -527,12 +462,12 @@ describe("create job application", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."application_stage_history"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM career."application_stage_history"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+          `,
           [user.workspaceId, first.applicationId],
         );
 
@@ -542,13 +477,13 @@ describe("create job application", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+          `,
           [user.workspaceId, first.applicationId],
         );
 
@@ -562,7 +497,10 @@ describe("create job application", () => {
         ).rejects.toBeInstanceOf(CommandReceiptConflictError);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-job-application-test-cleanup",
+      );
     }
   });
 
@@ -651,17 +589,20 @@ describe("create job application", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."job_application"
-              WHERE workspace_id = $1
-            `,
+            SELECT count(*)::text AS count
+            FROM career."job_application"
+            WHERE workspace_id = $1
+          `,
           [user.workspaceId],
         );
 
         expect(applicationCount.rows[0]?.count).toBe("2");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-job-application-test-cleanup",
+      );
     }
   });
 
@@ -684,8 +625,15 @@ describe("create job application", () => {
         }),
       ).rejects.toThrow(/active private workspace/i);
     } finally {
-      await removeTestUser(first);
-      await removeTestUser(second);
+      await removeProvisionedTestUser(
+        first,
+        "pmp-create-job-application-test-cleanup",
+      );
+
+      await removeProvisionedTestUser(
+        second,
+        "pmp-create-job-application-test-cleanup",
+      );
     }
   });
 });

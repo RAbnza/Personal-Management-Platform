@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -15,29 +15,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for account-history integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -65,60 +48,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-account-history-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function createExpenseCategory(
@@ -204,13 +133,6 @@ describe("account history", () => {
           openingBalanceMinor: "200000",
         });
 
-        /*
-         * Each financial service deliberately validates all deferred
-         * constraints before returning. The test is composing several
-         * command services inside one outer rollback transaction, so restore
-         * the transaction's normal deferred mode before constructing the
-         * next action/revision cycle.
-         */
         await client.query("SET CONSTRAINTS ALL DEFERRED");
 
         const income = await recordIncomeInTransaction(transaction, {
@@ -330,7 +252,7 @@ describe("account history", () => {
         expect(secondPage.nextCursor).toBeNull();
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-account-history-test-cleanup");
     }
   });
 
@@ -369,13 +291,13 @@ describe("account history", () => {
 
         await client.query(
           `
-              UPDATE finance."financial_account"
-              SET archived_at =
-                clock_timestamp()
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            UPDATE finance."financial_account"
+            SET archived_at =
+              clock_timestamp()
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, account.accountId],
         );
 
@@ -400,7 +322,7 @@ describe("account history", () => {
         });
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-account-history-test-cleanup");
     }
   });
 });

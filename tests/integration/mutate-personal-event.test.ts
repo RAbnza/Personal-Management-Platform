@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -18,29 +18,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for mutate-personal-event integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -69,62 +52,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-
-    application_name: "pmp-mutate-personal-event-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runTimeTestAndRollback(
@@ -224,10 +151,6 @@ describe("mutate personal event", () => {
 
           eventVersion: 2,
 
-          /*
-           * The schedule did not change. Only descriptive metadata changed,
-           * so the database must not create a new reminder generation.
-           */
           notificationGeneration: 1,
 
           status: "scheduled",
@@ -248,24 +171,24 @@ describe("mutate personal event", () => {
           version: number;
         }>(
           `
-                SELECT
-                  title,
-                  description,
-                  location,
-                  reference_url,
+            SELECT
+              title,
+              description,
+              location,
+              reference_url,
 
-                  event_date::text
-                    AS event_date,
+              event_date::text
+                AS event_date,
 
-                  notification_generation,
-                  version
+              notification_generation,
+              version
 
-                FROM time."personal_event"
+            FROM time."personal_event"
 
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, created.eventId],
         );
 
@@ -310,7 +233,10 @@ describe("mutate personal event", () => {
         });
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-personal-event-test-cleanup",
+      );
     }
   });
 
@@ -422,7 +348,10 @@ describe("mutate personal event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-personal-event-test-cleanup",
+      );
     }
   });
 
@@ -497,18 +426,18 @@ describe("mutate personal event", () => {
           version: number;
         }>(
           `
-                SELECT
-                  status,
-                  completed_at,
-                  notification_generation,
-                  version
+            SELECT
+              status,
+              completed_at,
+              notification_generation,
+              version
 
-                FROM time."personal_event"
+            FROM time."personal_event"
 
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, created.eventId],
         );
 
@@ -538,30 +467,33 @@ describe("mutate personal event", () => {
           count: string;
         }>(
           `
-                SELECT
-                  count(*)::text
-                    AS count
+            SELECT
+              count(*)::text
+                AS count
 
-                FROM audit."private_revision"
+            FROM audit."private_revision"
 
-                WHERE
-                  workspace_id = $1
+            WHERE
+              workspace_id = $1
 
-                  AND subject_kind =
-                    'personal_event'
+              AND subject_kind =
+                'personal_event'
 
-                  AND subject_id = $2
+              AND subject_id = $2
 
-                  AND operation =
-                    'complete'
-              `,
+              AND operation =
+                'complete'
+          `,
           [user.workspaceId, created.eventId],
         );
 
         expect(audit.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-personal-event-test-cleanup",
+      );
     }
   });
 
@@ -628,18 +560,18 @@ describe("mutate personal event", () => {
           version: number;
         }>(
           `
-                SELECT
-                  status,
-                  completed_at,
-                  notification_generation,
-                  version
+            SELECT
+              status,
+              completed_at,
+              notification_generation,
+              version
 
-                FROM time."personal_event"
+            FROM time."personal_event"
 
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, created.eventId],
         );
 
@@ -670,7 +602,10 @@ describe("mutate personal event", () => {
         expect(agenda.items).toEqual([]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-personal-event-test-cleanup",
+      );
     }
   });
 
@@ -721,11 +656,6 @@ describe("mutate personal event", () => {
 
         expect(edited.notificationGeneration).toBe(1);
 
-        /*
-         * The in-transaction service is deliberately tested under a
-         * SAVEPOINT here. A normal top-level command failure rolls back its
-         * transaction, including the claimed command receipt.
-         */
         await client.query("SAVEPOINT stale_personal_event");
 
         let staleError: unknown;
@@ -814,17 +744,17 @@ describe("mutate personal event", () => {
           notification_generation: number;
         }>(
           `
-                SELECT
-                  status,
-                  version,
-                  notification_generation
+            SELECT
+              status,
+              version,
+              notification_generation
 
-                FROM time."personal_event"
+            FROM time."personal_event"
 
-                WHERE
-                  workspace_id = $1
-                  AND id = $2
-              `,
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, created.eventId],
         );
 
@@ -839,7 +769,10 @@ describe("mutate personal event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-mutate-personal-event-test-cleanup",
+      );
     }
   });
 });

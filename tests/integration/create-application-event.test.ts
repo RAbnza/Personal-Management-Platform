@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { JobApplicationVersionConflictError } from "@/modules/career/domain/application";
@@ -14,29 +14,12 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import { removeProvisionedTestUser } from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
   workspaceId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for create-application-event integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -64,60 +47,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-create-application-event-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function runCareerTestAndRollback(
@@ -232,23 +161,23 @@ describe("create application event", () => {
           notification_generation: number;
         }>(
           `
-              SELECT
-                application_id,
-                event_kind,
-                title,
-                temporal_kind,
-                event_date::text AS event_date,
-                starts_at,
-                ends_at,
-                timezone,
-                status,
-                version,
-                notification_generation
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              application_id,
+              event_kind,
+              title,
+              temporal_kind,
+              event_date::text AS event_date,
+              starts_at,
+              ends_at,
+              timezone,
+              status,
+              version,
+              notification_generation
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.eventId],
         );
 
@@ -273,14 +202,14 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -299,15 +228,15 @@ describe("create application event", () => {
           status: string;
         }>(
           `
-              SELECT
-                source_kind,
-                source_id,
-                temporal_kind,
-                event_date::text AS event_date,
-                status
-              FROM time."agenda_v"
-              WHERE source_id = $1
-            `,
+            SELECT
+              source_kind,
+              source_id,
+              temporal_kind,
+              event_date::text AS event_date,
+              status
+            FROM time."agenda_v"
+            WHERE source_id = $1
+          `,
           [result.eventId],
         );
 
@@ -326,15 +255,15 @@ describe("create application event", () => {
           operation: string;
         }>(
           `
-              SELECT
-                subject_version,
-                operation
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'application_event'
-                AND subject_id = $2
-            `,
+            SELECT
+              subject_version,
+              operation
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'application_event'
+              AND subject_id = $2
+          `,
           [user.workspaceId, result.eventId],
         );
 
@@ -350,16 +279,16 @@ describe("create application event", () => {
           operation: string;
         }>(
           `
-              SELECT
-                subject_version,
-                operation
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-              ORDER BY subject_version
-            `,
+            SELECT
+              subject_version,
+              operation
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+            ORDER BY subject_version
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -375,7 +304,10 @@ describe("create application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-application-event-test-cleanup",
+      );
     }
   });
 
@@ -427,19 +359,19 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                temporal_kind,
-                event_date::text AS event_date,
-                starts_at,
-                ends_at,
-                timezone,
-                meeting_url,
-                version
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              temporal_kind,
+              event_date::text AS event_date,
+              starts_at,
+              ends_at,
+              timezone,
+              meeting_url,
+              version
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, result.eventId],
         );
 
@@ -465,14 +397,14 @@ describe("create application event", () => {
           timezone: string | null;
         }>(
           `
-              SELECT
-                source_kind,
-                temporal_kind,
-                starts_at,
-                timezone
-              FROM time."agenda_v"
-              WHERE source_id = $1
-            `,
+            SELECT
+              source_kind,
+              temporal_kind,
+              starts_at,
+              timezone
+            FROM time."agenda_v"
+            WHERE source_id = $1
+          `,
           [result.eventId],
         );
 
@@ -491,14 +423,14 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -510,7 +442,10 @@ describe("create application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-application-event-test-cleanup",
+      );
     }
   });
 
@@ -573,14 +508,14 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -595,11 +530,11 @@ describe("create application event", () => {
           source_id: string;
         }>(
           `
-              SELECT source_id
-              FROM time."agenda_v"
-              WHERE source_id = ANY($1::uuid[])
-              ORDER BY source_id
-            `,
+            SELECT source_id
+            FROM time."agenda_v"
+            WHERE source_id = ANY($1::uuid[])
+            ORDER BY source_id
+          `,
           [[first.eventId, second.eventId]],
         );
 
@@ -608,7 +543,10 @@ describe("create application event", () => {
         );
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-application-event-test-cleanup",
+      );
     }
   });
 
@@ -663,12 +601,12 @@ describe("create application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -679,14 +617,14 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -698,7 +636,10 @@ describe("create application event", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-application-event-test-cleanup",
+      );
     }
   });
 
@@ -751,12 +692,12 @@ describe("create application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM career."application_event"
-              WHERE
-                workspace_id = $1
-                AND application_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM career."application_event"
+            WHERE
+              workspace_id = $1
+              AND application_id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -767,14 +708,14 @@ describe("create application event", () => {
           version: number;
         }>(
           `
-              SELECT
-                next_action_event_id,
-                version
-              FROM career."job_application"
-              WHERE
-                workspace_id = $1
-                AND id = $2
-            `,
+            SELECT
+              next_action_event_id,
+              version
+            FROM career."job_application"
+            WHERE
+              workspace_id = $1
+              AND id = $2
+          `,
           [user.workspaceId, application.applicationId],
         );
 
@@ -789,13 +730,13 @@ describe("create application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'application_event'
-                AND subject_id = $2
-            `,
+            SELECT count(*)::text AS count
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'application_event'
+              AND subject_id = $2
+          `,
           [user.workspaceId, first.eventId],
         );
 
@@ -805,21 +746,24 @@ describe("create application event", () => {
           count: string;
         }>(
           `
-              SELECT count(*)::text AS count
-              FROM audit."private_revision"
-              WHERE
-                workspace_id = $1
-                AND subject_kind = 'job_application'
-                AND subject_id = $2
-                AND operation = 'next_action_set'
-            `,
+            SELECT count(*)::text AS count
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind = 'job_application'
+              AND subject_id = $2
+              AND operation = 'next_action_set'
+          `,
           [user.workspaceId, application.applicationId],
         );
 
         expect(pointerAuditCount.rows[0]?.count).toBe("1");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(
+        user,
+        "pmp-create-application-event-test-cleanup",
+      );
     }
   });
 });

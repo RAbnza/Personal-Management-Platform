@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Client, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -12,8 +12,10 @@ import {
   getDomainPool,
 } from "@/platform/db/pools";
 import { runScopedTransactionOnClient } from "@/platform/db/scoped-transaction";
-
-const TEST_DATABASE_NAME = "personal_management_test";
+import {
+  findSeededCategoryId,
+  removeProvisionedTestUser,
+} from "./helpers/provisioned-test-user";
 
 type TestUser = {
   userId: string;
@@ -24,22 +26,6 @@ type FinancialAccountFixture = {
   accountId: string;
   ledgerAccountId: string;
 };
-
-function getTestAdministratorConnectionString() {
-  const connectionString = process.env.TEST_DATABASE_ADMIN_URL;
-
-  if (!connectionString) {
-    throw new Error(
-      "TEST_DATABASE_ADMIN_URL is required for record-income integration tests.",
-    );
-  }
-
-  const url = new URL(connectionString);
-
-  url.pathname = `/${TEST_DATABASE_NAME}`;
-
-  return url.toString();
-}
 
 async function createTestUser(label: string): Promise<TestUser> {
   const userId = randomUUID();
@@ -67,60 +53,6 @@ async function createTestUser(label: string): Promise<TestUser> {
     userId,
     workspaceId: workspace.workspaceId,
   };
-}
-
-async function removeTestUser(user: TestUser): Promise<void> {
-  const administrator = new Client({
-    connectionString: getTestAdministratorConnectionString(),
-    application_name: "pmp-record-income-test-cleanup",
-  });
-
-  try {
-    await administrator.connect();
-    await administrator.query("BEGIN");
-
-    try {
-      await administrator.query(
-        `
-          DELETE FROM core."workspace_preference"
-          WHERE workspace_id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."workspace"
-          WHERE id = $1
-        `,
-        [user.workspaceId],
-      );
-
-      await administrator.query(
-        `
-          DELETE FROM core."user_profile"
-          WHERE user_id = $1
-        `,
-        [user.userId],
-      );
-
-      await administrator.query("COMMIT");
-    } catch (error) {
-      await administrator.query("ROLLBACK");
-
-      throw error;
-    }
-  } finally {
-    await administrator.end();
-  }
-
-  await getAuthPool().query(
-    `
-      DELETE FROM auth."user"
-      WHERE id = $1
-    `,
-    [user.userId],
-  );
 }
 
 async function createFinancialAccountFixture(
@@ -192,34 +124,6 @@ async function createFinancialAccountFixture(
   };
 }
 
-async function createIncomeCategory(
-  client: PoolClient,
-  user: TestUser,
-  name: string,
-): Promise<string> {
-  const categoryId = randomUUID();
-
-  await client.query(
-    `
-      INSERT INTO core."category" (
-        id,
-        workspace_id,
-        kind,
-        name
-      )
-      VALUES (
-        $1,
-        $2,
-        'income',
-        $3
-      )
-    `,
-    [categoryId, user.workspaceId, name],
-  );
-
-  return categoryId;
-}
-
 async function getCashLedgerBalance(
   client: PoolClient,
   input: {
@@ -231,16 +135,16 @@ async function getCashLedgerBalance(
     balance_minor: string;
   }>(
     `
-        SELECT
-          COALESCE(
-            sum(amount_minor),
-            0
-          )::text AS balance_minor
-        FROM finance."posting"
-        WHERE
-          workspace_id = $1
-          AND ledger_account_id = $2
-      `,
+      SELECT
+        COALESCE(
+          sum(amount_minor),
+          0
+        )::text AS balance_minor
+      FROM finance."posting"
+      WHERE
+        workspace_id = $1
+        AND ledger_account_id = $2
+    `,
     [input.workspaceId, input.ledgerAccountId],
   );
 
@@ -305,7 +209,10 @@ describe("record income", () => {
           },
         );
 
-        const categoryId = await createIncomeCategory(client, user, "Salary");
+        const categoryId = await findSeededCategoryId(client, user, {
+          kind: "income",
+          code: "salary",
+        });
 
         const result = await recordIncomeInTransaction(transaction, {
           userId: user.userId,
@@ -350,56 +257,56 @@ describe("record income", () => {
           category_id: string | null;
         }>(
           `
-                SELECT
-                  d.actual_received_minor::text
-                    AS actual_received_minor,
-                  d.receiving_account_id,
-                  d.source_label,
-                  d.sender_name,
+            SELECT
+              d.actual_received_minor::text
+                AS actual_received_minor,
+              d.receiving_account_id,
+              d.source_label,
+              d.sender_name,
 
-                  cash.amount_minor::text
-                    AS cash_amount_minor,
+              cash.amount_minor::text
+                AS cash_amount_minor,
 
-                  income.amount_minor::text
-                    AS income_amount_minor,
-                  income.income_class,
-                  income.category_id
-                FROM finance."receipt_detail" AS d
+              income.amount_minor::text
+                AS income_amount_minor,
+              income.income_class,
+              income.category_id
+            FROM finance."receipt_detail" AS d
 
-                INNER JOIN finance."posting" AS cash
-                  ON cash.workspace_id =
-                    d.workspace_id
-                  AND cash.action_revision_id =
-                    d.action_revision_id
+            INNER JOIN finance."posting" AS cash
+              ON cash.workspace_id =
+                d.workspace_id
+              AND cash.action_revision_id =
+                d.action_revision_id
 
-                INNER JOIN finance."ledger_account"
-                  AS cash_ledger
-                  ON cash_ledger.workspace_id =
-                    cash.workspace_id
-                  AND cash_ledger.id =
-                    cash.ledger_account_id
-                  AND cash_ledger.kind =
-                    'cash_asset'
+            INNER JOIN finance."ledger_account"
+              AS cash_ledger
+              ON cash_ledger.workspace_id =
+                cash.workspace_id
+              AND cash_ledger.id =
+                cash.ledger_account_id
+              AND cash_ledger.kind =
+                'cash_asset'
 
-                INNER JOIN finance."posting" AS income
-                  ON income.workspace_id =
-                    d.workspace_id
-                  AND income.action_revision_id =
-                    d.action_revision_id
+            INNER JOIN finance."posting" AS income
+              ON income.workspace_id =
+                d.workspace_id
+              AND income.action_revision_id =
+                d.action_revision_id
 
-                INNER JOIN finance."ledger_account"
-                  AS income_ledger
-                  ON income_ledger.workspace_id =
-                    income.workspace_id
-                  AND income_ledger.id =
-                    income.ledger_account_id
-                  AND income_ledger.kind =
-                    'income'
+            INNER JOIN finance."ledger_account"
+              AS income_ledger
+              ON income_ledger.workspace_id =
+                income.workspace_id
+              AND income_ledger.id =
+                income.ledger_account_id
+              AND income_ledger.kind =
+                'income'
 
-                WHERE
-                  d.workspace_id = $1
-                  AND d.action_revision_id = $2
-              `,
+            WHERE
+              d.workspace_id = $1
+              AND d.action_revision_id = $2
+          `,
           [user.workspaceId, result.actionRevisionId],
         );
 
@@ -420,15 +327,15 @@ describe("record income", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."ledger_account"
-                WHERE
-                  workspace_id = $1
-                  AND code =
-                    'income:shared'
-                  AND kind = 'income'
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."ledger_account"
+            WHERE
+              workspace_id = $1
+              AND code =
+                'income:shared'
+              AND kind = 'income'
+          `,
           [user.workspaceId],
         );
 
@@ -439,16 +346,16 @@ describe("record income", () => {
           operation: string;
         }>(
           `
-                SELECT
-                  subject_id,
-                  operation
-                FROM audit."private_revision"
-                WHERE
-                  workspace_id = $1
-                  AND subject_kind =
-                    'financial_action'
-                  AND subject_id = $2
-              `,
+            SELECT
+              subject_id,
+              operation
+            FROM audit."private_revision"
+            WHERE
+              workspace_id = $1
+              AND subject_kind =
+                'financial_action'
+              AND subject_id = $2
+          `,
           [user.workspaceId, result.actionId],
         );
 
@@ -460,7 +367,7 @@ describe("record income", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-income-test-cleanup");
     }
   });
 
@@ -474,7 +381,10 @@ describe("record income", () => {
           openingCutoffDate: "2026-02-01",
         });
 
-        const categoryId = await createIncomeCategory(client, user, "Gift");
+        const categoryId = await findSeededCategoryId(client, user, {
+          kind: "income",
+          code: "gift",
+        });
 
         const clientCommandId = randomUUID();
 
@@ -503,12 +413,12 @@ describe("record income", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -518,18 +428,18 @@ describe("record income", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."financial_action" AS a
-                INNER JOIN core."command_receipt" AS r
-                  ON r.workspace_id =
-                    a.workspace_id
-                  AND r.id =
-                    a.original_command_receipt_id
-                WHERE
-                  a.workspace_id = $1
-                  AND r.client_command_id = $2
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."financial_action" AS a
+            INNER JOIN core."command_receipt" AS r
+              ON r.workspace_id =
+                a.workspace_id
+              AND r.id =
+                a.original_command_receipt_id
+            WHERE
+              a.workspace_id = $1
+              AND r.client_command_id = $2
+          `,
           [user.workspaceId, clientCommandId],
         );
 
@@ -540,25 +450,25 @@ describe("record income", () => {
           sender_name: string | null;
         }>(
           `
-                SELECT
-                  p.income_class,
-                  d.sender_name
-                FROM finance."posting" AS p
-                INNER JOIN finance."ledger_account" AS l
-                  ON l.workspace_id =
-                    p.workspace_id
-                  AND l.id =
-                    p.ledger_account_id
-                INNER JOIN finance."receipt_detail" AS d
-                  ON d.workspace_id =
-                    p.workspace_id
-                  AND d.action_revision_id =
-                    p.action_revision_id
-                WHERE
-                  p.workspace_id = $1
-                  AND p.action_revision_id = $2
-                  AND l.kind = 'income'
-              `,
+            SELECT
+              p.income_class,
+              d.sender_name
+            FROM finance."posting" AS p
+            INNER JOIN finance."ledger_account" AS l
+              ON l.workspace_id =
+                p.workspace_id
+              AND l.id =
+                p.ledger_account_id
+            INNER JOIN finance."receipt_detail" AS d
+              ON d.workspace_id =
+                p.workspace_id
+              AND d.action_revision_id =
+                p.action_revision_id
+            WHERE
+              p.workspace_id = $1
+              AND p.action_revision_id = $2
+              AND l.kind = 'income'
+          `,
           [user.workspaceId, first.actionRevisionId],
         );
 
@@ -570,7 +480,7 @@ describe("record income", () => {
         ]);
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-income-test-cleanup");
     }
   });
 
@@ -602,11 +512,11 @@ describe("record income", () => {
           count: string;
         }>(
           `
-                SELECT count(*)::text
-                  AS count
-                FROM finance."financial_action"
-                WHERE workspace_id = $1
-              `,
+            SELECT count(*)::text
+              AS count
+            FROM finance."financial_action"
+            WHERE workspace_id = $1
+          `,
           [user.workspaceId],
         );
 
@@ -616,19 +526,19 @@ describe("record income", () => {
           financial_revision: string;
         }>(
           `
-                SELECT
-                  financial_revision::text
-                    AS financial_revision
-                FROM core."workspace"
-                WHERE id = $1
-              `,
+            SELECT
+              financial_revision::text
+                AS financial_revision
+            FROM core."workspace"
+            WHERE id = $1
+          `,
           [user.workspaceId],
         );
 
         expect(workspace.rows[0]?.financial_revision).toBe("0");
       });
     } finally {
-      await removeTestUser(user);
+      await removeProvisionedTestUser(user, "pmp-record-income-test-cleanup");
     }
   });
 });
