@@ -1,8 +1,21 @@
+export const APPLICATION_EVENT_KINDS = [
+  "interview",
+  "assessment",
+  "follow_up",
+  "submission",
+  "response",
+  "offer",
+  "no_response",
+  "note",
+] as const;
+
+export type ApplicationEventKind = (typeof APPLICATION_EVENT_KINDS)[number];
+
 export const CAREER_ACTIONABLE_EVENT_KINDS = [
   "interview",
   "assessment",
   "follow_up",
-] as const;
+] as const satisfies readonly ApplicationEventKind[];
 
 export type CareerActionableEventKind =
   (typeof CAREER_ACTIONABLE_EVENT_KINDS)[number];
