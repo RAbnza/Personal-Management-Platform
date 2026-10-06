@@ -42,4 +42,11 @@ describe("authentication session policy", () => {
   it("rejects an invalid session creation timestamp", () => {
     expect(isSessionWithinAbsoluteLifetime(new Date(Number.NaN))).toBe(false);
   });
+
+  it("rejects a session whose creation timestamp is in the future", () => {
+    const createdAt = new Date("2026-01-02T00:00:00.000Z");
+    const now = new Date("2026-01-01T00:00:00.000Z");
+
+    expect(isSessionWithinAbsoluteLifetime(createdAt, now)).toBe(false);
+  });
 });

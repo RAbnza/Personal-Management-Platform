@@ -26,5 +26,9 @@ export function isSessionWithinAbsoluteLifetime(
     return false;
   }
 
+  if (nowMilliseconds < createdAtMilliseconds) {
+    return false;
+  }
+
   return nowMilliseconds < getSessionAbsoluteExpiresAt(createdAt).getTime();
 }
