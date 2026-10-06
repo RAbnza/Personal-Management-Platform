@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 
+import { createPrivateRevision } from "@/modules/audit/repositories/private-revision-repository";
 import type { ScopedTransaction } from "@/platform/db";
 
 type FinancialWorkspaceRow = {
@@ -55,40 +56,26 @@ export async function createPrivateFinancialRevision(
     requestId: string | null;
   },
 ): Promise<void> {
-  const serializedAfterJson = JSON.stringify(input.afterJson);
+  await createPrivateRevision(transaction, {
+    id: input.id,
+    workspaceId: input.workspaceId,
+    commandReceiptId: input.commandReceiptId,
 
-  await transaction.db.execute(sql`
-    INSERT INTO "audit"."private_revision" (
-      "id",
-      "workspace_id",
-      "command_receipt_id",
-      "subject_kind",
-      "subject_id",
-      "subject_version",
-      "operation",
-      "before_json",
-      "after_json",
-      "effective_date",
-      "recorded_by_user_id",
-      "actor_kind",
-      "request_id"
-    )
-    VALUES (
-      ${input.id}::uuid,
-      ${input.workspaceId}::uuid,
-      ${input.commandReceiptId}::uuid,
-      ${input.subjectKind},
-      ${input.subjectId}::uuid,
-      ${input.subjectVersion},
-      ${input.operation},
-      NULL,
-      ${serializedAfterJson}::jsonb,
-      ${input.effectiveDate}::date,
-      ${input.recordedByUserId}::uuid,
-      'user',
-      ${input.requestId}::uuid
-    )
-  `);
+    subjectKind: input.subjectKind,
+    subjectId: input.subjectId,
+    subjectVersion: input.subjectVersion,
+    operation: input.operation,
+
+    beforeJson: null,
+    afterJson: input.afterJson,
+
+    reason: null,
+    effectiveDate: input.effectiveDate,
+
+    recordedByUserId: input.recordedByUserId,
+    actorKind: "user",
+    requestId: input.requestId,
+  });
 }
 
 export async function finalizeJournal(
