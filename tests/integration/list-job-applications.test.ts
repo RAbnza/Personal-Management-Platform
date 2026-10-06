@@ -7,6 +7,7 @@ import { createApplicationEventInTransaction } from "@/modules/career/services/c
 import { createJobApplicationInTransaction } from "@/modules/career/services/create-job-application";
 import {
   InvalidJobApplicationListCursorError,
+  JobApplicationListWorkspaceUnavailableError,
   listJobApplicationsInTransaction,
 } from "@/modules/career/services/list-job-applications";
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
@@ -223,6 +224,29 @@ describe("list job applications", () => {
 
         expect(result.items[1]?.nextAction).toBeNull();
         expect(result.items[2]?.nextAction).toBeNull();
+      });
+    } finally {
+      await removeProvisionedTestUser(
+        user,
+        "pmp-list-job-applications-test-cleanup",
+      );
+    }
+  });
+
+  it("returns an empty list for an active workspace with no matching applications", async () => {
+    const user = await createTestUser("CareerListEmpty");
+
+    try {
+      await runCareerTestAndRollback(user, async (transaction) => {
+        const result = await listJobApplicationsInTransaction(transaction, {
+          userId: user.userId,
+          workspaceId: user.workspaceId,
+        });
+
+        expect(result).toEqual({
+          items: [],
+          nextCursor: null,
+        });
       });
     } finally {
       await removeProvisionedTestUser(
@@ -530,27 +554,27 @@ describe("list job applications", () => {
     }
   });
 
-  it("does not expose another workspace's applications through a mismatched workspace argument", async () => {
+  it("does not expose another workspace and distinguishes it from an empty owned workspace", async () => {
     const userA = await createTestUser("CareerListOwnerA");
 
     const userB = await createTestUser("CareerListOwnerB");
 
     try {
       await runCareerTestAndRollback(userA, async (transaction) => {
-        /*
-         * The transaction's authoritative RLS context is userA/workspaceA.
-         * Supplying workspaceB to a repository-backed read must therefore
-         * return no private rows.
-         */
-        const result = await listJobApplicationsInTransaction(transaction, {
-          userId: userA.userId,
-          workspaceId: userB.workspaceId,
-        });
+        let readError: unknown;
 
-        expect(result).toEqual({
-          items: [],
-          nextCursor: null,
-        });
+        try {
+          await listJobApplicationsInTransaction(transaction, {
+            userId: userA.userId,
+            workspaceId: userB.workspaceId,
+          });
+        } catch (error) {
+          readError = error;
+        }
+
+        expect(readError).toBeInstanceOf(
+          JobApplicationListWorkspaceUnavailableError,
+        );
       });
     } finally {
       await removeProvisionedTestUser(

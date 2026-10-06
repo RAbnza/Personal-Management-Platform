@@ -14,6 +14,7 @@ import {
   readJobApplicationListPage,
   type JobApplicationListArchiveFilter,
   type JobApplicationListCursorPosition,
+  type JobApplicationListQueryRow,
 } from "@/modules/career/repositories/job-application-list-repository";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import {
@@ -119,6 +120,18 @@ export class InvalidJobApplicationListCursorError extends Error {
     );
 
     this.name = "InvalidJobApplicationListCursorError";
+  }
+}
+
+export class JobApplicationListWorkspaceUnavailableError extends Error {
+  readonly code = "JOB_APPLICATION_LIST_WORKSPACE_UNAVAILABLE";
+
+  constructor() {
+    super(
+      "The active workspace could not be resolved for the job application list.",
+    );
+
+    this.name = "JobApplicationListWorkspaceUnavailableError";
   }
 }
 
@@ -344,34 +357,29 @@ function mapNextAction(input: {
   };
 }
 
-async function executeListJobApplications(
-  transaction: ScopedTransaction,
-  input: NormalizedListJobApplicationsInput,
-): Promise<ListJobApplicationsResult> {
-  const rows = await readJobApplicationListPage(transaction, {
-    workspaceId: input.workspaceId,
+function mapApplicationRow(
+  row: JobApplicationListQueryRow,
+): JobApplicationListItem {
+  if (
+    row.application_id === null ||
+    row.company_name === null ||
+    row.role_title === null ||
+    row.current_stage === null ||
+    row.archived === null ||
+    row.version === null
+  ) {
+    throw new Error(
+      "Job application list query returned an incomplete application.",
+    );
+  }
 
-    archive: input.archive,
-    stage: input.stage,
-    search: input.search,
-
-    limit: input.pageSize + 1,
-
-    cursor: input.cursor,
-  });
-
-  const hasMore = rows.length > input.pageSize;
-
-  const visibleRows = rows.slice(0, input.pageSize);
-
-  const items = visibleRows.map((row): JobApplicationListItem => ({
+  return {
     applicationId: row.application_id,
 
     companyName: row.company_name,
     roleTitle: row.role_title,
 
     location: row.location,
-
     workArrangement: row.work_arrangement as CareerWorkArrangement | null,
 
     appliedDate:
@@ -395,28 +403,72 @@ async function executeListJobApplications(
       endsAt: row.next_ends_at,
       timezone: row.next_timezone,
     }),
-  }));
+  };
+}
+
+async function executeListJobApplications(
+  transaction: ScopedTransaction,
+  input: NormalizedListJobApplicationsInput,
+): Promise<ListJobApplicationsResult> {
+  const rows = await readJobApplicationListPage(transaction, {
+    workspaceId: input.workspaceId,
+
+    archive: input.archive,
+    stage: input.stage,
+    search: input.search,
+
+    limit: input.pageSize + 1,
+
+    cursor: input.cursor,
+  });
+
+  const firstRow = rows[0];
+
+  /*
+   * The repository anchors the page to an active workspace row. No visible
+   * root means the requested workspace is unavailable in this scoped
+   * transaction. A valid workspace with zero applications still returns one
+   * workspace-header row whose application_id is null.
+   */
+  if (!firstRow) {
+    throw new JobApplicationListWorkspaceUnavailableError();
+  }
+
+  const applicationRows = rows.filter((row) => row.application_id !== null);
+
+  const hasMore = applicationRows.length > input.pageSize;
+
+  const visibleRows = applicationRows.slice(0, input.pageSize);
+
+  const items = visibleRows.map(mapApplicationRow);
 
   const lastVisibleRow = visibleRows.at(-1);
 
-  const nextCursor =
-    hasMore && lastVisibleRow !== undefined
-      ? encodeJobApplicationListCursor(
-          {
-            appliedDate:
-              lastVisibleRow.applied_date === null
-                ? null
-                : parseCalendarDate(lastVisibleRow.applied_date),
+  let nextCursor: string | null = null;
 
-            applicationId: lastVisibleRow.application_id,
-          },
-          {
-            archive: input.archive,
-            stage: input.stage,
-            search: input.search,
-          },
-        )
-      : null;
+  if (hasMore && lastVisibleRow) {
+    if (lastVisibleRow.application_id === null) {
+      throw new Error(
+        "Job application list query could not create a cursor from an empty application row.",
+      );
+    }
+
+    nextCursor = encodeJobApplicationListCursor(
+      {
+        appliedDate:
+          lastVisibleRow.applied_date === null
+            ? null
+            : parseCalendarDate(lastVisibleRow.applied_date),
+
+        applicationId: lastVisibleRow.application_id,
+      },
+      {
+        archive: input.archive,
+        stage: input.stage,
+        search: input.search,
+      },
+    );
+  }
 
   return {
     items,

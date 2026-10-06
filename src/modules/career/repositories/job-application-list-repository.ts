@@ -12,21 +12,23 @@ export type JobApplicationListCursorPosition = {
 export type JobApplicationListArchiveFilter = "active" | "archived" | "all";
 
 export type JobApplicationListQueryRow = {
-  application_id: string;
+  workspace_id: string;
 
-  company_name: string;
-  role_title: string;
+  application_id: string | null;
+
+  company_name: string | null;
+  role_title: string | null;
 
   location: string | null;
   work_arrangement: string | null;
 
   applied_date: string | null;
 
-  current_stage: string;
+  current_stage: string | null;
   current_outcome: string | null;
 
-  archived: boolean;
-  version: number;
+  archived: boolean | null;
+  version: number | null;
 
   next_action_event_id: string | null;
   next_event_kind: string | null;
@@ -142,6 +144,25 @@ export async function readJobApplicationListPage(
   const cursorPredicate = buildCursorPredicate(input.cursor);
 
   const result = await transaction.db.execute<JobApplicationListQueryRow>(sql`
+    WITH workspace_context AS (
+      SELECT
+        workspace."id"
+
+      FROM core."workspace"
+        AS workspace
+
+      WHERE
+        workspace."id" =
+          ${input.workspaceId}::uuid
+
+        AND workspace."kind" =
+          'personal'
+
+        AND workspace."state" =
+          'active'
+    ),
+
+    application_page AS (
       SELECT
         application."id"
           AS "application_id",
@@ -191,9 +212,16 @@ export async function readJobApplicationListPage(
         next_event."timezone"
           AS "next_timezone"
 
-      FROM career."job_application" AS application
+      FROM career."job_application"
+        AS application
 
-      LEFT JOIN career."application_event" AS next_event
+      INNER JOIN workspace_context
+        AS workspace
+        ON workspace."id" =
+          application."workspace_id"
+
+      LEFT JOIN career."application_event"
+        AS next_event
         ON next_event."workspace_id" =
           application."workspace_id"
         AND next_event."application_id" =
@@ -202,10 +230,7 @@ export async function readJobApplicationListPage(
           application."next_action_event_id"
 
       WHERE
-        application."workspace_id" =
-          ${input.workspaceId}::uuid
-
-        AND ${archivePredicate}
+        ${archivePredicate}
         AND ${stagePredicate}
         AND ${searchPredicate}
         AND ${cursorPredicate}
@@ -213,11 +238,57 @@ export async function readJobApplicationListPage(
       ORDER BY
         application."applied_date"
           DESC NULLS LAST,
+
         application."id"
           DESC
 
       LIMIT ${input.limit}
-    `);
+    )
+
+    SELECT
+      workspace."id"
+        AS "workspace_id",
+
+      application."application_id",
+
+      application."company_name",
+      application."role_title",
+
+      application."location",
+      application."work_arrangement",
+
+      application."applied_date",
+
+      application."current_stage",
+      application."current_outcome",
+
+      application."archived",
+      application."version",
+
+      application."next_action_event_id",
+
+      application."next_event_kind",
+      application."next_title",
+      application."next_temporal_kind",
+      application."next_event_date",
+      application."next_starts_at",
+      application."next_ends_at",
+      application."next_timezone"
+
+    FROM workspace_context
+      AS workspace
+
+    LEFT JOIN application_page
+      AS application
+      ON TRUE
+
+    ORDER BY
+      application."applied_date"
+        DESC NULLS LAST,
+
+      application."application_id"
+        DESC
+  `);
 
   return result.rows;
 }
