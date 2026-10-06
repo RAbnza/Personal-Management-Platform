@@ -1,0 +1,242 @@
+:root {
+  color-scheme: light;
+
+  /* Brand primitives */
+  --brand-lavender: #c8b6f2;
+  --brand-violet: #6b469c;
+  --brand-charcoal: #1b1b22;
+  --brand-pink: #e6bcd4;
+
+  /* Core surfaces and text */
+  --background: #f7f7fa;
+  --foreground: #1b1b22;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-subtle: #eeeef3;
+  --muted: #eeeef3;
+  --muted-foreground: #5e5e6b;
+
+  /* Primary and secondary actions */
+  --primary: #c8b6f2;
+  --primary-foreground: #1b1b22;
+  --primary-hover: #bca5ee;
+  --primary-pressed: #b09ae0;
+  --primary-border: #6b469c;
+
+  --secondary: #eeeef3;
+  --secondary-foreground: #1b1b22;
+
+  /* Selection and links */
+  --accent: #eeeaf5;
+  --accent-foreground: #6b469c;
+  --link: #6b469c;
+
+  /* Structure and controls */
+  --border: #dcdce5;
+  --input: #82828f;
+  --ring: #6b469c;
+
+  --disabled-foreground: #5e5e6b;
+  --disabled-border: #dcdce5;
+
+  --overlay: rgb(17 17 22 / 0.45);
+
+  /* shadcn-compatible aliases */
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--foreground);
+
+  /* Feedback */
+  --success: #146c43;
+  --success-surface: #edf8f1;
+
+  --warning: #8a4b0f;
+  --warning-surface: #fff4df;
+
+  --danger: #b42318;
+  --danger-surface: #fff0ed;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+
+  --information: #235ea7;
+  --information-surface: #edf4ff;
+
+  --neutral: #5e5e6b;
+  --neutral-surface: #eeeef3;
+
+  /* Data visualization */
+  --chart-1: #6b469c;
+  --chart-2: #266c80;
+  --chart-3: #9a4c72;
+  --chart-4: #80631b;
+  --chart-5: #395eb2;
+  --chart-6: #59616f;
+
+  /* Layout */
+  --layout-content-max: 75rem;
+
+  /* Geometry sources */
+  --geometry-radius-marker: 0.25rem;
+  --geometry-radius-control: 0.5rem;
+  --geometry-radius-button: 0.625rem;
+  --geometry-radius-panel: 0.625rem;
+  --geometry-radius-card: 0.75rem;
+  --geometry-radius-dialog: 1rem;
+
+  /* Elevation sources */
+  --elevation-level-1: 0 2px 8px rgb(0 0 0 / 0.06);
+  --elevation-level-2: 0 8px 24px rgb(0 0 0 / 0.12);
+  --elevation-level-3: 0 16px 48px rgb(0 0 0 / 0.18);
+
+  /* Motion */
+  --motion-duration-press: 90ms;
+  --motion-duration-fast: 140ms;
+  --motion-duration-overlay: 180ms;
+  --motion-duration-content: 120ms;
+  --motion-ease-state: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layering */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-shell: 20;
+  --z-popover: 40;
+  --z-modal-backdrop: 50;
+  --z-modal: 60;
+  --z-modal-popover: 70;
+  --z-notice: 80;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #111116;
+  --foreground: #f5f5f8;
+  --surface: #1b1b24;
+  --surface-elevated: #23232c;
+  --surface-subtle: #23232c;
+  --muted: #23232c;
+  --muted-foreground: #b9b9c6;
+
+  --primary-border: #c8b6f2;
+
+  --secondary: #23232c;
+  --secondary-foreground: #f5f5f8;
+
+  --accent: #262631;
+  --accent-foreground: #c8b6f2;
+  --link: #c8b6f2;
+
+  --border: #343440;
+  --input: #747484;
+  --ring: #c8b6f2;
+
+  --disabled-foreground: #b9b9c6;
+  --disabled-border: #343440;
+
+  --overlay: rgb(0 0 0 / 0.65);
+
+  --success: #75d5a5;
+  --success-surface: #142b22;
+
+  --warning: #f3c16b;
+  --warning-surface: #312716;
+
+  --danger: #fda29b;
+  --danger-surface: #371d22;
+  --destructive: #fda29b;
+  --destructive-foreground: #1b1b22;
+
+  --information: #9ac5ff;
+  --information-surface: #19283b;
+
+  --neutral: #b9b9c6;
+  --neutral-surface: #23232c;
+
+  --chart-1: #c8b6f2;
+  --chart-2: #79c4d2;
+  --chart-3: #e6bcd4;
+  --chart-4: #e4c572;
+  --chart-5: #a9bcff;
+  --chart-6: #b9b9c6;
+
+  --elevation-level-1: 0 2px 8px rgb(0 0 0 / 0.2);
+  --elevation-level-2: 0 8px 24px rgb(0 0 0 / 0.32);
+  --elevation-level-3: 0 16px 48px rgb(0 0 0 / 0.45);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-subtle: var(--surface-subtle);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-link: var(--link);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-disabled-foreground: var(--disabled-foreground);
+  --color-disabled-border: var(--disabled-border);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-information: var(--information);
+  --color-information-surface: var(--information-surface);
+  --color-neutral: var(--neutral);
+  --color-neutral-surface: var(--neutral-surface);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --font-sans:
+    var(--font-geist), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Arial, sans-serif;
+
+  --radius-marker: var(--geometry-radius-marker);
+  --radius-control: var(--geometry-radius-control);
+  --radius-button: var(--geometry-radius-button);
+  --radius-panel: var(--geometry-radius-panel);
+  --radius-card: var(--geometry-radius-card);
+  --radius-dialog: var(--geometry-radius-dialog);
+
+  --shadow-level-1: var(--elevation-level-1);
+  --shadow-level-2: var(--elevation-level-2);
+  --shadow-level-3: var(--elevation-level-3);
+
+  --ease-state: var(--motion-ease-state);
+  --ease-enter: var(--motion-ease-enter);
+}
