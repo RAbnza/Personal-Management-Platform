@@ -63,10 +63,7 @@ async function deleteAuthUsers(identities: TestIdentity[]) {
   );
 }
 
-async function installScope(
-  client: PoolClient,
-  identity: TestIdentity,
-) {
+async function installScope(client: PoolClient, identity: TestIdentity) {
   await client.query(
     `
       SELECT
@@ -142,13 +139,7 @@ async function insertLedgerAccount(
       )
       VALUES ($1, $2, $3, $4, $5, 'PHP')
     `,
-    [
-      id,
-      input.workspaceId,
-      input.code,
-      input.name,
-      input.kind,
-    ],
+    [id, input.workspaceId, input.code, input.name, input.kind],
   );
 
   return id;
@@ -203,12 +194,7 @@ async function createOpeningCashFixture(
         $4
       )
     `,
-    [
-      accountId,
-      identity.workspaceId,
-      cashLedgerId,
-      openingDate,
-    ],
+    [accountId, identity.workspaceId, cashLedgerId, openingDate],
   );
 
   await client.query(
@@ -333,19 +319,12 @@ async function createOpeningCashFixture(
         'economic'
       )
     `,
-    [
-      journalId,
-      identity.workspaceId,
-      actionId,
-      revisionId,
-      openingDate,
-    ],
+    [journalId, identity.workspaceId, actionId, revisionId, openingDate],
   );
 
   if (postingMode !== "none") {
     const cashAmountMinor = 200_000;
-    const equityAmountMinor =
-      postingMode === "balanced" ? -200_000 : -199_999;
+    const equityAmountMinor = postingMode === "balanced" ? -200_000 : -199_999;
 
     await client.query(
       `
@@ -598,10 +577,7 @@ describe("S1 financial database integrity", () => {
               'PHP'
             )
           `,
-          [
-            second.workspaceId,
-            `forbidden-${randomUUID()}`,
-          ],
+          [second.workspaceId, `forbidden-${randomUUID()}`],
         ),
       ).rejects.toMatchObject({
         code: "42501",
@@ -624,11 +600,7 @@ describe("S1 financial database integrity", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      await createOpeningCashFixture(
-        client,
-        identity,
-        "none",
-      );
+      await createOpeningCashFixture(client, identity, "none");
 
       await expect(
         client.query("SET CONSTRAINTS ALL IMMEDIATE"),
@@ -653,11 +625,7 @@ describe("S1 financial database integrity", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      await createOpeningCashFixture(
-        client,
-        identity,
-        "unbalanced",
-      );
+      await createOpeningCashFixture(client, identity, "unbalanced");
 
       await expect(
         client.query("SET CONSTRAINTS ALL IMMEDIATE"),
@@ -805,9 +773,7 @@ describe("S1 financial database integrity", () => {
         [identity.workspaceId, fixture.accountId],
       );
 
-      expect(account.rows[0]?.opening_action_id).toBe(
-        fixture.actionId,
-      );
+      expect(account.rows[0]?.opening_action_id).toBe(fixture.actionId);
     } finally {
       await rollbackQuietly(client);
       client.release();

@@ -72,10 +72,7 @@ async function deleteAuthUsers(identities: TestIdentity[]) {
   );
 }
 
-async function installScope(
-  client: PoolClient,
-  identity: TestIdentity,
-) {
+async function installScope(client: PoolClient, identity: TestIdentity) {
   await client.query(
     `
       SELECT
@@ -252,12 +249,7 @@ async function insertCategory(
       )
       VALUES ($1, $2, $3, $4)
     `,
-    [
-      id,
-      input.workspaceId,
-      input.kind,
-      input.name,
-    ],
+    [id, input.workspaceId, input.kind, input.name],
   );
 
   return id;
@@ -337,11 +329,7 @@ async function createInitialAction(
   identity: TestIdentity,
   input: {
     actionKind:
-      | "opening_cash"
-      | "income"
-      | "expense"
-      | "transfer"
-      | "standalone_fee";
+      "opening_cash" | "income" | "expense" | "transfer" | "standalone_fee";
     effectiveDate: string;
     description: string;
   },
@@ -440,11 +428,7 @@ async function createReplacementRevision(
     previousRevisionId: string;
     effectiveDate: string;
     actionKind:
-      | "opening_cash"
-      | "income"
-      | "expense"
-      | "transfer"
-      | "standalone_fee";
+      "opening_cash" | "income" | "expense" | "transfer" | "standalone_fee";
   },
 ): Promise<ActionFixture> {
   const revisionId = randomUUID();
@@ -691,15 +675,11 @@ async function createIncomeAction(
     kind: "income",
   });
 
-  const action = await createInitialAction(
-    client,
-    identity,
-    {
-      actionKind: "income",
-      effectiveDate: input.effectiveDate,
-      description: "Integration test income",
-    },
-  );
+  const action = await createInitialAction(client, identity, {
+    actionKind: "income",
+    effectiveDate: input.effectiveDate,
+    description: "Integration test income",
+  });
 
   await client.query(
     `
@@ -761,17 +741,9 @@ async function createIncomeAction(
     incomeClass: "earned",
   });
 
-  await finalizeJournal(
-    client,
-    identity.workspaceId,
-    journalId,
-  );
+  await finalizeJournal(client, identity.workspaceId, journalId);
 
-  await finalizeRevision(
-    client,
-    identity.workspaceId,
-    action.revisionId,
-  );
+  await finalizeRevision(client, identity.workspaceId, action.revisionId);
 
   await completeCommandReceipt(client, {
     workspaceId: identity.workspaceId,
@@ -806,24 +778,16 @@ describe("S1 financial action recipes", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      const account = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Income Destination",
-          openingCutoffDate: "2026-01-01",
-        },
-      );
+      const account = await createFinancialAccount(client, identity, {
+        name: "Income Destination",
+        openingCutoffDate: "2026-01-01",
+      });
 
-      const income = await createIncomeAction(
-        client,
-        identity,
-        {
-          account,
-          effectiveDate: "2026-01-02",
-          amountMinor: 1_000_000,
-        },
-      );
+      const income = await createIncomeAction(client, identity, {
+        account,
+        effectiveDate: "2026-01-02",
+        amountMinor: 1_000_000,
+      });
 
       await client.query("SET CONSTRAINTS ALL IMMEDIATE");
 
@@ -890,14 +854,10 @@ describe("S1 financial action recipes", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      const account = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Expense Funding",
-          openingCutoffDate: "2026-02-01",
-        },
-      );
+      const account = await createFinancialAccount(client, identity, {
+        name: "Expense Funding",
+        openingCutoffDate: "2026-02-01",
+      });
 
       const expenseLedgerId = await insertLedgerAccount(client, {
         workspaceId: identity.workspaceId,
@@ -905,35 +865,25 @@ describe("S1 financial action recipes", () => {
         kind: "expense",
       });
 
-      const groceriesCategoryId = await insertCategory(
-        client,
-        {
-          workspaceId: identity.workspaceId,
-          name: `Groceries ${randomUUID()}`,
-          kind: "expense",
-        },
-      );
+      const groceriesCategoryId = await insertCategory(client, {
+        workspaceId: identity.workspaceId,
+        name: `Groceries ${randomUUID()}`,
+        kind: "expense",
+      });
 
-      const householdCategoryId = await insertCategory(
-        client,
-        {
-          workspaceId: identity.workspaceId,
-          name: `Household ${randomUUID()}`,
-          kind: "expense",
-        },
-      );
+      const householdCategoryId = await insertCategory(client, {
+        workspaceId: identity.workspaceId,
+        name: `Household ${randomUUID()}`,
+        kind: "expense",
+      });
 
       const effectiveDate = "2026-02-02";
 
-      const action = await createInitialAction(
-        client,
-        identity,
-        {
-          actionKind: "expense",
-          effectiveDate,
-          description: "Split purchase",
-        },
-      );
+      const action = await createInitialAction(client, identity, {
+        actionKind: "expense",
+        effectiveDate,
+        description: "Split purchase",
+      });
 
       await client.query(
         `
@@ -1007,17 +957,9 @@ describe("S1 financial action recipes", () => {
         expenseClass: "gross",
       });
 
-      await finalizeJournal(
-        client,
-        identity.workspaceId,
-        journalId,
-      );
+      await finalizeJournal(client, identity.workspaceId, journalId);
 
-      await finalizeRevision(
-        client,
-        identity.workspaceId,
-        action.revisionId,
-      );
+      await finalizeRevision(client, identity.workspaceId, action.revisionId);
 
       await completeCommandReceipt(client, {
         workspaceId: identity.workspaceId,
@@ -1087,10 +1029,7 @@ describe("S1 financial action recipes", () => {
             d.workspace_id = $1
             AND d.action_revision_id = $2
         `,
-        [
-          identity.workspaceId,
-          action.revisionId,
-        ],
+        [identity.workspaceId, action.revisionId],
       );
 
       expect(result.rows).toEqual([
@@ -1120,24 +1059,16 @@ describe("S1 financial action recipes", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      const account = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Cutoff Account",
-          openingCutoffDate: "2026-03-10",
-        },
-      );
+      const account = await createFinancialAccount(client, identity, {
+        name: "Cutoff Account",
+        openingCutoffDate: "2026-03-10",
+      });
 
-      await createIncomeAction(
-        client,
-        identity,
-        {
-          account,
-          effectiveDate: "2026-03-10",
-          amountMinor: 50_000,
-        },
-      );
+      await createIncomeAction(client, identity, {
+        account,
+        effectiveDate: "2026-03-10",
+        amountMinor: 50_000,
+      });
 
       await expect(
         client.query("SET CONSTRAINTS ALL IMMEDIATE"),
@@ -1162,23 +1093,15 @@ describe("S1 financial action recipes", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      const source = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Transfer Source",
-          openingCutoffDate: "2026-04-01",
-        },
-      );
+      const source = await createFinancialAccount(client, identity, {
+        name: "Transfer Source",
+        openingCutoffDate: "2026-04-01",
+      });
 
-      const destination = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Transfer Destination",
-          openingCutoffDate: "2026-04-01",
-        },
-      );
+      const destination = await createFinancialAccount(client, identity, {
+        name: "Transfer Destination",
+        openingCutoffDate: "2026-04-01",
+      });
 
       const expenseLedgerId = await insertLedgerAccount(client, {
         workspaceId: identity.workspaceId,
@@ -1188,15 +1111,11 @@ describe("S1 financial action recipes", () => {
 
       const effectiveDate = "2026-04-02";
 
-      const action = await createInitialAction(
-        client,
-        identity,
-        {
-          actionKind: "transfer",
-          effectiveDate,
-          description: "Transfer with withheld fee",
-        },
-      );
+      const action = await createInitialAction(client, identity, {
+        actionKind: "transfer",
+        effectiveDate,
+        description: "Transfer with withheld fee",
+      });
 
       await client.query(
         `
@@ -1275,19 +1194,16 @@ describe("S1 financial action recipes", () => {
         cashFlowDirection: "out",
       });
 
-      const feeExpensePostingId = await insertPosting(
-        client,
-        {
-          workspaceId: identity.workspaceId,
-          actionId: action.actionId,
-          revisionId: action.revisionId,
-          journalId,
-          ledgerAccountId: expenseLedgerId,
-          lineNo: 4,
-          amountMinor: 1_500,
-          expenseClass: "gross",
-        },
-      );
+      const feeExpensePostingId = await insertPosting(client, {
+        workspaceId: identity.workspaceId,
+        actionId: action.actionId,
+        revisionId: action.revisionId,
+        journalId,
+        ledgerAccountId: expenseLedgerId,
+        lineNo: 4,
+        amountMinor: 1_500,
+        expenseClass: "gross",
+      });
 
       await client.query(
         `
@@ -1324,17 +1240,9 @@ describe("S1 financial action recipes", () => {
         ],
       );
 
-      await finalizeJournal(
-        client,
-        identity.workspaceId,
-        journalId,
-      );
+      await finalizeJournal(client, identity.workspaceId, journalId);
 
-      await finalizeRevision(
-        client,
-        identity.workspaceId,
-        action.revisionId,
-      );
+      await finalizeRevision(client, identity.workspaceId, action.revisionId);
 
       await completeCommandReceipt(client, {
         workspaceId: identity.workspaceId,
@@ -1386,10 +1294,7 @@ describe("S1 financial action recipes", () => {
             p.workspace_id = $1
             AND p.action_revision_id = $2
         `,
-        [
-          identity.workspaceId,
-          action.revisionId,
-        ],
+        [identity.workspaceId, action.revisionId],
       );
 
       expect(cashEffect.rows).toEqual([
@@ -1415,10 +1320,7 @@ describe("S1 financial action recipes", () => {
             workspace_id = $1
             AND action_revision_id = $2
         `,
-        [
-          identity.workspaceId,
-          action.revisionId,
-        ],
+        [identity.workspaceId, action.revisionId],
       );
 
       expect(detail.rows).toEqual([
@@ -1446,35 +1348,23 @@ describe("S1 financial action recipes", () => {
     try {
       await beginScopedTestTransaction(client, identity);
 
-      const account = await createFinancialAccount(
-        client,
-        identity,
-        {
-          name: "Correction Account",
-          openingCutoffDate: "2026-05-01",
-        },
-      );
+      const account = await createFinancialAccount(client, identity, {
+        name: "Correction Account",
+        openingCutoffDate: "2026-05-01",
+      });
 
-      const original = await createIncomeAction(
-        client,
-        identity,
-        {
-          account,
-          effectiveDate: "2026-05-02",
-          amountMinor: 100_000,
-        },
-      );
+      const original = await createIncomeAction(client, identity, {
+        account,
+        effectiveDate: "2026-05-02",
+        amountMinor: 100_000,
+      });
 
-      const replacement = await createReplacementRevision(
-        client,
-        identity,
-        {
-          actionId: original.actionId,
-          previousRevisionId: original.revisionId,
-          effectiveDate: original.effectiveDate,
-          actionKind: "income",
-        },
-      );
+      const replacement = await createReplacementRevision(client, identity, {
+        actionId: original.actionId,
+        previousRevisionId: original.revisionId,
+        effectiveDate: original.effectiveDate,
+        actionKind: "income",
+      });
 
       await client.query(
         `
@@ -1503,18 +1393,15 @@ describe("S1 financial action recipes", () => {
         ],
       );
 
-      const reversalJournalId = await insertJournal(
-        client,
-        {
-          workspaceId: identity.workspaceId,
-          actionId: replacement.actionId,
-          revisionId: replacement.revisionId,
-          sequenceNo: 1,
-          effectiveDate: original.effectiveDate,
-          role: "reversal",
-          reversesJournalId: original.journalId,
-        },
-      );
+      const reversalJournalId = await insertJournal(client, {
+        workspaceId: identity.workspaceId,
+        actionId: replacement.actionId,
+        revisionId: replacement.revisionId,
+        sequenceNo: 1,
+        effectiveDate: original.effectiveDate,
+        role: "reversal",
+        reversesJournalId: original.journalId,
+      });
 
       await insertPosting(client, {
         workspaceId: identity.workspaceId,
@@ -1541,17 +1428,14 @@ describe("S1 financial action recipes", () => {
         reversesPostingId: original.incomePostingId,
       });
 
-      const replacementJournalId = await insertJournal(
-        client,
-        {
-          workspaceId: identity.workspaceId,
-          actionId: replacement.actionId,
-          revisionId: replacement.revisionId,
-          sequenceNo: 2,
-          effectiveDate: original.effectiveDate,
-          role: "economic",
-        },
-      );
+      const replacementJournalId = await insertJournal(client, {
+        workspaceId: identity.workspaceId,
+        actionId: replacement.actionId,
+        revisionId: replacement.revisionId,
+        sequenceNo: 2,
+        effectiveDate: original.effectiveDate,
+        role: "economic",
+      });
 
       await insertPosting(client, {
         workspaceId: identity.workspaceId,
@@ -1576,17 +1460,9 @@ describe("S1 financial action recipes", () => {
         incomeClass: "earned",
       });
 
-      await finalizeJournal(
-        client,
-        identity.workspaceId,
-        reversalJournalId,
-      );
+      await finalizeJournal(client, identity.workspaceId, reversalJournalId);
 
-      await finalizeJournal(
-        client,
-        identity.workspaceId,
-        replacementJournalId,
-      );
+      await finalizeJournal(client, identity.workspaceId, replacementJournalId);
 
       await finalizeRevision(
         client,
@@ -1602,11 +1478,7 @@ describe("S1 financial action recipes", () => {
             workspace_id = $2
             AND id = $3
         `,
-        [
-          replacement.revisionId,
-          identity.workspaceId,
-          replacement.actionId,
-        ],
+        [replacement.revisionId, identity.workspaceId, replacement.actionId],
       );
 
       await completeCommandReceipt(client, {
@@ -1637,10 +1509,7 @@ describe("S1 financial action recipes", () => {
             a.id,
             a.current_revision_id
         `,
-        [
-          identity.workspaceId,
-          original.actionId,
-        ],
+        [identity.workspaceId, original.actionId],
       );
 
       expect(actionState.rows).toEqual([
@@ -1661,10 +1530,7 @@ describe("S1 financial action recipes", () => {
             AND action_revision_id = $2
             AND reverses_posting_id IS NOT NULL
         `,
-        [
-          identity.workspaceId,
-          replacement.revisionId,
-        ],
+        [identity.workspaceId, replacement.revisionId],
       );
 
       expect(reversalCount.rows[0]?.count).toBe("2");
@@ -1684,15 +1550,10 @@ describe("S1 financial action recipes", () => {
             p.workspace_id = $1
             AND p.ledger_account_id = $2
         `,
-        [
-          identity.workspaceId,
-          account.cashLedgerId,
-        ],
+        [identity.workspaceId, account.cashLedgerId],
       );
 
-      expect(cashBalanceEffect.rows[0]?.amount_minor).toBe(
-        "120000",
-      );
+      expect(cashBalanceEffect.rows[0]?.amount_minor).toBe("120000");
     } finally {
       await rollbackQuietly(client);
       client.release();

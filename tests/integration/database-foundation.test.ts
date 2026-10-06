@@ -204,9 +204,7 @@ describe("database integration foundation", () => {
         ["Updated Integration Auth User", userId],
       );
 
-      expect(updatedUser.rows[0]?.name).toBe(
-        "Updated Integration Auth User",
-      );
+      expect(updatedUser.rows[0]?.name).toBe("Updated Integration Auth User");
 
       const selectedUser = await client.query<{ email: string }>(
         `
