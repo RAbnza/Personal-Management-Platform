@@ -3,17 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import {
-  useFieldArray,
-  useForm,
-  useWatch,
-} from "react-hook-form";
+import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -23,14 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { CategoryListItem } from "@/modules/core/services/list-categories";
 import type { FinancialAccountListItem } from "@/modules/finance/services/list-financial-accounts";
 import { isCalendarDate } from "@/shared/calendar-date";
-import {
-  MAX_FINANCIAL_COMPONENT_MINOR,
-  parseMinorUnits,
-} from "@/shared/money";
+import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 
-const decimalAmountPattern =
-  /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
+const decimalAmountPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 
 const transferFeeTreatments = [
   "source_additional",
@@ -38,26 +25,17 @@ const transferFeeTreatments = [
   "separate",
 ] as const;
 
-type TransferFeeTreatment =
-  (typeof transferFeeTreatments)[number];
+type TransferFeeTreatment = (typeof transferFeeTreatments)[number];
 
-function parseTwoDecimalAmountToMinorUnits(
-  value: string,
-): bigint {
+function parseTwoDecimalAmountToMinorUnits(value: string): bigint {
   if (!decimalAmountPattern.test(value)) {
-    throw new TypeError(
-      "Invalid two-decimal amount.",
-    );
+    throw new TypeError("Invalid two-decimal amount.");
   }
 
-  const [wholePart = "0", fractionalPart = ""] =
-    value.split(".");
+  const [wholePart = "0", fractionalPart = ""] = value.split(".");
 
   return (
-    BigInt(wholePart) * 100n +
-    BigInt(
-      fractionalPart.padEnd(2, "0") || "0",
-    )
+    BigInt(wholePart) * 100n + BigInt(fractionalPart.padEnd(2, "0") || "0")
   );
 }
 
@@ -66,28 +44,16 @@ function parseTwoDecimalAmountToMinorUnits(
  * CalendarDate type. Form fields intentionally remain ordinary strings until
  * submission/service boundaries, so expose a boolean-only validator to Zod.
  */
-function isValidCalendarDate(
-  value: string,
-): boolean {
+function isValidCalendarDate(value: string): boolean {
   return isCalendarDate(value);
 }
 
-function isValidOptionalUuid(
-  value: string,
-): boolean {
-  return (
-    value === "" ||
-    z.uuid().safeParse(value).success
-  );
+function isValidOptionalUuid(value: string): boolean {
+  return value === "" || z.uuid().safeParse(value).success;
 }
 
-function isValidOptionalCalendarDate(
-  value: string,
-): boolean {
-  return (
-    value === "" ||
-    isValidCalendarDate(value)
-  );
+function isValidOptionalCalendarDate(value: string): boolean {
+  return value === "" || isValidCalendarDate(value);
 }
 
 const transferFeeFormSchema = z.object({
@@ -95,9 +61,7 @@ const transferFeeFormSchema = z.object({
 
   amount: z.string(),
 
-  treatment: z.enum(
-    transferFeeTreatments,
-  ),
+  treatment: z.enum(transferFeeTreatments),
 
   effectiveDate: z.string(),
 
@@ -110,32 +74,19 @@ const transferFormSchema = z
   .object({
     sourceAccountId: z
       .string()
-      .refine(
-        (value) =>
-          z.uuid().safeParse(value).success,
-        {
-          message:
-            "Select a source account.",
-        },
-      ),
+      .refine((value) => z.uuid().safeParse(value).success, {
+        message: "Select a source account.",
+      }),
 
     destinationAccountId: z
       .string()
-      .refine(
-        (value) =>
-          z.uuid().safeParse(value).success,
-        {
-          message:
-            "Select a destination account.",
-        },
-      ),
-
-    effectiveDate: z
-      .string()
-      .refine(isValidCalendarDate, {
-        message:
-          "Enter a valid transfer date.",
+      .refine((value) => z.uuid().safeParse(value).success, {
+        message: "Select a destination account.",
       }),
+
+    effectiveDate: z.string().refine(isValidCalendarDate, {
+      message: "Enter a valid transfer date.",
+    }),
 
     destinationAmount: z
       .string()
@@ -146,24 +97,13 @@ const transferFormSchema = z
       })
       .refine(
         (value) => {
-          if (
-            !decimalAmountPattern.test(
-              value,
-            )
-          ) {
+          if (!decimalAmountPattern.test(value)) {
             return true;
           }
 
-          const amount =
-            parseTwoDecimalAmountToMinorUnits(
-              value,
-            );
+          const amount = parseTwoDecimalAmountToMinorUnits(value);
 
-          return (
-            amount > 0n &&
-            amount <=
-              MAX_FINANCIAL_COMPONENT_MINOR
-          );
+          return amount > 0n && amount <= MAX_FINANCIAL_COMPONENT_MINOR;
         },
         {
           message:
@@ -173,169 +113,90 @@ const transferFormSchema = z
 
     fees: z
       .array(transferFeeFormSchema)
-      .max(
-        20,
-        "A transfer can contain at most 20 fee components.",
-      ),
+      .max(20, "A transfer can contain at most 20 fee components."),
 
     description: z
       .string()
       .trim()
-      .min(
-        1,
-        "Enter a transfer description.",
-      )
-      .max(
-        2000,
-        "Description must be 2,000 characters or fewer.",
-      ),
+      .min(1, "Enter a transfer description.")
+      .max(2000, "Description must be 2,000 characters or fewer."),
 
     reference: z.string(),
 
-    notes: z
-      .string()
-      .max(
-        20_000,
-        "Notes must be 20,000 characters or fewer.",
-      ),
+    notes: z.string().max(20_000, "Notes must be 20,000 characters or fewer."),
   })
   .superRefine((values, context) => {
-    if (
-      values.sourceAccountId ===
-      values.destinationAccountId
-    ) {
+    if (values.sourceAccountId === values.destinationAccountId) {
       context.addIssue({
         code: "custom",
         path: ["destinationAccountId"],
-        message:
-          "Source and destination accounts must be different.",
+        message: "Source and destination accounts must be different.",
       });
     }
 
-    values.fees.forEach(
-      (fee, index) => {
-        const label =
-          fee.label.trim();
+    values.fees.forEach((fee, index) => {
+      const label = fee.label.trim();
 
-        if (
-          label.length === 0 ||
-          label.length > 200
-        ) {
+      if (label.length === 0 || label.length > 200) {
+        context.addIssue({
+          code: "custom",
+          path: ["fees", index, "label"],
+          message: "Fee label must contain between 1 and 200 characters.",
+        });
+      }
+
+      const amount = fee.amount.trim();
+
+      if (!decimalAmountPattern.test(amount)) {
+        context.addIssue({
+          code: "custom",
+          path: ["fees", index, "amount"],
+          message:
+            "Enter a positive fee amount with no more than two decimal places.",
+        });
+      } else {
+        const amountMinor = parseTwoDecimalAmountToMinorUnits(amount);
+
+        if (amountMinor <= 0n || amountMinor > MAX_FINANCIAL_COMPONENT_MINOR) {
           context.addIssue({
             code: "custom",
-            path: [
-              "fees",
-              index,
-              "label",
-            ],
+            path: ["fees", index, "amount"],
             message:
-              "Fee label must contain between 1 and 200 characters.",
+              "Fee amount must be greater than zero and within the supported financial limit.",
           });
         }
+      }
 
-        const amount =
-          fee.amount.trim();
+      if (!isValidOptionalCalendarDate(fee.effectiveDate)) {
+        context.addIssue({
+          code: "custom",
+          path: ["fees", index, "effectiveDate"],
+          message: "Enter a valid fee date.",
+        });
+      }
 
-        if (
-          !decimalAmountPattern.test(
-            amount,
-          )
-        ) {
-          context.addIssue({
-            code: "custom",
-            path: [
-              "fees",
-              index,
-              "amount",
-            ],
-            message:
-              "Enter a positive fee amount with no more than two decimal places.",
-          });
-        } else {
-          const amountMinor =
-            parseTwoDecimalAmountToMinorUnits(
-              amount,
-            );
+      if (!isValidOptionalUuid(fee.categoryId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["fees", index, "categoryId"],
+          message: "Select a valid fee category.",
+        });
+      }
 
-          if (
-            amountMinor <= 0n ||
-            amountMinor >
-              MAX_FINANCIAL_COMPONENT_MINOR
-          ) {
-            context.addIssue({
-              code: "custom",
-              path: [
-                "fees",
-                index,
-                "amount",
-              ],
-              message:
-                "Fee amount must be greater than zero and within the supported financial limit.",
-            });
-          }
-        }
-
-        if (
-          !isValidOptionalCalendarDate(
-            fee.effectiveDate,
-          )
-        ) {
-          context.addIssue({
-            code: "custom",
-            path: [
-              "fees",
-              index,
-              "effectiveDate",
-            ],
-            message:
-              "Enter a valid fee date.",
-          });
-        }
-
-        if (
-          !isValidOptionalUuid(
-            fee.categoryId,
-          )
-        ) {
-          context.addIssue({
-            code: "custom",
-            path: [
-              "fees",
-              index,
-              "categoryId",
-            ],
-            message:
-              "Select a valid fee category.",
-          });
-        }
-
-        if (
-          fee.treatment ===
-            "separate" &&
-          !z
-            .uuid()
-            .safeParse(
-              fee.bearingAccountId,
-            ).success
-        ) {
-          context.addIssue({
-            code: "custom",
-            path: [
-              "fees",
-              index,
-              "bearingAccountId",
-            ],
-            message:
-              "Select the account that paid this fee.",
-          });
-        }
-      },
-    );
+      if (
+        fee.treatment === "separate" &&
+        !z.uuid().safeParse(fee.bearingAccountId).success
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["fees", index, "bearingAccountId"],
+          message: "Select the account that paid this fee.",
+        });
+      }
+    });
   });
 
-type TransferFormValues = z.infer<
-  typeof transferFormSchema
->;
+type TransferFormValues = z.infer<typeof transferFormSchema>;
 
 type TransferFeePayload = {
   label: string;
@@ -376,11 +237,7 @@ type PendingTransferCommand = {
   payload: TransferPayload;
 };
 
-type SaveState =
-  | "idle"
-  | "saving"
-  | "unconfirmed"
-  | "saved";
+type SaveState = "idle" | "saving" | "unconfirmed" | "saved";
 
 const feeTreatmentContent: Record<
   TransferFeeTreatment,
@@ -396,15 +253,13 @@ const feeTreatmentContent: Record<
   },
 
   withheld: {
-    label:
-      "Fee included in source-side transfer",
+    label: "Fee included in source-side transfer",
     description:
       "The fee is part of the gross amount removed from the source. Enter above the amount that actually reaches the destination.",
   },
 
   separate: {
-    label:
-      "Fee paid separately",
+    label: "Fee paid separately",
     description:
       "The fee is paid from a selected account and may occur on a different date.",
   },
@@ -415,37 +270,28 @@ function addAccountEffect(
   accountId: string,
   amountMinor: bigint,
 ): void {
-  effects.set(
-    accountId,
-    (effects.get(accountId) ?? 0n) +
-      amountMinor,
-  );
+  effects.set(accountId, (effects.get(accountId) ?? 0n) + amountMinor);
 }
 
 async function postTransfer(
   command: PendingTransferCommand,
 ): Promise<Response> {
-  return fetch(
-    "/api/v1/financial-actions",
-    {
-      method: "POST",
+  return fetch("/api/v1/financial-actions", {
+    method: "POST",
 
-      headers: {
-        Accept: "application/json",
-        "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify({
-        clientCommandId:
-          command.clientCommandId,
-
-        ...command.payload,
-      }),
-
-      cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
-  );
+
+    body: JSON.stringify({
+      clientCommandId: command.clientCommandId,
+
+      ...command.payload,
+    }),
+
+    cache: "no-store",
+  });
 }
 
 export interface TransferCreateFormProps {
@@ -463,26 +309,17 @@ export function TransferCreateForm({
 }: TransferCreateFormProps) {
   const router = useRouter();
 
-  const [
-    pendingCommand,
-    setPendingCommand,
-  ] =
-    useState<PendingTransferCommand | null>(
-      null,
-    );
+  const [pendingCommand, setPendingCommand] =
+    useState<PendingTransferCommand | null>(null);
 
-  const [saveState, setSaveState] =
-    useState<SaveState>("idle");
+  const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  const [saveError, setSaveError] =
-    useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const defaultFeeCategoryId =
     categories.find(
       (category) =>
-        category.kind === "expense" &&
-        category.code ===
-          "transaction_fees",
+        category.kind === "expense" && category.code === "transaction_fees",
     )?.categoryId ?? "";
 
   const {
@@ -492,16 +329,12 @@ export function TransferCreateForm({
     setError,
     formState: { errors },
   } = useForm<TransferFormValues>({
-    resolver: zodResolver(
-      transferFormSchema,
-    ),
+    resolver: zodResolver(transferFormSchema),
 
     defaultValues: {
-      sourceAccountId:
-        accounts[0]?.accountId ?? "",
+      sourceAccountId: accounts[0]?.accountId ?? "",
 
-      destinationAccountId:
-        accounts[1]?.accountId ?? "",
+      destinationAccountId: accounts[1]?.accountId ?? "",
 
       effectiveDate: "",
 
@@ -531,11 +364,10 @@ export function TransferCreateForm({
     name: "sourceAccountId",
   });
 
-  const destinationAccountId =
-    useWatch({
-      control,
-      name: "destinationAccountId",
-    });
+  const destinationAccountId = useWatch({
+    control,
+    name: "destinationAccountId",
+  });
 
   const effectiveDate = useWatch({
     control,
@@ -554,108 +386,74 @@ export function TransferCreateForm({
   });
 
   const sourceAccount =
-    accounts.find(
-      (account) =>
-        account.accountId ===
-        sourceAccountId,
-    ) ?? null;
+    accounts.find((account) => account.accountId === sourceAccountId) ?? null;
 
   const destinationAccount =
-    accounts.find(
-      (account) =>
-        account.accountId ===
-        destinationAccountId,
-    ) ?? null;
+    accounts.find((account) => account.accountId === destinationAccountId) ??
+    null;
 
-  const expenseCategories =
-    categories.filter(
-      (category) =>
-        category.kind === "expense",
-    );
+  const expenseCategories = categories.filter(
+    (category) => category.kind === "expense",
+  );
 
-  const destinationPrincipalMinor =
-    decimalAmountPattern.test(
-      destinationAmount,
-    )
-      ? parseTwoDecimalAmountToMinorUnits(
-          destinationAmount,
-        )
-      : null;
+  const destinationPrincipalMinor = decimalAmountPattern.test(destinationAmount)
+    ? parseTwoDecimalAmountToMinorUnits(destinationAmount)
+    : null;
 
-  const previewEffects =
-    new Map<string, bigint>();
+  const previewEffects = new Map<string, bigint>();
 
-  const previewFees =
-    watchedFees.flatMap(
-      (
-        fee,
-        index,
-      ): Array<{
-        index: number;
-        label: string;
-        amountMinor: bigint;
-        treatment: TransferFeeTreatment;
-        effectiveDate: string;
-        bearingAccountId: string;
-      }> => {
-        const amount =
-          fee.amount.trim();
+  const previewFees = watchedFees.flatMap(
+    (
+      fee,
+      index,
+    ): Array<{
+      index: number;
+      label: string;
+      amountMinor: bigint;
+      treatment: TransferFeeTreatment;
+      effectiveDate: string;
+      bearingAccountId: string;
+    }> => {
+      const amount = fee.amount.trim();
 
-        if (
-          !decimalAmountPattern.test(
-            amount,
-          )
-        ) {
-          return [];
-        }
+      if (!decimalAmountPattern.test(amount)) {
+        return [];
+      }
 
-        const amountMinor =
-          parseTwoDecimalAmountToMinorUnits(
-            amount,
-          );
+      const amountMinor = parseTwoDecimalAmountToMinorUnits(amount);
 
-        if (amountMinor <= 0n) {
-          return [];
-        }
+      if (amountMinor <= 0n) {
+        return [];
+      }
 
-        const bearingAccountId =
-          fee.treatment === "separate"
-            ? fee.bearingAccountId
-            : sourceAccountId;
+      const bearingAccountId =
+        fee.treatment === "separate" ? fee.bearingAccountId : sourceAccountId;
 
-        const feeEffectiveDate =
-          fee.treatment === "withheld"
-            ? effectiveDate
-            : fee.effectiveDate ||
-              effectiveDate;
+      const feeEffectiveDate =
+        fee.treatment === "withheld"
+          ? effectiveDate
+          : fee.effectiveDate || effectiveDate;
 
-        return [
-          {
-            index,
-            label:
-              fee.label.trim() ||
-              `Fee ${index + 1}`,
-            amountMinor,
-            treatment:
-              fee.treatment,
-            effectiveDate:
-              feeEffectiveDate,
-            bearingAccountId,
-          },
-        ];
-      },
-    );
+      return [
+        {
+          index,
+          label: fee.label.trim() || `Fee ${index + 1}`,
+          amountMinor,
+          treatment: fee.treatment,
+          effectiveDate: feeEffectiveDate,
+          bearingAccountId,
+        },
+      ];
+    },
+  );
 
-  const previewFeeTotalMinor =
-    previewFees.reduce(
-      (total, fee) =>
-        total + fee.amountMinor,
-      0n,
-    );
+  const previewFeeTotalMinor = previewFees.reduce(
+    (total, fee) => total + fee.amountMinor,
+    0n,
+  );
 
   if (
-    destinationPrincipalMinor !==
-      null &&
+    destinationPrincipalMinor !== null &&
     destinationPrincipalMinor > 0n &&
     sourceAccountId &&
     destinationAccountId
@@ -683,15 +481,9 @@ export function TransferCreateForm({
     }
   }
 
-  const previewAccountEffects = [
-    ...previewEffects.entries(),
-  ].flatMap(
+  const previewAccountEffects = [...previewEffects.entries()].flatMap(
     ([accountId, effectMinor]) => {
-      const account = accounts.find(
-        (item) =>
-          item.accountId ===
-          accountId,
-      );
+      const account = accounts.find((item) => item.accountId === accountId);
 
       if (!account) {
         return [];
@@ -706,38 +498,28 @@ export function TransferCreateForm({
     },
   );
 
-  const accountsBelowZero =
-    previewAccountEffects.filter(
-      ({ account, effectMinor }) =>
-        parseMinorUnits(
-          account.currentBalanceMinor,
-        ) +
-          effectMinor <
-        0n,
-    );
+  const accountsBelowZero = previewAccountEffects.filter(
+    ({ account, effectMinor }) =>
+      parseMinorUnits(account.currentBalanceMinor) + effectMinor < 0n,
+  );
 
   const fieldsDisabled =
     saveState === "saving" ||
     saveState === "unconfirmed" ||
     saveState === "saved";
 
-  async function executeTransfer(
-    command: PendingTransferCommand,
-  ) {
+  async function executeTransfer(command: PendingTransferCommand) {
     setSaveState("saving");
     setSaveError(null);
 
     try {
-      const response =
-        await postTransfer(command);
+      const response = await postTransfer(command);
 
       if (response.ok) {
         setPendingCommand(null);
         setSaveState("saved");
 
-        router.push(
-          "/money/accounts",
-        );
+        router.push("/money/accounts");
 
         return;
       }
@@ -767,21 +549,14 @@ export function TransferCreateForm({
     }
   }
 
-  async function onSubmit(
-    values: TransferFormValues,
-  ) {
+  async function onSubmit(values: TransferFormValues) {
     const source = accounts.find(
-      (account) =>
-        account.accountId ===
-        values.sourceAccountId,
+      (account) => account.accountId === values.sourceAccountId,
     );
 
-    const destination =
-      accounts.find(
-        (account) =>
-          account.accountId ===
-          values.destinationAccountId,
-      );
+    const destination = accounts.find(
+      (account) => account.accountId === values.destinationAccountId,
+    );
 
     if (!source) {
       setError("sourceAccountId", {
@@ -794,38 +569,25 @@ export function TransferCreateForm({
     }
 
     if (!destination) {
-      setError(
-        "destinationAccountId",
-        {
-          type: "validate",
-          message:
-            "The selected destination account is unavailable. Refresh the page and try again.",
-        },
-      );
+      setError("destinationAccountId", {
+        type: "validate",
+        message:
+          "The selected destination account is unavailable. Refresh the page and try again.",
+      });
 
       return;
     }
 
-    if (
-      source.accountId ===
-      destination.accountId
-    ) {
-      setError(
-        "destinationAccountId",
-        {
-          type: "validate",
-          message:
-            "Source and destination accounts must be different.",
-        },
-      );
+    if (source.accountId === destination.accountId) {
+      setError("destinationAccountId", {
+        type: "validate",
+        message: "Source and destination accounts must be different.",
+      });
 
       return;
     }
 
-    if (
-      values.effectiveDate <=
-      source.openingCutoffDate
-    ) {
+    if (values.effectiveDate <= source.openingCutoffDate) {
       setError("effectiveDate", {
         type: "validate",
         message: `Transfer date must be after the source account opening balance date (${source.openingCutoffDate}).`,
@@ -834,10 +596,7 @@ export function TransferCreateForm({
       return;
     }
 
-    if (
-      values.effectiveDate <=
-      destination.openingCutoffDate
-    ) {
+    if (values.effectiveDate <= destination.openingCutoffDate) {
       setError("effectiveDate", {
         type: "validate",
         message: `Transfer date must be after the destination account opening balance date (${destination.openingCutoffDate}).`,
@@ -846,160 +605,110 @@ export function TransferCreateForm({
       return;
     }
 
-    const principalMinor =
-      parseTwoDecimalAmountToMinorUnits(
-        values.destinationAmount,
-      );
+    const principalMinor = parseTwoDecimalAmountToMinorUnits(
+      values.destinationAmount,
+    );
 
     let withheldFeeTotalMinor = 0n;
 
-    const normalizedFees: TransferFeePayload[] =
-      [];
+    const normalizedFees: TransferFeePayload[] = [];
 
-    for (const [
-      index,
-      fee,
-    ] of values.fees.entries()) {
-      const feeMinor =
-        parseTwoDecimalAmountToMinorUnits(
-          fee.amount.trim(),
-        );
+    for (const [index, fee] of values.fees.entries()) {
+      const feeMinor = parseTwoDecimalAmountToMinorUnits(fee.amount.trim());
 
       const feeEffectiveDate =
         fee.treatment === "withheld"
           ? values.effectiveDate
-          : fee.effectiveDate ||
-            values.effectiveDate;
+          : fee.effectiveDate || values.effectiveDate;
 
       const bearingAccountId =
         fee.treatment === "separate"
           ? fee.bearingAccountId
           : values.sourceAccountId;
 
-      const bearingAccount =
-        accounts.find(
-          (account) =>
-            account.accountId ===
-            bearingAccountId,
-        );
+      const bearingAccount = accounts.find(
+        (account) => account.accountId === bearingAccountId,
+      );
 
       if (!bearingAccount) {
-        setError(
-          `fees.${index}.bearingAccountId`,
-          {
-            type: "validate",
-            message:
-              "The selected fee-paying account is unavailable.",
-          },
-        );
+        setError(`fees.${index}.bearingAccountId`, {
+          type: "validate",
+          message: "The selected fee-paying account is unavailable.",
+        });
 
         return;
       }
 
-      if (
-        feeEffectiveDate <=
-        bearingAccount.openingCutoffDate
-      ) {
-        setError(
-          `fees.${index}.effectiveDate`,
-          {
-            type: "validate",
-            message: `Fee date must be after the fee-paying account opening balance date (${bearingAccount.openingCutoffDate}).`,
-          },
-        );
+      if (feeEffectiveDate <= bearingAccount.openingCutoffDate) {
+        setError(`fees.${index}.effectiveDate`, {
+          type: "validate",
+          message: `Fee date must be after the fee-paying account opening balance date (${bearingAccount.openingCutoffDate}).`,
+        });
 
         return;
       }
 
-      if (
-        fee.treatment === "withheld"
-      ) {
-        withheldFeeTotalMinor +=
-          feeMinor;
+      if (fee.treatment === "withheld") {
+        withheldFeeTotalMinor += feeMinor;
       }
 
       normalizedFees.push({
         label: fee.label.trim(),
 
-        amountMinor:
-          feeMinor.toString(),
+        amountMinor: feeMinor.toString(),
 
-        effectiveDate:
-          feeEffectiveDate,
+        effectiveDate: feeEffectiveDate,
 
         bearingAccountId,
 
-        treatment:
-          fee.treatment,
+        treatment: fee.treatment,
 
-        categoryId:
-          fee.categoryId === ""
-            ? null
-            : fee.categoryId,
+        categoryId: fee.categoryId === "" ? null : fee.categoryId,
       });
     }
 
     if (
-      principalMinor +
-        withheldFeeTotalMinor >
+      principalMinor + withheldFeeTotalMinor >
       MAX_FINANCIAL_COMPONENT_MINOR
     ) {
-      setError(
-        "root.transferLimit",
-        {
-          type: "validate",
-          message:
-            "The destination amount plus withheld fees exceeds the supported financial limit.",
-        },
-      );
+      setError("root.transferLimit", {
+        type: "validate",
+        message:
+          "The destination amount plus withheld fees exceeds the supported financial limit.",
+      });
 
       return;
     }
 
-    const reference =
-      values.reference.trim();
+    const reference = values.reference.trim();
 
-    const notes =
-      values.notes.trim();
+    const notes = values.notes.trim();
 
     const payload: TransferPayload = {
       actionKind: "transfer",
 
-      sourceAccountId:
-        values.sourceAccountId,
+      sourceAccountId: values.sourceAccountId,
 
-      destinationAccountId:
-        values.destinationAccountId,
+      destinationAccountId: values.destinationAccountId,
 
-      effectiveDate:
-        values.effectiveDate,
+      effectiveDate: values.effectiveDate,
 
-      destinationPrincipalMinor:
-        principalMinor.toString(),
+      destinationPrincipalMinor: principalMinor.toString(),
 
       fees: normalizedFees,
 
-      description:
-        values.description.trim(),
+      description: values.description.trim(),
 
-      reference:
-        reference.length > 0
-          ? reference
-          : null,
+      reference: reference.length > 0 ? reference : null,
 
-      notes:
-        notes.length > 0
-          ? notes
-          : null,
+      notes: notes.length > 0 ? notes : null,
     };
 
-    const command: PendingTransferCommand =
-      {
-        clientCommandId:
-          crypto.randomUUID(),
+    const command: PendingTransferCommand = {
+      clientCommandId: crypto.randomUUID(),
 
-        payload,
-      };
+      payload,
+    };
 
     setPendingCommand(command);
 
@@ -1017,9 +726,7 @@ export function TransferCreateForm({
       return;
     }
 
-    await executeTransfer(
-      pendingCommand,
-    );
+    await executeTransfer(pendingCommand);
   }
 
   return (
@@ -1028,9 +735,7 @@ export function TransferCreateForm({
       className="rounded-card border border-border bg-card p-5 text-card-foreground sm:p-6"
     >
       <div>
-        <p className="text-xs font-medium text-link">
-          Money
-        </p>
+        <p className="text-xs font-medium text-link">Money</p>
 
         <h2
           id="record-transfer-title"
@@ -1040,22 +745,16 @@ export function TransferCreateForm({
         </h2>
 
         <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-          Record a transfer that has
-          already completed. The
-          principal moves between your
-          accounts without becoming
-          income or spending. Any real
-          transfer fees are recorded
-          separately as expenses.
+          Record a transfer that has already completed. The principal moves
+          between your accounts without becoming income or spending. Any real
+          transfer fees are recorded separately as expenses.
         </p>
       </div>
 
       <form
         noValidate
         className="mt-6 space-y-6"
-        onSubmit={handleSubmit(
-          onSubmit,
-        )}
+        onSubmit={handleSubmit(onSubmit)}
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
@@ -1063,28 +762,17 @@ export function TransferCreateForm({
             label="Source account"
             description="The account the money actually left."
             descriptionId="transfer-source-description"
-            error={
-              errors.sourceAccountId
-                ?.message
-            }
+            error={errors.sourceAccountId?.message}
             errorId="transfer-source-error"
           >
             <select
-              {...register(
-                "sourceAccountId",
-              )}
+              {...register("sourceAccountId")}
               id="transfer-source"
-              disabled={
-                fieldsDisabled
-              }
-              aria-invalid={Boolean(
-                errors.sourceAccountId,
-              )}
+              disabled={fieldsDisabled}
+              aria-invalid={Boolean(errors.sourceAccountId)}
               aria-describedby={[
                 "transfer-source-description",
-                errors.sourceAccountId
-                  ? "transfer-source-error"
-                  : null,
+                errors.sourceAccountId ? "transfer-source-error" : null,
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -1097,24 +785,15 @@ export function TransferCreateForm({
                 "motion-reduce:transition-none",
               ].join(" ")}
             >
-              {accounts.map(
-                (account) => (
-                  <option
-                    key={
-                      account.accountId
-                    }
-                    value={
-                      account.accountId
-                    }
-                  >
-                    {account.name} —{" "}
-                    {formatMoneyMinorUnits(
-                      account.currency,
-                      account.currentBalanceMinor,
-                    )}
-                  </option>
-                ),
-              )}
+              {accounts.map((account) => (
+                <option key={account.accountId} value={account.accountId}>
+                  {account.name} —{" "}
+                  {formatMoneyMinorUnits(
+                    account.currency,
+                    account.currentBalanceMinor,
+                  )}
+                </option>
+              ))}
             </select>
           </FormField>
 
@@ -1123,28 +802,17 @@ export function TransferCreateForm({
             label="Destination account"
             description="The account where the transferred money actually arrived."
             descriptionId="transfer-destination-description"
-            error={
-              errors
-                .destinationAccountId
-                ?.message
-            }
+            error={errors.destinationAccountId?.message}
             errorId="transfer-destination-error"
           >
             <select
-              {...register(
-                "destinationAccountId",
-              )}
+              {...register("destinationAccountId")}
               id="transfer-destination"
-              disabled={
-                fieldsDisabled
-              }
-              aria-invalid={Boolean(
-                errors.destinationAccountId,
-              )}
+              disabled={fieldsDisabled}
+              aria-invalid={Boolean(errors.destinationAccountId)}
               aria-describedby={[
                 "transfer-destination-description",
-                errors
-                  .destinationAccountId
+                errors.destinationAccountId
                   ? "transfer-destination-error"
                   : null,
               ]
@@ -1159,24 +827,15 @@ export function TransferCreateForm({
                 "motion-reduce:transition-none",
               ].join(" ")}
             >
-              {accounts.map(
-                (account) => (
-                  <option
-                    key={
-                      account.accountId
-                    }
-                    value={
-                      account.accountId
-                    }
-                  >
-                    {account.name} —{" "}
-                    {formatMoneyMinorUnits(
-                      account.currency,
-                      account.currentBalanceMinor,
-                    )}
-                  </option>
-                ),
-              )}
+              {accounts.map((account) => (
+                <option key={account.accountId} value={account.accountId}>
+                  {account.name} —{" "}
+                  {formatMoneyMinorUnits(
+                    account.currency,
+                    account.currentBalanceMinor,
+                  )}
+                </option>
+              ))}
             </select>
           </FormField>
 
@@ -1184,38 +843,25 @@ export function TransferCreateForm({
             htmlFor="transfer-date"
             label="Transfer date"
             description={
-              sourceAccount &&
-              destinationAccount
+              sourceAccount && destinationAccount
                 ? `Must be after both opening balance dates (${sourceAccount.openingCutoffDate} and ${destinationAccount.openingCutoffDate}).`
                 : undefined
             }
             descriptionId="transfer-date-description"
-            error={
-              errors.effectiveDate
-                ?.message
-            }
+            error={errors.effectiveDate?.message}
             errorId="transfer-date-error"
           >
             <Input
-              {...register(
-                "effectiveDate",
-              )}
+              {...register("effectiveDate")}
               id="transfer-date"
               type="date"
-              disabled={
-                fieldsDisabled
-              }
-              aria-invalid={Boolean(
-                errors.effectiveDate,
-              )}
+              disabled={fieldsDisabled}
+              aria-invalid={Boolean(errors.effectiveDate)}
               aria-describedby={[
-                sourceAccount &&
-                destinationAccount
+                sourceAccount && destinationAccount
                   ? "transfer-date-description"
                   : null,
-                errors.effectiveDate
-                  ? "transfer-date-error"
-                  : null,
+                errors.effectiveDate ? "transfer-date-error" : null,
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -1227,32 +873,21 @@ export function TransferCreateForm({
             label={`Amount destination receives (${currency})`}
             description="Enter the amount that actually arrived in the destination account."
             descriptionId="transfer-destination-amount-description"
-            error={
-              errors
-                .destinationAmount
-                ?.message
-            }
+            error={errors.destinationAmount?.message}
             errorId="transfer-destination-amount-error"
           >
             <Input
-              {...register(
-                "destinationAmount",
-              )}
+              {...register("destinationAmount")}
               id="transfer-destination-amount"
               type="text"
               inputMode="decimal"
               autoComplete="off"
               placeholder="0.00"
-              disabled={
-                fieldsDisabled
-              }
-              aria-invalid={Boolean(
-                errors.destinationAmount,
-              )}
+              disabled={fieldsDisabled}
+              aria-invalid={Boolean(errors.destinationAmount)}
               aria-describedby={[
                 "transfer-destination-amount-description",
-                errors
-                  .destinationAmount
+                errors.destinationAmount
                   ? "transfer-destination-amount-error"
                   : null,
               ]
@@ -1274,442 +909,191 @@ export function TransferCreateForm({
               </legend>
 
               <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                Add only fees that were
-                actually charged. Each
-                fee remains an expense
-                rather than becoming
-                part of transferred
-                spending.
+                Add only fees that were actually charged. Each fee remains an
+                expense rather than becoming part of transferred spending.
               </p>
             </div>
 
             <Button
               type="button"
               variant="secondary"
-              disabled={
-                fieldsDisabled ||
-                feeFields.length >= 20
-              }
+              disabled={fieldsDisabled || feeFields.length >= 20}
               onClick={() => {
                 appendFee({
-                  label:
-                    "Transfer fee",
+                  label: "Transfer fee",
 
                   amount: "",
 
-                  treatment:
-                    "source_additional",
+                  treatment: "source_additional",
 
                   effectiveDate: "",
 
-                  bearingAccountId:
-                    sourceAccountId,
+                  bearingAccountId: sourceAccountId,
 
-                  categoryId:
-                    defaultFeeCategoryId,
+                  categoryId: defaultFeeCategoryId,
                 });
               }}
             >
-              <Plus
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.9}
-              />
-
+              <Plus aria-hidden="true" className="size-4" strokeWidth={1.9} />
               Add fee
             </Button>
           </div>
 
           {feeFields.length === 0 ? (
             <p className="rounded-control border border-border bg-surface px-4 py-3 text-sm leading-6 text-muted-foreground">
-              No fees added. A
-              fee-free internal
-              transfer changes where
-              your money is held but
-              does not change total
-              tracked liquid funds.
+              No fees added. A fee-free internal transfer changes where your
+              money is held but does not change total tracked liquid funds.
             </p>
           ) : (
             <div className="space-y-4">
-              {feeFields.map(
-                (field, index) => {
-                  const watchedFee =
-                    watchedFees[
-                      index
-                    ];
+              {feeFields.map((field, index) => {
+                const watchedFee = watchedFees[index];
 
-                  const treatment =
-                    watchedFee
-                      ?.treatment ??
-                    "source_additional";
+                const treatment = watchedFee?.treatment ?? "source_additional";
 
-                  const treatmentContent =
-                    feeTreatmentContent[
-                      treatment
-                    ];
+                const treatmentContent = feeTreatmentContent[treatment];
 
-                  const labelError =
-                    errors.fees?.[
-                      index
-                    ]?.label
-                      ?.message;
+                const labelError = errors.fees?.[index]?.label?.message;
 
-                  const amountError =
-                    errors.fees?.[
-                      index
-                    ]?.amount
-                      ?.message;
+                const amountError = errors.fees?.[index]?.amount?.message;
 
-                  const dateError =
-                    errors.fees?.[
-                      index
-                    ]?.effectiveDate
-                      ?.message;
+                const dateError = errors.fees?.[index]?.effectiveDate?.message;
 
-                  const accountError =
-                    errors.fees?.[
-                      index
-                    ]
-                      ?.bearingAccountId
-                      ?.message;
+                const accountError =
+                  errors.fees?.[index]?.bearingAccountId?.message;
 
-                  const categoryError =
-                    errors.fees?.[
-                      index
-                    ]?.categoryId
-                      ?.message;
+                const categoryError = errors.fees?.[index]?.categoryId?.message;
 
-                  return (
-                    <div
-                      key={field.id}
-                      className="space-y-4 rounded-control border border-border bg-surface p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">
-                            Fee{" "}
-                            {index +
-                              1}
-                          </h3>
+                return (
+                  <div
+                    key={field.id}
+                    className="space-y-4 rounded-control border border-border bg-surface p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">
+                          Fee {index + 1}
+                        </h3>
 
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {
-                              treatmentContent.description
-                            }
-                          </p>
-                        </div>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          aria-label={`Remove fee ${index + 1}`}
-                          disabled={
-                            fieldsDisabled
-                          }
-                          onClick={() => {
-                            removeFee(
-                              index,
-                            );
-                          }}
-                        >
-                          <Trash2
-                            aria-hidden="true"
-                            className="size-4"
-                            strokeWidth={
-                              1.9
-                            }
-                          />
-
-                          Remove
-                        </Button>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {treatmentContent.description}
+                        </p>
                       </div>
 
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <FormField
-                          htmlFor={`transfer-fee-label-${index}`}
-                          label={`Fee label ${index + 1}`}
-                          error={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        aria-label={`Remove fee ${index + 1}`}
+                        disabled={fieldsDisabled}
+                        onClick={() => {
+                          removeFee(index);
+                        }}
+                      >
+                        <Trash2
+                          aria-hidden="true"
+                          className="size-4"
+                          strokeWidth={1.9}
+                        />
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <FormField
+                        htmlFor={`transfer-fee-label-${index}`}
+                        label={`Fee label ${index + 1}`}
+                        error={labelError}
+                        errorId={`transfer-fee-label-error-${index}`}
+                      >
+                        <Input
+                          {...register(`fees.${index}.label`)}
+                          id={`transfer-fee-label-${index}`}
+                          type="text"
+                          autoComplete="off"
+                          disabled={fieldsDisabled}
+                          aria-invalid={Boolean(labelError)}
+                          aria-describedby={
                             labelError
+                              ? `transfer-fee-label-error-${index}`
+                              : undefined
                           }
-                          errorId={`transfer-fee-label-error-${index}`}
-                        >
-                          <Input
-                            {...register(
-                              `fees.${index}.label`,
-                            )}
-                            id={`transfer-fee-label-${index}`}
-                            type="text"
-                            autoComplete="off"
-                            disabled={
-                              fieldsDisabled
-                            }
-                            aria-invalid={Boolean(
-                              labelError,
-                            )}
-                            aria-describedby={
-                              labelError
-                                ? `transfer-fee-label-error-${index}`
-                                : undefined
-                            }
-                          />
-                        </FormField>
+                        />
+                      </FormField>
 
-                        <FormField
-                          htmlFor={`transfer-fee-amount-${index}`}
-                          label={`Fee amount ${index + 1} (${currency})`}
-                          error={
+                      <FormField
+                        htmlFor={`transfer-fee-amount-${index}`}
+                        label={`Fee amount ${index + 1} (${currency})`}
+                        error={amountError}
+                        errorId={`transfer-fee-amount-error-${index}`}
+                      >
+                        <Input
+                          {...register(`fees.${index}.amount`)}
+                          id={`transfer-fee-amount-${index}`}
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
+                          placeholder="0.00"
+                          disabled={fieldsDisabled}
+                          aria-invalid={Boolean(amountError)}
+                          aria-describedby={
                             amountError
+                              ? `transfer-fee-amount-error-${index}`
+                              : undefined
                           }
-                          errorId={`transfer-fee-amount-error-${index}`}
-                        >
-                          <Input
-                            {...register(
-                              `fees.${index}.amount`,
-                            )}
-                            id={`transfer-fee-amount-${index}`}
-                            type="text"
-                            inputMode="decimal"
-                            autoComplete="off"
-                            placeholder="0.00"
-                            disabled={
-                              fieldsDisabled
-                            }
-                            aria-invalid={Boolean(
-                              amountError,
-                            )}
-                            aria-describedby={
-                              amountError
-                                ? `transfer-fee-amount-error-${index}`
-                                : undefined
-                            }
-                            className="numeric-value"
-                          />
-                        </FormField>
+                          className="numeric-value"
+                        />
+                      </FormField>
 
+                      <FormField
+                        htmlFor={`transfer-fee-treatment-${index}`}
+                        label={`Fee treatment ${index + 1}`}
+                        description={treatmentContent.description}
+                        descriptionId={`transfer-fee-treatment-description-${index}`}
+                      >
+                        <select
+                          {...register(`fees.${index}.treatment`)}
+                          id={`transfer-fee-treatment-${index}`}
+                          disabled={fieldsDisabled}
+                          aria-describedby={`transfer-fee-treatment-description-${index}`}
+                          className={[
+                            "min-h-11 w-full rounded-control border border-input",
+                            "bg-surface px-3 py-2 text-base text-foreground",
+                            "transition-colors duration-(--motion-duration-fast) ease-state",
+                            "hover:border-ring",
+                            "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                            "motion-reduce:transition-none",
+                          ].join(" ")}
+                        >
+                          {transferFeeTreatments.map((option) => (
+                            <option key={option} value={option}>
+                              {feeTreatmentContent[option].label}
+                            </option>
+                          ))}
+                        </select>
+                      </FormField>
+
+                      {treatment === "separate" ? (
                         <FormField
-                          htmlFor={`transfer-fee-treatment-${index}`}
-                          label={`Fee treatment ${index + 1}`}
-                          description={
-                            treatmentContent.description
-                          }
-                          descriptionId={`transfer-fee-treatment-description-${index}`}
+                          htmlFor={`transfer-fee-account-${index}`}
+                          label={`Fee-paying account ${index + 1}`}
+                          description="Choose the account that actually paid this separate fee."
+                          descriptionId={`transfer-fee-account-description-${index}`}
+                          error={accountError}
+                          errorId={`transfer-fee-account-error-${index}`}
                         >
                           <select
-                            {...register(
-                              `fees.${index}.treatment`,
-                            )}
-                            id={`transfer-fee-treatment-${index}`}
-                            disabled={
-                              fieldsDisabled
-                            }
-                            aria-describedby={`transfer-fee-treatment-description-${index}`}
-                            className={[
-                              "min-h-11 w-full rounded-control border border-input",
-                              "bg-surface px-3 py-2 text-base text-foreground",
-                              "transition-colors duration-(--motion-duration-fast) ease-state",
-                              "hover:border-ring",
-                              "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                              "motion-reduce:transition-none",
-                            ].join(
-                              " ",
-                            )}
-                          >
-                            {transferFeeTreatments.map(
-                              (
-                                option,
-                              ) => (
-                                <option
-                                  key={
-                                    option
-                                  }
-                                  value={
-                                    option
-                                  }
-                                >
-                                  {
-                                    feeTreatmentContent[
-                                      option
-                                    ]
-                                      .label
-                                  }
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        </FormField>
-
-                        {treatment ===
-                        "separate" ? (
-                          <FormField
-                            htmlFor={`transfer-fee-account-${index}`}
-                            label={`Fee-paying account ${index + 1}`}
-                            description="Choose the account that actually paid this separate fee."
-                            descriptionId={`transfer-fee-account-description-${index}`}
-                            error={
-                              accountError
-                            }
-                            errorId={`transfer-fee-account-error-${index}`}
-                          >
-                            <select
-                              {...register(
-                                `fees.${index}.bearingAccountId`,
-                              )}
-                              id={`transfer-fee-account-${index}`}
-                              disabled={
-                                fieldsDisabled
-                              }
-                              aria-invalid={Boolean(
-                                accountError,
-                              )}
-                              aria-describedby={[
-                                `transfer-fee-account-description-${index}`,
-                                accountError
-                                  ? `transfer-fee-account-error-${index}`
-                                  : null,
-                              ]
-                                .filter(
-                                  Boolean,
-                                )
-                                .join(
-                                  " ",
-                                )}
-                              className={[
-                                "min-h-11 w-full rounded-control border border-input",
-                                "bg-surface px-3 py-2 text-base text-foreground",
-                                "transition-colors duration-(--motion-duration-fast) ease-state",
-                                "hover:border-ring",
-                                "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                                "motion-reduce:transition-none",
-                              ].join(
-                                " ",
-                              )}
-                            >
-                              {accounts.map(
-                                (
-                                  account,
-                                ) => (
-                                  <option
-                                    key={
-                                      account.accountId
-                                    }
-                                    value={
-                                      account.accountId
-                                    }
-                                  >
-                                    {
-                                      account.name
-                                    }{" "}
-                                    —{" "}
-                                    {formatMoneyMinorUnits(
-                                      account.currency,
-                                      account.currentBalanceMinor,
-                                    )}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          </FormField>
-                        ) : (
-                          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
-                            <p className="text-sm font-medium text-foreground">
-                              Fee-paying
-                              account
-                            </p>
-
-                            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                              {sourceAccount?.name ??
-                                "Source account"}
-                            </p>
-                          </div>
-                        )}
-
-                        {treatment !==
-                        "withheld" ? (
-                          <FormField
-                            htmlFor={`transfer-fee-date-${index}`}
-                            label={`Fee date ${index + 1}`}
-                            description="Optional. Leave blank to use the transfer date."
-                            descriptionId={`transfer-fee-date-description-${index}`}
-                            error={
-                              dateError
-                            }
-                            errorId={`transfer-fee-date-error-${index}`}
-                          >
-                            <Input
-                              {...register(
-                                `fees.${index}.effectiveDate`,
-                              )}
-                              id={`transfer-fee-date-${index}`}
-                              type="date"
-                              disabled={
-                                fieldsDisabled
-                              }
-                              aria-invalid={Boolean(
-                                dateError,
-                              )}
-                              aria-describedby={[
-                                `transfer-fee-date-description-${index}`,
-                                dateError
-                                  ? `transfer-fee-date-error-${index}`
-                                  : null,
-                              ]
-                                .filter(
-                                  Boolean,
-                                )
-                                .join(
-                                  " ",
-                                )}
-                            />
-                          </FormField>
-                        ) : (
-                          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
-                            <p className="text-sm font-medium text-foreground">
-                              Fee date
-                            </p>
-
-                            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                              Same as
-                              transfer
-                              date:{" "}
-                              {effectiveDate ||
-                                "Not selected yet"}
-                            </p>
-                          </div>
-                        )}
-
-                        <FormField
-                          htmlFor={`transfer-fee-category-${index}`}
-                          label={`Fee category ${index + 1}`}
-                          description="Optional. Transaction Fees is selected automatically when the default category is available."
-                          descriptionId={`transfer-fee-category-description-${index}`}
-                          error={
-                            categoryError
-                          }
-                          errorId={`transfer-fee-category-error-${index}`}
-                        >
-                          <select
-                            {...register(
-                              `fees.${index}.categoryId`,
-                            )}
-                            id={`transfer-fee-category-${index}`}
-                            disabled={
-                              fieldsDisabled
-                            }
-                            aria-invalid={Boolean(
-                              categoryError,
-                            )}
+                            {...register(`fees.${index}.bearingAccountId`)}
+                            id={`transfer-fee-account-${index}`}
+                            disabled={fieldsDisabled}
+                            aria-invalid={Boolean(accountError)}
                             aria-describedby={[
-                              `transfer-fee-category-description-${index}`,
-                              categoryError
-                                ? `transfer-fee-category-error-${index}`
+                              `transfer-fee-account-description-${index}`,
+                              accountError
+                                ? `transfer-fee-account-error-${index}`
                                 : null,
                             ]
-                              .filter(
-                                Boolean,
-                              )
-                              .join(
-                                " ",
-                              )}
+                              .filter(Boolean)
+                              .join(" ")}
                             className={[
                               "min-h-11 w-full rounded-control border border-input",
                               "bg-surface px-3 py-2 text-base text-foreground",
@@ -1717,47 +1101,124 @@ export function TransferCreateForm({
                               "hover:border-ring",
                               "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
                               "motion-reduce:transition-none",
-                            ].join(
-                              " ",
-                            )}
+                            ].join(" ")}
                           >
-                            <option value="">
-                              Uncategorized
-                            </option>
-
-                            {expenseCategories.map(
-                              (
-                                category,
-                              ) => (
-                                <option
-                                  key={
-                                    category.categoryId
-                                  }
-                                  value={
-                                    category.categoryId
-                                  }
-                                >
-                                  {
-                                    category.name
-                                  }
-                                </option>
-                              ),
-                            )}
+                            {accounts.map((account) => (
+                              <option
+                                key={account.accountId}
+                                value={account.accountId}
+                              >
+                                {account.name} —{" "}
+                                {formatMoneyMinorUnits(
+                                  account.currency,
+                                  account.currentBalanceMinor,
+                                )}
+                              </option>
+                            ))}
                           </select>
                         </FormField>
-                      </div>
+                      ) : (
+                        <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+                          <p className="text-sm font-medium text-foreground">
+                            Fee-paying account
+                          </p>
+
+                          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                            {sourceAccount?.name ?? "Source account"}
+                          </p>
+                        </div>
+                      )}
+
+                      {treatment !== "withheld" ? (
+                        <FormField
+                          htmlFor={`transfer-fee-date-${index}`}
+                          label={`Fee date ${index + 1}`}
+                          description="Optional. Leave blank to use the transfer date."
+                          descriptionId={`transfer-fee-date-description-${index}`}
+                          error={dateError}
+                          errorId={`transfer-fee-date-error-${index}`}
+                        >
+                          <Input
+                            {...register(`fees.${index}.effectiveDate`)}
+                            id={`transfer-fee-date-${index}`}
+                            type="date"
+                            disabled={fieldsDisabled}
+                            aria-invalid={Boolean(dateError)}
+                            aria-describedby={[
+                              `transfer-fee-date-description-${index}`,
+                              dateError
+                                ? `transfer-fee-date-error-${index}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                          />
+                        </FormField>
+                      ) : (
+                        <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+                          <p className="text-sm font-medium text-foreground">
+                            Fee date
+                          </p>
+
+                          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                            Same as transfer date:{" "}
+                            {effectiveDate || "Not selected yet"}
+                          </p>
+                        </div>
+                      )}
+
+                      <FormField
+                        htmlFor={`transfer-fee-category-${index}`}
+                        label={`Fee category ${index + 1}`}
+                        description="Optional. Transaction Fees is selected automatically when the default category is available."
+                        descriptionId={`transfer-fee-category-description-${index}`}
+                        error={categoryError}
+                        errorId={`transfer-fee-category-error-${index}`}
+                      >
+                        <select
+                          {...register(`fees.${index}.categoryId`)}
+                          id={`transfer-fee-category-${index}`}
+                          disabled={fieldsDisabled}
+                          aria-invalid={Boolean(categoryError)}
+                          aria-describedby={[
+                            `transfer-fee-category-description-${index}`,
+                            categoryError
+                              ? `transfer-fee-category-error-${index}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          className={[
+                            "min-h-11 w-full rounded-control border border-input",
+                            "bg-surface px-3 py-2 text-base text-foreground",
+                            "transition-colors duration-(--motion-duration-fast) ease-state",
+                            "hover:border-ring",
+                            "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                            "motion-reduce:transition-none",
+                          ].join(" ")}
+                        >
+                          <option value="">Uncategorized</option>
+
+                          {expenseCategories.map((category) => (
+                            <option
+                              key={category.categoryId}
+                              value={category.categoryId}
+                            >
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormField>
                     </div>
-                  );
-                },
-              )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </fieldset>
 
-        {destinationPrincipalMinor !==
-          null &&
-        destinationPrincipalMinor >
-          0n ? (
+        {destinationPrincipalMinor !== null &&
+        destinationPrincipalMinor > 0n ? (
           <section
             aria-labelledby="transfer-preview-title"
             className="rounded-control border border-border bg-surface p-4 sm:p-5"
@@ -1766,54 +1227,36 @@ export function TransferCreateForm({
               id="transfer-preview-title"
               className="text-sm font-semibold text-foreground"
             >
-              Completed transfer
-              preview
+              Completed transfer preview
             </h3>
 
             <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-              Review the exact account
-              effects before saving.
-              Principal moved between
-              your own accounts is not
-              income or spending.
+              Review the exact account effects before saving. Principal moved
+              between your own accounts is not income or spending.
             </p>
 
             <div className="mt-4 space-y-2">
-              {previewAccountEffects.map(
-                ({
-                  account,
-                  effectMinor,
-                }) => (
-                  <div
-                    key={
-                      account.accountId
-                    }
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-border bg-surface-subtle px-4 py-3"
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {
-                        account.name
-                      }
-                    </span>
+              {previewAccountEffects.map(({ account, effectMinor }) => (
+                <div
+                  key={account.accountId}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-border bg-surface-subtle px-4 py-3"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {account.name}
+                  </span>
 
-                    <span className="numeric-value text-sm font-semibold text-foreground">
-                      {effectMinor <
-                      0n
-                        ? "Decreases by "
-                        : "Increases by "}
-                      {formatMoneyMinorUnits(
-                        currency,
-                        (
-                          effectMinor <
-                          0n
-                            ? -effectMinor
-                            : effectMinor
-                        ).toString(),
-                      )}
-                    </span>
-                  </div>
-                ),
-              )}
+                  <span className="numeric-value text-sm font-semibold text-foreground">
+                    {effectMinor < 0n ? "Decreases by " : "Increases by "}
+                    {formatMoneyMinorUnits(
+                      currency,
+                      (effectMinor < 0n
+                        ? -effectMinor
+                        : effectMinor
+                      ).toString(),
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -1832,85 +1275,59 @@ export function TransferCreateForm({
 
               <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground">
-                  Total tracked
-                  liquid-funds change
+                  Total tracked liquid-funds change
                 </p>
 
                 <p className="numeric-value mt-1 text-base font-semibold text-foreground">
-                  {previewFeeTotalMinor ===
-                  0n
-                    ? formatMoneyMinorUnits(
-                        currency,
-                        "0",
-                      )
+                  {previewFeeTotalMinor === 0n
+                    ? formatMoneyMinorUnits(currency, "0")
                     : formatMoneyMinorUnits(
                         currency,
-                        (
-                          -previewFeeTotalMinor
-                        ).toString(),
+                        (-previewFeeTotalMinor).toString(),
                       )}
                 </p>
               </div>
             </div>
 
-            {previewFees.length >
-            0 ? (
+            {previewFees.length > 0 ? (
               <div className="mt-4 space-y-2">
                 <p className="text-sm font-semibold text-foreground">
                   Fee details
                 </p>
 
-                {previewFees.map(
-                  (fee) => {
-                    const bearer =
-                      accounts.find(
-                        (
-                          account,
-                        ) =>
-                          account.accountId ===
-                          fee.bearingAccountId,
-                      );
+                {previewFees.map((fee) => {
+                  const bearer = accounts.find(
+                    (account) => account.accountId === fee.bearingAccountId,
+                  );
 
-                    return (
-                      <p
-                        key={
-                          fee.index
-                        }
-                        className="text-sm leading-6 text-muted-foreground"
-                      >
-                        <span className="font-medium text-foreground">
-                          {
-                            fee.label
-                          }
-                        </span>
-                        {" · "}
-                        {formatMoneyMinorUnits(
-                          currency,
-                          fee.amountMinor.toString(),
-                        )}
-                        {" · "}
-                        {
-                          feeTreatmentContent[
-                            fee.treatment
-                          ].label
-                        }
-                        {" · "}
-                        {bearer?.name ??
-                          "Account not selected"}
-                        {" · "}
-                        {fee.effectiveDate ||
-                          "Date not selected"}
-                      </p>
-                    );
-                  },
-                )}
+                  return (
+                    <p
+                      key={fee.index}
+                      className="text-sm leading-6 text-muted-foreground"
+                    >
+                      <span className="font-medium text-foreground">
+                        {fee.label}
+                      </span>
+                      {" · "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        fee.amountMinor.toString(),
+                      )}
+                      {" · "}
+                      {feeTreatmentContent[fee.treatment].label}
+                      {" · "}
+                      {bearer?.name ?? "Account not selected"}
+                      {" · "}
+                      {fee.effectiveDate || "Date not selected"}
+                    </p>
+                  );
+                })}
               </div>
             ) : null}
           </section>
         ) : null}
 
-        {accountsBelowZero.length >
-        0 ? (
+        {accountsBelowZero.length > 0 ? (
           <div
             role="status"
             className="rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning"
@@ -1924,44 +1341,28 @@ export function TransferCreateForm({
 
               <div>
                 <p className="font-medium">
-                  This transfer may
-                  produce a negative
-                  account balance.
+                  This transfer may produce a negative account balance.
                 </p>
 
                 <p className="mt-1">
                   {accountsBelowZero
-                    .map(
-                      ({
-                        account,
-                      }) =>
-                        account.name,
-                    )
+                    .map(({ account }) => account.name)
                     .join(", ")}
-                  . The transfer is not
-                  blocked because older
-                  financial history may
-                  be incomplete, but the
-                  resulting balance
-                  should be reviewed.
+                  . The transfer is not blocked because older financial history
+                  may be incomplete, but the resulting balance should be
+                  reviewed.
                 </p>
               </div>
             </div>
           </div>
         ) : null}
 
-        {errors.root
-          ?.transferLimit
-          ?.message ? (
+        {errors.root?.transferLimit?.message ? (
           <p
             role="alert"
             className="rounded-control border border-danger bg-danger-surface px-4 py-3 text-sm leading-6 text-danger"
           >
-            {
-              errors.root
-                .transferLimit
-                .message
-            }
+            {errors.root.transferLimit.message}
           </p>
         ) : null}
 
@@ -1970,30 +1371,19 @@ export function TransferCreateForm({
           label="Description"
           description="Describe the completed movement, such as Transfer from GCash to savings."
           descriptionId="transfer-description-description"
-          error={
-            errors.description
-              ?.message
-          }
+          error={errors.description?.message}
           errorId="transfer-description-error"
         >
           <Input
-            {...register(
-              "description",
-            )}
+            {...register("description")}
             id="transfer-description"
             type="text"
             autoComplete="off"
-            disabled={
-              fieldsDisabled
-            }
-            aria-invalid={Boolean(
-              errors.description,
-            )}
+            disabled={fieldsDisabled}
+            aria-invalid={Boolean(errors.description)}
             aria-describedby={[
               "transfer-description-description",
-              errors.description
-                ? "transfer-description-error"
-                : null,
+              errors.description ? "transfer-description-error" : null,
             ]
               .filter(Boolean)
               .join(" ")}
@@ -2007,15 +1397,11 @@ export function TransferCreateForm({
           descriptionId="transfer-reference-description"
         >
           <Input
-            {...register(
-              "reference",
-            )}
+            {...register("reference")}
             id="transfer-reference"
             type="text"
             autoComplete="off"
-            disabled={
-              fieldsDisabled
-            }
+            disabled={fieldsDisabled}
             aria-describedby="transfer-reference-description"
           />
         </FormField>
@@ -2025,33 +1411,24 @@ export function TransferCreateForm({
           label="Notes"
           description="Optional context. Do not store passwords, PINs, recovery codes, or other secrets."
           descriptionId="transfer-notes-description"
-          error={
-            errors.notes?.message
-          }
+          error={errors.notes?.message}
           errorId="transfer-notes-error"
         >
           <Textarea
             {...register("notes")}
             id="transfer-notes"
-            disabled={
-              fieldsDisabled
-            }
-            aria-invalid={Boolean(
-              errors.notes,
-            )}
+            disabled={fieldsDisabled}
+            aria-invalid={Boolean(errors.notes)}
             aria-describedby={[
               "transfer-notes-description",
-              errors.notes
-                ? "transfer-notes-error"
-                : null,
+              errors.notes ? "transfer-notes-error" : null,
             ]
               .filter(Boolean)
               .join(" ")}
           />
         </FormField>
 
-        {saveState ===
-        "unconfirmed" ? (
+        {saveState === "unconfirmed" ? (
           <div
             role="alert"
             className="rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning"
@@ -2064,14 +1441,9 @@ export function TransferCreateForm({
               />
 
               <div>
-                <p className="font-medium">
-                  Save outcome
-                  unconfirmed
-                </p>
+                <p className="font-medium">Save outcome unconfirmed</p>
 
-                <p className="mt-1">
-                  {saveError}
-                </p>
+                <p className="mt-1">{saveError}</p>
               </div>
             </div>
           </div>
@@ -2094,16 +1466,12 @@ export function TransferCreateForm({
               className="size-4"
               strokeWidth={1.9}
             />
-
-            Transfer saved.
-            Returning to your
-            account balances…
+            Transfer saved. Returning to your account balances…
           </div>
         ) : null}
 
         <div className="flex flex-wrap justify-end gap-3">
-          {saveState ===
-          "unconfirmed" ? (
+          {saveState === "unconfirmed" ? (
             <Button
               type="button"
               variant="secondary"
@@ -2117,15 +1485,9 @@ export function TransferCreateForm({
 
           <Button
             type="submit"
-            loading={
-              saveState === "saving"
-            }
+            loading={saveState === "saving"}
             loadingLabel="Saving transfer…"
-            disabled={
-              saveState ===
-                "unconfirmed" ||
-              saveState === "saved"
-            }
+            disabled={saveState === "unconfirmed" || saveState === "saved"}
           >
             Save completed transfer
           </Button>

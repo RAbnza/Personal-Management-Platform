@@ -3,6 +3,7 @@ import {
   ArrowRightLeft,
   Banknote,
   Building2,
+  History,
   Landmark,
   Plus,
   Smartphone,
@@ -191,6 +192,20 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                       {account.notes}
                     </p>
                   ) : null}
+
+                  <div className="mt-4 border-t border-border pt-3">
+                    <Link
+                      href={`/money/accounts/${account.accountId}/history`}
+                      className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+                    >
+                      <History
+                        aria-hidden="true"
+                        className="size-4"
+                        strokeWidth={1.9}
+                      />
+                      View history
+                    </Link>
+                  </div>
                 </div>
               </div>
             </article>

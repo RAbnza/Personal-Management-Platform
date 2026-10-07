@@ -5,7 +5,7 @@ import { FinancialAccountList } from "@/components/money/financial-account-list"
 import type { ListFinancialAccountsResult } from "@/modules/finance/services/list-financial-accounts";
 
 describe("FinancialAccountList", () => {
-  it("shows exact derived account balances", () => {
+  it("shows exact derived account balances and history navigation", () => {
     const accounts: ListFinancialAccountsResult = {
       financialRevision: "7",
 
@@ -14,6 +14,7 @@ describe("FinancialAccountList", () => {
           accountId: "11111111-1111-4111-8111-111111111111",
 
           name: "GCash",
+
           accountType: "e_wallet",
 
           institutionName: "GCash",
@@ -42,6 +43,15 @@ describe("FinancialAccountList", () => {
     expect(screen.getByText("E-wallet · GCash")).toBeInTheDocument();
 
     expect(screen.getByText("Daily spending wallet")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("link", {
+        name: "View history",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/money/accounts/11111111-1111-4111-8111-111111111111/history",
+    );
   });
 
   it("shows a useful empty state", () => {
