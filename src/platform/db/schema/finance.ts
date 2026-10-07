@@ -431,7 +431,9 @@ export const actionRevision = financeSchema.table(
           'transfer',
           'standalone_fee',
           'opening_debt',
-          'borrowing'
+          'borrowing',
+          'debt_payment',
+          'payment_reclassification'
         )
       `,
     ),

@@ -89,6 +89,17 @@ export const borrowingInstallmentSchema = z
       installment.knownFeeMinor,
     ];
 
+    // Field checks can report nonfatal issues before cross-field refinements.
+    // Leave malformed amounts to those checks before doing exact arithmetic.
+    if (
+      !integerMinorPattern.test(installment.contractualMinor) ||
+      knownComponents.some(
+        (value) => value !== null && !integerMinorPattern.test(value),
+      )
+    ) {
+      return;
+    }
+
     const knownTotalMinor = knownComponents.reduce<bigint>(
       (total, value) => total + BigInt(value ?? "0"),
       0n,
@@ -167,6 +178,14 @@ export const recordBorrowingBodySchema = z
   })
   .strict()
   .superRefine((input, context) => {
+    if (
+      !integerMinorPattern.test(input.principalMinor) ||
+      !integerMinorPattern.test(input.actualReceivedMinor) ||
+      input.fees.some((fee) => !integerMinorPattern.test(fee.amountMinor))
+    ) {
+      return;
+    }
+
     const principalMinor = BigInt(input.principalMinor);
 
     const withheldFeeMinor = input.fees.reduce(

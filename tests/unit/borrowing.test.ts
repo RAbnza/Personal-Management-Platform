@@ -40,6 +40,49 @@ function validBorrowing() {
 }
 
 describe("borrowing domain", () => {
+  it.each(["principalMinor", "actualReceivedMinor"])(
+    "returns validation errors for malformed %s without throwing",
+    (field) => {
+      const result = recordBorrowingBodySchema.safeParse({
+        ...validBorrowing(),
+        [field]: "1p0r",
+      });
+      expect(result.success).toBe(false);
+    },
+  );
+
+  it("returns validation errors for malformed borrowing fees without throwing", () => {
+    const result = recordBorrowingBodySchema.safeParse({
+      ...validBorrowing(),
+      fees: [{ label: "Fee", amountMinor: "1p0r", treatment: "withheld" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it.each([
+    "contractualMinor",
+    "knownPrincipalMinor",
+    "knownInterestMinor",
+    "knownFeeMinor",
+  ])(
+    "returns validation errors for malformed installment %s without throwing",
+    (field) => {
+      const result = recordBorrowingBodySchema.safeParse({
+        ...validBorrowing(),
+        installments: [
+          {
+            dueDate: "2026-11-08",
+            contractualMinor: "100000",
+            knownPrincipalMinor: null,
+            knownInterestMinor: null,
+            knownFeeMinor: null,
+            [field]: "1p0r",
+          },
+        ],
+      });
+      expect(result.success).toBe(false);
+    },
+  );
   it("builds an exact borrowing plan when the full principal is received", () => {
     const plan = buildBorrowingPlan(validBorrowing());
 

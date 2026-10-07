@@ -7,6 +7,14 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
+import {
+  finalizeSchedule,
+  mapPool,
+  payment,
+  reclassify,
+  schedule,
+  withFixture,
+} from "../../tests/integration/helpers/debt-payment-fixture";
 
 import { provisionPersonalWorkspace } from "../../src/modules/core/services/provision-personal-workspace";
 import { FinancialCommandConflictError } from "../../src/modules/finance/domain/financial-command";
@@ -716,6 +724,39 @@ async function main() {
 
     console.log(
       "Committed D6b + D7 financial effects remain balanced and auditable on the fresh migration chain.",
+    );
+
+    await withFixture(async (client, debt) => {
+      const paid = await payment(client, debt, {
+        external: "15",
+        unapplied: "100",
+        certainty: "unresolved",
+        components: [{ disposition: "clearing", amount: "400" }],
+      });
+      await reclassify(client, debt, paid, { amount: "200" });
+      const revised = await schedule(client, debt, {
+        previousId: debt.scheduleId,
+        version: 2,
+      });
+      await mapPool(client, debt, paid, revised, "300");
+      await mapPool(
+        client,
+        debt,
+        paid,
+        { scheduleId: revised.scheduleId },
+        "100",
+        null,
+      );
+      await finalizeSchedule(client, debt, revised.scheduleId);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+      const cash = await client.query<{ amount: string }>(
+        "SELECT sum(amount_minor)::text AS amount FROM finance.posting WHERE workspace_id=$1 AND ledger_account_id=$2",
+        [debt.workspaceId, debt.cashId],
+      );
+      assert.equal(cash.rows[0]?.amount, "-415");
+    });
+    console.log(
+      "D8a payment, fee, clearing resolution, and exhaustive schedule mapping passed on the fresh migration chain.",
     );
   } finally {
     await closeRuntimeDatabasePools();
