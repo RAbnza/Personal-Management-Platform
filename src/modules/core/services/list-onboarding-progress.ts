@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getCareerOnboardingEvidenceInTransaction } from "@/modules/career/services/get-career-onboarding-evidence";
 import {
   ONBOARDING_GUIDE_STEPS,
   ONBOARDING_GUIDE_VERSION,
@@ -125,14 +126,21 @@ async function executeListOnboardingProgress(
   );
 
   /*
-   * Guidance consumes a narrow Finance read contract instead of querying
-   * Finance tables itself.
+   * Guidance consumes narrow domain evidence contracts rather than querying
+   * Finance or Career tables directly.
    *
-   * Do not use account/history read models here. Those queries derive richer
-   * ledger projections and would make a lightweight onboarding read more
-   * expensive as financial history grows.
+   * Do not use richer account, ledger, application or timeline read models
+   * here. Onboarding only needs evidence that specific real workflows have
+   * already happened.
    */
   const financialEvidence = await getFinancialOnboardingEvidenceInTransaction(
+    transaction,
+    {
+      workspaceId: input.workspaceId,
+    },
+  );
+
+  const careerEvidence = await getCareerOnboardingEvidenceInTransaction(
     transaction,
     {
       workspaceId: input.workspaceId,
@@ -152,6 +160,11 @@ async function executeListOnboardingProgress(
 
   const hasRealFinancialTransaction =
     financialEvidence.firstTransactionRecordedAt !== null;
+
+  const hasCareerApplication =
+    careerEvidence.firstApplicationCreatedAt !== null;
+
+  const hasCareerNextAction = careerEvidence.firstNextActionSetAt !== null;
 
   const steps = ONBOARDING_GUIDE_STEPS.map(
     (definition): OnboardingProgressItem => {
@@ -205,6 +218,31 @@ async function executeListOnboardingProgress(
 
           completedAt = financialEvidence.firstTransactionRecordedAt;
         } else if (state === "completed") {
+          state = "pending";
+          completedAt = null;
+        }
+      }
+
+      /*
+       * The Career lesson is complete only after the user has both created a
+       * real application record and established a real actionable Career event
+       * as an application next action.
+       *
+       * The immutable next_action_set audit revision remains evidence after
+       * the event is later completed, cancelled or replaced, so completing
+       * normal Career work cannot make onboarding regress.
+       */
+      if (definition.stepKey === "add-job-application") {
+        if (hasCareerApplication && hasCareerNextAction) {
+          state = "completed";
+
+          completedAt = careerEvidence.firstNextActionSetAt;
+        } else if (state === "completed") {
+          /*
+           * Like Finance, an explicit guide-state write cannot manufacture the
+           * underlying Career workflow. An explicitly skipped step remains
+           * valid until authoritative Career evidence exists.
+           */
           state = "pending";
           completedAt = null;
         }

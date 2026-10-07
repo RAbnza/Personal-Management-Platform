@@ -11,13 +11,16 @@ import {
 
 import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
 import { AuthCard } from "@/components/auth/auth-card";
+import { ApplicationEventActions } from "@/components/career/application-event-actions";
 import { ApplicationEventCreateForm } from "@/components/career/application-event-create-form";
 import { ApplicationStageTransitionForm } from "@/components/career/application-stage-transition-form";
 import { AppShell } from "@/components/shell/app-shell";
 import { Panel } from "@/components/ui/panel";
-import type {
-  ApplicationEventKind,
-  ApplicationEventStatus,
+import {
+  CAREER_ACTIONABLE_EVENT_KINDS,
+  type ApplicationEventKind,
+  type ApplicationEventStatus,
+  type CareerActionableEventKind,
 } from "@/modules/career/domain/application-event";
 import {
   JobApplicationUnavailableError,
@@ -87,6 +90,14 @@ const eventStatusLabels: Record<ApplicationEventStatus, string> = {
   completed: "Completed",
   cancelled: "Cancelled",
 };
+
+function isCareerActionableEventKind(
+  value: ApplicationEventKind,
+): value is CareerActionableEventKind {
+  return (
+    CAREER_ACTIONABLE_EVENT_KINDS as readonly ApplicationEventKind[]
+  ).includes(value);
+}
 
 function formatInstant(value: string, timezone: string): string {
   return new Intl.DateTimeFormat("en-PH", {
@@ -511,7 +522,7 @@ export default async function JobApplicationDetailPage({
 
         <Panel
           title="Career activity"
-          description="Scheduled source events will later appear in the Agenda directly from these records."
+          description="Scheduled Career activities are source records. Their lifecycle changes remain attached to this application."
         >
           {detail.events.length === 0 ? (
             <div className="flex gap-3">
@@ -535,76 +546,134 @@ export default async function JobApplicationDetailPage({
             </div>
           ) : (
             <ol className="divide-y divide-border">
-              {detail.events.map((event) => (
-                <li key={event.eventId} className="py-4 first:pt-0 last:pb-0">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          {event.title}
+              {detail.events.map((event) => {
+                const replacementEvents = detail.events
+                  .filter(
+                    (candidate) =>
+                      candidate.eventId !== event.eventId &&
+                      candidate.status === "scheduled" &&
+                      isCareerActionableEventKind(candidate.eventKind),
+                  )
+                  .map((candidate) => ({
+                    eventId: candidate.eventId,
+                    title: candidate.title,
+                  }));
+
+                return (
+                  <li key={event.eventId} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">
+                            {event.title}
+                          </p>
+
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {eventKindLabels[event.eventKind]}
+                          </span>
+
+                          {event.isNextAction ? (
+                            <span className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                              Next action
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {eventStatusLabels[event.status]}
                         </p>
 
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {eventKindLabels[event.eventKind]}
-                        </span>
+                        <p className="mt-2 text-sm text-foreground">
+                          {event.temporalKind === "date"
+                            ? event.eventDate
+                            : event.startsAt && event.timezone
+                              ? `${formatInstant(
+                                  event.startsAt,
+                                  event.timezone,
+                                )} · ${event.timezone}`
+                              : "Schedule unavailable"}
+                        </p>
 
-                        {event.isNextAction ? (
-                          <span className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
-                            Next action
-                          </span>
+                        {event.temporalKind === "timed" &&
+                        event.endsAt &&
+                        event.timezone ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Ends {formatInstant(event.endsAt, event.timezone)}
+                          </p>
+                        ) : null}
+
+                        {event.location ? (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {event.location}
+                          </p>
+                        ) : null}
+
+                        {event.preparationNotes ? (
+                          <p className="mt-2 max-w-[68ch] whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                            {event.preparationNotes}
+                          </p>
+                        ) : null}
+
+                        {event.outcomeNotes ? (
+                          <div className="mt-3 rounded-control border border-border bg-surface-subtle px-3 py-2">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Outcome notes
+                            </p>
+
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground">
+                              {event.outcomeNotes}
+                            </p>
+                          </div>
+                        ) : null}
+
+                        {event.completedAt ? (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Completed{" "}
+                            {formatInstant(
+                              event.completedAt,
+                              workspace.timezone,
+                            )}{" "}
+                            · {workspace.timezone}
+                          </p>
+                        ) : null}
+
+                        {event.meetingUrl ? (
+                          <a
+                            href={event.meetingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+                          >
+                            Open meeting link
+                            <ExternalLink
+                              aria-hidden="true"
+                              className="size-4"
+                              strokeWidth={1.9}
+                            />
+                          </a>
+                        ) : null}
+
+                        {!application.archived &&
+                        event.status === "scheduled" &&
+                        isCareerActionableEventKind(event.eventKind) ? (
+                          <ApplicationEventActions
+                            key={`${event.eventId}:${event.version}:${application.version}`}
+                            applicationId={application.applicationId}
+                            applicationVersion={application.version}
+                            event={event}
+                            workspaceTimezone={workspace.timezone}
+                            replacementEvents={replacementEvents}
+                          />
                         ) : null}
                       </div>
 
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {eventStatusLabels[event.status]}
-                      </p>
-
-                      <p className="mt-2 text-sm text-foreground">
-                        {event.temporalKind === "date"
-                          ? event.eventDate
-                          : event.startsAt && event.timezone
-                            ? `${formatInstant(
-                                event.startsAt,
-                                event.timezone,
-                              )} · ${event.timezone}`
-                            : "Schedule unavailable"}
-                      </p>
-
-                      {event.location ? (
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {event.location}
-                        </p>
-                      ) : null}
-
-                      {event.preparationNotes ? (
-                        <p className="mt-2 max-w-[68ch] whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                          {event.preparationNotes}
-                        </p>
-                      ) : null}
-
-                      {event.meetingUrl ? (
-                        <a
-                          href={event.meetingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-                        >
-                          Open meeting link
-                          <ExternalLink
-                            aria-hidden="true"
-                            className="size-4"
-                            strokeWidth={1.9}
-                          />
-                        </a>
-                      ) : null}
+                      <span className="numeric-value text-xs text-muted-foreground">
+                        v{event.version}
+                      </span>
                     </div>
-
-                    <span className="numeric-value text-xs text-muted-foreground">
-                      v{event.version}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ol>
           )}
         </Panel>
