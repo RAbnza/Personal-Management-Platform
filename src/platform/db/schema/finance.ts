@@ -430,7 +430,8 @@ export const actionRevision = financeSchema.table(
           'expense',
           'transfer',
           'standalone_fee',
-          'opening_debt'
+          'opening_debt',
+          'borrowing'
         )
       `,
     ),

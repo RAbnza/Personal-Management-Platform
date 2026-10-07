@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { z } from "zod";
+
 import {
   DebtUnavailableError,
   getDebtDetail,
@@ -13,23 +14,34 @@ export default async function DebtDetailPage({
   params: Promise<{ debtId: string }>;
 }) {
   const { user, workspace } = await debtWorkspace();
+
   const parsed = z.object({ debtId: z.uuid() }).safeParse(await params);
+
   let result;
+
   try {
-    if (!parsed.success) throw new DebtUnavailableError();
+    if (!parsed.success) {
+      throw new DebtUnavailableError();
+    }
+
     result = await getDebtDetail({
       userId: user.id,
       workspaceId: workspace.id,
       debtId: parsed.data.debtId,
     });
   } catch (error) {
-    if (!(error instanceof DebtUnavailableError)) throw error;
+    if (!(error instanceof DebtUnavailableError)) {
+      throw error;
+    }
+
     return (
       <div>
         <h1 className="text-2xl font-semibold">Debt unavailable</h1>
+
         <p className="mt-3">
           This debt could not be found in your private workspace.
         </p>
+
         <Link
           href="/money/debts"
           className="inline-flex min-h-11 items-center text-link underline"
@@ -39,32 +51,48 @@ export default async function DebtDetailPage({
       </div>
     );
   }
+
   const { debt, installments } = result;
+
+  const importedOpeningDebt = debt.openingCutoffDate !== null;
+
   const money = (value: string | null) =>
     value === null
       ? "Unknown / not supplied"
       : formatMoneyMinorUnits(debt.currency, value);
+
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: workspace.timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+
   return (
     <article className="space-y-6">
       <header>
-        <h1 className="break-words text-2xl font-semibold sm:text-3xl">
+        <Link
+          href="/money/debts"
+          className="inline-flex min-h-11 items-center text-sm font-medium text-link underline-offset-4 hover:underline"
+        >
+          Back to debts
+        </Link>
+
+        <h1 className="mt-2 wrap-break-word text-2xl font-semibold sm:text-3xl">
           {debt.name}
         </h1>
-        <p className="mt-2 break-words text-muted-foreground">
+
+        <p className="mt-2 wrap-break-word text-muted-foreground">
           {debt.lenderName}
           {debt.productName ? ` · ${debt.productName}` : ""}
         </p>
+
         <p className="mt-2 text-sm">
           {debt.debtType.replaceAll("_", " ")} ·{" "}
           {debt.lifecycle.replaceAll("_", " ")}
         </p>
       </header>
+
       <dl className="grid gap-5 rounded-card border border-border bg-card p-5 sm:grid-cols-2">
         {[
           ["Recognized liability", money(debt.recognizedLiabilityMinor)],
@@ -77,44 +105,68 @@ export default async function DebtDetailPage({
           ["Debt start date", debt.startDate],
           [
             "Opening cutoff (end of day)",
-            debt.openingCutoffDate ?? "Not imported",
+            debt.openingCutoffDate ?? "Not applicable — new borrowing",
           ],
         ].map(([label, value]) => (
           <div key={label}>
             <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="numeric-value mt-1 break-words font-semibold">
+
+            <dd className="numeric-value mt-1 wrap-break-word font-semibold">
               {value}
             </dd>
           </div>
         ))}
       </dl>
+
       <section className="space-y-2 rounded-card border border-border p-5">
-        <h2 className="text-lg font-semibold">Coverage and opening history</h2>
+        <h2 className="text-lg font-semibold">
+          {importedOpeningDebt
+            ? "Coverage and opening history"
+            : "Borrowing and liability coverage"}
+        </h2>
+
         <p className="text-sm leading-6">
           Liability breakdown: {debt.breakdownStatus}.{" "}
           {debt.breakdownStatus !== "known"
             ? `${money(debt.unclassifiedLiabilityMinor)} remains unclassified. Principal and interest are not inferred from the schedule.`
-            : "Liability components were supplied at import."}
+            : importedOpeningDebt
+              ? "Liability components were supplied as part of the opening debt import."
+              : "Liability components are known from the recorded borrowing."}
         </p>
-        <p className="text-sm leading-6">
-          This opening baseline creates no cash movement, income, spending, or
-          historical payments. Coverage begins after {debt.openingCutoffDate}.
-          Scheduled amounts may include future charges that are not recognized
-          liabilities.
-        </p>
-        <p className="whitespace-pre-wrap break-words text-sm leading-6">
+
+        {importedOpeningDebt ? (
+          <p className="text-sm leading-6">
+            This opening baseline creates no cash movement, income, spending, or
+            historical payments. Coverage begins after {debt.openingCutoffDate}.
+            Scheduled amounts may include future charges that are not recognized
+            liabilities.
+          </p>
+        ) : (
+          <p className="text-sm leading-6">
+            This debt began during tracked history. Actual proceeds were posted
+            to the receiving financial account, borrowed principal was not
+            treated as income, and any provider-confirmed borrowing fees were
+            recorded separately. Scheduled amounts may include future charges
+            that are not yet recognized liabilities.
+          </p>
+        )}
+
+        <p className="whitespace-pre-wrap wrap-break-word text-sm leading-6">
           {debt.scheduleReason}
         </p>
+
         {debt.notes ? (
-          <p className="whitespace-pre-wrap break-words text-sm leading-6">
+          <p className="whitespace-pre-wrap wrap-break-word text-sm leading-6">
             {debt.notes}
           </p>
         ) : null}
       </section>
+
       <section aria-labelledby="schedule-title" className="space-y-4">
         <h2 id="schedule-title" className="text-lg font-semibold">
           Manual schedule
         </h2>
+
         {installments.length === 0 ? (
           <p className="rounded-card border border-border p-5 text-sm">
             No provider due dates supplied. Scheduled payable is unknown; the
@@ -123,14 +175,26 @@ export default async function DebtDetailPage({
         ) : (
           <ol className="space-y-4">
             {installments.map((row) => {
+              const remainingMinor = BigInt(row.remainingMinor);
+
+              const openingSatisfiedMinor = BigInt(row.openingSatisfiedMinor);
+
+              const contractualMinor = BigInt(row.contractualMinor);
+
+              const fullySatisfiedAtOpening =
+                openingSatisfiedMinor >= contractualMinor;
+
               const state =
-                BigInt(row.remainingMinor) === 0n
-                  ? "Satisfied before cutoff"
+                remainingMinor === 0n
+                  ? fullySatisfiedAtOpening
+                    ? "Satisfied at opening cutoff"
+                    : "Satisfied"
                   : row.dueDate < today
                     ? "Overdue"
                     : row.dueDate === today
                       ? "Due today"
                       : "Upcoming";
+
               return (
                 <li
                   key={row.installmentId}
@@ -140,10 +204,11 @@ export default async function DebtDetailPage({
                     Installment {row.sequenceNo} ·{" "}
                     <time dateTime={row.dueDate}>{row.dueDate}</time> · {state}
                   </h3>
+
                   <dl className="grid gap-3 text-sm sm:grid-cols-3">
                     {[
                       ["Contractual amount", row.contractualMinor],
-                      ["Satisfied at cutoff", row.openingSatisfiedMinor],
+                      ["Opening satisfaction", row.openingSatisfiedMinor],
                       ["Remaining due", row.remainingMinor],
                       ["Known principal", row.knownPrincipalMinor],
                       ["Known interest", row.knownInterestMinor],
@@ -151,19 +216,22 @@ export default async function DebtDetailPage({
                     ].map(([label, value]) => (
                       <div key={label}>
                         <dt className="text-muted-foreground">{label}</dt>
+
                         <dd className="numeric-value mt-1">
                           {money(value ?? null)}
                         </dd>
                       </div>
                     ))}
                   </dl>
+
                   <p className="text-sm text-muted-foreground">
                     {row.breakdownComplete
                       ? "Complete contractual breakdown"
                       : "Contractual breakdown incomplete or not supplied"}
                   </p>
+
                   {row.notes ? (
-                    <p className="whitespace-pre-wrap break-words text-sm">
+                    <p className="whitespace-pre-wrap wrap-break-word text-sm">
                       {row.notes}
                     </p>
                   ) : null}

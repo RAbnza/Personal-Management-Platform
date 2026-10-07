@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { recordBorrowingBodySchema } from "@/modules/finance/domain/borrowing";
 import {
   FinancialCommandConflictError,
   FinancialCommandStateError,
@@ -10,6 +11,7 @@ import {
   FinancialCategoryReferenceUnavailableError,
 } from "@/modules/finance/domain/financial-reference";
 import { FinancialWriteWorkspaceUnavailableError } from "@/modules/finance/repositories/financial-write-repository";
+import { recordBorrowing } from "@/modules/finance/services/record-borrowing";
 import { recordExpense } from "@/modules/finance/services/record-expense";
 import { recordIncome } from "@/modules/finance/services/record-income";
 import { recordTransfer } from "@/modules/finance/services/record-transfer";
@@ -175,20 +177,39 @@ const transferFinancialActionBodySchema = z
   .strict();
 
 /**
- * SYSTEM_ARCHITECTURE.md defines POST /api/v1/financial-actions as one
- * discriminated income/expense/transfer command surface.
+ * The original S1 command surface remains a discriminated union.
+ *
+ * Borrowing has more cross-field validation than the S1 shapes and its
+ * authoritative schema already lives in the finance domain. We identify the
+ * discriminator first, then hand the remaining borrowing payload to that
+ * domain schema instead of duplicating its validation here.
  */
-const financialActionBodySchema = z.discriminatedUnion("actionKind", [
+const standardFinancialActionBodySchema = z.discriminatedUnion("actionKind", [
   incomeFinancialActionBodySchema,
   expenseFinancialActionBodySchema,
   transferFinancialActionBodySchema,
 ]);
+
+const financialActionKindEnvelopeSchema = z
+  .object({
+    actionKind: z.enum(["income", "expense", "transfer", "borrowing"]),
+  })
+  .passthrough();
+
+const borrowingFinancialActionEnvelopeSchema = z
+  .object({
+    actionKind: z.literal("borrowing"),
+  })
+  .passthrough();
 
 /**
  * Record an actual financial action in the authenticated workspace.
  *
  * Ownership and audit request attribution are derived exclusively from
  * ActorContext. The browser cannot supply userId, workspaceId or requestId.
+ *
+ * SYSTEM_ARCHITECTURE.md defines this route as the discriminated command
+ * surface for income, expense, transfer and borrowing.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const requestId = createApiRequestId();
@@ -209,14 +230,56 @@ export async function POST(request: Request): Promise<NextResponse> {
       return actorResolution.response;
     }
 
-    const body = financialActionBodySchema.parse(
-      await readApiJsonBody(request),
-    );
+    const rawBody = await readApiJsonBody(request);
+
+    const actionKind =
+      financialActionKindEnvelopeSchema.parse(rawBody).actionKind;
+
+    if (actionKind === "borrowing") {
+      const borrowingEnvelope =
+        borrowingFinancialActionEnvelopeSchema.parse(rawBody);
+
+      /*
+       * The API discriminator belongs to the shared financial-action route,
+       * while recordBorrowingBodySchema deliberately models only borrowing
+       * business intent.
+       */
+      const borrowingCandidate: Record<string, unknown> = {
+        ...borrowingEnvelope,
+      };
+
+      delete borrowingCandidate.actionKind;
+
+      const body = recordBorrowingBodySchema.parse(borrowingCandidate);
+
+      const result = await recordBorrowing({
+        ...body,
+
+        userId: actorResolution.actor.userId,
+
+        workspaceId: actorResolution.actor.workspaceId,
+
+        requestId: actorResolution.actor.requestId,
+      });
+
+      return createApiJsonResponse(
+        {
+          actionKind: "borrowing",
+
+          ...result,
+        },
+        201,
+        requestId,
+      );
+    }
+
+    const body = standardFinancialActionBodySchema.parse(rawBody);
 
     switch (body.actionKind) {
       case "income": {
         const result = await recordIncome({
           userId: actorResolution.actor.userId,
+
           workspaceId: actorResolution.actor.workspaceId,
 
           clientCommandId: body.clientCommandId,
@@ -258,6 +321,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       case "expense": {
         const result = await recordExpense({
           userId: actorResolution.actor.userId,
+
           workspaceId: actorResolution.actor.workspaceId,
 
           clientCommandId: body.clientCommandId,
@@ -295,6 +359,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       case "transfer": {
         const result = await recordTransfer({
           userId: actorResolution.actor.userId,
+
           workspaceId: actorResolution.actor.workspaceId,
 
           clientCommandId: body.clientCommandId,
