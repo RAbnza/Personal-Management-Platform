@@ -69,6 +69,9 @@ export default async function Home() {
   const moneyEnabled =
     modules.find((module) => module.moduleKey === "money")?.enabled === true;
 
+  const careerEnabled =
+    modules.find((module) => module.moduleKey === "career")?.enabled === true;
+
   const showGettingStarted =
     onboarding !== null &&
     !onboarding.complete &&
@@ -117,7 +120,7 @@ export default async function Home() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Panel
             title="Money"
-            description="Accounts, financial activity, and obligations remain grounded in the financial ledger."
+            description="Accounts, financial activity, transfers, fees, and account history remain grounded in the financial ledger."
           >
             <div className="flex gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent text-accent-foreground">
@@ -131,7 +134,7 @@ export default async function Home() {
               <div>
                 <p className="text-sm leading-6 text-muted-foreground">
                   {moneyEnabled
-                    ? "The first Money workflow is now available: add and review the accounts where your actual funds are held."
+                    ? "Record real financial activity and review the exact ledger-derived balances and history behind each account."
                     : "Money is currently disabled for this workspace. Existing financial records remain preserved."}
                 </p>
 
@@ -140,7 +143,7 @@ export default async function Home() {
                     href="/money/accounts"
                     className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
                   >
-                    Open financial accounts
+                    Open Money
                   </Link>
                 ) : (
                   <Link
@@ -167,11 +170,29 @@ export default async function Home() {
                 />
               </div>
 
-              <p className="text-sm leading-6 text-muted-foreground">
-                Application information will appear here once the Career
-                interface is implemented, without inventing synthetic
-                application counts.
-              </p>
+              <div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {careerEnabled
+                    ? "Track saved opportunities and submitted applications as separate attempts with explicit stages and dates."
+                    : "Career is currently disabled for this workspace. Existing application records remain preserved."}
+                </p>
+
+                {careerEnabled ? (
+                  <Link
+                    href="/career/applications"
+                    className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Open job applications
+                  </Link>
+                ) : (
+                  <Link
+                    href="/onboarding"
+                    className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Enable Career
+                  </Link>
+                )}
+              </div>
             </div>
           </Panel>
 

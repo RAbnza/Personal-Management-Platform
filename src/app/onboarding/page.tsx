@@ -68,6 +68,10 @@ export default async function OnboardingPage() {
     (step) => step.stepKey === "record-first-transaction",
   );
 
+  const addJobApplicationStep = progress?.steps.find(
+    (step) => step.stepKey === "add-job-application",
+  );
+
   return (
     <AppShell
       pageTitle="Getting started"
@@ -137,13 +141,9 @@ export default async function OnboardingPage() {
                 ].join("|")}
                 workspace={{
                   currency: workspace.currency,
-
                   timezone: workspace.timezone,
-
                   weekStart: workspace.weekStart,
-
                   version: workspace.version,
-
                   currencyChangeAllowed: workspace.currencyChangeAllowed,
                 }}
                 modules={modules}
@@ -189,6 +189,28 @@ export default async function OnboardingPage() {
                   className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
                 >
                   Record transaction
+                </Link>
+              </Panel>
+            ) : null}
+
+            {addJobApplicationStep?.applicable &&
+            addJobApplicationStep.state !== "completed" ? (
+              <Panel
+                title="Next: add a job application"
+                description="Start the Career workflow with a real saved opportunity or application attempt."
+              >
+                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  Record the company, role, real application stage, and dates
+                  now. This guide step also expects a real next action such as
+                  an interview, assessment, or follow-up, so it will remain open
+                  until that Career event is scheduled.
+                </p>
+
+                <Link
+                  href="/career/applications/new"
+                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Add job application
                 </Link>
               </Panel>
             ) : null}
