@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { listOnboardingProgressInTransaction } from "@/modules/core/services/list-onboarding-progress";
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
 import { openFinancialAccountInTransaction } from "@/modules/finance/services/open-financial-account";
+import { recordIncomeInTransaction } from "@/modules/finance/services/record-income";
 import type { ScopedTransaction } from "@/platform/db";
 import {
   closeRuntimeDatabasePools,
@@ -88,7 +89,7 @@ afterAll(async () => {
 });
 
 describe("onboarding financial evidence", () => {
-  it("derives first-account completion from Finance without creating onboarding state", async () => {
+  it("derives account and real-transaction completion from Finance without creating onboarding state", async () => {
     const user = await createTestUser("OnboardingFinancialEvidence");
 
     try {
@@ -107,6 +108,22 @@ describe("onboarding financial evidence", () => {
           updatedAt: null,
         });
 
+        expect(
+          before.steps.find(
+            (step) => step.stepKey === "record-first-transaction",
+          ),
+        ).toMatchObject({
+          applicable: true,
+          state: "pending",
+          completedAt: null,
+          updatedAt: null,
+        });
+
+        /*
+         * Use a non-zero opening balance deliberately. Finance will create
+         * an opening_cash action, which must complete account setup but must
+         * NOT satisfy the user's first real transaction lesson.
+         */
         const opened = await openFinancialAccountInTransaction(transaction, {
           userId: user.userId,
           workspaceId: user.workspaceId,
@@ -121,25 +138,30 @@ describe("onboarding financial evidence", () => {
 
           institutionName: null,
 
-          openingCutoffDate: "2026-10-07",
+          openingCutoffDate: "2026-10-01",
 
-          openingBalanceMinor: "0",
+          openingBalanceMinor: "100000",
 
           notes: null,
         });
 
         expect(opened.accountId).toEqual(expect.any(String));
 
-        const after = await listOnboardingProgressInTransaction(transaction, {
-          userId: user.userId,
-          workspaceId: user.workspaceId,
-        });
+        expect(opened.openingActionId).toEqual(expect.any(String));
 
-        const firstAccountStep = after.steps.find(
-          (step) => step.stepKey === "add-first-account",
+        const afterOpeningAccount = await listOnboardingProgressInTransaction(
+          transaction,
+          {
+            userId: user.userId,
+            workspaceId: user.workspaceId,
+          },
         );
 
-        expect(firstAccountStep).toMatchObject({
+        expect(
+          afterOpeningAccount.steps.find(
+            (step) => step.stepKey === "add-first-account",
+          ),
+        ).toMatchObject({
           applicable: true,
 
           state: "completed",
@@ -147,23 +169,107 @@ describe("onboarding financial evidence", () => {
           completedAt: expect.any(String),
 
           /*
-           * Completion is derived from Finance. Merely reading onboarding
-           * must not materialize a core.onboarding_step row.
+           * Completion is derived from Finance. Reading onboarding does not
+           * create a core.onboarding_step row.
            */
           updatedAt: null,
         });
 
-        expect(after.resolvedApplicableStepCount).toBe(1);
+        expect(
+          afterOpeningAccount.steps.find(
+            (step) => step.stepKey === "record-first-transaction",
+          ),
+        ).toMatchObject({
+          applicable: true,
 
-        expect(after.complete).toBe(false);
+          /*
+           * The opening_cash journal is a baseline, not the user's first
+           * real financial transaction.
+           */
+          state: "pending",
 
+          completedAt: null,
+          updatedAt: null,
+        });
+
+        expect(afterOpeningAccount.resolvedApplicableStepCount).toBe(1);
+
+        await recordIncomeInTransaction(transaction, {
+          userId: user.userId,
+          workspaceId: user.workspaceId,
+
+          clientCommandId: randomUUID(),
+
+          requestId: randomUUID(),
+
+          receivingAccountId: opened.accountId,
+
+          effectiveDate: "2026-10-07",
+
+          amountMinor: "50000",
+
+          incomeClass: "earned",
+
+          categoryId: null,
+
+          senderName: "Test Employer",
+
+          sourceLabel: null,
+
+          description: "Test income",
+
+          reference: null,
+
+          notes: null,
+        });
+
+        const afterTransaction = await listOnboardingProgressInTransaction(
+          transaction,
+          {
+            userId: user.userId,
+            workspaceId: user.workspaceId,
+          },
+        );
+
+        expect(
+          afterTransaction.steps.find(
+            (step) => step.stepKey === "add-first-account",
+          ),
+        ).toMatchObject({
+          applicable: true,
+          state: "completed",
+          completedAt: expect.any(String),
+          updatedAt: null,
+        });
+
+        expect(
+          afterTransaction.steps.find(
+            (step) => step.stepKey === "record-first-transaction",
+          ),
+        ).toMatchObject({
+          applicable: true,
+
+          state: "completed",
+
+          completedAt: expect.any(String),
+
+          updatedAt: null,
+        });
+
+        expect(afterTransaction.resolvedApplicableStepCount).toBe(2);
+
+        expect(afterTransaction.complete).toBe(false);
+
+        /*
+         * Evidence-backed Finance lessons remain side-effect free reads.
+         * Neither derived completion should create onboarding rows.
+         */
         const stored = await client.query<{
-          count: string;
+          step_key: string;
         }>(
           `
                 SELECT
-                  count(*)::text
-                    AS count
+                  step_key
 
                 FROM core."onboarding_step"
 
@@ -172,13 +278,18 @@ describe("onboarding financial evidence", () => {
 
                   AND guide_version = 1
 
-                  AND step_key =
-                    'add-first-account'
+                  AND step_key IN (
+                    'add-first-account',
+                    'record-first-transaction'
+                  )
+
+                ORDER BY
+                  step_key
               `,
           [user.workspaceId],
         );
 
-        expect(stored.rows[0]?.count).toBe("0");
+        expect(stored.rows).toEqual([]);
       });
     } finally {
       await removeProvisionedTestUser(

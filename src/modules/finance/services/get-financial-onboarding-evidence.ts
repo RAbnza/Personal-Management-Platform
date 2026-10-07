@@ -18,7 +18,24 @@ export type FinancialOnboardingEvidence = {
    * not whether the account is currently active.
    */
   firstAccountCreatedAt: string | null;
+
+  /**
+   * Null means the workspace has not yet recorded a posted financial action
+   * other than opening_cash.
+   *
+   * Opening balances deliberately do not count as the user's first real
+   * transaction.
+   */
+  firstTransactionRecordedAt: string | null;
 };
+
+function normalizeInstant(value: string | null): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  return new Date(value).toISOString();
+}
 
 /**
  * Expose narrowly scoped Finance evidence to coordinating application
@@ -41,7 +58,10 @@ export async function getFinancialOnboardingEvidenceInTransaction(
   });
 
   return {
-    firstAccountCreatedAt:
-      evidence.first_account_created_at?.toISOString() ?? null,
+    firstAccountCreatedAt: normalizeInstant(evidence.first_account_created_at),
+
+    firstTransactionRecordedAt: normalizeInstant(
+      evidence.first_transaction_recorded_at,
+    ),
   };
 }

@@ -64,6 +64,10 @@ export default async function OnboardingPage() {
     (step) => step.stepKey === "add-first-account",
   );
 
+  const recordFirstTransactionStep = progress?.steps.find(
+    (step) => step.stepKey === "record-first-transaction",
+  );
+
   return (
     <AppShell
       pageTitle="Getting started"
@@ -133,9 +137,13 @@ export default async function OnboardingPage() {
                 ].join("|")}
                 workspace={{
                   currency: workspace.currency,
+
                   timezone: workspace.timezone,
+
                   weekStart: workspace.weekStart,
+
                   version: workspace.version,
+
                   currencyChangeAllowed: workspace.currencyChangeAllowed,
                 }}
                 modules={modules}
@@ -160,6 +168,27 @@ export default async function OnboardingPage() {
                   className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
                 >
                   Add your first account
+                </Link>
+              </Panel>
+            ) : null}
+
+            {recordFirstTransactionStep?.applicable &&
+            addFirstAccountStep?.state === "completed" &&
+            recordFirstTransactionStep.state !== "completed" ? (
+              <Panel
+                title="Next: record a real transaction"
+                description="Record actual income or spending and then inspect the updated account balance."
+              >
+                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  Planned income or bills do not change balances. Use this step
+                  only for a transaction that really happened.
+                </p>
+
+                <Link
+                  href="/money/transactions"
+                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Record transaction
                 </Link>
               </Panel>
             ) : null}

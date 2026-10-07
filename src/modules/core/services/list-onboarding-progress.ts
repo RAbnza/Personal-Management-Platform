@@ -126,11 +126,11 @@ async function executeListOnboardingProgress(
 
   /*
    * Guidance consumes a narrow Finance read contract instead of querying
-   * finance tables itself.
+   * Finance tables itself.
    *
-   * Do not use the ordinary financial-account list here. That query derives
-   * live balances from postings and would make a lightweight onboarding read
-   * increasingly expensive as financial history grows.
+   * Do not use account/history read models here. Those queries derive richer
+   * ledger projections and would make a lightweight onboarding read more
+   * expensive as financial history grows.
    */
   const financialEvidence = await getFinancialOnboardingEvidenceInTransaction(
     transaction,
@@ -150,6 +150,9 @@ async function executeListOnboardingProgress(
 
   const hasFinancialAccount = financialEvidence.firstAccountCreatedAt !== null;
 
+  const hasRealFinancialTransaction =
+    financialEvidence.firstTransactionRecordedAt !== null;
+
   const steps = ONBOARDING_GUIDE_STEPS.map(
     (definition): OnboardingProgressItem => {
       const stored = storedByKey.get(definition.stepKey);
@@ -167,9 +170,8 @@ async function executeListOnboardingProgress(
        * has been completed.
        *
        * The onboarding row is guidance metadata, not authority for whether a
-       * financial account exists. This also repairs the important recovery
-       * case where the Finance command committed but a later onboarding write
-       * never happened.
+       * financial account exists. This also repairs the recovery case where
+       * the Finance command committed but a later onboarding write did not.
        */
       if (definition.stepKey === "add-first-account") {
         if (hasFinancialAccount) {
@@ -178,13 +180,31 @@ async function executeListOnboardingProgress(
           completedAt = financialEvidence.firstAccountCreatedAt;
         } else if (state === "completed") {
           /*
-           * Do not let an explicit guide-state write manufacture completion of
-           * a real domain workflow. Without Finance evidence, this step remains
-           * unresolved.
+           * Do not let an explicit guide-state write manufacture completion
+           * of a real domain workflow.
            *
            * Skipped remains meaningful because onboarding explicitly permits
            * optional/resumable steps.
            */
+          state = "pending";
+          completedAt = null;
+        }
+      }
+
+      /*
+       * A posted non-opening financial action is authoritative evidence that
+       * the user has recorded real financial activity.
+       *
+       * opening_cash is deliberately excluded by Finance because opening
+       * balances establish a baseline and must not be misclassified as the
+       * user's first income, expense or transfer.
+       */
+      if (definition.stepKey === "record-first-transaction") {
+        if (hasRealFinancialTransaction) {
+          state = "completed";
+
+          completedAt = financialEvidence.firstTransactionRecordedAt;
+        } else if (state === "completed") {
           state = "pending";
           completedAt = null;
         }

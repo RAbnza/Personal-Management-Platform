@@ -1,7 +1,9 @@
+import Link from "next/link";
 import {
   Banknote,
   Building2,
   Landmark,
+  Plus,
   Smartphone,
   WalletCards,
   type LucideIcon,
@@ -83,15 +85,33 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
       title="Your accounts"
       description="Balances are derived from finalized ledger activity rather than a manually edited balance field."
       action={
-        <span className="text-sm font-medium text-muted-foreground">
-          {accounts.items.length}{" "}
-          {accounts.items.length === 1 ? "account" : "accounts"}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            {accounts.items.length}{" "}
+            {accounts.items.length === 1 ? "account" : "accounts"}
+          </span>
+
+          <Link
+            href="/money/transactions"
+            className={[
+              "inline-flex min-h-11 items-center justify-center gap-2",
+              "rounded-button border border-input bg-secondary px-3 py-2",
+              "text-sm font-semibold text-secondary-foreground",
+              "transition-colors duration-(--motion-duration-fast) ease-state",
+              "hover:bg-accent hover:text-accent-foreground",
+              "motion-reduce:transition-none",
+            ].join(" ")}
+          >
+            <Plus aria-hidden="true" className="size-4" strokeWidth={1.9} />
+            Record transaction
+          </Link>
+        </div>
       }
     >
       <div className="grid gap-3 md:grid-cols-2">
         {accounts.items.map((account) => {
           const type = accountTypeContent[account.accountType];
+
           const Icon = type.icon;
 
           return (
