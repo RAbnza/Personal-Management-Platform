@@ -59,12 +59,15 @@ export default async function Home() {
     );
   }
 
-  const { user, workspace, preference } = bootstrap;
+  const { user, workspace, preference, modules } = bootstrap;
 
   const onboarding = await resolveOnboardingProgress({
     userId: user.id,
     workspaceId: workspace.id,
   });
+
+  const moneyEnabled =
+    modules.find((module) => module.moduleKey === "money")?.enabled === true;
 
   const showGettingStarted =
     onboarding !== null &&
@@ -125,11 +128,29 @@ export default async function Home() {
                 />
               </div>
 
-              <p className="text-sm leading-6 text-muted-foreground">
-                Financial summaries will appear here when the Money interface is
-                connected. No placeholder balance is shown as if it were real
-                data.
-              </p>
+              <div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {moneyEnabled
+                    ? "The first Money workflow is now available: add and review the accounts where your actual funds are held."
+                    : "Money is currently disabled for this workspace. Existing financial records remain preserved."}
+                </p>
+
+                {moneyEnabled ? (
+                  <Link
+                    href="/money/accounts"
+                    className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Open financial accounts
+                  </Link>
+                ) : (
+                  <Link
+                    href="/onboarding"
+                    className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Enable Money
+                  </Link>
+                )}
+              </div>
             </div>
           </Panel>
 

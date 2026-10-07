@@ -11,6 +11,7 @@ import {
   readStoredOnboardingSteps,
 } from "@/modules/core/repositories/onboarding-repository";
 import { listModulePreferencesInTransaction } from "@/modules/core/services/list-module-preferences";
+import { getFinancialOnboardingEvidenceInTransaction } from "@/modules/finance/services/get-financial-onboarding-evidence";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import type { ImplementedModuleKey } from "@/platform/db/schema/core";
 
@@ -38,11 +39,18 @@ export type OnboardingProgressItem = {
 
   state: OnboardingStepState;
 
+  /**
+   * For evidence-backed steps, this can come from the authoritative domain
+   * event rather than core.onboarding_step.
+   */
   completedAt: string | null;
 
   /**
-   * Null means the step is still using its virtual pending state and has never
-   * been explicitly changed.
+   * This describes explicit onboarding-state storage only.
+   *
+   * Null means the step has never been explicitly changed in
+   * core.onboarding_step. An evidence-backed step can therefore be completed
+   * while updatedAt remains null.
    */
   updatedAt: string | null;
 };
@@ -56,7 +64,7 @@ export type ListOnboardingProgressResult = {
   resolvedApplicableStepCount: number;
 
   /**
-   * Both completed and explicitly skipped steps count as resolved.
+   * Both completed and explicitly skipped applicable steps count as resolved.
    */
   complete: boolean;
 };
@@ -100,8 +108,8 @@ async function executeListOnboardingProgress(
   }
 
   /*
-   * A ScopedTransaction owns one checked-out PostgreSQL connection. Keep these
-   * reads sequential instead of issuing concurrent client queries.
+   * A ScopedTransaction owns one checked-out PostgreSQL connection. Keep
+   * these reads sequential rather than issuing concurrent client queries.
    */
   const storedSteps = await readStoredOnboardingSteps(transaction, {
     workspaceId: input.workspaceId,
@@ -116,6 +124,21 @@ async function executeListOnboardingProgress(
     },
   );
 
+  /*
+   * Guidance consumes a narrow Finance read contract instead of querying
+   * finance tables itself.
+   *
+   * Do not use the ordinary financial-account list here. That query derives
+   * live balances from postings and would make a lightweight onboarding read
+   * increasingly expensive as financial history grows.
+   */
+  const financialEvidence = await getFinancialOnboardingEvidenceInTransaction(
+    transaction,
+    {
+      workspaceId: input.workspaceId,
+    },
+  );
+
   const storedByKey = new Map(storedSteps.map((step) => [step.stepKey, step]));
 
   const moduleEnabled = new Map(
@@ -125,6 +148,8 @@ async function executeListOnboardingProgress(
     ]),
   );
 
+  const hasFinancialAccount = financialEvidence.firstAccountCreatedAt !== null;
+
   const steps = ONBOARDING_GUIDE_STEPS.map(
     (definition): OnboardingProgressItem => {
       const stored = storedByKey.get(definition.stepKey);
@@ -133,6 +158,38 @@ async function executeListOnboardingProgress(
         definition.requiredModule === null ||
         moduleEnabled.get(definition.requiredModule) === true;
 
+      let state: OnboardingStepState = stored?.state ?? "pending";
+
+      let completedAt = stored?.completedAt ?? null;
+
+      /*
+       * A real financial account is authoritative evidence that this lesson
+       * has been completed.
+       *
+       * The onboarding row is guidance metadata, not authority for whether a
+       * financial account exists. This also repairs the important recovery
+       * case where the Finance command committed but a later onboarding write
+       * never happened.
+       */
+      if (definition.stepKey === "add-first-account") {
+        if (hasFinancialAccount) {
+          state = "completed";
+
+          completedAt = financialEvidence.firstAccountCreatedAt;
+        } else if (state === "completed") {
+          /*
+           * Do not let an explicit guide-state write manufacture completion of
+           * a real domain workflow. Without Finance evidence, this step remains
+           * unresolved.
+           *
+           * Skipped remains meaningful because onboarding explicitly permits
+           * optional/resumable steps.
+           */
+          state = "pending";
+          completedAt = null;
+        }
+      }
+
       return {
         stepKey: definition.stepKey,
 
@@ -140,9 +197,9 @@ async function executeListOnboardingProgress(
 
         applicable,
 
-        state: stored?.state ?? "pending",
+        state,
 
-        completedAt: stored?.completedAt ?? null,
+        completedAt,
 
         updatedAt: stored?.updatedAt ?? null,
       };

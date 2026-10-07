@@ -10,6 +10,7 @@ import { GettingStartedPanel } from "@/components/onboarding/getting-started-pan
 import { StartingGoalForm } from "@/components/onboarding/starting-goal-form";
 import { WorkspacePreferencesForm } from "@/components/onboarding/workspace-preferences-form";
 import { AppShell } from "@/components/shell/app-shell";
+import { Panel } from "@/components/ui/panel";
 
 export default async function OnboardingPage() {
   const bootstrap = await resolvePrivateAppBootstrap(await headers());
@@ -57,6 +58,10 @@ export default async function OnboardingPage() {
 
   const confirmPreferencesStep = progress?.steps.find(
     (step) => step.stepKey === "confirm-preferences",
+  );
+
+  const addFirstAccountStep = progress?.steps.find(
+    (step) => step.stepKey === "add-first-account",
   );
 
   return (
@@ -136,6 +141,27 @@ export default async function OnboardingPage() {
                 modules={modules}
                 stepState={confirmPreferencesStep.state}
               />
+            ) : null}
+
+            {addFirstAccountStep?.applicable &&
+            addFirstAccountStep.state !== "completed" ? (
+              <Panel
+                title="Next: add your first account"
+                description="Money setup now has a real account workflow. Add the place where your current funds are held and establish its opening balance."
+              >
+                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  The opening balance is a baseline, not income. You will choose
+                  the date that the balance represents before anything is
+                  written to the financial ledger.
+                </p>
+
+                <Link
+                  href="/money/accounts"
+                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Add your first account
+                </Link>
+              </Panel>
             ) : null}
           </>
         ) : (
