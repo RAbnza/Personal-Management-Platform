@@ -325,10 +325,6 @@ export function TransactionCreateForm({
     control,
     name: "expenseSplits",
 
-    /*
-     * Avoid a `?? []` fallback here. Creating a new fallback array on each
-     * render would make this value unstable for effect dependencies.
-     */
     defaultValue: [
       {
         amount: "",
@@ -336,6 +332,16 @@ export function TransactionCreateForm({
       },
     ],
   });
+
+  /*
+   * useWatch values are used directly for rendering below, but an array value
+   * is not a suitable effect dependency when the effect itself changes form
+   * state. Build a scalar key from only the values relevant to split-total
+   * validation so the error is cleared only when those values truly change.
+   */
+  const expenseSplitAmountKey = watchedExpenseSplits
+    .map((split) => split.amount)
+    .join("\u0000");
 
   /*
    * A normal one-category expense should not require entering the purchase
@@ -355,13 +361,17 @@ export function TransactionCreateForm({
   }, [actionKind, enteredAmount, expenseSplitFields.length, setValue]);
 
   /*
-   * Once the user edits the purchase amount or category portions, an earlier
-   * total-mismatch message no longer describes the current input. Submission
-   * will re-check exact equality.
+   * Once the user actually edits the purchase amount or category-portion
+   * amounts, an earlier total-mismatch message no longer describes the
+   * current input. Submission will re-check exact equality.
+   *
+   * Depend on the scalar amount key instead of the watched array identity so
+   * setError/clearErrors cannot create a render/effect loop or immediately
+   * erase a newly submitted split-total error.
    */
   useEffect(() => {
     clearErrors("root.splitTotal");
-  }, [enteredAmount, watchedExpenseSplits, clearErrors]);
+  }, [enteredAmount, expenseSplitAmountKey, clearErrors]);
 
   const selectedAccount =
     accounts.find((account) => account.accountId === selectedAccountId) ?? null;
@@ -1065,7 +1075,7 @@ export function TransactionCreateForm({
             <div className="flex gap-2">
               <AlertTriangle
                 aria-hidden="true"
-                className="mt-0.5 size-5 shrink-0"
+                className="mt-0.5 size-4 shrink-0"
                 strokeWidth={1.9}
               />
 
