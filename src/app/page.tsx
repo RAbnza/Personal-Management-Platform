@@ -8,8 +8,10 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+import { resolveOnboardingProgress } from "@/app/_lib/onboarding-progress";
 import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
 import { AuthCard } from "@/components/auth/auth-card";
+import { GettingStartedPanel } from "@/components/onboarding/getting-started-panel";
 import { AppShell } from "@/components/shell/app-shell";
 import { Panel } from "@/components/ui/panel";
 
@@ -59,6 +61,16 @@ export default async function Home() {
 
   const { user, workspace, preference } = bootstrap;
 
+  const onboarding = await resolveOnboardingProgress({
+    userId: user.id,
+    workspaceId: workspace.id,
+  });
+
+  const showGettingStarted =
+    onboarding !== null &&
+    !onboarding.complete &&
+    preference.gettingStartedDismissedAt === null;
+
   return (
     <AppShell
       pageTitle="Dashboard"
@@ -94,6 +106,10 @@ export default async function Home() {
             </span>
           </p>
         </header>
+
+        {showGettingStarted ? (
+          <GettingStartedPanel progress={onboarding} />
+        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Panel
@@ -160,17 +176,25 @@ export default async function Home() {
           </Panel>
         </div>
 
-        <Panel
-          title="Start with what you need"
-          description="The workspace is designed for progressive setup rather than requiring every module at once."
-        >
-          <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-            You can eventually use Career without configuring Money, or begin
-            tracking finances without completing unrelated setup. Additional
-            application navigation will appear as those workflows become
-            available.
-          </p>
-        </Panel>
+        {!showGettingStarted ? (
+          <Panel
+            title="Start with what you need"
+            description="The workspace is designed for progressive setup rather than requiring every module at once."
+          >
+            <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+              You can use Career without configuring Money, or begin tracking
+              finances without completing unrelated setup. Your Getting Started
+              guide remains available whenever you want to review the workflow.
+            </p>
+
+            <Link
+              href="/onboarding"
+              className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+            >
+              Review Getting Started guide
+            </Link>
+          </Panel>
+        ) : null}
       </div>
     </AppShell>
   );
