@@ -187,9 +187,12 @@ export function JobApplicationList({
                   return (
                     <tr key={application.applicationId} className="align-top">
                       <td className="py-4 pr-5">
-                        <p className="font-semibold text-foreground">
+                        <Link
+                          href={`/career/applications/${application.applicationId}`}
+                          className="font-semibold text-link underline-offset-4 hover:underline"
+                        >
                           {application.companyName}
-                        </p>
+                        </Link>
 
                         <p className="mt-1 text-sm text-muted-foreground">
                           {application.roleTitle}
@@ -287,8 +290,16 @@ export function JobApplicationList({
             href={
               search || stage
                 ? `/career/applications?${new URLSearchParams({
-                    ...(search ? { search } : {}),
-                    ...(stage ? { stage } : {}),
+                    ...(search
+                      ? {
+                          search,
+                        }
+                      : {}),
+                    ...(stage
+                      ? {
+                          stage,
+                        }
+                      : {}),
                   }).toString()}`
                 : "/career/applications"
             }

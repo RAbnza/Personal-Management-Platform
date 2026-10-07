@@ -11,14 +11,17 @@ const applications: ListJobApplicationsResult = {
       applicationId: "11111111-1111-4111-8111-111111111111",
 
       companyName: "Example Technologies",
+
       roleTitle: "Full Stack Developer",
 
       location: "Metro Manila",
+
       workArrangement: "hybrid",
 
       appliedDate: parseCalendarDate("2026-10-05"),
 
       currentStage: "screening",
+
       currentOutcome: null,
 
       archived: false,
@@ -37,7 +40,9 @@ const applications: ListJobApplicationsResult = {
         eventDate: parseCalendarDate("2026-10-10"),
 
         startsAt: null,
+
         endsAt: null,
+
         timezone: null,
       },
     },
@@ -47,12 +52,19 @@ const applications: ListJobApplicationsResult = {
 };
 
 describe("JobApplicationList", () => {
-  it("shows the current application stage and next Career action", () => {
+  it("shows the current application stage, next action, and detail route", () => {
     render(
       <JobApplicationList applications={applications} search="" stage={null} />,
     );
 
-    expect(screen.getByText("Example Technologies")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Example Technologies",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/career/applications/11111111-1111-4111-8111-111111111111",
+    );
 
     expect(screen.getByText("Full Stack Developer")).toBeInTheDocument();
 
@@ -95,6 +107,7 @@ describe("JobApplicationList", () => {
       <JobApplicationList
         applications={{
           ...applications,
+
           nextCursor: null,
         }}
         search="engineer"
