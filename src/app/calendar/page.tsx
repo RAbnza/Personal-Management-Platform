@@ -26,7 +26,7 @@ type CalendarPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type AgendaSourceFilter = "all" | "career" | "time";
+type AgendaSourceFilter = "all" | "career" | "time" | "money";
 
 function firstQueryValue(
   value: string | string[] | undefined,
@@ -80,7 +80,7 @@ function addCalendarDays(value: CalendarDate, amount: number): CalendarDate {
 }
 
 function normalizeSourceFilter(value: string | undefined): AgendaSourceFilter {
-  if (value === "career" || value === "time") {
+  if (value === "career" || value === "time" || value === "money") {
     return value;
   }
 
@@ -201,7 +201,7 @@ export default async function CalendarPage({
 
   const modulesFilter =
     sourceFilter === "all"
-      ? (["career", "time"] as const)
+      ? (["career", "time", "money"] as const)
       : ([sourceFilter] as const);
 
   const rawCursor = firstQueryValue(query.cursor);
@@ -353,7 +353,8 @@ export default async function CalendarPage({
                 defaultValue={sourceFilter}
                 className={`mt-2 ${selectClassName}`}
               >
-                <option value="all">Career and Calendar</option>
+                <option value="all">Money, Career and Calendar</option>
+                <option value="money">Money only</option>
 
                 <option value="career">Career only</option>
 
@@ -401,6 +402,9 @@ export default async function CalendarPage({
               moduleEnabled={{
                 career: careerEnabled,
                 time: timeEnabled,
+                money:
+                  modules.find((module) => module.moduleKey === "money")
+                    ?.enabled ?? false,
               }}
             />
 

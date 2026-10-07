@@ -155,6 +155,12 @@ export default async function MoneyAccountsPage() {
               {workspace.currency}
             </span>
           </p>
+          <Link
+            href="/money/debts"
+            className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+          >
+            View debts and manual schedules
+          </Link>
         </header>
 
         {accounts ? (

@@ -130,7 +130,7 @@ describe("AgendaList", () => {
     expect(screen.getByText("Module reminders are off")).toBeInTheDocument();
   });
 
-  it("shows a hidden-module cue and does not expose that source's navigation link", () => {
+  it("keeps the source link available with a hidden-module cue", () => {
     render(
       <AgendaList
         agenda={agenda}
@@ -144,10 +144,10 @@ describe("AgendaList", () => {
     expect(screen.getByText("Module hidden")).toBeInTheDocument();
 
     expect(
-      screen.queryByRole("link", {
+      screen.getByRole("link", {
         name: "Open application",
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
 
     expect(
       screen.getByRole("link", {

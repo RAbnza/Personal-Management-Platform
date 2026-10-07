@@ -16,6 +16,7 @@ const timingLabels = {
 const moduleLabels = {
   career: "Career",
   time: "Calendar",
+  money: "Money",
 } as const;
 
 function formatInstant(value: string, timezone: string): string {
@@ -52,6 +53,7 @@ export interface AgendaListProps {
   moduleEnabled: {
     career: boolean;
     time: boolean;
+    money?: boolean;
   };
 }
 
@@ -71,7 +73,7 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
   return (
     <Panel
       title="Agenda"
-      description="Upcoming commitments are projected from their authoritative Career and Calendar source records rather than copied into a second editable calendar."
+      description="Upcoming commitments come from their Money, Career and Calendar source records. Open a source to review or change it."
     >
       {agenda.items.length === 0 ? (
         <div className="flex gap-3">
@@ -128,7 +130,9 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                   const actionLabel =
                     item.sourceKind === "application_event"
                       ? "Open application"
-                      : "Open personal event";
+                      : item.sourceKind === "debt_installment"
+                        ? "Open debt"
+                        : "Open personal event";
 
                   return (
                     <li
@@ -194,7 +198,7 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                             </div>
                           ) : null}
 
-                          {route && !hidden ? (
+                          {route ? (
                             <Link
                               href={route}
                               className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"

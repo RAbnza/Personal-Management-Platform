@@ -39,6 +39,7 @@ export async function runScopedTransactionOnClient<TResult>(
   client: PoolClient,
   context: ScopedDatabaseContext,
   operation: ScopedTransactionOperation<TResult>,
+  options?: { readOnlySnapshot?: boolean },
 ): Promise<TResult> {
   const trustedContext = scopedDatabaseContextSchema.parse(context);
 
@@ -46,7 +47,11 @@ export async function runScopedTransactionOnClient<TResult>(
   let destroyClient = false;
 
   try {
-    await client.query("BEGIN ISOLATION LEVEL READ COMMITTED");
+    await client.query(
+      options?.readOnlySnapshot
+        ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"
+        : "BEGIN ISOLATION LEVEL READ COMMITTED",
+    );
     transactionOpen = true;
 
     const installedContext = await client.query<{
@@ -107,11 +112,17 @@ export async function runScopedTransactionOnClient<TResult>(
 export async function withDomainTransaction<TResult>(
   context: ScopedDatabaseContext,
   operation: ScopedTransactionOperation<TResult>,
+  options?: { readOnlySnapshot?: boolean },
 ): Promise<TResult> {
   const client = await getDomainPool().connect();
 
   try {
-    return await runScopedTransactionOnClient(client, context, operation);
+    return await runScopedTransactionOnClient(
+      client,
+      context,
+      operation,
+      options,
+    );
   } finally {
     client.release();
   }

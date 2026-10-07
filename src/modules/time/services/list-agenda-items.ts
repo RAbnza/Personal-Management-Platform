@@ -86,7 +86,7 @@ const listAgendaItemsInputSchema = z
     startDate: calendarDateSchema,
     endDate: calendarDateSchema,
 
-    modules: agendaModulesSchema.default(["career", "time"]),
+    modules: agendaModulesSchema.default(["career", "time", "money"]),
 
     pageSize: z.number().int().min(1).max(200).default(100),
 
@@ -357,6 +357,8 @@ function expectedDisplayModule(
 
     case "personal_event":
       return "time";
+    case "debt_installment":
+      return "money";
   }
 }
 
@@ -524,6 +526,14 @@ async function executeListAgendaItems(
 
   for (const row of visibleRows) {
     if (row.source_id === null) {
+      continue;
+    }
+
+    if (row.source_kind === "debt_installment") {
+      if (!row.debt_id)
+        throw new Error("Debt Agenda source could not resolve its debt.");
+      sourceRoutes[`debt_installment:${row.source_id}`] =
+        `/money/debts/${row.debt_id}`;
       continue;
     }
 

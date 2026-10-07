@@ -129,7 +129,7 @@ describe("GET /api/v1/agenda", () => {
         "https://app.example.test/api/v1/agenda" +
           "?startDate=2026-10-01" +
           "&endDate=2026-10-31" +
-          "&modules=money",
+          "&modules=trackers",
       ),
     );
 

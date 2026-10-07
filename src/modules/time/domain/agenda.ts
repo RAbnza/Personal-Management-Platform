@@ -1,11 +1,12 @@
 export const AGENDA_SOURCE_KINDS = [
   "personal_event",
   "application_event",
+  "debt_installment",
 ] as const;
 
 export type AgendaSourceKind = (typeof AGENDA_SOURCE_KINDS)[number];
 
-export const AGENDA_DISPLAY_MODULES = ["career", "time"] as const;
+export const AGENDA_DISPLAY_MODULES = ["career", "time", "money"] as const;
 
 export type AgendaDisplayModule = (typeof AGENDA_DISPLAY_MODULES)[number];
 

@@ -28,6 +28,7 @@ export type AgendaListQueryRow = {
   occurrence_key: string | null;
 
   application_id: string | null;
+  debt_id: string | null;
 
   title: string | null;
 
@@ -58,6 +59,7 @@ export type AgendaListQueryRow = {
 function buildModulePredicate(modules: readonly AgendaDisplayModule[]) {
   const includeCareer = modules.includes("career");
   const includeTime = modules.includes("time");
+  const includeMoney = modules.includes("money");
 
   return sql`
     (
@@ -70,6 +72,7 @@ function buildModulePredicate(modules: readonly AgendaDisplayModule[]) {
         ${includeTime}::boolean
         AND source."display_module" = 'time'
       )
+      OR (${includeMoney}::boolean AND source."display_module" = 'money')
     )
   `;
 }
@@ -161,6 +164,7 @@ export async function readAgendaPage(
           agenda."occurrence_key",
 
           career_event."application_id",
+          debt_obligation."debt_id",
 
           agenda."title",
 
@@ -171,6 +175,7 @@ export async function readAgendaPage(
             WHEN agenda."source_kind" =
               'personal_event'
             THEN 'time'
+            WHEN agenda."source_kind" = 'debt_installment' THEN 'money'
             ELSE NULL
           END AS "display_module",
 
@@ -230,6 +235,11 @@ export async function readAgendaPage(
 
           AND career_event."id" =
             agenda."source_id"
+
+        LEFT JOIN finance."debt_obligation" AS debt_obligation
+          ON agenda."source_kind"='debt_installment'
+          AND debt_obligation."workspace_id"=context."workspace_id"
+          AND debt_obligation."id"=agenda."source_id"
 
         WHERE
           (
@@ -323,6 +333,7 @@ export async function readAgendaPage(
         source."occurrence_key",
 
         source."application_id",
+        source."debt_id",
 
         source."title",
 

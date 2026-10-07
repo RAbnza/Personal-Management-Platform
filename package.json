@@ -28,6 +28,7 @@
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "db:migrate:test": "drizzle-kit migrate --config=drizzle.test.config.ts",
+    "db:verify:chain": "tsx scripts/db/verify-migration-chain.ts",
     "auth:schema:generate": "auth generate --config ./src/platform/auth/schema-generation.ts --output ./src/platform/db/schema/auth.generated.ts --yes"
   },
   "dependencies": {
