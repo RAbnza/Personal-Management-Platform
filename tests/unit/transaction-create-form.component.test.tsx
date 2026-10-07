@@ -101,6 +101,24 @@ const categories: CategoryListItem[] = [
 
     version: 1,
   },
+
+  {
+    categoryId: "77777777-7777-4777-8777-777777777777",
+
+    kind: "expense",
+
+    code: "household",
+
+    name: "Household",
+
+    archivedAt: null,
+
+    archived: false,
+
+    sortOrder: 1,
+
+    version: 1,
+  },
 ];
 
 beforeEach(() => {
@@ -234,7 +252,7 @@ describe("TransactionCreateForm", () => {
     expect(routerMocks.push).toHaveBeenCalledWith("/money/accounts");
   });
 
-  it("records an expense as one exact category split", async () => {
+  it("records a one-category expense without requiring the amount twice", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -281,6 +299,12 @@ describe("TransactionCreateForm", () => {
       }),
       categories[1]!.categoryId,
     );
+
+    expect(
+      screen.getByRole("textbox", {
+        name: "Category amount (PHP)",
+      }),
+    ).toHaveValue("125.75");
 
     await user.type(
       screen.getByRole("textbox", {
@@ -339,6 +363,212 @@ describe("TransactionCreateForm", () => {
     });
   });
 
+  it("records multiple exact category portions without creating another purchase amount", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          actionKind: "expense",
+
+          actionId: "55555555-5555-4555-8555-555555555555",
+
+          actionRevisionId: "66666666-6666-4666-8666-666666666666",
+
+          financialRevision: "2",
+        }),
+        {
+          status: 201,
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    render(
+      <TransactionCreateForm
+        currency="PHP"
+        accounts={accounts}
+        categories={categories}
+      />,
+    );
+
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Transaction date"), "2026-10-07");
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Amount (PHP)",
+      }),
+      "1000.00",
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Add category split",
+      }),
+    );
+
+    await user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Category 1",
+      }),
+      categories[1]!.categoryId,
+    );
+
+    await user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Category 2",
+      }),
+      categories[2]!.categoryId,
+    );
+
+    const firstPortion = screen.getByRole("textbox", {
+      name: "Portion 1 amount (PHP)",
+    });
+
+    const secondPortion = screen.getByRole("textbox", {
+      name: "Portion 2 amount (PHP)",
+    });
+
+    await user.clear(firstPortion);
+
+    await user.type(firstPortion, "700.00");
+
+    await user.type(secondPortion, "300.00");
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /category portions match the purchase amount exactly/i,
+    );
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Merchant",
+      }),
+      "Integration Store",
+    );
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Description",
+      }),
+      "Split household purchase",
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Save transaction",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+
+    expect(
+      JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string),
+    ).toEqual({
+      clientCommandId: expect.any(String),
+
+      actionKind: "expense",
+
+      fundingAccountId: accounts[0]!.accountId,
+
+      effectiveDate: "2026-10-07",
+
+      purchaseMinor: "100000",
+
+      splits: [
+        {
+          amountMinor: "70000",
+
+          categoryId: categories[1]!.categoryId,
+
+          memo: null,
+        },
+
+        {
+          amountMinor: "30000",
+
+          categoryId: categories[2]!.categoryId,
+
+          memo: null,
+        },
+      ],
+
+      merchantName: "Integration Store",
+
+      description: "Split household purchase",
+
+      reference: null,
+
+      notes: null,
+    });
+  });
+
+  it("rejects category portions that do not equal the expense amount", async () => {
+    render(
+      <TransactionCreateForm
+        currency="PHP"
+        accounts={accounts}
+        categories={categories}
+      />,
+    );
+
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Transaction date"), "2026-10-07");
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Amount (PHP)",
+      }),
+      "1000.00",
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Add category split",
+      }),
+    );
+
+    const firstPortion = screen.getByRole("textbox", {
+      name: "Portion 1 amount (PHP)",
+    });
+
+    const secondPortion = screen.getByRole("textbox", {
+      name: "Portion 2 amount (PHP)",
+    });
+
+    await user.clear(firstPortion);
+
+    await user.type(firstPortion, "700.00");
+
+    await user.type(secondPortion, "200.00");
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Description",
+      }),
+      "Invalid split total",
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Save transaction",
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Expense category portions must sum exactly to the transaction amount.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("retries an unconfirmed save with the identical financial command", async () => {
     fetchMock
       .mockResolvedValueOnce(
@@ -349,6 +579,7 @@ describe("TransactionCreateForm", () => {
           }),
           {
             status: 503,
+
             headers: {
               "Content-Type": "application/json",
             },
@@ -368,6 +599,7 @@ describe("TransactionCreateForm", () => {
           }),
           {
             status: 201,
+
             headers: {
               "Content-Type": "application/json",
             },
@@ -494,8 +726,14 @@ describe("TransactionCreateForm", () => {
       "1500.00",
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      /greater than the currently loaded balance/i,
-    );
+    expect(
+      screen
+        .getAllByRole("status")
+        .some((element) =>
+          element.textContent?.includes(
+            "greater than the currently loaded balance",
+          ),
+        ),
+    ).toBe(true);
   });
 });

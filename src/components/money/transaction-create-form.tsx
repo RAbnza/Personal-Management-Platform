@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useForm, useWatch } from "react-hook-form";
+import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -39,57 +39,105 @@ function isValidOptionalUuid(value: string): boolean {
   return value === "" || z.uuid().safeParse(value).success;
 }
 
-const transactionFormSchema = z.object({
-  actionKind: z.enum(["income", "expense"]),
-
-  accountId: z.string().refine((value) => z.uuid().safeParse(value).success, {
-    message: "Select a financial account.",
-  }),
-
-  effectiveDate: z.string().refine(isValidCalendarDate, {
-    message: "Enter a valid transaction date.",
-  }),
-
-  amount: z
-    .string()
-    .trim()
-    .regex(decimalAmountPattern, {
-      message: "Enter a positive amount with no more than two decimal places.",
-    })
-    .refine(
-      (value) => {
-        if (!decimalAmountPattern.test(value)) {
-          return true;
-        }
-
-        const amount = parseTwoDecimalAmountToMinorUnits(value);
-
-        return amount > 0n && amount <= MAX_FINANCIAL_COMPONENT_MINOR;
-      },
-      {
-        message:
-          "Amount must be greater than zero and within the supported financial limit.",
-      },
-    ),
-
-  categoryId: z.string().refine(isValidOptionalUuid, {
-    message: "Select a valid category.",
-  }),
-
-  incomeClass: z.enum(["earned", "gift", "reward", "other"]),
-
-  counterpartyName: z.string(),
-
-  description: z
-    .string()
-    .trim()
-    .min(1, "Enter a transaction description.")
-    .max(2000, "Description must be 2,000 characters or fewer."),
-
-  reference: z.string(),
-
-  notes: z.string().max(20_000, "Notes must be 20,000 characters or fewer."),
+const expenseSplitFormSchema = z.object({
+  amount: z.string(),
+  categoryId: z.string(),
 });
+
+const transactionFormSchema = z
+  .object({
+    actionKind: z.enum(["income", "expense"]),
+
+    accountId: z.string().refine((value) => z.uuid().safeParse(value).success, {
+      message: "Select a financial account.",
+    }),
+
+    effectiveDate: z.string().refine(isValidCalendarDate, {
+      message: "Enter a valid transaction date.",
+    }),
+
+    amount: z
+      .string()
+      .trim()
+      .regex(decimalAmountPattern, {
+        message:
+          "Enter a positive amount with no more than two decimal places.",
+      })
+      .refine(
+        (value) => {
+          if (!decimalAmountPattern.test(value)) {
+            return true;
+          }
+
+          const amount = parseTwoDecimalAmountToMinorUnits(value);
+
+          return amount > 0n && amount <= MAX_FINANCIAL_COMPONENT_MINOR;
+        },
+        {
+          message:
+            "Amount must be greater than zero and within the supported financial limit.",
+        },
+      ),
+
+    categoryId: z.string().refine(isValidOptionalUuid, {
+      message: "Select a valid category.",
+    }),
+
+    expenseSplits: z.array(expenseSplitFormSchema).min(1),
+
+    incomeClass: z.enum(["earned", "gift", "reward", "other"]),
+
+    counterpartyName: z.string(),
+
+    description: z
+      .string()
+      .trim()
+      .min(1, "Enter a transaction description.")
+      .max(2000, "Description must be 2,000 characters or fewer."),
+
+    reference: z.string(),
+
+    notes: z.string().max(20_000, "Notes must be 20,000 characters or fewer."),
+  })
+  .superRefine((values, context) => {
+    if (values.actionKind !== "expense") {
+      return;
+    }
+
+    values.expenseSplits.forEach((split, index) => {
+      const amount = split.amount.trim();
+
+      if (!decimalAmountPattern.test(amount)) {
+        context.addIssue({
+          code: "custom",
+          path: ["expenseSplits", index, "amount"],
+          message:
+            "Enter a positive amount with no more than two decimal places.",
+        });
+
+        return;
+      }
+
+      const amountMinor = parseTwoDecimalAmountToMinorUnits(amount);
+
+      if (amountMinor <= 0n || amountMinor > MAX_FINANCIAL_COMPONENT_MINOR) {
+        context.addIssue({
+          code: "custom",
+          path: ["expenseSplits", index, "amount"],
+          message:
+            "Category portion must be greater than zero and within the supported financial limit.",
+        });
+      }
+
+      if (!isValidOptionalUuid(split.categoryId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["expenseSplits", index, "categoryId"],
+          message: "Select a valid category.",
+        });
+      }
+    });
+  });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
@@ -121,13 +169,11 @@ type ExpensePayload = {
   effectiveDate: string;
   purchaseMinor: string;
 
-  splits: [
-    {
-      amountMinor: string;
-      categoryId: string | null;
-      memo: null;
-    },
-  ];
+  splits: Array<{
+    amountMinor: string;
+    categoryId: string | null;
+    memo: null;
+  }>;
 
   merchantName: string | null;
 
@@ -215,6 +261,8 @@ export function TransactionCreateForm({
     handleSubmit,
     control,
     setError,
+    clearErrors,
+    setValue,
     formState: { errors },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -230,6 +278,13 @@ export function TransactionCreateForm({
 
       categoryId: "",
 
+      expenseSplits: [
+        {
+          amount: "",
+          categoryId: "",
+        },
+      ],
+
       incomeClass: "earned",
 
       counterpartyName: "",
@@ -242,11 +297,15 @@ export function TransactionCreateForm({
     },
   });
 
-  /*
-   * React Compiler cannot safely memoize React Hook Form's imperative
-   * watch() API. useWatch() is the supported subscription hook for values
-   * that affect rendering.
-   */
+  const {
+    fields: expenseSplitFields,
+    append: appendExpenseSplit,
+    remove: removeExpenseSplit,
+  } = useFieldArray({
+    control,
+    name: "expenseSplits",
+  });
+
   const actionKind = useWatch({
     control,
     name: "actionKind",
@@ -262,11 +321,57 @@ export function TransactionCreateForm({
     name: "amount",
   });
 
+  const watchedExpenseSplits = useWatch({
+    control,
+    name: "expenseSplits",
+
+    /*
+     * Avoid a `?? []` fallback here. Creating a new fallback array on each
+     * render would make this value unstable for effect dependencies.
+     */
+    defaultValue: [
+      {
+        amount: "",
+        categoryId: "",
+      },
+    ],
+  });
+
+  /*
+   * A normal one-category expense should not require entering the purchase
+   * amount twice. While there is only one category portion, keep its amount
+   * synchronized with the overall purchase amount.
+   *
+   * As soon as another portion is added, each amount becomes independently
+   * editable and must sum exactly to the purchase total.
+   */
+  useEffect(() => {
+    if (actionKind === "expense" && expenseSplitFields.length === 1) {
+      setValue("expenseSplits.0.amount", enteredAmount, {
+        shouldDirty: false,
+        shouldValidate: false,
+      });
+    }
+  }, [actionKind, enteredAmount, expenseSplitFields.length, setValue]);
+
+  /*
+   * Once the user edits the purchase amount or category portions, an earlier
+   * total-mismatch message no longer describes the current input. Submission
+   * will re-check exact equality.
+   */
+  useEffect(() => {
+    clearErrors("root.splitTotal");
+  }, [enteredAmount, watchedExpenseSplits, clearErrors]);
+
   const selectedAccount =
     accounts.find((account) => account.accountId === selectedAccountId) ?? null;
 
-  const availableCategories = categories.filter(
-    (category) => category.kind === actionKind,
+  const incomeCategories = categories.filter(
+    (category) => category.kind === "income",
+  );
+
+  const expenseCategories = categories.filter(
+    (category) => category.kind === "expense",
   );
 
   let expenseExceedsLoadedBalance = false;
@@ -285,6 +390,25 @@ export function TransactionCreateForm({
     expenseExceedsLoadedBalance = expenseMinor > loadedBalanceMinor;
   }
 
+  const purchaseAmountMinor = decimalAmountPattern.test(enteredAmount)
+    ? parseTwoDecimalAmountToMinorUnits(enteredAmount)
+    : null;
+
+  const allocatedExpenseMinor = watchedExpenseSplits.reduce((total, split) => {
+    const value = split.amount.trim();
+
+    if (!decimalAmountPattern.test(value)) {
+      return total;
+    }
+
+    return total + parseTwoDecimalAmountToMinorUnits(value);
+  }, 0n);
+
+  const remainingExpenseMinor =
+    purchaseAmountMinor === null
+      ? null
+      : purchaseAmountMinor - allocatedExpenseMinor;
+
   const fieldsDisabled =
     saveState === "saving" ||
     saveState === "unconfirmed" ||
@@ -301,19 +425,11 @@ export function TransactionCreateForm({
         setPendingCommand(null);
         setSaveState("saved");
 
-        /*
-         * The Accounts page re-reads ledger-derived balances from the
-         * server, so the user immediately sees the financial effect.
-         */
         router.push("/money/accounts");
 
         return;
       }
 
-      /*
-       * A 5xx response cannot prove whether the financial transaction
-       * committed. Preserve both the exact command ID and payload.
-       */
       if (response.status >= 500) {
         setSaveState("unconfirmed");
 
@@ -331,10 +447,6 @@ export function TransactionCreateForm({
         "The transaction could not be saved. Review the information and try again.",
       );
     } catch {
-      /*
-       * A network failure has the same ambiguity as a lost successful
-       * response. Never generate a new financial command for this retry.
-       */
       setSaveState("unconfirmed");
 
       setSaveError(
@@ -358,10 +470,6 @@ export function TransactionCreateForm({
       return;
     }
 
-    /*
-     * Financial activity must occur after the account's opening cutoff.
-     * YYYY-MM-DD values are lexically chronological once validated.
-     */
     if (values.effectiveDate <= account.openingCutoffDate) {
       setError("effectiveDate", {
         type: "validate",
@@ -371,11 +479,28 @@ export function TransactionCreateForm({
       return;
     }
 
-    const amountMinor = parseTwoDecimalAmountToMinorUnits(
-      values.amount,
-    ).toString();
+    const amountMinor = parseTwoDecimalAmountToMinorUnits(values.amount);
 
-    const categoryId = values.categoryId === "" ? null : values.categoryId;
+    if (values.actionKind === "expense") {
+      const splitTotal = values.expenseSplits.reduce(
+        (total, split) =>
+          total + parseTwoDecimalAmountToMinorUnits(split.amount.trim()),
+        0n,
+      );
+
+      if (splitTotal !== amountMinor) {
+        setError("root.splitTotal", {
+          type: "validate",
+          message:
+            "Expense category portions must sum exactly to the transaction amount.",
+        });
+
+        return;
+      }
+    }
+
+    const incomeCategoryId =
+      values.categoryId === "" ? null : values.categoryId;
 
     const counterpartyName = values.counterpartyName.trim();
 
@@ -400,11 +525,11 @@ export function TransactionCreateForm({
 
             receivingAccountId: values.accountId,
 
-            amountMinor,
+            amountMinor: amountMinor.toString(),
 
             incomeClass: values.incomeClass,
 
-            categoryId,
+            categoryId: incomeCategoryId,
 
             senderName: counterpartyName.length > 0 ? counterpartyName : null,
 
@@ -417,17 +542,17 @@ export function TransactionCreateForm({
 
             fundingAccountId: values.accountId,
 
-            purchaseMinor: amountMinor,
+            purchaseMinor: amountMinor.toString(),
 
-            splits: [
-              {
-                amountMinor,
+            splits: values.expenseSplits.map((split) => ({
+              amountMinor: parseTwoDecimalAmountToMinorUnits(
+                split.amount.trim(),
+              ).toString(),
 
-                categoryId,
+              categoryId: split.categoryId === "" ? null : split.categoryId,
 
-                memo: null,
-              },
-            ],
+              memo: null,
+            })),
 
             merchantName: counterpartyName.length > 0 ? counterpartyName : null,
 
@@ -619,43 +744,45 @@ export function TransactionCreateForm({
             />
           </FormField>
 
-          <FormField
-            htmlFor="transaction-category"
-            label="Category"
-            description="Optional. Categories affect reporting, not the account balance itself."
-            descriptionId="transaction-category-description"
-            error={errors.categoryId?.message}
-            errorId="transaction-category-error"
-          >
-            <select
-              {...register("categoryId")}
-              id="transaction-category"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.categoryId)}
-              aria-describedby={[
-                "transaction-category-description",
-                errors.categoryId ? "transaction-category-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              className={[
-                "min-h-11 w-full rounded-control border border-input",
-                "bg-surface px-3 py-2 text-base text-foreground",
-                "transition-colors duration-(--motion-duration-fast) ease-state",
-                "hover:border-ring",
-                "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                "motion-reduce:transition-none",
-              ].join(" ")}
+          {actionKind === "income" ? (
+            <FormField
+              htmlFor="transaction-category"
+              label="Category"
+              description="Optional. Categories affect reporting, not the account balance itself."
+              descriptionId="transaction-category-description"
+              error={errors.categoryId?.message}
+              errorId="transaction-category-error"
             >
-              <option value="">Uncategorized</option>
+              <select
+                {...register("categoryId")}
+                id="transaction-category"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.categoryId)}
+                aria-describedby={[
+                  "transaction-category-description",
+                  errors.categoryId ? "transaction-category-error" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                className={[
+                  "min-h-11 w-full rounded-control border border-input",
+                  "bg-surface px-3 py-2 text-base text-foreground",
+                  "transition-colors duration-(--motion-duration-fast) ease-state",
+                  "hover:border-ring",
+                  "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                  "motion-reduce:transition-none",
+                ].join(" ")}
+              >
+                <option value="">Uncategorized</option>
 
-              {availableCategories.map((category) => (
-                <option key={category.categoryId} value={category.categoryId}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
+                {incomeCategories.map((category) => (
+                  <option key={category.categoryId} value={category.categoryId}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          ) : null}
 
           {actionKind === "income" ? (
             <FormField
@@ -705,6 +832,230 @@ export function TransactionCreateForm({
             />
           </FormField>
         </div>
+
+        {actionKind === "expense" ? (
+          <fieldset
+            disabled={fieldsDisabled}
+            className="space-y-4 rounded-control border border-border bg-surface-subtle p-4 sm:p-5"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <legend className="text-sm font-semibold text-foreground">
+                  Expense categories
+                </legend>
+
+                <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  Split one purchase across categories without creating another
+                  account deduction. Every portion must add up exactly to the
+                  transaction amount.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={fieldsDisabled}
+                onClick={() => {
+                  appendExpenseSplit({
+                    amount: "",
+                    categoryId: "",
+                  });
+                }}
+              >
+                <Plus aria-hidden="true" className="size-4" strokeWidth={1.9} />
+                Add category split
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {expenseSplitFields.map((field, index) => {
+                const amountError =
+                  errors.expenseSplits?.[index]?.amount?.message;
+
+                const categoryError =
+                  errors.expenseSplits?.[index]?.categoryId?.message;
+
+                const hasMultiple = expenseSplitFields.length > 1;
+
+                return (
+                  <div
+                    key={field.id}
+                    className="grid gap-4 rounded-control border border-border bg-surface p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_auto]"
+                  >
+                    <FormField
+                      htmlFor={`expense-split-category-${index}`}
+                      label={hasMultiple ? `Category ${index + 1}` : "Category"}
+                      description={
+                        hasMultiple
+                          ? undefined
+                          : "Optional. Add another category split when one purchase belongs to more than one category."
+                      }
+                      descriptionId={`expense-split-category-description-${index}`}
+                      error={categoryError}
+                      errorId={`expense-split-category-error-${index}`}
+                    >
+                      <select
+                        {...register(`expenseSplits.${index}.categoryId`)}
+                        id={`expense-split-category-${index}`}
+                        disabled={fieldsDisabled}
+                        aria-invalid={Boolean(categoryError)}
+                        aria-describedby={[
+                          !hasMultiple
+                            ? `expense-split-category-description-${index}`
+                            : null,
+                          categoryError
+                            ? `expense-split-category-error-${index}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        className={[
+                          "min-h-11 w-full rounded-control border border-input",
+                          "bg-surface px-3 py-2 text-base text-foreground",
+                          "transition-colors duration-(--motion-duration-fast) ease-state",
+                          "hover:border-ring",
+                          "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                          "motion-reduce:transition-none",
+                        ].join(" ")}
+                      >
+                        <option value="">Uncategorized</option>
+
+                        {expenseCategories.map((category) => (
+                          <option
+                            key={category.categoryId}
+                            value={category.categoryId}
+                          >
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+
+                    <FormField
+                      htmlFor={`expense-split-amount-${index}`}
+                      label={
+                        hasMultiple
+                          ? `Portion ${index + 1} amount (${currency})`
+                          : `Category amount (${currency})`
+                      }
+                      description={
+                        hasMultiple
+                          ? undefined
+                          : "With one category, this automatically uses the full transaction amount."
+                      }
+                      descriptionId={`expense-split-amount-description-${index}`}
+                      error={amountError}
+                      errorId={`expense-split-amount-error-${index}`}
+                    >
+                      <Input
+                        {...register(`expenseSplits.${index}.amount`)}
+                        id={`expense-split-amount-${index}`}
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        placeholder="0.00"
+                        readOnly={!hasMultiple}
+                        disabled={fieldsDisabled}
+                        aria-invalid={Boolean(amountError)}
+                        aria-describedby={[
+                          !hasMultiple
+                            ? `expense-split-amount-description-${index}`
+                            : null,
+                          amountError
+                            ? `expense-split-amount-error-${index}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        className="numeric-value"
+                      />
+                    </FormField>
+
+                    {hasMultiple ? (
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={fieldsDisabled}
+                          aria-label={`Remove category portion ${index + 1}`}
+                          onClick={() => {
+                            removeExpenseSplit(index);
+                          }}
+                        >
+                          <Trash2
+                            aria-hidden="true"
+                            className="size-4"
+                            strokeWidth={1.9}
+                          />
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            {purchaseAmountMinor !== null && purchaseAmountMinor > 0n ? (
+              <div
+                role="status"
+                className="rounded-control border border-border bg-surface px-4 py-3 text-sm leading-6"
+              >
+                <p className="text-muted-foreground">
+                  Allocated{" "}
+                  <span className="numeric-value font-medium text-foreground">
+                    {formatMoneyMinorUnits(
+                      currency,
+                      allocatedExpenseMinor.toString(),
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="numeric-value font-medium text-foreground">
+                    {formatMoneyMinorUnits(
+                      currency,
+                      purchaseAmountMinor.toString(),
+                    )}
+                  </span>
+                  .
+                </p>
+
+                {remainingExpenseMinor === 0n ? (
+                  <p className="mt-1 font-medium text-success">
+                    Category portions match the purchase amount exactly.
+                  </p>
+                ) : remainingExpenseMinor !== null &&
+                  remainingExpenseMinor > 0n ? (
+                  <p className="mt-1 text-muted-foreground">
+                    Remaining:{" "}
+                    <span className="numeric-value font-medium text-foreground">
+                      {formatMoneyMinorUnits(
+                        currency,
+                        remainingExpenseMinor.toString(),
+                      )}
+                    </span>
+                  </p>
+                ) : remainingExpenseMinor !== null ? (
+                  <p className="mt-1 text-danger">
+                    Over by{" "}
+                    <span className="numeric-value font-medium">
+                      {formatMoneyMinorUnits(
+                        currency,
+                        (-remainingExpenseMinor).toString(),
+                      )}
+                    </span>
+                    .
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {errors.root?.splitTotal?.message ? (
+              <p role="alert" className="text-sm leading-5 text-danger">
+                {errors.root.splitTotal.message}
+              </p>
+            ) : null}
+          </fieldset>
+        ) : null}
 
         {expenseExceedsLoadedBalance && selectedAccount ? (
           <div
