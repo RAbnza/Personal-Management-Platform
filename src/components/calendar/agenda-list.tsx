@@ -125,6 +125,11 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
 
                   const hidden = !moduleEnabled[item.displayModule];
 
+                  const actionLabel =
+                    item.sourceKind === "application_event"
+                      ? "Open application"
+                      : "Open personal event";
+
                   return (
                     <li
                       key={`${item.sourceKind}:${item.sourceId}:${item.occurrenceKey}`}
@@ -194,7 +199,7 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                               href={route}
                               className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
                             >
-                              Open application
+                              {actionLabel}
                             </Link>
                           ) : null}
                         </div>

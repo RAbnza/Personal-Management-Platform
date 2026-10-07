@@ -85,13 +85,16 @@ const agenda: ListAgendaItemsResult = {
   sourceRoutes: {
     "application_event:11111111-1111-4111-8111-111111111111":
       "/career/applications/33333333-3333-4333-8333-333333333333",
+
+    "personal_event:22222222-2222-4222-8222-222222222222":
+      "/calendar/events/22222222-2222-4222-8222-222222222222",
   },
 
   nextCursor: null,
 };
 
 describe("AgendaList", () => {
-  it("renders source-driven Career and personal Calendar items", () => {
+  it("renders source-driven Career and personal Calendar items with their source routes", () => {
     render(
       <AgendaList
         agenda={agenda}
@@ -115,10 +118,19 @@ describe("AgendaList", () => {
       "/career/applications/33333333-3333-4333-8333-333333333333",
     );
 
+    expect(
+      screen.getByRole("link", {
+        name: "Open personal event",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/calendar/events/22222222-2222-4222-8222-222222222222",
+    );
+
     expect(screen.getByText("Module reminders are off")).toBeInTheDocument();
   });
 
-  it("shows a hidden-module cue and does not expose its normal navigation link", () => {
+  it("shows a hidden-module cue and does not expose that source's navigation link", () => {
     render(
       <AgendaList
         agenda={agenda}
@@ -136,5 +148,11 @@ describe("AgendaList", () => {
         name: "Open application",
       }),
     ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("link", {
+        name: "Open personal event",
+      }),
+    ).toBeInTheDocument();
   });
 });

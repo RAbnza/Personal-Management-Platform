@@ -156,21 +156,10 @@ export type AgendaItem = {
 
   notificationGeneration: number;
 
-  /**
-   * Current S2 personal and Career event sources are structurally capable of
-   * reminders even though durable reminder state arrives in a later slice.
-   */
   reminderCapable: true;
 
-  /**
-   * Module-level reminder preference. Absence of a module preference row uses
-   * the database/documented default of true.
-   */
   remindersEnabled: boolean;
 
-  /**
-   * The source aggregate version used by later source-aware edits/reminders.
-   */
   sourceVersion: number;
 };
 
@@ -181,11 +170,10 @@ export type ListAgendaItemsResult = {
   items: AgendaItem[];
 
   /**
-   * Authorized routes back to source aggregates when the current source
-   * adapter already exposes one.
+   * Authorized routes back to each source aggregate.
    *
-   * Manual personal-event detail routes are added in C2b2b. Career events can
-   * already resolve to their owning application.
+   * Career events route to their owning application. Manual personal events
+   * route to their Calendar-owned source detail page.
    */
   sourceRoutes: Record<string, string>;
 
@@ -518,11 +506,6 @@ async function executeListAgendaItems(
 
   const firstRow = rows[0];
 
-  /*
-   * workspace_context is the root row in the repository query. If no row is
-   * visible, the supplied workspace does not belong to this scoped RLS
-   * transaction.
-   */
   if (!firstRow) {
     throw new AgendaWorkspaceUnavailableError();
   }
@@ -540,7 +523,18 @@ async function executeListAgendaItems(
   const sourceRoutes: Record<string, string> = {};
 
   for (const row of visibleRows) {
-    if (row.source_kind === "application_event" && row.source_id !== null) {
+    if (row.source_id === null) {
+      continue;
+    }
+
+    if (row.source_kind === "personal_event") {
+      sourceRoutes[`personal_event:${row.source_id}`] =
+        `/calendar/events/${row.source_id}`;
+
+      continue;
+    }
+
+    if (row.source_kind === "application_event") {
       if (row.application_id === null) {
         throw new Error(
           "Career Agenda source could not resolve its owning application.",
