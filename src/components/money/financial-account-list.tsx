@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ArrowRightLeft,
   Banknote,
   Building2,
   Landmark,
@@ -90,6 +91,27 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
             {accounts.items.length}{" "}
             {accounts.items.length === 1 ? "account" : "accounts"}
           </span>
+
+          {accounts.items.length >= 2 ? (
+            <Link
+              href="/money/transfers"
+              className={[
+                "inline-flex min-h-11 items-center justify-center gap-2",
+                "rounded-button border border-input bg-secondary px-3 py-2",
+                "text-sm font-semibold text-secondary-foreground",
+                "transition-colors duration-(--motion-duration-fast) ease-state",
+                "hover:bg-accent hover:text-accent-foreground",
+                "motion-reduce:transition-none",
+              ].join(" ")}
+            >
+              <ArrowRightLeft
+                aria-hidden="true"
+                className="size-4"
+                strokeWidth={1.9}
+              />
+              Transfer money
+            </Link>
+          ) : null}
 
           <Link
             href="/money/transactions"
