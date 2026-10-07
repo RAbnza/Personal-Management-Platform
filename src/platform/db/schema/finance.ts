@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -76,7 +77,9 @@ export const ledgerAccount = financeSchema.table(
           'expense',
           'income',
           'opening_equity',
-          'adjustment_equity'
+          'adjustment_equity',
+          'debt_liability',
+          'payment_clearing_asset'
         )
       `,
     ),
@@ -426,7 +429,8 @@ export const actionRevision = financeSchema.table(
           'income',
           'expense',
           'transfer',
-          'standalone_fee'
+          'standalone_fee',
+          'opening_debt'
         )
       `,
     ),
@@ -1188,6 +1192,873 @@ export const actionTag = financeSchema.table(
       table.workspaceId,
       table.tagId,
       table.actionId,
+    ),
+  ],
+);
+
+/**
+ * Coherent-V1 debt aggregate.
+ *
+ * A debt is not an editable balance. Recognized liability is derived from
+ * postings to liabilityLedgerAccountId. Contractual schedule values are kept
+ * separately below and may contain future amounts that have not yet been
+ * recognized in the financial ledger.
+ *
+ * The deferred same-debt currentScheduleVersionId foreign key is intentionally
+ * installed in the reviewed C debt-integrity migration after both tables
+ * exist.
+ */
+export const debt = financeSchema.table(
+  "debt",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+
+    name: text("name").notNull(),
+
+    lenderName: text("lender_name").notNull(),
+
+    productName: text("product_name"),
+
+    debtType: text("debt_type").notNull(),
+
+    currency: text("currency").notNull(),
+
+    liabilityLedgerAccountId: uuid("liability_ledger_account_id").notNull(),
+
+    clearingLedgerAccountId: uuid("clearing_ledger_account_id"),
+
+    originalPrincipalMinor: bigint("original_principal_minor", {
+      mode: "bigint",
+    }),
+
+    startDate: date("start_date", {
+      mode: "string",
+    }).notNull(),
+
+    /**
+     * Required by the import-existing-debt workflow.
+     *
+     * It identifies the baseline boundary represented by the opening debt
+     * action, preventing historical borrowing or old payments from being
+     * fabricated as current-period cash activity.
+     */
+    openingCutoffDate: date("opening_cutoff_date", {
+      mode: "string",
+    }),
+
+    breakdownStatus: text("breakdown_status").notNull(),
+
+    lifecycle: text("lifecycle").default("active").notNull(),
+
+    currentScheduleVersionId: uuid("current_schedule_version_id"),
+
+    notes: text("notes"),
+
+    closedAt: timestamp("closed_at", {
+      withTimezone: true,
+    }),
+
+    recordedByUserId: uuid("recorded_by_user_id").references(
+      () => authUser.id,
+      {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      },
+    ),
+
+    actorKind: text("actor_kind").notNull(),
+
+    requestId: uuid("request_id"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    version: integer("version").default(1).notNull(),
+  },
+  (table) => [
+    unique("uq_debt_scope_id").on(table.workspaceId, table.id),
+
+    unique("uq_debt_scope_currency").on(
+      table.workspaceId,
+      table.id,
+      table.currency,
+    ),
+
+    unique("uq_debt_liability_ledger").on(
+      table.workspaceId,
+      table.liabilityLedgerAccountId,
+    ),
+
+    unique("uq_debt_clearing_ledger").on(
+      table.workspaceId,
+      table.clearingLedgerAccountId,
+    ),
+
+    foreignKey({
+      name: "fk_debt_workspace_currency",
+      columns: [table.workspaceId, table.currency],
+      foreignColumns: [workspace.id, workspace.currency],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    foreignKey({
+      name: "fk_debt_liability_ledger",
+      columns: [
+        table.workspaceId,
+        table.liabilityLedgerAccountId,
+        table.currency,
+      ],
+      foreignColumns: [
+        ledgerAccount.workspaceId,
+        ledgerAccount.id,
+        ledgerAccount.currency,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    foreignKey({
+      name: "fk_debt_clearing_ledger",
+      columns: [
+        table.workspaceId,
+        table.clearingLedgerAccountId,
+        table.currency,
+      ],
+      foreignColumns: [
+        ledgerAccount.workspaceId,
+        ledgerAccount.id,
+        ledgerAccount.currency,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    index("ix_debt_lifecycle").on(table.workspaceId, table.lifecycle, table.id),
+
+    check(
+      "ck_debt_name",
+      sql`
+        char_length(${table.name}) BETWEEN 1 AND 200
+      `,
+    ),
+
+    check(
+      "ck_debt_lender_name",
+      sql`
+        char_length(${table.lenderName}) BETWEEN 1 AND 200
+      `,
+    ),
+
+    check(
+      "ck_debt_product_name",
+      sql`
+        ${table.productName} IS NULL
+        OR char_length(${table.productName}) BETWEEN 1 AND 200
+      `,
+    ),
+
+    check(
+      "ck_debt_type",
+      sql`
+        ${table.debtType}
+        IN (
+          'personal_loan',
+          'installment_loan',
+          'financed_purchase',
+          'flexible_manual'
+        )
+      `,
+    ),
+
+    check("ck_debt_currency", sql`${table.currency} ~ '^[A-Z]{3}$'`),
+
+    check(
+      "ck_debt_original_principal",
+      sql`
+        ${table.originalPrincipalMinor} IS NULL
+        OR (
+          ${table.originalPrincipalMinor} > 0
+          AND ${table.originalPrincipalMinor} <= 100000000000
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_breakdown_status",
+      sql`
+        ${table.breakdownStatus}
+        IN (
+          'known',
+          'partial',
+          'unknown'
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_lifecycle",
+      sql`
+        ${table.lifecycle}
+        IN (
+          'active',
+          'settled',
+          'settled_early',
+          'cancelled'
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_closed_shape",
+      sql`
+        (
+          ${table.lifecycle} = 'active'
+          AND ${table.closedAt} IS NULL
+        )
+        OR
+        (
+          ${table.lifecycle} <> 'active'
+          AND ${table.closedAt} IS NOT NULL
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_notes",
+      sql`
+        ${table.notes} IS NULL
+        OR char_length(${table.notes}) <= 20000
+      `,
+    ),
+
+    check(
+      "ck_debt_actor_kind",
+      sql`
+        ${table.actorKind}
+        IN ('user', 'system', 'import')
+      `,
+    ),
+
+    check(
+      "ck_debt_actor_user",
+      sql`
+        ${table.actorKind} <> 'user'
+        OR ${table.recordedByUserId} IS NOT NULL
+      `,
+    ),
+
+    check("ck_debt_version", sql`${table.version} > 0`),
+  ],
+);
+
+/**
+ * Immutable typed evidence connecting a financial action revision to one debt.
+ *
+ * The D6 import flow uses purpose=opening. Later C-phase commands add
+ * borrowing/purchase/charge/payment/settlement/waiver/reclassification.
+ */
+export const debtActionLink = financeSchema.table(
+  "debt_action_link",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+
+    actionId: uuid("action_id").notNull(),
+
+    actionRevisionId: uuid("action_revision_id").notNull(),
+
+    debtId: uuid("debt_id").notNull(),
+
+    purpose: text("purpose").notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_debt_action_link_scope_id").on(table.workspaceId, table.id),
+
+    unique("uq_debt_action_link_revision_debt_purpose").on(
+      table.workspaceId,
+      table.actionRevisionId,
+      table.debtId,
+      table.purpose,
+    ),
+
+    foreignKey({
+      name: "fk_debt_action_link_action_revision",
+      columns: [table.workspaceId, table.actionId, table.actionRevisionId],
+      foreignColumns: [
+        actionRevision.workspaceId,
+        actionRevision.actionId,
+        actionRevision.id,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    foreignKey({
+      name: "fk_debt_action_link_debt",
+      columns: [table.workspaceId, table.debtId],
+      foreignColumns: [debt.workspaceId, debt.id],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    index("ix_debt_action_link_debt_revision").on(
+      table.workspaceId,
+      table.debtId,
+      table.actionRevisionId,
+    ),
+
+    check(
+      "ck_debt_action_link_purpose",
+      sql`
+        ${table.purpose}
+        IN (
+          'opening',
+          'borrowing',
+          'purchase',
+          'charge',
+          'payment',
+          'settlement',
+          'waiver',
+          'reclassification'
+        )
+      `,
+    ),
+  ],
+);
+
+/**
+ * Stable identity for one contractual obligation across schedule revisions.
+ *
+ * Amounts and dates intentionally do not live here. They belong to immutable
+ * schedule-version entries.
+ */
+export const debtObligation = financeSchema.table(
+  "debt_obligation",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+
+    debtId: uuid("debt_id").notNull(),
+
+    externalLabel: text("external_label"),
+
+    recordedByUserId: uuid("recorded_by_user_id").references(
+      () => authUser.id,
+      {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      },
+    ),
+
+    actorKind: text("actor_kind").notNull(),
+
+    requestId: uuid("request_id"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_debt_obligation_scope_id").on(table.workspaceId, table.id),
+
+    unique("uq_debt_obligation_debt_id").on(
+      table.workspaceId,
+      table.debtId,
+      table.id,
+    ),
+
+    foreignKey({
+      name: "fk_debt_obligation_debt",
+      columns: [table.workspaceId, table.debtId],
+      foreignColumns: [debt.workspaceId, debt.id],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    check(
+      "ck_debt_obligation_external_label",
+      sql`
+        ${table.externalLabel} IS NULL
+        OR char_length(${table.externalLabel}) BETWEEN 1 AND 200
+      `,
+    ),
+
+    check(
+      "ck_debt_obligation_actor_kind",
+      sql`
+        ${table.actorKind}
+        IN ('user', 'system', 'import')
+      `,
+    ),
+
+    check(
+      "ck_debt_obligation_actor_user",
+      sql`
+        ${table.actorKind} <> 'user'
+        OR ${table.recordedByUserId} IS NOT NULL
+      `,
+    ),
+  ],
+);
+
+/**
+ * Immutable contractual schedule version.
+ *
+ * previousVersionId and debt.currentScheduleVersionId are same-debt
+ * relationships. Their deferred composite foreign keys are added in the
+ * reviewed C debt-integrity migration.
+ */
+export const debtScheduleVersion = financeSchema.table(
+  "debt_schedule_version",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+
+    debtId: uuid("debt_id").notNull(),
+
+    versionNo: integer("version_no").notNull(),
+
+    previousVersionId: uuid("previous_version_id"),
+
+    effectiveDate: date("effective_date", {
+      mode: "string",
+    }).notNull(),
+
+    revisionKind: text("revision_kind").notNull(),
+
+    reason: text("reason").notNull(),
+
+    frequency: text("frequency").notNull(),
+
+    state: text("state").default("building").notNull(),
+
+    finalizedAt: timestamp("finalized_at", {
+      withTimezone: true,
+    }),
+
+    recordedByUserId: uuid("recorded_by_user_id").references(
+      () => authUser.id,
+      {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      },
+    ),
+
+    actorKind: text("actor_kind").notNull(),
+
+    requestId: uuid("request_id"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_debt_schedule_version_scope_id").on(table.workspaceId, table.id),
+
+    unique("uq_debt_schedule_version_number").on(
+      table.workspaceId,
+      table.debtId,
+      table.versionNo,
+    ),
+
+    unique("uq_debt_schedule_version_debt_id").on(
+      table.workspaceId,
+      table.debtId,
+      table.id,
+    ),
+
+    foreignKey({
+      name: "fk_debt_schedule_version_debt",
+      columns: [table.workspaceId, table.debtId],
+      foreignColumns: [debt.workspaceId, debt.id],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    index("ix_debt_schedule_version_debt").on(
+      table.workspaceId,
+      table.debtId,
+      table.versionNo,
+    ),
+
+    check("ck_debt_schedule_version_number", sql`${table.versionNo} > 0`),
+
+    check(
+      "ck_debt_schedule_version_revision_kind",
+      sql`
+        ${table.revisionKind}
+        IN (
+          'initial',
+          'date_correction',
+          'renegotiation',
+          'allocation_correction',
+          'settlement'
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_reason",
+      sql`
+        char_length(btrim(${table.reason})) BETWEEN 1 AND 2000
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_frequency",
+      sql`
+        ${table.frequency}
+        IN (
+          'manual',
+          'weekly',
+          'monthly',
+          'other'
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_state",
+      sql`
+        ${table.state}
+        IN ('building', 'finalized')
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_finalization",
+      sql`
+        (
+          ${table.state} = 'building'
+          AND ${table.finalizedAt} IS NULL
+        )
+        OR
+        (
+          ${table.state} = 'finalized'
+          AND ${table.finalizedAt} IS NOT NULL
+        )
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_actor_kind",
+      sql`
+        ${table.actorKind}
+        IN ('user', 'system', 'import')
+      `,
+    ),
+
+    check(
+      "ck_debt_schedule_version_actor_user",
+      sql`
+        ${table.actorKind} <> 'user'
+        OR ${table.recordedByUserId} IS NOT NULL
+      `,
+    ),
+  ],
+);
+
+/**
+ * One immutable installment entry within a finalized schedule version.
+ *
+ * openingSatisfiedMinor records contractual amounts that were already
+ * satisfied before the imported-debt cutoff. It never posts cash and must not
+ * be increased later to hide a real payment.
+ */
+export const scheduledInstallment = financeSchema.table(
+  "scheduled_installment",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, {
+        onDelete: "restrict",
+        onUpdate: "restrict",
+      }),
+
+    debtId: uuid("debt_id").notNull(),
+
+    scheduleVersionId: uuid("schedule_version_id").notNull(),
+
+    obligationId: uuid("obligation_id").notNull(),
+
+    sequenceNo: integer("sequence_no").notNull(),
+
+    dueDate: date("due_date", {
+      mode: "string",
+    }).notNull(),
+
+    contractualMinor: bigint("contractual_minor", {
+      mode: "bigint",
+    }).notNull(),
+
+    knownPrincipalMinor: bigint("known_principal_minor", {
+      mode: "bigint",
+    }),
+
+    knownInterestMinor: bigint("known_interest_minor", {
+      mode: "bigint",
+    }),
+
+    knownFeeMinor: bigint("known_fee_minor", {
+      mode: "bigint",
+    }),
+
+    breakdownComplete: boolean("breakdown_complete").default(false).notNull(),
+
+    openingSatisfiedMinor: bigint("opening_satisfied_minor", {
+      mode: "bigint",
+    })
+      .default(sql`0`)
+      .notNull(),
+
+    disposition: text("disposition").default("scheduled").notNull(),
+
+    cancellationReason: text("cancellation_reason"),
+
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_scheduled_installment_scope_id").on(table.workspaceId, table.id),
+
+    unique("uq_scheduled_installment_schedule_obligation").on(
+      table.workspaceId,
+      table.scheduleVersionId,
+      table.obligationId,
+    ),
+
+    unique("uq_scheduled_installment_schedule_sequence").on(
+      table.workspaceId,
+      table.scheduleVersionId,
+      table.sequenceNo,
+    ),
+
+    unique("uq_scheduled_installment_debt_id").on(
+      table.workspaceId,
+      table.debtId,
+      table.id,
+    ),
+
+    unique("uq_scheduled_installment_debt_schedule_id").on(
+      table.workspaceId,
+      table.debtId,
+      table.scheduleVersionId,
+      table.id,
+    ),
+
+    foreignKey({
+      name: "fk_scheduled_installment_debt",
+      columns: [table.workspaceId, table.debtId],
+      foreignColumns: [debt.workspaceId, debt.id],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    foreignKey({
+      name: "fk_scheduled_installment_schedule",
+      columns: [table.workspaceId, table.debtId, table.scheduleVersionId],
+      foreignColumns: [
+        debtScheduleVersion.workspaceId,
+        debtScheduleVersion.debtId,
+        debtScheduleVersion.id,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    foreignKey({
+      name: "fk_scheduled_installment_obligation",
+      columns: [table.workspaceId, table.debtId, table.obligationId],
+      foreignColumns: [
+        debtObligation.workspaceId,
+        debtObligation.debtId,
+        debtObligation.id,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    index("ix_scheduled_installment_due").on(
+      table.workspaceId,
+      table.dueDate,
+      table.id,
+    ),
+
+    index("ix_scheduled_installment_schedule").on(
+      table.workspaceId,
+      table.scheduleVersionId,
+      table.id,
+    ),
+
+    check("ck_scheduled_installment_sequence", sql`${table.sequenceNo} > 0`),
+
+    check(
+      "ck_scheduled_installment_contractual",
+      sql`
+        ${table.contractualMinor} > 0
+        AND ${table.contractualMinor} <= 100000000000
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_known_principal",
+      sql`
+        ${table.knownPrincipalMinor} IS NULL
+        OR (
+          ${table.knownPrincipalMinor} >= 0
+          AND ${table.knownPrincipalMinor} <= 100000000000
+        )
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_known_interest",
+      sql`
+        ${table.knownInterestMinor} IS NULL
+        OR (
+          ${table.knownInterestMinor} >= 0
+          AND ${table.knownInterestMinor} <= 100000000000
+        )
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_known_fee",
+      sql`
+        ${table.knownFeeMinor} IS NULL
+        OR (
+          ${table.knownFeeMinor} >= 0
+          AND ${table.knownFeeMinor} <= 100000000000
+        )
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_known_total",
+      sql`
+        COALESCE(${table.knownPrincipalMinor}, 0)
+          + COALESCE(${table.knownInterestMinor}, 0)
+          + COALESCE(${table.knownFeeMinor}, 0)
+        <= ${table.contractualMinor}
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_breakdown",
+      sql`
+        (
+          ${table.breakdownComplete} = false
+          AND (
+            COALESCE(${table.knownPrincipalMinor}, 0)
+              + COALESCE(${table.knownInterestMinor}, 0)
+              + COALESCE(${table.knownFeeMinor}, 0)
+            <= ${table.contractualMinor}
+          )
+        )
+        OR
+        (
+          ${table.breakdownComplete} = true
+          AND ${table.knownPrincipalMinor} IS NOT NULL
+          AND ${table.knownInterestMinor} IS NOT NULL
+          AND ${table.knownFeeMinor} IS NOT NULL
+          AND ${table.knownPrincipalMinor}
+            + ${table.knownInterestMinor}
+            + ${table.knownFeeMinor}
+            = ${table.contractualMinor}
+        )
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_opening_satisfied",
+      sql`
+        ${table.openingSatisfiedMinor} >= 0
+        AND ${table.openingSatisfiedMinor} <= ${table.contractualMinor}
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_disposition",
+      sql`
+        ${table.disposition}
+        IN ('scheduled', 'cancelled')
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_cancellation_shape",
+      sql`
+        (
+          ${table.disposition} = 'scheduled'
+          AND ${table.cancellationReason} IS NULL
+        )
+        OR
+        (
+          ${table.disposition} = 'cancelled'
+          AND ${table.cancellationReason} IS NOT NULL
+          AND char_length(btrim(${table.cancellationReason})) > 0
+        )
+      `,
+    ),
+
+    check(
+      "ck_scheduled_installment_notes",
+      sql`
+        ${table.notes} IS NULL
+        OR char_length(${table.notes}) <= 20000
+      `,
     ),
   ],
 );

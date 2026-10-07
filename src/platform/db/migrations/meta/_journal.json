@@ -120,6 +120,27 @@
       "when": 1791306428460,
       "tag": "0016_workspace_currency_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791377605076,
+      "tag": "0017_complex_marauders",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791378268454,
+      "tag": "0018_d6a_debt_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791378624348,
+      "tag": "0019_d6a_opening_baseline_identity",
+      "breakpoints": true
     }
   ]
 }
