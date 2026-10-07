@@ -180,6 +180,15 @@ export type ListAgendaItemsResult = {
 
   items: AgendaItem[];
 
+  /**
+   * Authorized routes back to source aggregates when the current source
+   * adapter already exposes one.
+   *
+   * Manual personal-event detail routes are added in C2b2b. Career events can
+   * already resolve to their owning application.
+   */
+  sourceRoutes: Record<string, string>;
+
   nextCursor: string | null;
 };
 
@@ -528,6 +537,21 @@ async function executeListAgendaItems(
 
   const items = visibleRows.map(mapAgendaItem);
 
+  const sourceRoutes: Record<string, string> = {};
+
+  for (const row of visibleRows) {
+    if (row.source_kind === "application_event" && row.source_id !== null) {
+      if (row.application_id === null) {
+        throw new Error(
+          "Career Agenda source could not resolve its owning application.",
+        );
+      }
+
+      sourceRoutes[`application_event:${row.source_id}`] =
+        `/career/applications/${row.application_id}`;
+    }
+  }
+
   const lastRow = visibleRows.at(-1);
 
   let nextCursor: string | null = null;
@@ -596,6 +620,8 @@ async function executeListAgendaItems(
     today,
 
     items,
+
+    sourceRoutes,
 
     nextCursor,
   };

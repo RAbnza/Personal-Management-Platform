@@ -72,6 +72,9 @@ export default async function Home() {
   const careerEnabled =
     modules.find((module) => module.moduleKey === "career")?.enabled === true;
 
+  const timeEnabled =
+    modules.find((module) => module.moduleKey === "time")?.enabled === true;
+
   const showGettingStarted =
     onboarding !== null &&
     !onboarding.complete &&
@@ -198,7 +201,7 @@ export default async function Home() {
 
           <Panel
             title="Calendar"
-            description="Upcoming items will be projected from their authoritative source records."
+            description="Upcoming items are projected directly from their authoritative source records."
             className="md:col-span-2 xl:col-span-1"
           >
             <div className="flex gap-3">
@@ -210,10 +213,20 @@ export default async function Home() {
                 />
               </div>
 
-              <p className="text-sm leading-6 text-muted-foreground">
-                Agenda information will link back to its source workflow rather
-                than becoming a second editable copy.
-              </p>
+              <div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {timeEnabled
+                    ? "Review Career activities and personal events together without creating duplicate editable Calendar records."
+                    : "Calendar can still show agenda-visible source records while manual personal-event creation is disabled."}
+                </p>
+
+                <Link
+                  href="/calendar"
+                  className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Open Calendar
+                </Link>
+              </div>
             </div>
           </Panel>
         </div>

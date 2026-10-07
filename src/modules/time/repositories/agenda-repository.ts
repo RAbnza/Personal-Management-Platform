@@ -27,6 +27,8 @@ export type AgendaListQueryRow = {
   source_id: string | null;
   occurrence_key: string | null;
 
+  application_id: string | null;
+
   title: string | null;
 
   display_module: string | null;
@@ -158,6 +160,8 @@ export async function readAgendaPage(
           agenda."source_id",
           agenda."occurrence_key",
 
+          career_event."application_id",
+
           agenda."title",
 
           CASE
@@ -215,6 +219,17 @@ export async function readAgendaPage(
         FROM "workspace_context" AS context
 
         CROSS JOIN time."agenda_v" AS agenda
+
+        LEFT JOIN career."application_event"
+          AS career_event
+          ON agenda."source_kind" =
+            'application_event'
+
+          AND career_event."workspace_id" =
+            context."workspace_id"
+
+          AND career_event."id" =
+            agenda."source_id"
 
         WHERE
           (
@@ -306,6 +321,8 @@ export async function readAgendaPage(
         source."source_kind",
         source."source_id",
         source."occurrence_key",
+
+        source."application_id",
 
         source."title",
 

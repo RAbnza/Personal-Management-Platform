@@ -72,6 +72,10 @@ export default async function OnboardingPage() {
     (step) => step.stepKey === "add-job-application",
   );
 
+  const reviewAgendaStep = progress?.steps.find(
+    (step) => step.stepKey === "review-agenda",
+  );
+
   return (
     <AppShell
       pageTitle="Getting started"
@@ -211,6 +215,27 @@ export default async function OnboardingPage() {
                   className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
                 >
                   Add job application
+                </Link>
+              </Panel>
+            ) : null}
+
+            {reviewAgendaStep?.applicable &&
+            reviewAgendaStep.state !== "completed" ? (
+              <Panel
+                title="Next: review your Agenda"
+                description="See how upcoming commitments are projected from their authoritative source records."
+              >
+                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                  Career activities and manual personal events appear together
+                  without becoming duplicate editable records. Open Calendar,
+                  review the Agenda, then explicitly confirm the lesson there.
+                </p>
+
+                <Link
+                  href="/calendar"
+                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Review Agenda
                 </Link>
               </Panel>
             ) : null}
