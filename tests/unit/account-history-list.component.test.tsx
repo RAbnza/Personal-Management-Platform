@@ -110,6 +110,27 @@ const history: AccountHistoryResult = {
 };
 
 describe("AccountHistoryList", () => {
+  it("labels a debt payment as repayment activity rather than spending", () => {
+    render(
+      <AccountHistoryList
+        history={{
+          ...history,
+          entries: [
+            {
+              ...history.entries[0]!,
+              actionKind: "debt_payment",
+              description: "Loan repayment",
+              signedAmountMinor: "-111000",
+            },
+          ],
+        }}
+        timezone="Asia/Manila"
+      />,
+    );
+    expect(screen.getByText("Debt payment")).toBeInTheDocument();
+    expect(screen.queryByText("Spending")).not.toBeInTheDocument();
+    expect(screen.getByText("PHP 1,110.00")).toBeInTheDocument();
+  });
   it("shows ledger-derived account activity and running balances", () => {
     render(<AccountHistoryList history={history} timezone="Asia/Manila" />);
 

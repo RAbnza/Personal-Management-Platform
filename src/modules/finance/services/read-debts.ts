@@ -4,10 +4,13 @@ import {
   debtInstallmentReadSchema,
   type DebtListResult,
   type DebtDetailResult,
+  debtPaymentHistoryItemSchema,
+  type DebtPaymentHistoryResult,
 } from "@/modules/finance/domain/debt";
 import {
   readDebts,
   readDebtInstallments,
+  readDebtPaymentHistory,
 } from "@/modules/finance/repositories/debt-read-repository";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 
@@ -59,7 +62,54 @@ export async function getDebtDetailInTransaction(
         }),
       )
     : [];
-  return { financialRevision: result.financial_revision, debt, installments };
+  const history = z
+    .array(debtPaymentHistoryItemSchema)
+    .parse(await readDebtPaymentHistory(transaction, parsed));
+  return {
+    financialRevision: result.financial_revision,
+    debt,
+    installments,
+    payments: history.slice(0, 50),
+    nextPaymentCursor:
+      history.length > 50 ? history[49]!.actionRevisionId : null,
+  };
+}
+
+export async function listDebtPayments(
+  input: z.infer<typeof scope> & { debtId: string; after?: string | undefined },
+): Promise<DebtPaymentHistoryResult> {
+  const parsed = scope
+    .extend({ debtId: z.uuid(), after: z.uuid().optional() })
+    .strict()
+    .parse(input);
+  return withDomainTransaction(
+    scope.parse(input),
+    (transaction) => listDebtPaymentsInTransaction(transaction, parsed),
+    { readOnlySnapshot: true },
+  );
+}
+export async function listDebtPaymentsInTransaction(
+  transaction: ScopedTransaction,
+  input: z.infer<typeof scope> & { debtId: string; after?: string | undefined },
+): Promise<DebtPaymentHistoryResult> {
+  const parsed = scope
+    .extend({ debtId: z.uuid(), after: z.uuid().optional() })
+    .strict()
+    .parse(input);
+  const header = await readDebts(transaction, {
+    workspaceId: parsed.workspaceId,
+    debtId: parsed.debtId,
+  });
+  if (!header || !z.array(debtSummarySchema).parse(header.items)[0])
+    throw new DebtUnavailableError();
+  const items = z
+    .array(debtPaymentHistoryItemSchema)
+    .parse(await readDebtPaymentHistory(transaction, parsed));
+  return {
+    financialRevision: header.financial_revision,
+    items: items.slice(0, 50),
+    nextCursor: items.length > 50 ? items[49]!.actionRevisionId : null,
+  };
 }
 export async function getDebtDetail(
   input: z.infer<typeof scope> & { debtId: string },

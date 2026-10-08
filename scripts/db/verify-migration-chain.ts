@@ -22,6 +22,8 @@ import { getAccountHistory } from "../../src/modules/finance/services/get-accoun
 import { importExistingDebt } from "../../src/modules/finance/services/import-existing-debt";
 import { openFinancialAccount } from "../../src/modules/finance/services/open-financial-account";
 import { recordBorrowing } from "../../src/modules/finance/services/record-borrowing";
+import { recordDebtPayment } from "../../src/modules/finance/services/record-debt-payment";
+import { PaymentPreviewStaleError } from "../../src/modules/finance/domain/debt-payment";
 import {
   getDebtDetail,
   listDebts,
@@ -757,6 +759,154 @@ async function main() {
     });
     console.log(
       "D8a payment, fee, clearing resolution, and exhaustive schedule mapping passed on the fresh migration chain.",
+    );
+    const paymentBefore = await getDebtDetail({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    const paymentCommand = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      debtId: firstBorrowing.debtId,
+      payingAccountId: receivingAccount.accountId,
+      paymentDate: "2026-10-09",
+      scheduleVersionId: firstBorrowing.scheduleVersionId,
+      expectedFinancialRevision: paymentBefore.financialRevision,
+      actualPaidMinor: "111000",
+      contractualMinor: "110000",
+      externalFeeMinor: "1000",
+      allocationCertainty: "known_components" as const,
+      components: [
+        {
+          disposition: "liability_reduction" as const,
+          liabilityComponent: "principal" as const,
+          amountMinor: "100000",
+          label: "Principal",
+        },
+        {
+          disposition: "new_interest" as const,
+          amountMinor: "10000",
+          label: "Confirmed new interest",
+        },
+      ],
+      dueAllocations: [
+        {
+          installmentId: paymentBefore.installments[0]!.installmentId,
+          amountMinor: "110000",
+        },
+      ],
+      unappliedContractualMinor: "0",
+      dueAllocationConfirmed: true as const,
+      confirmationSource: "user" as const,
+      description: "Verification debt payment",
+    };
+    const [savedPayment, concurrentReplay] = await Promise.all([
+      recordDebtPayment(paymentCommand),
+      recordDebtPayment({ ...paymentCommand, requestId: randomUUID() }),
+    ]);
+    assert.deepEqual(savedPayment, concurrentReplay);
+    assert.deepEqual(
+      await recordDebtPayment({ ...paymentCommand, requestId: randomUUID() }),
+      savedPayment,
+    );
+    await assert.rejects(
+      () =>
+        recordDebtPayment({
+          ...paymentCommand,
+          description: "Changed payment retry",
+        }),
+      FinancialCommandConflictError,
+    );
+    const paymentAfter = await getDebtDetail({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    assert.equal(paymentAfter.debt.recognizedLiabilityMinor, "900000");
+    assert.equal(paymentAfter.debt.remainingScheduledMinor, "890000");
+    assert.equal(paymentAfter.installments[0]?.openingSatisfiedMinor, "0");
+    assert.equal(paymentAfter.installments[0]?.paymentSatisfiedMinor, "110000");
+    assert.equal(paymentAfter.payments.length, 1);
+    assert.equal(paymentAfter.payments[0]?.paymentId, savedPayment.paymentId);
+    const paidAccount = await getAccountHistory({
+      ...owner,
+      accountId: receivingAccount.accountId,
+    });
+    assert.equal(paidAccount.account.currentBalanceMinor, "869000");
+    assert.equal(
+      paidAccount.entries.filter(
+        (entry) => entry.actionId === savedPayment.actionId,
+      ).length,
+      1,
+    );
+    assert.equal(
+      paidAccount.entries.find(
+        (entry) => entry.actionId === savedPayment.actionId,
+      )?.signedAmountMinor,
+      "-111000",
+    );
+    assert.equal(
+      (
+        await listAgendaItems({
+          ...owner,
+          startDate: "2026-01-01",
+          endDate: "2026-12-31",
+          modules: ["money"],
+        })
+      ).items.length,
+      2,
+    );
+    const competingPayment = {
+      ...paymentCommand,
+      expectedFinancialRevision: paymentAfter.financialRevision,
+      actualPaidMinor: "1000",
+      contractualMinor: "1000",
+      externalFeeMinor: "0",
+      components: [
+        {
+          disposition: "liability_reduction" as const,
+          liabilityComponent: "principal" as const,
+          amountMinor: "1000",
+          label: "Principal",
+        },
+      ],
+      dueAllocations: [
+        {
+          installmentId: paymentAfter.installments[0]!.installmentId,
+          amountMinor: "1000",
+        },
+      ],
+    };
+    const competing = await Promise.allSettled([
+      recordDebtPayment({ ...competingPayment, clientCommandId: randomUUID() }),
+      recordDebtPayment({ ...competingPayment, clientCommandId: randomUUID() }),
+    ]);
+    assert.equal(
+      competing.filter((result) => result.status === "fulfilled").length,
+      1,
+    );
+    const rejected = competing.find((result) => result.status === "rejected");
+    assert.ok(
+      rejected &&
+        rejected.status === "rejected" &&
+        rejected.reason instanceof PaymentPreviewStaleError,
+    );
+    const currentPaid = await getDebtDetail({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    assert.equal(currentPaid.payments.length, 2);
+    assert.equal(currentPaid.debt.remainingScheduledMinor, "889000");
+    assert.equal(
+      (
+        await getAccountHistory({
+          ...owner,
+          accountId: receivingAccount.accountId,
+        })
+      ).account.currentBalanceMinor,
+      "868000",
+    );
+    console.log(
+      "D8b committed payment, exact cash/expense/liability effects, concurrent replay/competing-preview conflicts, payment history, and current Debt/Agenda dues passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();

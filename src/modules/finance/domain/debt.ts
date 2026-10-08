@@ -197,6 +197,13 @@ export const debtSummarySchema = z.object({
   recognizedLiabilityMinor: z.string(),
   outstandingPrincipalMinor: z.string().nullable(),
   unclassifiedLiabilityMinor: z.string(),
+  recognizedLiabilityComponents: z.object({
+    principal: z.string(),
+    interest: z.string(),
+    fee: z.string(),
+    penalty: z.string(),
+    unclassified: z.string(),
+  }),
   breakdownStatus: z.enum(["known", "partial", "unknown"]),
   lifecycle: z.enum(["active", "settled", "settled_early", "cancelled"]),
   notes: z.string().nullable(),
@@ -205,6 +212,8 @@ export const debtSummarySchema = z.object({
   installmentCount: z.number().int(),
   scheduleVersionId: z.uuid().nullable(),
   scheduleReason: z.string().nullable(),
+  paymentClearingMinor: z.string(),
+  unappliedContractualMinor: z.string(),
 });
 export type DebtSummary = z.infer<typeof debtSummarySchema>;
 export const debtInstallmentReadSchema = z.object({
@@ -213,6 +222,8 @@ export const debtInstallmentReadSchema = z.object({
   dueDate: z.string(),
   contractualMinor: z.string(),
   openingSatisfiedMinor: z.string(),
+  paymentSatisfiedMinor: z.string(),
+  disposition: z.enum(["scheduled", "cancelled"]),
   remainingMinor: z.string(),
   knownPrincipalMinor: z.string().nullable(),
   knownInterestMinor: z.string().nullable(),
@@ -230,4 +241,62 @@ export type DebtDetailResult = {
   financialRevision: string;
   debt: DebtSummary;
   installments: DebtInstallment[];
+  payments: DebtPaymentHistoryItem[];
+  nextPaymentCursor: string | null;
+};
+
+export const debtPaymentHistoryItemSchema = z.object({
+  paymentId: z.uuid(),
+  actionId: z.uuid(),
+  actionRevisionId: z.uuid(),
+  revisionNo: z.number().int(),
+  changeKind: z.enum(["create", "replace", "void"]),
+  current: z.boolean(),
+  paymentDate: z.string(),
+  recordedAt: z.iso.datetime(),
+  payingAccountName: z.string().nullable(),
+  actualPaidMinor: z.string().nullable(),
+  contractualMinor: z.string().nullable(),
+  externalFeeMinor: z.string().nullable(),
+  unappliedContractualMinor: z.string().nullable(),
+  allocationCertainty: z
+    .enum(["known_components", "confirmed_total", "unresolved"])
+    .nullable(),
+  description: z.string(),
+  reference: z.string().nullable(),
+  confirmationSource: z.enum(["user", "provider"]).nullable(),
+  confirmationNote: z.string().nullable(),
+  negativeBalanceAcknowledged: z.boolean(),
+  components: z.array(
+    z.object({
+      disposition: z.enum([
+        "liability_reduction",
+        "new_interest",
+        "new_fee",
+        "new_penalty",
+        "clearing",
+        "advance",
+        "external_fee",
+      ]),
+      amountMinor: z.string(),
+      liabilityComponent: z.enum(liabilityComponents).nullable(),
+      label: z.string().nullable(),
+    }),
+  ),
+  dueAllocations: z.array(
+    z.object({
+      installmentId: z.uuid(),
+      sequenceNo: z.number().int(),
+      dueDate: z.string(),
+      amountMinor: z.string(),
+    }),
+  ),
+});
+export type DebtPaymentHistoryItem = z.infer<
+  typeof debtPaymentHistoryItemSchema
+>;
+export type DebtPaymentHistoryResult = {
+  financialRevision: string;
+  items: DebtPaymentHistoryItem[];
+  nextCursor: string | null;
 };

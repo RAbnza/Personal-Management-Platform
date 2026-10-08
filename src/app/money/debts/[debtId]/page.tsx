@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { z } from "zod";
+import { DebtPaymentHistory } from "@/components/money/debt-payment-history";
 
 import {
   DebtUnavailableError,
@@ -91,6 +92,14 @@ export default async function DebtDetailPage({
           {debt.debtType.replaceAll("_", " ")} ·{" "}
           {debt.lifecycle.replaceAll("_", " ")}
         </p>
+        {debt.lifecycle === "active" && debt.scheduleVersionId ? (
+          <Link
+            href={`/money/debts/${debt.debtId}/pay`}
+            className="mt-4 inline-flex min-h-11 items-center rounded-button border border-primary-border bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+          >
+            Record payment
+          </Link>
+        ) : null}
       </header>
 
       <dl className="grid gap-5 rounded-card border border-border bg-card p-5 sm:grid-cols-2">
@@ -98,6 +107,14 @@ export default async function DebtDetailPage({
           ["Recognized liability", money(debt.recognizedLiabilityMinor)],
           ["Outstanding principal", money(debt.outstandingPrincipalMinor)],
           ["Remaining supplied schedule", money(debt.remainingScheduledMinor)],
+          [
+            "Payment clearing / advance (not spendable cash)",
+            money(debt.paymentClearingMinor),
+          ],
+          [
+            "Current unapplied contractual payments",
+            money(debt.unappliedContractualMinor),
+          ],
           [
             "Original principal (contract metadata)",
             money(debt.originalPrincipalMinor),
@@ -185,15 +202,17 @@ export default async function DebtDetailPage({
                 openingSatisfiedMinor >= contractualMinor;
 
               const state =
-                remainingMinor === 0n
-                  ? fullySatisfiedAtOpening
-                    ? "Satisfied at opening cutoff"
-                    : "Satisfied"
-                  : row.dueDate < today
-                    ? "Overdue"
-                    : row.dueDate === today
-                      ? "Due today"
-                      : "Upcoming";
+                row.disposition === "cancelled"
+                  ? "Cancelled"
+                  : remainingMinor === 0n
+                    ? fullySatisfiedAtOpening
+                      ? "Satisfied at opening cutoff"
+                      : "Satisfied"
+                    : row.dueDate < today
+                      ? "Overdue"
+                      : row.dueDate === today
+                        ? "Due today"
+                        : "Upcoming";
 
               return (
                 <li
@@ -209,6 +228,10 @@ export default async function DebtDetailPage({
                     {[
                       ["Contractual amount", row.contractualMinor],
                       ["Opening satisfaction", row.openingSatisfiedMinor],
+                      [
+                        "Current payment satisfaction",
+                        row.paymentSatisfiedMinor,
+                      ],
                       ["Remaining due", row.remainingMinor],
                       ["Known principal", row.knownPrincipalMinor],
                       ["Known interest", row.knownInterestMinor],
@@ -241,6 +264,15 @@ export default async function DebtDetailPage({
           </ol>
         )}
       </section>
+      <DebtPaymentHistory
+        key={`${debt.debtId}:${result.financialRevision}`}
+        debtId={debt.debtId}
+        currency={debt.currency}
+        financialRevision={result.financialRevision}
+        timezone={workspace.timezone}
+        initialItems={result.payments}
+        initialCursor={result.nextPaymentCursor}
+      />
     </article>
   );
 }

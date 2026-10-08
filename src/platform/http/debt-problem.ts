@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { PaymentPreviewStaleError } from "@/modules/finance/domain/debt-payment";
+import {
+  FinancialAccountReferenceUnavailableError,
+  FinancialCategoryReferenceUnavailableError,
+} from "@/modules/finance/domain/financial-reference";
 import {
   FinancialCommandConflictError,
   FinancialCommandStateError,
@@ -17,6 +22,36 @@ export function debtProblem(error: unknown, requestId: string) {
     return createJsonBodyProblemResponse(error, requestId);
   if (error instanceof z.ZodError)
     return createSchemaValidationProblemResponse(error, requestId);
+  if (error instanceof PaymentPreviewStaleError)
+    return createApiProblemResponse({
+      status: 409,
+      code: "PAYMENT_PREVIEW_STALE",
+      message: error.message,
+      requestId,
+      retryable: false,
+    });
+  if (error instanceof RangeError)
+    return createApiProblemResponse({
+      status: 422,
+      code: "BUSINESS_RULE_VIOLATION",
+      message: error.message,
+      requestId,
+      retryable: false,
+    });
+  if (
+    error instanceof FinancialAccountReferenceUnavailableError ||
+    error instanceof FinancialCategoryReferenceUnavailableError
+  )
+    return createApiProblemResponse({
+      status: 404,
+      code:
+        error instanceof FinancialAccountReferenceUnavailableError
+          ? "FINANCIAL_ACCOUNT_UNAVAILABLE"
+          : "FINANCIAL_CATEGORY_UNAVAILABLE",
+      message: "The selected private financial reference is unavailable.",
+      requestId,
+      retryable: false,
+    });
   if (
     error instanceof DebtUnavailableError ||
     error instanceof FinancialWriteWorkspaceUnavailableError

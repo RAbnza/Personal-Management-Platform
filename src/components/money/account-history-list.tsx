@@ -41,6 +41,8 @@ const actionKindContent: Record<string, ActionKindContent> = {
     icon: ArrowUpRight,
   },
 
+  debt_payment: { label: "Debt payment", icon: ArrowUpRight },
+
   transfer: {
     label: "Transfer",
     icon: ArrowRightLeft,
