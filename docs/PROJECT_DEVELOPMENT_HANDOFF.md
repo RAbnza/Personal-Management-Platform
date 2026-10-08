@@ -8,7 +8,7 @@
 
 **Handoff date:** October 8, 2026
 
-**Current verified implementation `main` HEAD:** `5f69a0e054705e8fc40dd7b572e3e26189a4eba0` — `feat(money): add debt payment workflow`
+**Current verified implementation `main` HEAD:** `038d387e1cab8096c5c6dcd729d1e6481dd59b40` — `feat(money): add versioned debt schedule revisions`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, and D8b payment workflow are complete. D9 schedule revisions is the next milestone.
+The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, and D9 schedule revisions are complete. D10 early debt settlement is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -431,6 +431,50 @@ Verification on October 8, 2026:
 
 No unresolved D8b blocker remains. User-facing payment correction/reclassification entry, D9 schedule revisions, early settlement, reconciliation, Dashboard/Reports, V2, and V3 remain outside this milestone. D8b reads already supported revision evidence correctly; it does not release a schedule-revision or settlement workflow.
 
+### 5.9 Debt Schedule Revisions — D9 complete
+
+Verified implementation commit: `038d387e1cab8096c5c6dcd729d1e6481dd59b40` — `feat(money): add versioned debt schedule revisions`.
+
+Continuation verified clean `main` at `dcd53269e1caa2cd50351a72df89c64336c58aa9` and all 85 focused D8b workflow/D8a integrity tests before implementation. D9 reuses the immutable schedule/payment tables, workspace serialization, scoped transactions, command receipts, private audit, and current due/Agenda views.
+
+Released behavior:
+
+- `date_correction`, `renegotiation`, and `allocation_correction` commands create a new finalized immutable version with its immediate predecessor retained. Initial versions and settlement are not accepted revision commands.
+- Surviving entries keep their `debt_obligation` identity and exact opening satisfaction. Genuine replacements receive new identities and explicit predecessor-obligation evidence in the command audit. An obligation cannot both survive and be replaced. Opening satisfaction cannot disappear into a replacement; later payments never change the opening baseline.
+- Setup reads a single repeatable snapshot of debt versions, current terms, original payment allocation sources/unapplied pools, and their current targets. Each current nonvoid payment source must be mapped exactly once and in full to the new schedule or explicit unapplied funds. Historical allocations/maps remain immutable; mappings never use another mapping as their source.
+- Shared exact preview validates same-debt identities, supported terms, exhaustive mappings, no duplicate paths, no oversatisfaction, and fully satisfied surviving obligations. Date correction preserves amounts and each source's target by stable obligation; allocation correction preserves dates/terms; renegotiation explicitly changes agreed terms.
+- Atomic command claims/replays its receipt before stale/reference checks, checks expected **debt version**, schedule pointer and workspace financial revision, assembles entries/maps, finalizes the schedule, switches the debt pointer, advances aggregate/workspace versions, writes before/after audit and completes the receipt. Constraints and COMMIT must succeed before success is returned.
+- Pure schedule/date changes create no financial posting. An explicitly provider-confirmed newly recognized interest/fee/penalty is a separate `debt_charge` action in the same transaction: expense debit, matching debt-liability credit, no cash. Fee charges include one capitalized `fee_component`. Scheduled future charges and already recognized amounts are not recognized again.
+- Current satisfaction remains opening + current direct allocations + mapped older current payments through `current_installment_due_v`. Agenda automatically reads only the active finalized schedule and positive remaining dues. Stable source identities survive date changes; source debt version and schedule notification generation advance atomically. Paid/cancelled dues disappear from projections. External reminder dispatch remains a later Coherent V1 capability.
+
+Layers released:
+
+- Domain: `debt-schedule-revision.ts`, `debt-schedule-history.ts`; installment reads now include stable obligation identity and cancellation reason.
+- Repository/service: `debt-schedule-repository.ts`, `get-debt-schedule-setup.ts`, `revise-debt-schedule.ts`, `read-debt-schedules.ts`; debt detail/history share one repeatable snapshot.
+- API: authenticated same-origin `POST /api/v1/debts/:debtId/schedule-revisions`, owned paginated `GET` at the same path, typed stale-preview 409. The revision route uses a server-owned bounded 8 MiB transport allowance for up to 360 complete entries and 10,000 source maps; other APIs retain the existing 64 KiB default. Shared transport checks both declared and actual bytes.
+- UI: `/money/debts/[debtId]/revise-schedule`, loading/error/reload behavior, review form and paginated immutable history. Review shows old/new dates, contractual/known terms, opening/payment carry, remaining, obligation replacements/cancellations, exact pool mappings, explicit unapplied total, Agenda impact and any separate noncash charge.
+- Save stages retain a frozen reviewed snapshot and exact in-memory command. Lost/malformed responses keep editing locked and offer same-command retry; stale previews require a refreshed snapshot and renewed confirmation. No private payload is persisted in browser storage.
+
+Migrations (test first, development only after verification):
+
+- `0029_d9_schedule_charge_kind.sql`: generated structural release of the documented `debt_charge` action kind.
+- `0030_d9_schedule_integrity.sql`: correction-term/identity checks, historical-opening retention, dedicated confirmed noncash-charge recipe and routing; existing FORCE RLS and immutable evidence guards continue to apply.
+- `0031_d9_charge_fee_evidence.sql`: reviewed follow-up requiring affirmative provider evidence even for missing JSON fields and exact typed capitalized fee evidence. Applied migrations were not rewritten.
+
+Verification:
+
+- Focused D8b/D8a continuation baseline: 85 tests passed before implementation. Final affected D9/D8b/D8a run: 110 tests passed (25 D9 workflow/database tests).
+- `pnpm test:integration`: 44 files / 277 real PostgreSQL tests passed. D9 covers due correction, renegotiated amounts/new identities, partial/full payment carry, opening baseline retention, current direct + older mapped satisfaction, no-date/unapplied mapping, mapping exhaustiveness/conflicts, stale versions, exact replay, immutable history/pagination, actual foreign-owner references, explicit interest/fee/penalty recognition without cash, and complete late-failure rollback.
+- `pnpm test --maxWorkers=1`: 73 files / 428 tests passed, including 38 D9 contract/API/form/history tests (the supported 10,000 original pools included) and three shared bounded-transport regressions. The existing transaction-form test timed out once with simultaneous heavy gate jobs, then passed in isolation and in the complete suite without changing its timeout or implementation.
+- `pnpm check`: lint, TypeScript and repository formatting passed. `pnpm build`: passed with the revision API/page and history read surface.
+- `pnpm db:verify:chain`: 32 migrations and a no-op repeat passed on a fresh disposable database, including committed D9 same-key concurrent replay, competing stale previews, exact mappings, unchanged cash, preserved history and stable Agenda projections. Existing D6b/D7/D8a/D8b committed smoke remains passing.
+- `pnpm db:generate --name=d9_drift_check`: no schema drift; no extra migration generated.
+- Test migrations applied first; development migrations applied after focused/full PostgreSQL regressions and fresh-chain verification.
+- Browser verification could not run because no browser surface was available (`iab` unavailable). Component tests verify the complete review/save/error/stale/safe-retry flow, frozen uncertain-save snapshot, explicit handling of removed mapping targets, and paginated history. No browser verification is claimed.
+- `git diff --cached --check` passed before commit.
+
+There is no D9 blocker. User-facing payment correction/reclassification, early settlement, reconciliation, Dashboard/Reports, V2 and V3 remain separate assignments. **Next: D10 — Early Debt Settlement.**
+
 ---
 
 ## 6. Current functional route surface
@@ -454,6 +498,7 @@ At the current handoff point, the repository includes functional page routes for
   - existing-debt import
   - new borrowing
   - debt payment entry and payment/audit history
+  - debt schedule revision review and immutable schedule history
 - Career:
   - application list
   - create application
@@ -462,17 +507,17 @@ At the current handoff point, the repository includes functional page routes for
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include schedule revisions, settlement, reconciliation, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include settlement, payment correction/reclassification entry, reconciliation, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: D9 — Debt Schedule Revisions
+### Next milestone: D10 — Early Debt Settlement
 
-Continue with the separately assigned D9 schedule-revision workflow using immutable terms, stable obligation identity, exact exhaustive allocation maps, reviewed version checks, and existing audit/workspace-locking patterns. The current due view already handles direct and mapped effective payments. Preserve original payment allocations and opening satisfaction; do not copy payments into a second cash action or mutate finalized schedules/maps.
+Continue with the separately assigned D10 settlement workflow. Consult authoritative §9.4 System Architecture and §7.4 Database Architecture for confirmed payoff, recognized charge/waiver versus avoided unrecognized future charges, exact zero residual, clearing/unapplied resolution, immutable closing schedule and future Agenda cancellation. D9's schedule revision and explicit noncash-charge primitives do not themselves settle a debt.
 
-Consult the current repository and relevant authoritative schedule sections before implementation. Do not rebuild D6b/D7/D8a/D8b, invent payment breakdowns/dates, or include early settlement, reconciliation, Dashboard/Reports, V2, or V3 unless a later prompt explicitly assigns that work.
+Verify D9 before continuing. Do not rebuild D6b/D7/D8a/D8b/D9, guess provider payoff/waiver classification, or include reconciliation, Dashboard/Reports, V2 or V3. D9 stopped without settlement implementation.
 
 ---
 
@@ -494,7 +539,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, and D8b are complete; D9 is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, and D9 are complete; D10 is next.
 
 ### A. Existing debt import and read model
 
@@ -566,9 +611,9 @@ Rules:
 
 ### E. Manual schedules and schedule revisions
 
-Initial manual schedules and empty no-date schedules are already released in D6b/D7. D9 is the next milestone for the user-facing revision workflow and must preserve the following contracts.
+Initial manual/empty no-date schedules are released in D6b/D7. The user-facing versioned revision and allocation-mapping workflow is complete in D9. Preserve these contracts:
 
-Implement:
+Released:
 
 - initial manual schedule;
 - stable obligation identities;
@@ -1313,9 +1358,9 @@ Re-check whether Agenda items from a hidden module should remain source-linkable
 
 ### 14.3 Remaining debt workflows
 
-D6b import/read, D7 borrowing, and D8b payment entry/history are released workflows. User-facing schedule revisions, payment correction/reclassification, and settlement remain future work. The database foundation must not be mistaken for those released user flows.
+D6b import/read, D7 borrowing, D8b payment entry/history and D9 schedule revisions/history are released workflows. Payment correction/reclassification entry and settlement remain future work. D9 allocation correction maps contractual satisfaction only; it does not correct financial payment evidence or classify clearing.
 
-The immediate continuation is **D9 — Debt Schedule Revisions**. No D8b blocker remains; the separate release review items above remain applicable before V1 completion.
+The immediate continuation is **D10 — Early Debt Settlement**. No D9 blocker remains; the separate release review items above remain applicable before V1 completion.
 
 ---
 
@@ -1344,6 +1389,7 @@ Useful milestone commits currently on `main`:
 | Borrowing/net proceeds | `8c0875298e6995c7a1cf0d302db179aafeae82c4` |
 | Debt-payment database foundation | `dc451c51374620198df0ad6befe366e3c2a09698` |
 | Debt payment workflow | `5f69a0e054705e8fc40dd7b572e3e26189a4eba0` |
+| Debt schedule revisions | `038d387e1cab8096c5c6dcd729d1e6481dd59b40` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1378,7 +1424,8 @@ As of this handoff:
 - Borrowing/net proceeds D7: complete.
 - Debt-payment database/security/integrity foundation D8a: complete and verified; test and development migrations applied.
 - Debt Payment Workflow D8b: complete and verified; current dues/Agenda, payment/audit history, and test/development migration applied.
-- **Next task: D9 — Debt Schedule Revisions.**
+- Debt Schedule Revisions D9: complete and verified; immutable history, exhaustive payment mapping, explicit noncash charge and current Agenda projections.
+- **Next task: D10 — Early Debt Settlement.**
 - Coherent V1 dashboard/reports/reminders/exports/lifecycle: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
