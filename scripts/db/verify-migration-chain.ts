@@ -1468,6 +1468,66 @@ async function main() {
     console.log(
       "D12 committed reversal/replacement, current logical identity, genuine refund, signed account history, concurrent replay, changed-payload conflicts and owner isolation passed.",
     );
+    const { getDashboard } =
+      await import("@/modules/dashboard/services/get-dashboard");
+    const { getSpendingDetail } =
+      await import("@/modules/reporting/services/get-spending-detail");
+    const dashboard = await getDashboard({
+      ...owner,
+      query: {
+        period: "custom",
+        startDate: "2026-10-08",
+        endDate: "2026-10-10",
+      },
+    });
+    const contributions = await getSpendingDetail({
+      ...owner,
+      query: { startDate: "2026-10-08", endDate: "2026-10-10" },
+    });
+    assert.deepEqual(dashboard.finance.spending, contributions.summary);
+    assert.equal(
+      dashboard.finance.accounts.find(
+        (a) => a.account_id === receivingAccount.accountId,
+      )?.current_balance_minor,
+      d12History.account.currentBalanceMinor,
+    );
+    assert.equal(
+      contributions.items
+        .filter((p) => p.actionId === purchase.actionId)
+        .reduce((sum, p) => sum + BigInt(p.amountMinor), 0n),
+      800n,
+    );
+    assert.equal(
+      contributions.items
+        .filter((p) => p.actionId === refunded[0]!.actionId)
+        .reduce((sum, p) => sum + BigInt(p.amountMinor), 0n),
+      -200n,
+    );
+    assert.equal(
+      dashboard.activity.filter((a) => a.key === purchase.actionId).length,
+      1,
+    );
+    const foreignDashboard = await getDashboard({
+      ...other,
+      query: {
+        period: "custom",
+        startDate: "2026-10-08",
+        endDate: "2026-10-10",
+      },
+    });
+    assert.equal(
+      foreignDashboard.finance.accounts.some(
+        (a) => a.account_id === receivingAccount.accountId,
+      ),
+      false,
+    );
+    assert.equal(
+      foreignDashboard.activity.some((a) => a.key === purchase.actionId),
+      false,
+    );
+    console.log(
+      "V1-C1 committed Dashboard/spending snapshot, signed correction/refund contributions, account history consistency, logical activity and owner isolation passed.",
+    );
   } finally {
     await closeRuntimeDatabasePools();
 

@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config=vitest.integration.config.ts",
+    "test:browser": "playwright test",
     "services:up": "docker compose --env-file .env.docker up -d",
     "services:down": "docker compose --env-file .env.docker down",
     "services:logs": "docker compose --env-file .env.docker logs -f",
@@ -52,6 +53,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",

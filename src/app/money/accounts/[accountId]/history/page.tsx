@@ -66,52 +66,6 @@ export default async function MoneyAccountHistoryPage({
   const moneyEnabled =
     modules.find((module) => module.moduleKey === "money")?.enabled === true;
 
-  if (!moneyEnabled) {
-    return (
-      <AppShell
-        pageTitle="Account history"
-        activePath="/money/accounts"
-        userName={user.name}
-        userEmail={user.email}
-        workspaceTheme={preference.theme}
-        workspacePreferenceVersion={preference.version}
-        gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
-      >
-        <div className="space-y-8">
-          <header>
-            <Link
-              href="/money/accounts"
-              className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-            >
-              <ArrowLeft
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.9}
-              />
-              Back to accounts
-            </Link>
-
-            <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-              Account history
-            </h1>
-          </header>
-
-          <Panel
-            title="Money is currently disabled"
-            description="Existing financial records remain preserved when the module is hidden."
-          >
-            <Link
-              href="/onboarding"
-              className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
-              Enable Money from Getting Started
-            </Link>
-          </Panel>
-        </div>
-      </AppShell>
-    );
-  }
-
   const { accountId } = await params;
 
   const resolvedSearchParams = await searchParams;
@@ -162,7 +116,7 @@ export default async function MoneyAccountHistoryPage({
       <div className="space-y-8">
         <header>
           <Link
-            href="/money/accounts"
+            href={moneyEnabled ? "/money/accounts" : "/"}
             className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
           >
             <ArrowLeft
@@ -170,7 +124,7 @@ export default async function MoneyAccountHistoryPage({
               className="size-4"
               strokeWidth={1.9}
             />
-            Back to accounts
+            {moneyEnabled ? "Back to accounts" : "Back to Dashboard"}
           </Link>
 
           <p className="mt-3 text-sm font-medium text-link">Money</p>
@@ -184,6 +138,12 @@ export default async function MoneyAccountHistoryPage({
             Effective dates describe when financial activity occurred; recorded
             times show when it was saved.
           </p>
+          {!moneyEnabled && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Money module hidden. This owned source history remains available
+              from Dashboard.
+            </p>
+          )}
         </header>
 
         {history ? (

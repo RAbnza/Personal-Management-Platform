@@ -134,7 +134,7 @@ export async function readAgendaPage(
           workspace."timezone",
 
           (
-            clock_timestamp()
+            transaction_timestamp()
               AT TIME ZONE workspace."timezone"
           )::date AS "workspace_today",
 

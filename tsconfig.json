@@ -37,6 +37,7 @@
     "drizzle.test.config.ts",
     "vitest.config.ts",
     "vitest.integration.config.ts",
+    "playwright.config.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
