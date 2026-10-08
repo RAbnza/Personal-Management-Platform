@@ -6,9 +6,9 @@
 
 **Repository name status:** Tentative; do not treat it as the final product name.
 
-**Handoff date:** October 8, 2026
+**Handoff date:** October 9, 2026
 
-**Current verified implementation `main` HEAD:** `91624010767254461297f55eff238aa260ab07df` — `feat(dashboard): connect source-backed attention and summaries`
+**Current verified implementation `main` HEAD:** `d1e94142ceb56586d36072551dbe7f077672de0f` — `feat(reports): add exact period reports and scoped CSV exports`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** is complete. **V1-C2 — Reports, Drilldowns, and CSV Exports** is the next milestone.
+The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** and **V1-C2 — Reports, Drilldowns, and CSV Exports** are complete. **V1-C3 — In-App Due and Reminder Controls** is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -636,7 +636,35 @@ Verification:
 - `pnpm check` and `pnpm build`: passed. `git diff --cached --check`: passed before the implementation commit.
 - `pnpm db:generate --name=v1_c1_verified_drift`: **no schema changes**. No migration or development database change was required. `pnpm db:verify:chain`: **51 migrations and a no-op repeat passed** on an empty disposable database, retaining D6b–D12 committed smoke and adding Dashboard/spending equality, signed correction/refund contributions, account-history consistency, current logical activity and owner isolation.
 
-No unresolved V1-C1 blocker remains. Full Reports/CSV exports, reminder controls, other remaining coherent-V1 lifecycle surfaces, V2/V3 and broad redesign remain outside this milestone. Next milestone: **V1-C2 — Reports, Drilldowns, and CSV Exports**.
+No unresolved V1-C1 blocker remains. V1-C1 stopped with V1-C2 as its next assignment; V1-C2 is completed below. Reminder controls, other remaining coherent-V1 lifecycle surfaces, V2/V3 and broad redesign remain separate assignments.
+
+### 5.14 V1-C2 — Reports, Drilldowns, and CSV Exports
+
+Verified implementation commit: `d1e94142ceb56586d36072551dbe7f077672de0f` — `feat(reports): add exact period reports and scoped CSV exports`.
+
+V1-C2 is complete. Continuation began on clean synchronized `main` at `b6d16bc16a8636679850b0726082d37a8da19aff`. V1-C1 was verified first with all nine Dashboard PostgreSQL cases and 27 focused period/service/API/component cases. Review stayed within the authoritative reporting, period, financial classification, Career history/cohort, CSV/provenance and report-design sections.
+
+Released behavior:
+
+- `/reports` redirects to Financial; `/reports/financial`, `/reports/career` and `/reports/financial/detail` expose coherent server-derived reports and supporting records. Shared `PeriodFilterBar` uses C1's existing period service for configurable weeks, months, calendar quarters/years and inclusive custom ranges (maximum 366 days). Standard periods optionally accept an anchor date; Career accepts an explicit effective-observation cutoff through workspace today. All views retain currency, timezone, filters, definition version, generation time, coverage and financial source revision. Module hiding does not remove retained sources from reporting.
+- `GET /api/v1/reports/{financial|career|contributions}` uses the trusted server actor and one scoped read-only REPEATABLE READ snapshot. Unknown/duplicate/client-ownership parameters are rejected; private source failures do not become invented zero values. The definition version is `v1-reports-signed-cohort-1`. Dashboard spending reuses the same signed classification expressions and remains regression verified.
+- Financial query grain is one immutable posted posting, retaining every original/reversal/replacement leg. Many-side payment/settlement metadata is independently reduced before joining; tags and contractual allocations do not multiply financial evidence. Reversal classifications reference original posting/revision evidence. SQL numeric sums and server BigInt identities preserve exact values; principal and own transfers are not spending, borrowing/refunds/adjustments are not income, and previously recognized charges are not expensed again. Gross spending, eligible offsets/net, fees/interest/penalties/debt charges, external cash movement, transfer principal, baseline changes, explicit adjustments, recognized liability roll-forwards/waivers, uncertain clearing and limited tracked net position remain separate lenses.
+- Financial views include exact category/daily/cash-meaning tables, liability components and per-debt opening/closing balances including credit states. Every metric/table amount links to the same signed contribution predicate or its source record. Contributions have stable 100-row pagination while totals cover all matching rows. Owned category/uncategorized, cash-meaning, liability-component and balance-ledger filters remain explicit; ledger filtering is limited to balances so it cannot silently change the consolidated transfer boundary. Current scheduled payable is separate from recognized liability and uses current opening + direct + mapped payment satisfaction; opening satisfaction is never rewritten. Unknown schedules, component coverage and opening cutoffs stay disclosed.
+- Career cohorts count distinct attempts by actual submission date, include archived submitted attempts and exclude Saved opportunities. Resolved nonsuperseded history through the as-of date supplies reached stages/outcomes and full calendar-day stage durations, including repeated/open visits. Response conversion requires explicit dated noncancelled response evidence and one common cohort denominator; empty denominators are null/not applicable. Interview/assessment/event-date activity across all cohorts is independent of applications reaching a stage. Timed event boundaries use workspace timezone; cancelled events and superseded history remain supporting evidence. As-of is an effective observation cutoff under current corrected snapshot knowledge, not historical database knowledge reconstruction.
+- A narrowly required Career reporting dependency releases dated response/offer/no-response/note observations on application detail and `POST /api/v1/applications/[applicationId]/observations`. The old event creation contract only allowed scheduled interview/assessment/follow-up, so stage changes could not supply actual response evidence. Observation saves are owner/version checked, auditable and idempotent; changed payloads, stale/foreign applications and future actual dates reject. They create no stage transition, next action, financial write or reminder. Fields wait for hydration before accepting input; uncertain-save retry retains the exact command/body. Existing Career workflows remain unchanged.
+- Reports use the established shell/panels/tokens with accessible loading, empty, invalid-filter, error and pending states. Lazy Recharts trend/category charts use approximate display coordinates, explicit zero baselines, no entrance animation and adjacent exact-value tables; chart coordinates never calculate financial totals. No broad visual redesign was introduced.
+- `GET /api/v1/exports/{transactions|debt-schedules|debt-payments|applications|report}.csv` prepares an owner-scoped consistent snapshot and streams bounded CSV. Exact integer centavos/signed decimals, UTF-8/quoted multiline text, formula-safe untrusted text, schema/definition versions, source IDs/classifications, periods/date semantics, filters, coverage and revision metadata are preserved. A first manifest row and repeated metadata describe contents even for an empty export. Accounting components, contractual due allocations and historical mapping remain separate JSON columns. Historical payment/schedule/application revisions are evidence, not extra business actions. Exports expressly are not a complete workspace backup or an import/restore format. See [V1 CSV export contract](V1_CSV_EXPORTS.md) for column/grain/date/retention definitions.
+- New `ops.export_run` stores completed synchronous preparation provenance linked to a completed command receipt, with owner/workspace FKs, forced RLS, immutable metadata and guarded expiration pruning. Exports do not post money or increment financial revision. The visible history window is 30 days; the next prepared export prunes expired metadata, so inactive workspaces may retain older provenance until then. CSV files are not retained for redownload. Prepared means generation completed, not browser receipt. Caps are 10,000 data rows, 10 MiB, 366-day periods, 10-second SQL statements and a 30-second CSV-generation check before provenance/response. Later requests produce fresh snapshots, not immutable published accounting reports.
+
+Verification:
+
+- Full unit/component/API gate: **89 files / 610 tests passed** (`pnpm test --maxWorkers=1 --testTimeout=20000`). New C2 cases cover exact amounts beyond JavaScript precision, quoted/formula-safe CSV, size rejection, strict actor/filters, private attachments/errors, period navigation, export loading/error scope and identical observation retries. Initial parallel execution hit existing form timeouts; serial execution passed. The hidden-Career page test now isolates the added observation form like its other forms. The final hydration fix was separately verified with all seven affected report-control/hidden-source component cases.
+- Full PostgreSQL/runtime-role integration gate: **49 files / 367 tests passed** (`pnpm test:integration`). Fourteen C2 cases cover the PHP 36,915 cash / PHP 13,085 spending example with multiple splits/tags and every metric's exact drilldown sum, all period types, maximum valid monetary components, backdated category/fee corrections, actual later refunds, transfer principal/fees, adjustment equity, clearing and corrected later classification without another cash movement, Career submission/as-of/timezone/repeated/corrected history, cancelled events, foreign/stale/future observation rejection, export grains/provenance/nonfinancial revision and rollback. Settlement regressions now also assert eligible recognized waiver, avoided-charge and newly recognized cost/fee reporting. After the final CSV classification columns were added, all 23 focused C2/Dashboard PostgreSQL cases passed again.
+- Production browser gate: **six tests passed** (`$env:PMP_BROWSER_CHANNEL='msedge'; pnpm test:browser`) on isolated localhost:3100 with the guarded test database, preserving all three C1 browser regressions. C2 tests cover mobile period/report/drilldown behavior, an actual CSV download parsed for exact signed postings and manifest/provenance, the explicit dated-response form/cohort/source drilldown, invalid/ambiguous filters, real foreign-owner ledger isolation and anonymous export rejection. Mobile overflow was checked; mobile and Career screenshots were inspected. The first Career run caught an input-before-hydration date reset; fields now remain disabled until handlers are ready, and the full browser suite passes. Next's existing nonfatal destination-stream cancellation on navigation/teardown was still logged without assertion failures.
+- `pnpm check` and `pnpm build`: passed, rerun after the final form fix. `git diff --cached --check`: passed before the implementation commit. Added pinned architecture-selected `csv-stringify@6.9.0`, lazy `recharts@3.10.1`, and test-only `csv-parse@7.0.3`; existing dependency pins were unchanged.
+- Drizzle generated `0051_v1_c2_export_provenance.sql`; reviewed custom `0052_v1_c2_export_security.sql` supplies privileges, forced ownership RLS, immutability/retention and completed-command integrity. Both were applied to the test database first, then to development after focused/full regressions and fresh-chain verification. `pnpm db:generate`: no schema drift. `pnpm db:verify:chain`: **53 migrations plus a no-op repeat passed** on an empty disposable database, preserving D6b–C1 smoke and adding committed C2 reports/drilldown/export provenance, ownership, unchanged financial revision and a concurrent financial write that does not alter the in-progress repeatable report snapshot.
+
+No unresolved V1-C2 blocker remains within the documented coverage/bounds. Reminder controls, lifecycle/settings/help completion, V2/V3 and broad redesign were not begun. Future lifecycle purge must include `ops.export_run` and its restricted owner/receipt links through the reviewed privileged purge path; ordinary runtime deletion remains forbidden. Next milestone: **V1-C3 — In-App Due and Reminder Controls**.
 
 ---
 
@@ -652,6 +680,10 @@ At the current handoff point, the repository includes functional page routes for
   - verify email
 - onboarding
 - Connected Dashboard, source-backed attention/summaries and exact-period spending drilldown
+- Reports:
+  - Financial and Career period reports
+  - exact financial contribution/category/flow/component/balance drilldowns
+  - scoped transactions, debt schedule/payment, application history and report CSV exports
 - Money:
   - accounts
   - account history
@@ -669,21 +701,22 @@ At the current handoff point, the repository includes functional page routes for
   - application list
   - create application
   - application detail
+  - explicit dated provider response/offer/no-response/note observations
 - Calendar:
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include full reporting/CSV exports and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include in-app due/reminder controls and remaining coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: V1-C2 — Reports, Drilldowns, and CSV Exports
+### Next milestone: V1-C3 — In-App Due and Reminder Controls
 
-Continue from the verified V1-C1 state. Inspect current `main`, this handoff and only the authoritative reporting, drilldown, export, period and coverage sections needed for the milestone. Verify V1-C1 before building on it; reuse its shared server-side definitions and read-only snapshot contract.
+Continue from the verified V1-C2 state. Inspect current `main`, this handoff and only the authoritative in-app due/reminder, source lifecycle and Agenda sections needed for the milestone. Verify V1-C2 before building on it; preserve its shared reporting/CSV definitions and read-only snapshot contract.
 
-Preserve immutable financial evidence, exact signed all-posting sums, current logical-action counts, refund expense offsets, negative-balance acknowledgement, current direct/mapped schedule satisfaction, reconciliation invalidation and authorized hidden-module source links. Respect the documented dependent-record correction restrictions recorded in section 5.12. Reports, drilldowns and CSV must share server-owned definitions, filters, source revision and explicit coverage; balances, income, spending, cash movement, principal and scheduled payable remain separate. Do not rebuild D6b–D12/Dashboard or begin V2/V3 or broad redesign.
+Implement V1 in-app due/reminder controls only. Source payment/completion/cancellation remains authoritative; reminder acknowledgement/snooze/dismissal must not mutate financial balances, contractual satisfaction or source completion. Preserve current direct/mapped due calculations, immutable financial/Career evidence, unknown coverage, ownership/version boundaries and authorized hidden-module source links. Dated response/no-response/offer/note observations are completed history, not scheduled actionable reminders. Do not rebuild D6b–D12/Dashboard/Reports or begin external delivery, V2/V3 or broad redesign. Include `ops.export_run` in future reviewed lifecycle scope rather than weakening its guards during this milestone.
 
 ---
 
@@ -705,7 +738,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12 and V1-C1 are complete; V1-C2 — Reports, Drilldowns, and CSV Exports is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12, V1-C1 and V1-C2 are complete; V1-C3 — In-App Due and Reminder Controls is next.
 
 ### A. Existing debt import and read model
 
@@ -869,7 +902,7 @@ Rules:
 
 ### B. Reports
 
-Implement shared server-side definitions for:
+Complete and verified in V1-C2; see section 5.14 and [V1 CSV export contract](V1_CSV_EXPORTS.md). Preserve shared server-side definitions for:
 
 - weekly;
 - monthly;
@@ -913,7 +946,7 @@ External delivery belongs to V2 unless the current authoritative docs explicitly
 
 ### D. CSV exports
 
-Implement V1 CSV export coverage with clear scope.
+Complete and verified in V1-C2; see section 5.14 and [V1 CSV export contract](V1_CSV_EXPORTS.md). Preserve V1 CSV export coverage with clear scope.
 
 A report CSV is not a complete workspace backup.
 
@@ -1526,7 +1559,7 @@ Resolved in D12. Authorized hidden Career application sources open with a hidden
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C2 — Reports, Drilldowns, and CSV Exports**. No D12 accounting-release or V1-C1 blocker remains within the documented V1 dependent-record restrictions. Full Reports, V2/V3 and broad redesign are not started.
+The immediate continuation is **V1-C3 — In-App Due and Reminder Controls**. No D12 accounting-release, V1-C1 or V1-C2 blocker remains within the documented V1 dependent-record restrictions and report/export bounds. In-app reminder controls, remaining lifecycle/support completion, V2/V3 and broad redesign are not started.
 
 ---
 
@@ -1560,6 +1593,7 @@ Useful milestone commits currently on `main`:
 | Reconciliation and explicit balance adjustments | `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` |
 | Financial corrections/refunds/accounting cleanup | `f536c019622d25a239098286e7fb81e343a932bb` |
 | Connected Dashboard | `91624010767254461297f55eff238aa260ab07df` |
+| Reports, drilldowns and scoped CSV exports | `d1e94142ceb56586d36072551dbe7f077672de0f` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1588,7 +1622,7 @@ As of this handoff:
 - Foundation proof: complete enough to support continued development.
 - First usable Money slice: complete.
 - Career and Agenda stage: complete.
-- Financial Core Completion: D6a-D12 complete within documented V1 dependent-record restrictions; Coherent V1 Dashboard is complete.
+- Financial Core Completion: D6a-D12 complete within documented V1 dependent-record restrictions; Coherent V1 Dashboard and Reports/CSV are complete.
 - Debt database/integrity foundation D6a: complete.
 - Existing-debt import/read D6b: complete.
 - Borrowing/net proceeds D7: complete.
@@ -1599,8 +1633,9 @@ As of this handoff:
 - Reconciliation and Balance Adjustments D11: complete and verified; immutable cutoff comparisons, derived review status, explicit cash/equity actions, safe replay, and test/development migrations applied.
 - Financial Corrections and V1 Accounting Cleanup D12: complete and verified; explicit immutable corrections/refunds/classification, durable negative acknowledgement and hidden Agenda links; test/development migrations applied.
 - Connected Dashboard V1-C1: complete and verified; source-backed attention, exact snapshot summaries, coverage, Career/Agenda, supporting records and narrow spending drilldown; no schema changes.
-- **Next task: V1-C2 — Reports, Drilldowns, and CSV Exports.**
-- Coherent V1 full reports/reminders/exports/lifecycle: still ahead.
+- Reports, Drilldowns, and CSV Exports V1-C2: complete and verified; shared exact period/financial/Career definitions, supporting records, bounded owner-scoped exports and provenance; test/development migrations applied.
+- **Next task: V1-C3 — In-App Due and Reminder Controls.**
+- Coherent V1 due/reminder controls and remaining support/settings/lifecycle work: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 
