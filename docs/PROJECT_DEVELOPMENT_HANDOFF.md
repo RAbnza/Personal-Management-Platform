@@ -8,7 +8,7 @@
 
 **Handoff date:** October 8, 2026
 
-**Current verified implementation `main` HEAD:** `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` — `feat(money): add reconciliation and explicit balance adjustments`
+**Current verified implementation `main` HEAD:** `f536c019622d25a239098286e7fb81e343a932bb` — `feat(money): add financial corrections refunds and durable acknowledgements`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, and D11 reconciliation and balance adjustments are complete. D12 financial corrections and V1 accounting cleanup is the next milestone.
+The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -521,7 +521,7 @@ Verification:
 - Browser surface remained unavailable from the D9 environment check; no browser verification is claimed. Component tests cover the settlement review, stale/error/loading, uncertain response, navigation/unload protection, frozen snapshot, identical retry and history flows.
 - `git diff --cached --check` passed before the implementation commit. One trailing blank line was normalized during final whitespace review without changing SQL behavior; integrity fixes remain follow-up migrations.
 
-D10 stopped with D11 as the next assignment; D11 is completed below. Dashboard/Reports, user-facing financial payment correction/reclassification, V2/V3 and broad redesign remain separate work.
+D10 stopped with D11 as the next assignment; D11 and D12 are completed below. Dashboard/Reports, V2/V3 and broad redesign remain separate work.
 
 ---
 
@@ -561,7 +561,55 @@ Verification:
 - `pnpm db:generate --name=d11_drift_check`: no schema changes or extra migration. `pnpm db:migrate`: development migrations applied after verification.
 - `git diff --cached --check` passed before the implementation commit. Browser surface remains unavailable; no browser QA is claimed. Component tests and production build verify the released UI behavior.
 
-D11 stops here. Full Dashboard/Reports, user-facing financial correction/reclassification, V2/V3 and broad redesign remain separate work. No D11 blocker remains. Next milestone: **D12 — Financial Corrections and V1 Accounting Cleanup**.
+D11 stopped with D12 as the next assignment; D12 is completed below. Full Dashboard/Reports, V2/V3 and broad redesign remain separate work. No D11 blocker remains.
+
+---
+
+### 5.12 D12 — Financial Corrections and V1 Accounting Cleanup
+
+D12 is complete and verified within the documented V1 dependent-record restrictions. D11 was verified first with its 20 PostgreSQL tests from the clean, synchronized `main` continuation (`bdc6199640df72e26f813c64fd07d3e636470c32`, D11 implementation `aea675049cc5dc246b97d5a099b66e4ccfa68dd2`). Test migrations preceded focused tests, financial regressions and repository gates; development migrations were applied only after the final verification below.
+
+Released accounting behavior:
+
+- Explicit economic corrections retain one logical financial action, require a reason and expected action/workspace financial revisions, reverse only the immediately previous economic journals at their original effective dates, and post replacement economics at the corrected dates. Original evidence, typed details, exact reversal links and reporting classifications remain immutable. Reversals preserve each expense/income/cash-flow/liability class and direction while negating the signed amount. Original plus reversal plus replacement postings determine balances and historical periods; current logical-action views count a correction as a revision rather than another purchase/payment.
+- Supported replacement contracts cover income, cash expense/category splits, transfer/fees, active-debt borrowing, debt opening components, provider-confirmed debt charges, debt payments/accounting and contractual allocation, refunds, payment reclassification, opening cash amount and balance adjustments. Archived accounts remain usable for historical corrections. A previously used archived category can be retained; ordinary new activity still rejects it. Opening corrections retain the same account/debt and coverage cutoff; no command silently rebases coverage or writes later payments into `opening_satisfied_minor`.
+- Payment corrections retain the stable `debt_payment` identity with a new payment revision. A correction or reversal of a payment already mapped into a newer schedule creates a new immutable allocation-correction version with unchanged obligation identities, dates, terms and opening satisfaction, rebuilt original-pool maps, atomic pointer/version/audit changes and current Agenda projections. Old schedules/maps and payment evidence remain intact. Replayed commands return the same response and create neither another schedule nor another cash deduction. Metadata-only mapped-payment edits are rejected as unnecessary financial corrections.
+- Provider-confirmed later clearing/advance classification creates a separate linked `payment_reclassification` action on its actual confirmation date. It debits confirmed recognized liability and/or newly recognized costs and credits the original clearing component, with **zero cash postings**. Known newly recognized fees retain typed fee evidence and the original payment-account provenance. Erroneous classification can itself use reversal/replacement; active linked classifications must be explicitly resolved before correcting the source payment.
+- Genuine refunds are released for current cash purchases and explicitly recognized fee portions of released actions. They preserve the purchase, use the actual refund date and selected owned receiving account, and credit `refund_offset` expense rather than income. Purchase and fee refunds are separately allocated to immutable original postings. Limits cover each original posting and the current corrected purchase/category/fee budget; workspace serialization prevents cumulative over-refunds. Compatible source corrections preserve original refund references. Incompatible amount/category changes are rejected until dependent refunds are explicitly reversed/corrected, as permitted by DATABASE_ARCHITECTURE sections 5.2 and 6.1. No financed-purchase/card/cashback feature was introduced.
+- Income, expense and transfer commands now carry durable `acknowledgeNegativeBalance`, complementing debt payment, settlement and adjustment evidence. Default/missing acknowledgement is false; a negative projection requires explicit true. Service review checks all affected historical dates, including removed accounts and the gap when an earlier receipt moves later. Immutable audit evidence records acknowledgement and exact warning facts; a deferred database guard also requires acknowledgement for negative results. Signed negative balances remain allowed. Pre-D12 manual-command replay remains compatible when acknowledgement was absent; changing acknowledgement to true changes command intent.
+- Backdated corrections invalidate affected D11 comparisons through the existing immutable source-count design, including net-zero reversal/replacement. Adjustment corrections retain an original same-account reconciliation link when appropriate; moving accounts explicitly detaches it without erasing the historical link. Unexplained adjustment equity never becomes income.
+- An owned Career application reached through Agenda remains accessible when Career is hidden and displays the hidden-module cue. Authentication, owned-source lookup and unavailable/foreign-source rejection remain active. Agenda links and Personal/Money source behavior already satisfied the contract and were preserved.
+
+Layers and routes:
+
+- `domain/manual-financial-action.ts` shares the existing manual-action schemas with the durable acknowledgement field; `domain/financial-correction.ts` defines strict replacement, reversal, refund, clearing-resolution, expected-version and result contracts. Existing typed writers are reused through an internal correction context that cannot come from an HTTP body.
+- `financial-correction-repository.ts`, `negative-balance-repository.ts`, `refund-repository.ts`, `correct-financial-action.ts`, `record-refund.ts`, `resolve-payment-clearing.ts` and `list-financial-actions.ts` implement transactional commands, exact cash/date reviews, immutable revisions/audits, current source capacities and logical/history reads. Existing income/expense/transfer/borrowing/payment/adjustment writers and account-history queries were extended rather than replaced by an arbitrary journal writer.
+- `GET /api/v1/financial-actions/[actionId]`, `POST .../corrections`, `POST .../reversals`, `POST /api/v1/refunds`, and `POST /api/v1/payment-reclassifications` use server-owned actors, same-origin writes, strict scoped schemas, no-store responses, stale/idempotency conflicts, definite business-rule rejections and masked unexpected errors. The existing financial-actions create route also accepts refund and manual acknowledgement contracts.
+- `/money/actions` lists the latest 100 logical actions; `/money/actions/[actionId]` exposes current evidence, correction/refund/clearing review and retained revision history. Account and payment history link to the owned action. Account history uses each revision's audit description/reference, preserving historical presentation after a correction.
+- `FinancialActionReviewForm` uses structured account/date/category/fee/component/due/refund fields, before-and-after accounting/current allocations, exact cash effects, required reasons and separate final confirmation. Negative-balance acknowledgement is explicit and revoked on intent edits. Original allocations can be proposed into the current schedule but remain visible and require confirmation. Provider facts for charge/classification are disclosed for confirmation.
+- Review snapshots and commands stay copied in memory, including account/category setup. Saving, uncertain network/server/malformed-success outcomes and refreshed props retain an identical retry; editing/navigation is guarded, with a 20-second request bound and duplicate-click protection. Stale previews require reload. Manual transaction/transfer forms also persist acknowledgement and retain safe retry. No private command is written to browser storage. Loading, unavailable and error states are included; broad visual redesign was not undertaken.
+
+Migrations:
+
+- `0042_d12_refunds.sql`: generated refund evidence, revision/source/destination/posting scoped FKs, exact positive bounds and uniqueness.
+- `0043_d12_correction_refund_integrity.sql`: FORCE owner RLS and append-only grants/triggers, exact refund recipes/cumulative capacities, correction-compatible borrowing/adjustment/charge recipes, durable negative acknowledgement and liability over-repayment rejection. Existing exact signed reversal validators remain active.
+- `0044_d12_refund_action_kind.sql` activates the refund kind; `0045_d12_baseline_corrections.sql` permits exact opening-debt replacements; `0046_d12_historical_negative_review.sql` checks affected historical periods.
+- `0047_d12_resolution_evidence.sql` is an applied no-op placeholder retained unchanged. `0048_d12_clearing_fee_and_linked_correction.sql` implements the intended clearing fee evidence and original linked-adjustment correction behavior. Applied migrations were not rewritten; follow-ups carried fixes.
+- `0049_d12_refund_portion_limits.sql` adds immutable original-posting cumulative refund limits and resolved-fee original-account provenance. `0050_d12_refund_evidence_indexes.sql` adds immutable timestamps, scoped allocation identity and source/destination lookup indexes. The final chain has **51 migrations / 49 tables**.
+
+Verification:
+
+- D11 continuation baseline: 20 PostgreSQL reconciliation tests passed before implementation.
+- Focused D12 integration: 18 tests passed, covering backdated correction/negative historical gap, category splits, retained archived category/new-use rejection, corrected transfer/borrowing fees, later purchase/fee refunds and limits, compatible refund/source correction, dependency rollback, stable payment identity, post-D9 map rebuilding/reversal/replay, explicit reversal, opening-balance invalidation, adjustment equity, clearing resolution and corrected fee with zero additional cash, stale/changed-payload replay and real foreign-owner isolation. The final account-history companion run passed 20 tests across two files.
+- `pnpm test --maxWorkers=2 --testTimeout=20000`: **82 files / 554 unit/component tests passed**. The first unconstrained run suffered widespread worker-contention timeouts; two workers removed those failures except the existing expensive borrowing-form cases, which passed with the bounded per-test allowance. No timeout was changed in repository configuration. After the final preview/snapshot edits, the four affected component files passed all 20 tests.
+- `pnpm test:integration`: final **47 files / 344 PostgreSQL tests passed**, including D8a/D8b/D9/D10/D11, recipes, RLS, rollback, account/history and reporting-classification regressions.
+- `pnpm check`: lint, TypeScript and repository formatting passed. `pnpm build`: passed with all new correction/refund/classification API and page routes.
+- `pnpm db:generate --name=d12_verified_drift`: no schema changes or extra migration. `pnpm db:verify:chain`: **51 migrations and a no-op repeat** passed on an empty disposable database, retaining all D6b-D11 committed smoke and adding committed D12 correction/refund signed history, current logical identity, concurrent replay, changed-payload conflicts and owner isolation.
+- `pnpm db:migrate`: verified development migrations applied after the gates. `git -c core.whitespace=-blank-at-eof diff --cached --check` passed; the already-applied 0048 migration's extra final blank line was retained rather than changing its checksum. No interactive browser QA is claimed; component tests and the production build verified the UI.
+
+Documented dependent-record restrictions remain visible in the read model/UI and reject commands before changing evidence: borrowing-origin reversal, corrections/reversals under a finalized debt settlement/closing schedule, incompatible refund source/category changes, and source payments with active linked clearing resolutions. This milestone does not introduce grouped multi-action dependent settlement reopening or a coverage-rebaselining workflow. These restrictions preserve released immutable accounting and closure rather than automatically reopening or forcing a balance to zero.
+
+D12 stops here. Connected Dashboard, full Reports, V2/V3 and broad visual redesign remain separate assignments. Next milestone: **V1-C1 — Connected Dashboard**.
 
 ---
 
@@ -581,6 +629,7 @@ At the current handoff point, the repository includes functional page routes for
   - accounts
   - account history
   - account reconciliation, immutable comparison history and explicit balance adjustment review
+  - current logical financial activity, economic correction/reversal, genuine refund and payment-clearing review
   - transaction entry
   - transfer entry
   - debt list and detail
@@ -597,17 +646,17 @@ At the current handoff point, the repository includes functional page routes for
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include payment correction/reclassification entry, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include Connected Dashboard, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: D12 — Financial Corrections and V1 Accounting Cleanup
+### Next milestone: V1-C1 — Connected Dashboard
 
-Continue from the verified D11 state. Inspect current `main`, this handoff and only the authoritative financial correction/accounting sections required by the separately assigned milestone. Verify D11 before building on it.
+Continue from the verified D12 state. Inspect current `main`, this handoff and only the authoritative sections relevant to source-backed Dashboard queries and attention/coverage behavior. Verify D12 before building on it.
 
-D11 is complete. Preserve immutable comparisons, cutoff-specific source invalidation, explicit cash/adjustment-equity posting, same-account links, exact previews, owner isolation and safe replay. Corrections must preserve original/reversal/replacement ledger semantics and make affected comparisons need review, even when their net balance is unchanged. Do not rebuild D6b through D11 or begin full Dashboard/Reports, V2/V3 or broad redesign without a separate assignment.
+Preserve immutable financial evidence, exact signed all-posting sums, current logical-action counts, refund expense offsets, negative-balance acknowledgement, current direct/mapped schedule satisfaction, reconciliation invalidation and authorized hidden-module Agenda links. Respect the documented dependent-record correction restrictions recorded in section 5.12. Reuse shared server-owned query definitions rather than adding UI money formulas. Do not rebuild D6b-D12 or begin full Reports, V2/V3 or broad redesign without a separate assignment.
 
 ---
 
@@ -629,7 +678,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10 and D11 are complete; D12 is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11 and D12 are complete; V1-C1 — Connected Dashboard is next.
 
 ### A. Existing debt import and read model
 
@@ -689,13 +738,13 @@ Use the database architecture's debt-payment and payment-allocation model rather
 
 ### D. Unknown allocation and clearing
 
-The clearing/reclassification database foundation is complete in D8a. D8b can record explicit unresolved clearing and display its coverage; user-facing clearing resolution/reclassification remains future work and must avoid another cash deduction.
+The clearing/reclassification database foundation is complete in D8a. D8b records explicit unresolved clearing and displays its coverage; D12 releases provider-confirmed clearing resolution and correction with zero additional cash movement.
 
 Rules:
 
 - unknown does not become guessed accuracy;
 - unresolved allocation remains visible;
-- reconciliation is required to resolve uncertainty;
+- explicit provider-confirmed accounting evidence is required to resolve uncertainty;
 - clearing is not liquid cash;
 - reports disclose coverage/unknown portions.
 
@@ -749,7 +798,7 @@ Support:
 
 ### H. Refund/correction behavior required by released transaction types
 
-Implement the core refund/correction rules that the V1 documentation requires for released workflows.
+Completed in D12 for released V1 transaction types, with the documented dependent-record restrictions in section 5.12. Preserve exact reversal/replacement, refund expense-offset and clearing-resolution semantics.
 
 Corrections must:
 
@@ -1438,19 +1487,17 @@ Do not hide a logic/performance problem by increasing a test timeout without und
 
 ### 14.1 Negative balance acknowledgement
 
-Before V1 release, verify the architecture requirement for explicit acknowledgement when a manual transaction would create a negative account balance.
-
-D8b debt payments, D10 settlements and D11 balance adjustments require and retain negative-balance acknowledgement evidence. Review the other manual financial transaction types before V1 release; a UI warning alone may not satisfy the requirement if their backend does not record acknowledgement.
+Resolved in D12. Manual income/expense/transfer and correction/refund commands now retain explicit acknowledgement and exact warning facts alongside the existing debt-payment, settlement and adjustment contracts. Missing acknowledgement rejects a negative result, including backdated historical gaps. Keep acknowledgement in command/audit evidence and revoke UI confirmation when intent changes.
 
 ### 14.2 Agenda source links for hidden modules
 
-Re-check whether Agenda items from a hidden module should remain source-linkable while displaying the hidden-module cue. Preserve the authoritative architecture/design behavior.
+Resolved in D12. Authorized hidden Career application sources open with a hidden-module cue; unavailable/foreign sources remain unavailable. Existing Agenda source links and Personal/Money source behavior were preserved. Module hiding is a navigation preference, not an ownership denial.
 
-### 14.3 Remaining debt workflows
+### 14.3 Debt correction dependencies
 
-D6b import/read, D7 borrowing, D8b payment entry/history, D9 schedule revisions/history and D10 explicit settlement/history are released workflows. User-facing financial payment correction/reclassification remains future work. D9 allocation correction maps contractual satisfaction only; it does not correct financial payment evidence or classify clearing.
+D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **D12 — Financial Corrections and V1 Accounting Cleanup**. No D11 blocker remains; the separate release review items above remain applicable before V1 completion.
+The immediate continuation is **V1-C1 — Connected Dashboard**. No D12 accounting-release blocker remains within the documented V1 dependent-record restrictions. Full Reports, V2/V3 and broad redesign are not started.
 
 ---
 
@@ -1482,6 +1529,7 @@ Useful milestone commits currently on `main`:
 | Debt schedule revisions | `038d387e1cab8096c5c6dcd729d1e6481dd59b40` |
 | Explicit verified debt settlement | `1960dcb607d4207797ff4476db18302d69d6ff98` |
 | Reconciliation and explicit balance adjustments | `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` |
+| Financial corrections/refunds/accounting cleanup | `f536c019622d25a239098286e7fb81e343a932bb` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1510,7 +1558,7 @@ As of this handoff:
 - Foundation proof: complete enough to support continued development.
 - First usable Money slice: complete.
 - Career and Agenda stage: complete.
-- Financial Core Completion: in progress.
+- Financial Core Completion: D6a-D12 complete within documented V1 dependent-record restrictions; Coherent V1 work is next.
 - Debt database/integrity foundation D6a: complete.
 - Existing-debt import/read D6b: complete.
 - Borrowing/net proceeds D7: complete.
@@ -1519,7 +1567,8 @@ As of this handoff:
 - Debt Schedule Revisions D9: complete and verified; immutable history, exhaustive payment mapping, explicit noncash charge and current Agenda projections.
 - Early Debt Settlement D10: complete and verified; one-action payoff/adjustments, exact zero-residual closure, immutable history and Agenda cleanup; test/development migrations applied.
 - Reconciliation and Balance Adjustments D11: complete and verified; immutable cutoff comparisons, derived review status, explicit cash/equity actions, safe replay, and test/development migrations applied.
-- **Next task: D12 — Financial Corrections and V1 Accounting Cleanup.**
+- Financial Corrections and V1 Accounting Cleanup D12: complete and verified; explicit immutable corrections/refunds/classification, durable negative acknowledgement and hidden Agenda links; test/development migrations applied.
+- **Next task: V1-C1 — Connected Dashboard.**
 - Coherent V1 dashboard/reports/reminders/exports/lifecycle: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
