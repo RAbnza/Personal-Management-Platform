@@ -79,9 +79,9 @@ export async function readDebtInstallments(
   input: { workspaceId: string; debtId: string; scheduleVersionId: string },
 ) {
   const result = await transaction.db.execute<{ item: unknown }>(sql`
-    SELECT jsonb_build_object('installmentId',id,'sequenceNo',sequence_no,'dueDate',due_date::text,
+    SELECT jsonb_build_object('installmentId',id,'obligationId',obligation_id,'sequenceNo',sequence_no,'dueDate',due_date::text,
       'contractualMinor',contractual_minor::text,'openingSatisfiedMinor',opening_satisfied_minor::text,
-      'paymentSatisfiedMinor',payment_satisfied_minor::text,'remainingMinor',remaining_minor::text,'disposition',disposition,
+      'paymentSatisfiedMinor',payment_satisfied_minor::text,'remainingMinor',remaining_minor::text,'disposition',disposition,'cancellationReason',cancellation_reason,
       'knownPrincipalMinor',known_principal_minor::text,'knownInterestMinor',known_interest_minor::text,
       'knownFeeMinor',known_fee_minor::text,'breakdownComplete',breakdown_complete,'notes',notes) AS item
     FROM finance.current_installment_due_v

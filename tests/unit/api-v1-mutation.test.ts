@@ -7,6 +7,46 @@ import {
 } from "@/platform/http/api-v1-mutation";
 
 describe("API v1 mutation transport boundary", () => {
+  it("permits a bounded route-specific limit while retaining the default 64 KB boundary", async () => {
+    const request = new Request("https://app.example.test/revision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "x".repeat(API_V1_JSON_BODY_MAX_BYTES) }),
+    });
+    await expect(readApiJsonBody(request.clone())).rejects.toMatchObject({
+      reason: "body_too_large",
+    });
+    expect(await readApiJsonBody(request, 128 * 1024)).toEqual({
+      value: "x".repeat(API_V1_JSON_BODY_MAX_BYTES),
+    });
+  });
+  it("checks both actual and declared bytes against the server-owned override", async () => {
+    const actual = new Request("https://app.example.test/revision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "too long" }),
+    });
+    await expect(readApiJsonBody(actual, 8)).rejects.toMatchObject({
+      reason: "body_too_large",
+    });
+    const declared = new Request("https://app.example.test/revision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": "100" },
+      body: "{}",
+    });
+    await expect(readApiJsonBody(declared, 8)).rejects.toMatchObject({
+      reason: "body_too_large",
+    });
+  });
+  it("rejects invalid or unbounded server-owned overrides", async () => {
+    for (const limit of [0, -1, NaN, 9 * 1024 * 1024, 1.5])
+      await expect(
+        readApiJsonBody(
+          new Request("https://app.example.test/revision"),
+          limit,
+        ),
+      ).rejects.toBeInstanceOf(TypeError);
+  });
   it("accepts an exact trusted same-origin request", () => {
     const request = new Request(
       "https://app.example.test/api/v1/settings/workspace",

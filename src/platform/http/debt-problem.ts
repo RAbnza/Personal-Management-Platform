@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PaymentPreviewStaleError } from "@/modules/finance/domain/debt-payment";
+import { SchedulePreviewStaleError } from "@/modules/finance/domain/debt-schedule-revision";
 import {
   FinancialAccountReferenceUnavailableError,
   FinancialCategoryReferenceUnavailableError,
@@ -22,6 +23,14 @@ export function debtProblem(error: unknown, requestId: string) {
     return createJsonBodyProblemResponse(error, requestId);
   if (error instanceof z.ZodError)
     return createSchemaValidationProblemResponse(error, requestId);
+  if (error instanceof SchedulePreviewStaleError)
+    return createApiProblemResponse({
+      status: 409,
+      code: "SCHEDULE_PREVIEW_STALE",
+      message: error.message,
+      requestId,
+      retryable: false,
+    });
   if (error instanceof PaymentPreviewStaleError)
     return createApiProblemResponse({
       status: 409,

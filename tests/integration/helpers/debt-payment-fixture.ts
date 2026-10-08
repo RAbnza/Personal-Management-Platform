@@ -485,7 +485,7 @@ export async function schedule(
       f.debtId,
       input.version ?? 1,
       input.previousId ?? null,
-      input.kind ?? (input.previousId ? "date_correction" : "initial"),
+      input.kind ?? (input.previousId ? "renegotiation" : "initial"),
       f.userId,
     ],
   );
@@ -548,6 +548,7 @@ export async function fixture(
   client: PoolClient,
   identity: { userId: string; workspaceId: string },
   empty = false,
+  openingSatisfied = "0",
 ): Promise<DebtFixture> {
   const f = {
     ...identity,
@@ -577,7 +578,10 @@ export async function fixture(
     `INSERT INTO finance.debt_obligation (id,workspace_id,debt_id,recorded_by_user_id,actor_kind) VALUES ($1,$2,$3,$4,'user')`,
     [f.obligationId, f.workspaceId, f.debtId, f.userId],
   );
-  Object.assign(f, await schedule(client, f, { empty }));
+  Object.assign(
+    f,
+    await schedule(client, f, { empty, opening: openingSatisfied }),
+  );
   await finalizeSchedule(client, f, f.scheduleId);
   const opening = await action(client, f, "opening_debt");
   await link(client, f, opening, "opening");

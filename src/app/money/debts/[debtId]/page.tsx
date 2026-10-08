@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { z } from "zod";
 import { DebtPaymentHistory } from "@/components/money/debt-payment-history";
+import { DebtScheduleHistory } from "@/components/money/debt-schedule-history";
+import { getDebtWithScheduleHistory } from "@/modules/finance/services/read-debt-schedules";
 
-import {
-  DebtUnavailableError,
-  getDebtDetail,
-} from "@/modules/finance/services/read-debts";
+import { DebtUnavailableError } from "@/modules/finance/services/read-debts";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { debtWorkspace } from "../_workspace";
 
@@ -19,17 +18,20 @@ export default async function DebtDetailPage({
   const parsed = z.object({ debtId: z.uuid() }).safeParse(await params);
 
   let result;
+  let scheduleHistory;
 
   try {
     if (!parsed.success) {
       throw new DebtUnavailableError();
     }
 
-    result = await getDebtDetail({
+    const loaded = await getDebtWithScheduleHistory({
       userId: user.id,
       workspaceId: workspace.id,
       debtId: parsed.data.debtId,
     });
+    result = loaded.detail;
+    scheduleHistory = loaded.history;
   } catch (error) {
     if (!(error instanceof DebtUnavailableError)) {
       throw error;
@@ -100,7 +102,22 @@ export default async function DebtDetailPage({
             Record payment
           </Link>
         ) : null}
+        {debt.lifecycle === "active" && debt.scheduleVersionId ? (
+          <Link
+            href={`/money/debts/${debt.debtId}/revise-schedule`}
+            className="ml-3 mt-4 inline-flex min-h-11 items-center text-link underline"
+          >
+            Revise schedule
+          </Link>
+        ) : null}
       </header>
+      <DebtScheduleHistory
+        key={`${debt.debtId}:${result.financialRevision}`}
+        debtId={debt.debtId}
+        currency={debt.currency}
+        timezone={workspace.timezone}
+        initial={scheduleHistory}
+      />
 
       <dl className="grid gap-5 rounded-card border border-border bg-card p-5 sm:grid-cols-2">
         {[

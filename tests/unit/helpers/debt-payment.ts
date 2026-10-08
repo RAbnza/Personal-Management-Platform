@@ -103,12 +103,14 @@ export function paymentDetail(): DebtDetailResult {
     installments: [
       {
         installmentId: paymentIds.installment,
+        obligationId: paymentIds.installment,
         sequenceNo: 1,
         dueDate: "2026-10-20",
         contractualMinor: "110000",
         openingSatisfiedMinor: "0",
         paymentSatisfiedMinor: "0",
         disposition: "scheduled",
+        cancellationReason: null,
         remainingMinor: "110000",
         knownPrincipalMinor: "100000",
         knownInterestMinor: "10000",

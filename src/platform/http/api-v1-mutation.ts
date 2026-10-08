@@ -64,14 +64,23 @@ function getDeclaredContentLength(request: Request): number | null {
  * helper is limited to transport concerns: media type, request size and JSON
  * syntax.
  */
-export async function readApiJsonBody(request: Request): Promise<unknown> {
+export async function readApiJsonBody(
+  request: Request,
+  maximumBytes = API_V1_JSON_BODY_MAX_BYTES,
+): Promise<unknown> {
+  if (
+    !Number.isSafeInteger(maximumBytes) ||
+    maximumBytes <= 0 ||
+    maximumBytes > 8 * 1024 * 1024
+  )
+    throw new TypeError("Invalid server-owned JSON body limit.");
   if (!isJsonMediaType(request.headers.get("content-type"))) {
     throw new ApiJsonBodyError("unsupported_media_type");
   }
 
   const declaredLength = getDeclaredContentLength(request);
 
-  if (declaredLength !== null && declaredLength > API_V1_JSON_BODY_MAX_BYTES) {
+  if (declaredLength !== null && declaredLength > maximumBytes) {
     throw new ApiJsonBodyError("body_too_large");
   }
 
@@ -79,7 +88,7 @@ export async function readApiJsonBody(request: Request): Promise<unknown> {
 
   const actualLength = new TextEncoder().encode(text).byteLength;
 
-  if (actualLength > API_V1_JSON_BODY_MAX_BYTES) {
+  if (actualLength > maximumBytes) {
     throw new ApiJsonBodyError("body_too_large");
   }
 

@@ -204,6 +204,27 @@
       "when": 1791436638207,
       "tag": "0028_d8b_current_payment_dues",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791439615128,
+      "tag": "0029_d9_schedule_charge_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791439629189,
+      "tag": "0030_d9_schedule_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791439915012,
+      "tag": "0031_d9_charge_fee_evidence",
+      "breakpoints": true
     }
   ]
 }

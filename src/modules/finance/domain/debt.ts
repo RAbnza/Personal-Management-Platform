@@ -218,12 +218,14 @@ export const debtSummarySchema = z.object({
 export type DebtSummary = z.infer<typeof debtSummarySchema>;
 export const debtInstallmentReadSchema = z.object({
   installmentId: z.uuid(),
+  obligationId: z.uuid(),
   sequenceNo: z.number().int(),
   dueDate: z.string(),
   contractualMinor: z.string(),
   openingSatisfiedMinor: z.string(),
   paymentSatisfiedMinor: z.string(),
   disposition: z.enum(["scheduled", "cancelled"]),
+  cancellationReason: z.string().nullable(),
   remainingMinor: z.string(),
   knownPrincipalMinor: z.string().nullable(),
   knownInterestMinor: z.string().nullable(),

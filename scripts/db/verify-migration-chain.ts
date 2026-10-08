@@ -24,6 +24,10 @@ import { openFinancialAccount } from "../../src/modules/finance/services/open-fi
 import { recordBorrowing } from "../../src/modules/finance/services/record-borrowing";
 import { recordDebtPayment } from "../../src/modules/finance/services/record-debt-payment";
 import { PaymentPreviewStaleError } from "../../src/modules/finance/domain/debt-payment";
+import { getDebtScheduleSetup } from "../../src/modules/finance/services/get-debt-schedule-setup";
+import { reviseDebtSchedule } from "../../src/modules/finance/services/revise-debt-schedule";
+import { SchedulePreviewStaleError } from "../../src/modules/finance/domain/debt-schedule-revision";
+import { listDebtSchedules } from "../../src/modules/finance/services/read-debt-schedules";
 import {
   getDebtDetail,
   listDebts,
@@ -907,6 +911,133 @@ async function main() {
     );
     console.log(
       "D8b committed payment, exact cash/expense/liability effects, concurrent replay/competing-preview conflicts, payment history, and current Debt/Agenda dues passed.",
+    );
+    const revisionSetup = await getDebtScheduleSetup({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    const revisionEntries = revisionSetup.detail.installments.map((i) => ({
+      entryKey: randomUUID(),
+      obligationId: i.obligationId,
+      dueDate: "2026-12-20",
+      contractualMinor: i.contractualMinor,
+      knownPrincipalMinor: i.knownPrincipalMinor,
+      knownInterestMinor: i.knownInterestMinor,
+      knownFeeMinor: i.knownFeeMinor,
+      breakdownComplete: i.breakdownComplete,
+      disposition: i.disposition,
+      cancellationReason: i.cancellationReason,
+      notes: i.notes,
+    }));
+    const revisionCommand = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      debtId: firstBorrowing.debtId,
+      expectedDebtVersion: revisionSetup.detail.debt.version,
+      expectedScheduleVersionId: revisionSetup.detail.debt.scheduleVersionId!,
+      expectedFinancialRevision: revisionSetup.detail.financialRevision,
+      effectiveDate: "2026-10-08",
+      revisionKind: "date_correction" as const,
+      reason: "Provider corrected due dates",
+      frequency: revisionSetup.frequency,
+      entries: revisionEntries,
+      mappings: revisionSetup.pools.flatMap((p) =>
+        p.currentTargets.map((target) => ({
+          paymentRevisionId: p.paymentRevisionId,
+          sourceAllocationId: p.sourceAllocationId,
+          targetEntryKey: target.obligationId
+            ? revisionEntries.find(
+                (e) => e.obligationId === target.obligationId,
+              )!.entryKey
+            : null,
+          amountMinor: target.amountMinor,
+        })),
+      ),
+      allocationMappingConfirmed: true as const,
+    };
+    const revisionReplay = await Promise.all([
+      reviseDebtSchedule(revisionCommand),
+      reviseDebtSchedule(revisionCommand),
+    ]);
+    assert.deepEqual(revisionReplay[0], revisionReplay[1]);
+    const revised = await getDebtScheduleSetup({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    assert.equal(revised.detail.debt.remainingScheduledMinor, "889000");
+    assert.equal(
+      revised.detail.installments[0]!.paymentSatisfiedMinor,
+      "111000",
+    );
+    assert.equal(revised.detail.installments[0]!.openingSatisfiedMinor, "0");
+    assert.equal(
+      revised.detail.installments[0]!.obligationId,
+      revisionSetup.detail.installments[0]!.obligationId,
+    );
+    assert.equal(
+      (
+        await getAccountHistory({
+          ...owner,
+          accountId: receivingAccount.accountId,
+        })
+      ).account.currentBalanceMinor,
+      "868000",
+    );
+    await assert.rejects(
+      reviseDebtSchedule({ ...revisionCommand, clientCommandId: randomUUID() }),
+      SchedulePreviewStaleError,
+    );
+    const competingRevision = {
+      ...revisionCommand,
+      expectedDebtVersion: revised.detail.debt.version,
+      expectedScheduleVersionId: revised.detail.debt.scheduleVersionId!,
+      expectedFinancialRevision: revised.detail.financialRevision,
+      entries: revisionEntries.map((e) => ({ ...e, dueDate: "2026-12-25" })),
+    };
+    const revisions = await Promise.allSettled([
+      reviseDebtSchedule({
+        ...competingRevision,
+        clientCommandId: randomUUID(),
+      }),
+      reviseDebtSchedule({
+        ...competingRevision,
+        clientCommandId: randomUUID(),
+      }),
+    ]);
+    assert.equal(revisions.filter((r) => r.status === "fulfilled").length, 1);
+    const rejectedRevision = revisions.find((r) => r.status === "rejected");
+    assert.ok(
+      rejectedRevision?.status === "rejected" &&
+        rejectedRevision.reason instanceof SchedulePreviewStaleError,
+    );
+    const history = await listDebtSchedules({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    assert.deepEqual(
+      history.items.map((v) => v.versionNo),
+      [3, 2, 1],
+    );
+    assert.equal(
+      history.items[2]!.entries[0]!.dueDate,
+      revisionSetup.detail.installments[0]!.dueDate,
+    );
+    const revisedAgenda = await listAgendaItems({
+      ...owner,
+      startDate: "2026-01-01",
+      endDate: "2026-12-31",
+      modules: ["money"],
+    });
+    assert.ok(
+      revisedAgenda.items.some(
+        (i) =>
+          i.sourceId === revised.detail.installments[0]!.obligationId &&
+          i.temporal.kind === "date" &&
+          i.temporal.eventDate === "2026-12-25",
+      ),
+    );
+    console.log(
+      "D9 committed immutable schedules, exhaustive original-pool mapping, unchanged cash, stable Agenda identities/generations, history and concurrent replay/stale conflicts passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();
