@@ -6,3 +6,5 @@ export * from "./finance";
 export * from "./debt-payments";
 export * from "./namespaces";
 export * from "./time";
+
+export * from "./debt-settlements";

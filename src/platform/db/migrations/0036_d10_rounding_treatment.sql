@@ -1,0 +1,2 @@
+ALTER TABLE "finance"."settlement_component" ADD COLUMN "rounding_treatment" text;--> statement-breakpoint
+ALTER TABLE "finance"."settlement_component" ADD CONSTRAINT "ck_settlement_rounding_treatment" CHECK (("finance"."settlement_component"."component_kind"='rounding_correction' AND "finance"."settlement_component"."rounding_treatment" IN ('recognized_charge','recognized_waiver')) OR ("finance"."settlement_component"."component_kind"<>'rounding_correction' AND "finance"."settlement_component"."rounding_treatment" IS NULL));

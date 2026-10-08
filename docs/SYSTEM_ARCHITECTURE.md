@@ -1013,7 +1013,7 @@ Release evidence is workflow-based: required acceptance tests pass, invariants h
 | Auth/ORM/worker compatibility | Pin stable versions and demonstrate verify/reset/revoke, scoped Drizzle transactions and atomic pg-boss enqueue | Before domain implementation; technical lead. |
 | Registration policy | Configurable closed beta followed by public registration with persistent abuse limits | Before inviting additional users; product owner. |
 | Exact debt coverage and unknown allocation UX | Manual schedules/confirmed totals; explicit clearing for genuinely unresolved cash payments | Before debt screens/schema; product owner with representative provider examples. |
-| Imported recognized-charge waiver classification | Offset identified prior charges; otherwise show explicit opening/adjustment treatment with unknown breakdown | Before settlement implementation; financial-domain design review. |
+| Imported recognized-charge waiver classification | Offset identified prior charges; otherwise show explicit opening/adjustment treatment with unknown breakdown | D10: source-linked `waiver_offset`, or disclosed `adjustment_equity` backed by imported opening evidence. |
 | Refund/cashback release scope | Include core partial cash refunds in V1 if feasible; merchant offsets versus general reward income | Before V1 scope freeze; product owner. |
 | Card recognition/statement policy | Transaction-date spending for recognized purchases; provider-posted statement reconciliation and manual allocation | Before V2 card schema; product owner/technical lead. |
 | External reminder cadence and quiet-hour behavior | In-app first; explicit channel opt-in, no repeated external overdue default | Before scheduled reminder release; product owner. |

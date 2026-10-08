@@ -433,6 +433,7 @@ export const actionRevision = financeSchema.table(
           'opening_debt',
           'borrowing',
           'debt_charge',
+          'debt_settlement',
           'debt_payment',
           'payment_reclassification'
         )

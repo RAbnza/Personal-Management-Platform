@@ -1,3 +1,4 @@
+import { SettlementPreviewStaleError } from "@/modules/finance/domain/debt-settlement";
 import { z } from "zod";
 import { PaymentPreviewStaleError } from "@/modules/finance/domain/debt-payment";
 import { SchedulePreviewStaleError } from "@/modules/finance/domain/debt-schedule-revision";
@@ -23,6 +24,14 @@ export function debtProblem(error: unknown, requestId: string) {
     return createJsonBodyProblemResponse(error, requestId);
   if (error instanceof z.ZodError)
     return createSchemaValidationProblemResponse(error, requestId);
+  if (error instanceof SettlementPreviewStaleError)
+    return createApiProblemResponse({
+      status: 409,
+      code: "SETTLEMENT_PREVIEW_STALE",
+      message: error.message,
+      requestId,
+      retryable: false,
+    });
   if (error instanceof SchedulePreviewStaleError)
     return createApiProblemResponse({
       status: 409,

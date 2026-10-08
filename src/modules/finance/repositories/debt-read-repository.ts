@@ -27,7 +27,7 @@ export async function readDebts(
           'remainingScheduledMinor',s.remaining::text,'installmentCount',COALESCE(s.count,0),
           'scheduleVersionId',v.id,'scheduleReason',v.reason,
           'paymentClearingMinor',COALESCE(c.balance,0)::text,
-          'unappliedContractualMinor',COALESCE(u.amount,0)::text
+          'unappliedContractualMinor',(COALESCE(u.amount,0)-COALESCE((SELECT st.resolved_unapplied_minor FROM finance.debt_settlement st WHERE st.workspace_id=d.workspace_id AND st.debt_id=d.id AND st.closing_schedule_version_id=v.id),0))::text
         ) AS item
         FROM finance.debt d
         LEFT JOIN LATERAL (
@@ -44,7 +44,7 @@ export async function readDebts(
         ) b ON true
         LEFT JOIN finance.debt_schedule_version v ON v.workspace_id=d.workspace_id AND v.debt_id=d.id AND v.id=d.current_schedule_version_id AND v.state='finalized'
         LEFT JOIN LATERAL (
-          SELECT sum(i.remaining_minor) FILTER (WHERE i.disposition='scheduled') AS remaining, count(*)::integer AS count
+          SELECT CASE WHEN count(*)>0 THEN COALESCE(sum(i.remaining_minor) FILTER (WHERE i.disposition='scheduled'),0) ELSE NULL END AS remaining, count(*)::integer AS count
           FROM finance.current_installment_due_v i WHERE i.workspace_id=d.workspace_id AND i.debt_id=d.id AND i.schedule_version_id=v.id
         ) s ON true
         LEFT JOIN LATERAL (

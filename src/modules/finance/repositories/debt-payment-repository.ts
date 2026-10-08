@@ -109,6 +109,7 @@ export async function insertDebtPayment(
     receiptId: string;
     currency: string;
     body: ValidatedDebtPayment;
+    actionKind?: "debt_payment" | "debt_settlement";
     payingLedgerId: string;
     liabilityLedgerId: string;
     clearingLedgerId: string | null;
@@ -147,7 +148,7 @@ export async function insertDebtPayment(
     revisionNo: 1,
     commandReceiptId: input.receiptId,
     changeKind: "create",
-    actionKind: "debt_payment",
+    actionKind: input.actionKind ?? "debt_payment",
     primaryEffectiveDate: body.paymentDate,
     currency: input.currency,
   });
@@ -156,7 +157,7 @@ export async function insertDebtPayment(
     debtId: body.debtId,
     actionId: ids.actionId,
     actionRevisionId: ids.actionRevisionId,
-    purpose: "payment",
+    purpose: input.actionKind === "debt_settlement" ? "settlement" : "payment",
   });
   await transaction.db.insert(debtPayment).values({
     ...scope,
@@ -294,5 +295,5 @@ export async function insertDebtPayment(
         amountMinor: BigInt(allocation.amountMinor),
       })),
     );
-  return ids;
+  return { ...ids, nextLineNo: lineNo };
 }

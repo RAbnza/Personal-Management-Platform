@@ -225,6 +225,62 @@
       "when": 1791439915012,
       "tag": "0031_d9_charge_fee_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791450438122,
+      "tag": "0032_d10_settlement_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791450461255,
+      "tag": "0033_d10_settlement_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791450937308,
+      "tag": "0034_d10_settlement_final_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791450981164,
+      "tag": "0035_d10_settlement_component_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791451496773,
+      "tag": "0036_d10_rounding_treatment",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791451497531,
+      "tag": "0037_d10_settlement_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791451613503,
+      "tag": "0038_d10_settlement_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791452602822,
+      "tag": "0039_d10_confirmed_avoided_charges",
+      "breakpoints": true
     }
   ]
 }

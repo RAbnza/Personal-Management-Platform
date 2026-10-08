@@ -29,6 +29,15 @@ import { reviseDebtSchedule } from "../../src/modules/finance/services/revise-de
 import { SchedulePreviewStaleError } from "../../src/modules/finance/domain/debt-schedule-revision";
 import { listDebtSchedules } from "../../src/modules/finance/services/read-debt-schedules";
 import {
+  getDebtSettlementSetup,
+  previewDebtSettlement,
+  settleDebt,
+} from "../../src/modules/finance/services/settle-debt";
+import {
+  settleDebtBodySchema,
+  SettlementPreviewStaleError,
+} from "../../src/modules/finance/domain/debt-settlement";
+import {
   getDebtDetail,
   listDebts,
 } from "../../src/modules/finance/services/read-debts";
@@ -1038,6 +1047,176 @@ async function main() {
     );
     console.log(
       "D9 committed immutable schedules, exhaustive original-pool mapping, unchanged cash, stable Agenda identities/generations, history and concurrent replay/stale conflicts passed.",
+    );
+    const settlementSetup = await getDebtSettlementSetup({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    let payoffRemainder = BigInt(
+      settlementSetup.detail.debt.recognizedLiabilityMinor,
+    );
+    const payoffAllocations = settlementSetup.detail.installments.flatMap(
+      (i) => {
+        const amount =
+          payoffRemainder < BigInt(i.remainingMinor)
+            ? payoffRemainder
+            : BigInt(i.remainingMinor);
+        payoffRemainder -= amount;
+        return amount > 0n
+          ? [{ installmentId: i.installmentId, amountMinor: amount.toString() }]
+          : [];
+      },
+    );
+    const settlementCommand = {
+      ...owner,
+      ...settleDebtBodySchema.parse({
+        clientCommandId: randomUUID(),
+        debtId: firstBorrowing.debtId,
+        expectedDebtVersion: settlementSetup.detail.debt.version,
+        expectedScheduleVersionId:
+          settlementSetup.detail.debt.scheduleVersionId,
+        expectedFinancialRevision: settlementSetup.detail.financialRevision,
+        settlementDate: "2026-10-10",
+        settlementKind: "early",
+        payingAccountId: receivingAccount.accountId,
+        actualCashPaidMinor:
+          settlementSetup.detail.debt.recognizedLiabilityMinor,
+        confirmedPayoffMinor:
+          settlementSetup.detail.debt.recognizedLiabilityMinor,
+        externalFeeMinor: "0",
+        externalFeeLabel: "External settlement fee",
+        externalFeeCategoryId: null,
+        liabilityPayments: Object.entries(
+          settlementSetup.detail.debt.recognizedLiabilityComponents,
+        ).flatMap(([kind, amountMinor]) =>
+          BigInt(amountMinor) > 0n ? [{ kind, amountMinor }] : [],
+        ),
+        adjustments: [],
+        dueAllocations: payoffAllocations,
+        unappliedContractualMinor: payoffRemainder.toString(),
+        poolMappings: settlementSetup.pools.flatMap((p) =>
+          p.currentTargets.map((target) => ({
+            paymentRevisionId: p.paymentRevisionId,
+            sourceAllocationId: p.sourceAllocationId,
+            targetObligationId: target.obligationId,
+            amountMinor: target.amountMinor,
+          })),
+        ),
+        unappliedResolutionNote:
+          "Provider accepts the entire contractual pool as final payoff",
+        allocationConfirmed: true,
+        confirmationSource: "provider",
+        confirmationNote: "Verified final payoff",
+        acknowledgeNegativeBalance: true,
+        providerReference: "D10",
+        reason: "Provider confirmed early settlement",
+      }),
+    };
+    const settlementPreview = await previewDebtSettlement(settlementCommand);
+    assert.equal(settlementPreview.residualMinor, "0");
+    const settlements = await Promise.all([
+      settleDebt(settlementCommand),
+      settleDebt(settlementCommand),
+    ]);
+    assert.deepEqual(settlements[0], settlements[1]);
+    await assert.rejects(
+      settleDebt({ ...settlementCommand, reason: "Changed payoff intent" }),
+      FinancialCommandConflictError,
+    );
+    await assert.rejects(
+      settleDebt({ ...settlementCommand, clientCommandId: randomUUID() }),
+      SettlementPreviewStaleError,
+    );
+    const settledDetail = await getDebtDetail({
+      ...owner,
+      debtId: firstBorrowing.debtId,
+    });
+    assert.equal(settledDetail.debt.lifecycle, "settled_early");
+    assert.equal(settledDetail.debt.recognizedLiabilityMinor, "0");
+    assert.equal(settledDetail.debt.unappliedContractualMinor, "0");
+    assert.equal(settledDetail.installments[0]!.openingSatisfiedMinor, "0");
+    assert.equal(settledDetail.payments.length, 3);
+    const settledAccount = await getAccountHistory({
+      ...owner,
+      accountId: receivingAccount.accountId,
+    });
+    assert.equal(
+      settledAccount.entries.filter(
+        (e) => e.actionId === settlements[0]!.actionId,
+      ).length,
+      1,
+    );
+    assert.equal(
+      settledAccount.entries.find(
+        (e) => e.actionId === settlements[0]!.actionId,
+      )?.signedAmountMinor,
+      `-${settlementCommand.actualCashPaidMinor}`,
+    );
+    assert.ok(
+      !(
+        await listAgendaItems({
+          ...owner,
+          startDate: "2026-01-01",
+          endDate: "2026-12-31",
+          modules: ["money"],
+        })
+      ).items.some(
+        (i) => i.sourceId === settledDetail.installments[0]!.obligationId,
+      ),
+    );
+    assert.deepEqual(
+      (
+        await listDebtSchedules({ ...owner, debtId: firstBorrowing.debtId })
+      ).items.map((s) => s.versionNo),
+      [4, 3, 2, 1],
+    );
+    // Competing distinct settlement commands serialize against one reviewed snapshot.
+    const competingDebt = await importExistingDebt({
+      ...owner,
+      clientCommandId: randomUUID(),
+      name: "Competing settlement",
+      lenderName: "Provider",
+      debtType: "personal_loan",
+      startDate: "2026-01-01",
+      openingCutoffDate: "2026-09-30",
+      openingLiabilityMinor: "100000",
+      openingComponents: [{ kind: "principal", amountMinor: "100000" }],
+      installments: [],
+      scheduleReason: "No provider due dates",
+    });
+    const competingSetup = await getDebtSettlementSetup({
+      ...owner,
+      debtId: competingDebt.debtId,
+    });
+    const competingSettlement = {
+      ...settlementCommand,
+      debtId: competingDebt.debtId,
+      expectedDebtVersion: competingSetup.detail.debt.version,
+      expectedScheduleVersionId: competingDebt.scheduleVersionId,
+      expectedFinancialRevision: competingSetup.detail.financialRevision,
+      actualCashPaidMinor: "100000",
+      confirmedPayoffMinor: "100000",
+      liabilityPayments: [
+        { kind: "principal" as const, amountMinor: "100000" },
+      ],
+      dueAllocations: [],
+      unappliedContractualMinor: "100000",
+      poolMappings: [],
+    };
+    const outcomes = await Promise.allSettled([
+      settleDebt({ ...competingSettlement, clientCommandId: randomUUID() }),
+      settleDebt({ ...competingSettlement, clientCommandId: randomUUID() }),
+    ]);
+    assert.equal(outcomes.filter((o) => o.status === "fulfilled").length, 1);
+    assert.ok(
+      outcomes.some(
+        (o) =>
+          o.status === "rejected" &&
+          o.reason instanceof SettlementPreviewStaleError,
+      ),
+    );
+    console.log(
+      "D10 committed settlement, server preview, one account deduction, immutable closing history, Agenda cleanup, resolved unapplied pools, concurrent replay and competing-version conflicts passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();

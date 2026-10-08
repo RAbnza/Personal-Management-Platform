@@ -1,3 +1,4 @@
+import { DebtSettlementHistory } from "@/components/money/debt-settlement-history";
 import Link from "next/link";
 import { z } from "zod";
 import { DebtPaymentHistory } from "@/components/money/debt-payment-history";
@@ -19,6 +20,7 @@ export default async function DebtDetailPage({
 
   let result;
   let scheduleHistory;
+  let settlement;
 
   try {
     if (!parsed.success) {
@@ -32,6 +34,7 @@ export default async function DebtDetailPage({
     });
     result = loaded.detail;
     scheduleHistory = loaded.history;
+    settlement = loaded.settlement;
   } catch (error) {
     if (!(error instanceof DebtUnavailableError)) {
       throw error;
@@ -110,7 +113,16 @@ export default async function DebtDetailPage({
             Revise schedule
           </Link>
         ) : null}
+        {debt.lifecycle === "active" && debt.scheduleVersionId ? (
+          <Link
+            href={`/money/debts/${debt.debtId}/settle`}
+            className="ml-3 mt-4 inline-flex min-h-11 items-center text-link underline"
+          >
+            Settle debt
+          </Link>
+        ) : null}
       </header>
+      <DebtSettlementHistory settlement={settlement} currency={debt.currency} />
       <DebtScheduleHistory
         key={`${debt.debtId}:${result.financialRevision}`}
         debtId={debt.debtId}
@@ -270,6 +282,11 @@ export default async function DebtDetailPage({
                       : "Contractual breakdown incomplete or not supplied"}
                   </p>
 
+                  {row.cancellationReason ? (
+                    <p className="text-sm">
+                      Cancellation: {row.cancellationReason}
+                    </p>
+                  ) : null}
                   {row.notes ? (
                     <p className="whitespace-pre-wrap wrap-break-word text-sm">
                       {row.notes}

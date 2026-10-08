@@ -1,3 +1,5 @@
+import { readDebtSettlement } from "../repositories/debt-settlement-repository";
+import { debtSettlementReadSchema } from "../domain/debt-settlement";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
@@ -79,6 +81,9 @@ export function getDebtWithScheduleHistory(input: {
     async (t) => ({
       detail: await getDebtDetailInTransaction(t, parsed),
       history: await listDebtSchedulesInTransaction(t, parsed),
+      settlement: debtSettlementReadSchema
+        .nullable()
+        .parse(await readDebtSettlement(t, parsed)),
     }),
     { readOnlySnapshot: true },
   );
