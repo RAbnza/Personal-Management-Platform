@@ -8,7 +8,7 @@
 
 **Handoff date:** October 8, 2026
 
-**Current verified implementation `main` HEAD:** `038d387e1cab8096c5c6dcd729d1e6481dd59b40` — `feat(money): add versioned debt schedule revisions`
+**Current verified implementation `main` HEAD:** `1960dcb607d4207797ff4476db18302d69d6ff98` — `feat(money): add explicit verified debt settlement`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, and D9 schedule revisions are complete. D10 early debt settlement is the next milestone.
+The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, and D10 early debt settlement are complete. D11 reconciliation and balance adjustments is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -473,7 +473,55 @@ Verification:
 - Browser verification could not run because no browser surface was available (`iab` unavailable). Component tests verify the complete review/save/error/stale/safe-retry flow, frozen uncertain-save snapshot, explicit handling of removed mapping targets, and paginated history. No browser verification is claimed.
 - `git diff --cached --check` passed before commit.
 
-There is no D9 blocker. User-facing payment correction/reclassification, early settlement, reconciliation, Dashboard/Reports, V2 and V3 remain separate assignments. **Next: D10 — Early Debt Settlement.**
+There is no D9 blocker. D9 stopped with D10 as the next assignment; D10 is completed below. User-facing financial payment correction/reclassification, reconciliation, Dashboard/Reports, V2 and V3 remain separate assignments.
+
+
+### 5.10 D10 — Early Debt Settlement
+
+D10 is complete and verified. Test migrations were applied first; development migrations were applied only after focused/full regressions and final verification.
+
+The debt workflow now records explicit normal/early settlement through one financial action. Its optional payoff payment shares that action; noncash charges and waivers share its journal. It never forces a ledger balance to zero. Server preview and save both require zero residual in every recognized liability component, zero clearing, and complete confirmed contractual treatment.
+
+Released behavior:
+
+- Cash payoff, provider-confirmed payoff, recognized liability repayment, newly recognized interest/fee/penalty, eligible recognized-cost waiver, disclosed imported-opening waiver and avoided future unrecognized charges remain separate. Principal repayment creates no spending; an already recognized charge is not expensed again. External fees are separate expense/cash reporting legs within one actual account deduction and do not satisfy dues.
+- Known-cost waivers use identified eligible current charge evidence and the same expense ledger/category with `waiver_offset`. Imported opening components without a recorded eligible cost use explicitly disclosed `adjustment_equity`; opening source capacity is verified. No income or fictional cash receipt is created.
+- Explicit rounding corrections require a confirmed charge/waiver treatment and source/explanation; there is no automatic residual plug. Avoided future charges have no postings, including when no due dates were supplied. An already fully paid debt can close normally without another payment or zero-value journal.
+- A new immutable settlement schedule retains all obligations, dates, contractual components, notes, opening satisfaction and historical payment satisfaction. Only unpaid remainders are cancelled. Original payment source pools map exhaustively exactly once into the closing version; no payment is counted twice. Old schedules, mappings and payments remain unchanged.
+- Closing unapplied pools accepted as final payoff require an explicit resolution note and exact typed resolved total. This supports debts without supplied dates and preserves original unapplied evidence without manufacturing dates. It cannot resolve accounting clearing/advances. Current unresolved-unapplied totals subtract only the verified current settlement disposition.
+- Debt pointer/lifecycle/closed timestamp/version, financial revision, one command receipt, action/payment/adjustment evidence, closing version and before/after schedule audit commit atomically. Confirmed normal/early kind maps to `settled`/`settled_early`; no provider payoff calculator or date heuristic is introduced. Current Agenda excludes the settled debt's unpaid projections while history remains available.
+- Expected debt version, schedule pointer and workspace financial revision reject stale previews. Replay occurs before mutable checks and recovers the original result. Changed payload conflicts, foreign-owner references, unmatched source evidence, negative balance without acknowledgement and late failures cannot commit partial effects.
+
+Modules and routes:
+
+- `domain/debt-settlement.ts`, `schema/debt-settlements.ts`, `repositories/debt-settlement-repository.ts`, `services/settle-debt.ts`; the payment repository reuses its existing one-action recipe for the settlement kind. Current debt/schedule reads include the settlement disposition/history.
+- `POST /api/v1/debts/[debtId]/settlement/preview` is a read-only server validation of the exact proposed command. `POST .../settlement` saves atomically; `GET .../settlement` reads the owned settlement with its financial snapshot. Strict owner-bound inputs, same-origin mutation guard, no-store responses and bounded full-pool transport remain in force.
+- `/money/debts/[debtId]/settle`, loading/setup error states, `DebtSettlementForm`, `DebtSettlementHistory`, debt detail action and cancellation reasons. Review shows account balances, actual cash, all financial components, contractual allocations, source-pool mappings, old/closing schedule and reminder cancellation before final save.
+- Editing revokes contractual/negative-balance confirmation. Oldest-due-first is a visible proposal requiring explicit confirmation. Review retains a copied setup snapshot and frozen exact command; uncertain responses lock editing and permit identical retry, even if page props refresh. Navigation/unload guards protect the retained in-memory retry. No private command is stored in browser storage. A stale snapshot requires reload/review.
+
+Migrations, applied to test first:
+
+- `0032_d10_settlement_model.sql`: generated settlement/component tables, scoped same-action/debt/payment/schedule/posting FKs and release of `debt_settlement`.
+- `0033_d10_settlement_integrity.sql`: FORCE owner RLS, append-only evidence, workspace serialization, shared payment routing, exact settlement recipe, closing history, zero-residual/clearing and resolved-pool guards, narrow journal-free closure support.
+- `0034_d10_settlement_final_state.sql` and `0035_d10_settlement_component_scope.sql`: follow-up fixes for implicit trigger-record/SQL-alias collisions exposed by focused PostgreSQL tests; applied SQL was not rewritten.
+- `0036_d10_rounding_treatment.sql`, `0037_d10_settlement_evidence.sql`, `0038_d10_settlement_checks.sql`: explicit supported rounding, affirmative exact audit intent, eligible source capacities, retained payment satisfaction, and NULL-safe evidence/amount checks.
+- `0039_d10_confirmed_avoided_charges.sql`: confirmed avoided-charge metadata also works without supplied dates; it creates no postings or liability resolution.
+
+Verification:
+
+- D9 continuation baseline: all 25 schedule-revision integration tests passed before implementation.
+- Focused settlement integration: 29 tests passed, including both canonical 6,400/6,000 cases, previously recognized costs, new interest/fee/penalty, external fee exclusion, partial/full/zero cash payoff, no dates, historical unapplied pools, opening satisfaction, normal/early lifecycle, clearing/residual rejection, source/owner isolation, replay/conflicts, rollback, immutable history, duplicate cash rejection, provider-audit evidence and NULL-safe pool disposition.
+- D8b/D9 affected regressions passed during implementation. Settlement domain/API/component checks cover explicit confirmation, exact arithmetic, clearing/mismatch rejection, server validation, safe problems, review, uncertain retry/navigation, frozen refreshed-prop behavior and history rendering.
+- `pnpm test --maxWorkers=1`: 76 files / 488 unit/component tests passed, including 60 new settlement contract/API/form/history checks. The review snapshot remains unchanged through refreshed props and uncertain-save retry.
+- `pnpm test:integration`: 45 files / 306 real PostgreSQL tests passed, including all D8a/D8b/D9 regressions and 29 D10 tests.
+- `pnpm check`: lint, TypeScript and repository formatting passed. `pnpm build`: passed with settlement API/preview/page and debt detail/history.
+- `pnpm db:verify:chain`: 40 migrations and a no-op repeat passed on an empty disposable database, retaining all committed D6b/D7/D8a/D8b/D9 smoke and adding D10 committed preview/closure, exactly one account entry/deduction, retained payment/schedule history, Agenda cleanup, resolved unapplied pools, concurrent same-command replay and competing stale-version commands.
+- `pnpm db:generate --name=d10_drift_check`: no schema changes; no extra migration generated.
+- `pnpm db:migrate`: development migration applied after the complete verified test sequence.
+- Browser surface remained unavailable from the D9 environment check; no browser verification is claimed. Component tests cover the settlement review, stale/error/loading, uncertain response, navigation/unload protection, frozen snapshot, identical retry and history flows.
+- `git diff --cached --check` passed before the implementation commit. One trailing blank line was normalized during final whitespace review without changing SQL behavior; integrity fixes remain follow-up migrations.
+
+D10 stops here. Reconciliation/balance adjustments, Dashboard/Reports, user-facing financial payment correction/reclassification, V2/V3 and broad redesign remain separate work. Next milestone: **D11 — Reconciliation and Balance Adjustments**.
 
 ---
 
@@ -499,6 +547,7 @@ At the current handoff point, the repository includes functional page routes for
   - new borrowing
   - debt payment entry and payment/audit history
   - debt schedule revision review and immutable schedule history
+  - explicit settlement review, verified closure and settlement history
 - Career:
   - application list
   - create application
@@ -507,17 +556,17 @@ At the current handoff point, the repository includes functional page routes for
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include settlement, payment correction/reclassification entry, reconciliation, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include payment correction/reclassification entry, reconciliation, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: D10 — Early Debt Settlement
+### Next milestone: D11 — Reconciliation and Balance Adjustments
 
-Continue with the separately assigned D10 settlement workflow. Consult authoritative §9.4 System Architecture and §7.4 Database Architecture for confirmed payoff, recognized charge/waiver versus avoided unrecognized future charges, exact zero residual, clearing/unapplied resolution, immutable closing schedule and future Agenda cancellation. D9's schedule revision and explicit noncash-charge primitives do not themselves settle a debt.
+Continue from the verified D10 state. Inspect current `main`, this handoff and only the authoritative reconciliation/balance-adjustment sections required by the separately assigned milestone. Verify D10 before building on it.
 
-Verify D9 before continuing. Do not rebuild D6b/D7/D8a/D8b/D9, guess provider payoff/waiver classification, or include reconciliation, Dashboard/Reports, V2 or V3. D9 stopped without settlement implementation.
+D10 is complete. Preserve its one-action payoff, exact component/source accounting, immutable closing schedule, confirmed pool disposition, zero-residual/clearing closure, ownership and safe replay behavior. Do not rebuild D6b/D7/D8a/D8b/D9/D10 or begin Dashboard/Reports, V2/V3 or broad redesign without a separate assignment.
 
 ---
 
@@ -539,7 +588,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, and D9 are complete; D10 is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9 and D10 are complete; D11 is next.
 
 ### A. Existing debt import and read model
 
@@ -630,9 +679,9 @@ Do not edit finalized contractual terms in place.
 
 ### F. Early settlement
 
-Implement explicit early settlement behavior:
+Completed in D10. Preserve explicit settlement behavior:
 
-- payment action;
+- one financial action with an optional same-action payment;
 - recognized liability resolution;
 - recognized waiver where applicable;
 - avoided future unrecognized charges as metadata rather than fake expense reversal;
@@ -1358,9 +1407,9 @@ Re-check whether Agenda items from a hidden module should remain source-linkable
 
 ### 14.3 Remaining debt workflows
 
-D6b import/read, D7 borrowing, D8b payment entry/history and D9 schedule revisions/history are released workflows. Payment correction/reclassification entry and settlement remain future work. D9 allocation correction maps contractual satisfaction only; it does not correct financial payment evidence or classify clearing.
+D6b import/read, D7 borrowing, D8b payment entry/history, D9 schedule revisions/history and D10 explicit settlement/history are released workflows. User-facing financial payment correction/reclassification remains future work. D9 allocation correction maps contractual satisfaction only; it does not correct financial payment evidence or classify clearing.
 
-The immediate continuation is **D10 — Early Debt Settlement**. No D9 blocker remains; the separate release review items above remain applicable before V1 completion.
+The immediate continuation is **D11 — Reconciliation and Balance Adjustments**. No D10 blocker remains; the separate release review items above remain applicable before V1 completion.
 
 ---
 
@@ -1390,6 +1439,7 @@ Useful milestone commits currently on `main`:
 | Debt-payment database foundation | `dc451c51374620198df0ad6befe366e3c2a09698` |
 | Debt payment workflow | `5f69a0e054705e8fc40dd7b572e3e26189a4eba0` |
 | Debt schedule revisions | `038d387e1cab8096c5c6dcd729d1e6481dd59b40` |
+| Explicit verified debt settlement | `1960dcb607d4207797ff4476db18302d69d6ff98` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1425,7 +1475,8 @@ As of this handoff:
 - Debt-payment database/security/integrity foundation D8a: complete and verified; test and development migrations applied.
 - Debt Payment Workflow D8b: complete and verified; current dues/Agenda, payment/audit history, and test/development migration applied.
 - Debt Schedule Revisions D9: complete and verified; immutable history, exhaustive payment mapping, explicit noncash charge and current Agenda projections.
-- **Next task: D10 — Early Debt Settlement.**
+- Early Debt Settlement D10: complete and verified; one-action payoff/adjustments, exact zero-residual closure, immutable history and Agenda cleanup; test/development migrations applied.
+- **Next task: D11 — Reconciliation and Balance Adjustments.**
 - Coherent V1 dashboard/reports/reminders/exports/lifecycle: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
