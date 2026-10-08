@@ -612,6 +612,16 @@ export default async function JobApplicationDetailPage({
                           </p>
                         ) : null}
 
+                        {["interview", "assessment", "follow_up"].includes(
+                          event.eventKind,
+                        ) ? (
+                          <Link
+                            href={`/calendar/reminders/application_event/${event.eventId}`}
+                            className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                          >
+                            Reminder controls and history
+                          </Link>
+                        ) : null}
                         {event.location ? (
                           <p className="mt-2 text-sm text-muted-foreground">
                             {event.location}

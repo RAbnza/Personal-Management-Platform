@@ -252,6 +252,12 @@ export default async function DebtDetailPage({
                     Installment {row.sequenceNo} ·{" "}
                     <time dateTime={row.dueDate}>{row.dueDate}</time> · {state}
                   </h3>
+                  <Link
+                    href={`/calendar/reminders/debt_installment/${row.obligationId}`}
+                    className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                  >
+                    Reminder controls and history
+                  </Link>
 
                   <dl className="grid gap-3 text-sm sm:grid-cols-3">
                     {[

@@ -37,6 +37,10 @@ import { FinancialAccountReferenceUnavailableError } from "@/modules/finance/dom
 import { scoped, action, post, finish } from "./helpers/debt-payment-fixture";
 import * as settlementRepo from "@/modules/finance/repositories/debt-settlement-repository";
 import { getFinancialReportInTransaction } from "@/modules/reporting/services/get-reports";
+import {
+  getReminderInTransaction,
+  mutateReminderInTransaction,
+} from "@/modules/time/services/reminders";
 const report = (c: PoolClient, f: DebtFixture) =>
   getFinancialReportInTransaction(tx(c), {
     workspaceId: f.workspaceId,
@@ -220,6 +224,25 @@ describe("D10 explicit settlement", () => {
   it("settles a full payoff with exactly one cash action, no principal expense and no future Agenda", () =>
     withFixture(async (c, f) => {
       const before = await amounts(c, f);
+      const target = {
+        sourceKind: "debt_installment" as const,
+        sourceId: f.obligationId,
+      };
+      const reminder = await getReminderInTransaction(
+        tx(c),
+        f.workspaceId,
+        target,
+      );
+      await mutateReminderInTransaction(
+        tx(c),
+        { userId: f.userId, workspaceId: f.workspaceId },
+        {
+          target,
+          expectedSnapshot: reminder.snapshot,
+          clientCommandId: randomUUID(),
+          action: { kind: "dismiss", ruleKey: "0:09:00" },
+        },
+      );
       const b = await command(c, f);
       const p = await previewDebtSettlementInTransaction(tx(c), {
         ...scope(f),
@@ -241,6 +264,14 @@ describe("D10 explicit settlement", () => {
         obligationId: f.obligationId,
       });
       expect(d.payments).toHaveLength(1);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE");
+      const closedReminder = await getReminderInTransaction(
+        tx(c),
+        f.workspaceId,
+        target,
+      );
+      expect(closedReminder.eligible).toBe(false);
+      expect(closedReminder.history[0]?.state).toBe("cancelled");
       expect(
         (
           await c.query(

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { readReminderViewsInTransaction } from "./reminders";
+import { reminderHref } from "../domain/reminder";
 
 import {
   AGENDA_DISPLAY_MODULES,
@@ -161,6 +163,12 @@ export type AgendaItem = {
   remindersEnabled: boolean;
 
   sourceVersion: number;
+  reminder?: {
+    href: string;
+    dueCount: number;
+    label: string;
+    remainingMinor: string | null;
+  };
 };
 
 export type ListAgendaItemsResult = {
@@ -618,6 +626,43 @@ async function executeListAgendaItems(
     );
   }
 
+  const reminders = await readReminderViewsInTransaction(
+    transaction,
+    input.workspaceId,
+    items.map((item) => ({
+      sourceKind: item.sourceKind,
+      sourceId: item.sourceId,
+    })),
+  );
+  for (const item of items) {
+    const view = reminders.find(
+      (r) =>
+        "sourceId" in r.target &&
+        r.target.sourceId === item.sourceId &&
+        r.target.sourceKind === item.sourceKind,
+    );
+    if (!view) continue;
+    const dueCount = view.rules.filter((r) => r.due).length;
+    item.reminder = {
+      href: reminderHref({
+        sourceKind: item.sourceKind,
+        sourceId: item.sourceId,
+      }),
+      dueCount,
+      remainingMinor: view.remainingMinor,
+      label: !view.moduleRemindersEnabled
+        ? "Module reminders off"
+        : view.mode === "off" || !view.rules.length
+          ? "Reminders off"
+          : dueCount
+            ? `Due · ${dueCount} in-app reminder${dueCount === 1 ? "" : "s"}`
+            : view.rules.every((r) => r.state === "dismissed")
+              ? "Reminder dismissed"
+              : view.rules.some((r) => r.state === "snoozed")
+                ? "Reminder snoozed"
+                : "Upcoming reminder",
+    };
+  }
   return {
     workspaceTimezone: firstRow.workspace_timezone,
 
@@ -652,5 +697,6 @@ export async function listAgendaItems(
       workspaceId: normalizedInput.workspaceId,
     },
     (transaction) => executeListAgendaItems(transaction, normalizedInput),
+    { readOnlySnapshot: true },
   );
 }

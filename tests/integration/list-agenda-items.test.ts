@@ -298,7 +298,7 @@ describe("list Agenda items", () => {
           futurePersonalId,
         ]);
 
-        expect(result.items[0]).toEqual({
+        expect(result.items[0]).toMatchObject({
           sourceKind: "personal_event",
           sourceId: overduePersonalId,
           occurrenceKey: "single",
@@ -320,7 +320,7 @@ describe("list Agenda items", () => {
           sourceVersion: 1,
         });
 
-        expect(result.items[1]).toEqual({
+        expect(result.items[1]).toMatchObject({
           sourceKind: "application_event",
           sourceId: interview.eventId,
           occurrenceKey: "single",

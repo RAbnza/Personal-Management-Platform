@@ -346,6 +346,12 @@ export default async function PersonalEventDetailPage({
           />
         )}
 
+        <Link
+          href={`/calendar/reminders/personal_event/${event.eventId}`}
+          className="inline-flex min-h-11 items-center font-semibold text-link underline"
+        >
+          Reminder controls and history
+        </Link>
         <Panel
           title="Record metadata"
           description="These timestamps describe the source record itself, not a duplicated Agenda item."

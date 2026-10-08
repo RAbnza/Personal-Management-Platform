@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BellOff, BriefcaseBusiness, CalendarDays, Clock3 } from "lucide-react";
 
 import { Panel } from "@/components/ui/panel";
+import { formatMoneyMinorUnits } from "@/shared/money-display";
 import type {
   AgendaItem,
   ListAgendaItemsResult,
@@ -205,6 +206,28 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                             >
                               {actionLabel}
                             </Link>
+                          ) : null}
+                          {item.reminder ? (
+                            <div className="mt-2 text-sm">
+                              <p className="font-medium">
+                                {item.reminder.label}
+                              </p>
+                              {item.reminder.remainingMinor !== null ? (
+                                <p className="text-muted-foreground">
+                                  Contractual amount remaining:{" "}
+                                  {formatMoneyMinorUnits(
+                                    "PHP",
+                                    item.reminder.remainingMinor,
+                                  )}
+                                </p>
+                              ) : null}
+                              <Link
+                                href={item.reminder.href}
+                                className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"
+                              >
+                                Reminder controls
+                              </Link>
+                            </div>
                           ) : null}
                         </div>
 

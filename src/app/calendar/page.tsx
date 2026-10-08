@@ -8,6 +8,13 @@ import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AgendaList } from "@/components/calendar/agenda-list";
 import { PersonalEventCreateForm } from "@/components/calendar/personal-event-create-form";
+import { ReminderControls } from "@/components/calendar/reminder-controls";
+import {
+  getReminder,
+  getReminderAttention,
+} from "@/modules/time/services/reminders";
+import { reminderHref } from "@/modules/time/domain/reminder";
+import type { ReminderView } from "@/modules/time/domain/reminder";
 import { AgendaReviewButton } from "@/components/onboarding/agenda-review-button";
 import { AppShell } from "@/components/shell/app-shell";
 import { Panel } from "@/components/ui/panel";
@@ -250,6 +257,30 @@ export default async function CalendarPage({
     }
   }
 
+  let reminderDefaults: ReminderView[] | null = null;
+  let reminderAttention: Awaited<
+    ReturnType<typeof getReminderAttention>
+  > | null = null;
+  try {
+    reminderAttention = await getReminderAttention({
+      userId: user.id,
+      workspaceId: workspace.id,
+    });
+  } catch {
+    console.error("Reminder attention could not be loaded.");
+  }
+  try {
+    reminderDefaults = await Promise.all(
+      (["money", "career", "time"] as const).map((moduleKey) =>
+        getReminder(
+          { userId: user.id, workspaceId: workspace.id },
+          { moduleKey },
+        ),
+      ),
+    );
+  } catch {
+    console.error("Reminder defaults could not be loaded.");
+  }
   return (
     <AppShell
       pageTitle="Calendar"
@@ -295,6 +326,78 @@ export default async function CalendarPage({
             </span>
           </p>
         </header>
+        <Panel
+          title="In-app reminder attention"
+          description="Due reminder labels appear on Agenda sources. Today and overdue describe the source date; dismissing a reminder preserves the source commitment."
+        >
+          <p className="text-sm leading-6">
+            Open Reminder controls beside a source to dismiss, snooze, restore,
+            or choose custom reminder times. Module defaults apply to sources
+            using inherited reminders.
+          </p>
+          {reminderAttention ? (
+            <div className="mt-4">
+              <p role="status" className="font-medium">
+                {reminderAttention.total === 0
+                  ? "No in-app reminders due"
+                  : `${reminderAttention.total} source${reminderAttention.total === 1 ? "" : "s"} with due in-app reminders`}
+              </p>
+              <ul className="mt-3 divide-y divide-border">
+                {reminderAttention.items.map((view) =>
+                  "sourceId" in view.target ? (
+                    <li
+                      key={`${view.target.sourceKind}:${view.target.sourceId}`}
+                      className="py-3"
+                    >
+                      <Link
+                        href={reminderHref(view.target)}
+                        className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                      >
+                        {view.title} · {view.dueDate ?? "Scheduled source"}
+                      </Link>
+                      {view.moduleHidden ? (
+                        <span className="ml-2 text-sm">Module hidden</span>
+                      ) : null}
+                    </li>
+                  ) : null,
+                )}
+              </ul>
+              {reminderAttention.total > reminderAttention.items.length ? (
+                <p className="text-sm text-muted-foreground">
+                  Showing the first 25 due sources. Use Agenda source/date
+                  filters to review further commitments.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-4" role="alert">
+              Due reminder attention is temporarily unavailable. Reload Calendar
+              to retry.
+            </p>
+          )}
+          <details className="mt-4">
+            <summary className="min-h-11 cursor-pointer font-semibold">
+              Module reminder defaults
+            </summary>
+            <div className="mt-4 space-y-5">
+              {reminderDefaults ? (
+                reminderDefaults.map((view) => (
+                  <ReminderControls
+                    key={
+                      "moduleKey" in view.target ? view.target.moduleKey : ""
+                    }
+                    initial={view}
+                  />
+                ))
+              ) : (
+                <p role="alert">
+                  Reminder defaults are temporarily unavailable. Reload Calendar
+                  to retry.
+                </p>
+              )}
+            </div>
+          </details>
+        </Panel>
 
         <Panel
           title="Agenda range"

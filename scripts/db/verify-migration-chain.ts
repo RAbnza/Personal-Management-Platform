@@ -1,4 +1,13 @@
 import { recordExpense } from "../../src/modules/finance/services/record-expense";
+import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
+import { mutatePersonalEvent } from "../../src/modules/time/services/mutate-personal-event";
+import {
+  getReminder,
+  getReminderAttention,
+  mutateReminder,
+} from "../../src/modules/time/services/reminders";
+import { ReminderUnavailableError } from "../../src/modules/time/domain/reminder";
+import { CommandReceiptConflictError } from "../../src/modules/core/domain/command";
 import { recordRefund } from "../../src/modules/finance/services/record-refund";
 import {
   correctFinancialAction,
@@ -1633,6 +1642,85 @@ async function main() {
     );
     console.log(
       "V1-C2 committed reports/drilldown/CSV provenance, exact values, owner isolation, nonfinancial export and concurrent repeatable snapshot passed.",
+    );
+    const reminderFinancialBefore = await getFinancialReport({
+      ...owner,
+      query: reportQuery,
+    });
+    const reminderEvent = await createPersonalEvent({
+      ...owner,
+      clientCommandId: randomUUID(),
+      title: "Reminder committed source",
+      temporalKind: "date",
+      eventDate: "2026-01-01",
+    });
+    const reminderTarget = {
+      sourceKind: "personal_event" as const,
+      sourceId: reminderEvent.eventId,
+    };
+    const reminderBefore = await getReminder(owner, reminderTarget);
+    assert.equal(reminderBefore.rules[0]!.id, null);
+    const reminderCommand = {
+      target: reminderTarget,
+      expectedSnapshot: reminderBefore.snapshot,
+      clientCommandId: randomUUID(),
+      action: { kind: "dismiss" as const, ruleKey: "0:09:00" },
+    };
+    await mutateReminder(owner, reminderCommand);
+    await mutateReminder(owner, reminderCommand);
+    assert.equal(
+      (await getReminder(owner, reminderTarget)).rules[0]!.state,
+      "dismissed",
+    );
+    await assert.rejects(
+      getReminder(other, reminderTarget),
+      ReminderUnavailableError,
+    );
+    await assert.rejects(
+      mutateReminder(owner, {
+        ...reminderCommand,
+        action: { kind: "restore", ruleKey: "0:09:00" },
+      }),
+      CommandReceiptConflictError,
+    );
+    await withDomainTransaction(
+      owner,
+      async (t) => {
+        assert.equal(
+          (
+            await t.db.execute<{ count: string }>(
+              sql`SELECT count(*)::text count FROM time.reminder_occurrence WHERE personal_event_id=${reminderEvent.eventId}::uuid`,
+            )
+          ).rows[0]!.count,
+          "1",
+        );
+      },
+      { readOnlySnapshot: true },
+    );
+    assert.ok(
+      !(await getReminderAttention(owner)).items.some(
+        (r) =>
+          "sourceId" in r.target && r.target.sourceId === reminderEvent.eventId,
+      ),
+    );
+    await mutatePersonalEvent({
+      ...owner,
+      eventId: reminderEvent.eventId,
+      expectedEventVersion: 1,
+      clientCommandId: randomUUID(),
+      action: "cancel",
+    });
+    const reminderClosed = await getReminder(owner, reminderTarget);
+    assert.equal(reminderClosed.eligible, false);
+    assert.equal(reminderClosed.history[0]!.state, "cancelled");
+    await mutateReminder(owner, reminderCommand);
+    assert.equal(
+      (await getFinancialReport({ ...owner, query: reportQuery }))
+        .financialRevision,
+      reminderFinancialBefore.financialRevision,
+    );
+    console.log(
+      "V1-C3 committed reminder replay/conflict, source cancellation, owner isolation, read-time attention and financial independence passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();
