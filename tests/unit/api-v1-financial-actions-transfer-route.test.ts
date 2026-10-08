@@ -143,6 +143,7 @@ describe("POST /api/v1/financial-actions — transfer", () => {
     expect(response.status).toBe(201);
 
     expect(mocks.recordTransfer).toHaveBeenCalledWith({
+      acknowledgeNegativeBalance: false,
       userId: USER_ID,
       workspaceId: WORKSPACE_ID,
 

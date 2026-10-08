@@ -208,7 +208,7 @@ export async function finish(
     [f.workspaceId, a.revisionId],
   );
   await client.query(
-    `INSERT INTO audit.private_revision (workspace_id,command_receipt_id,subject_kind,subject_id,subject_version,operation,after_json,recorded_by_user_id,actor_kind) VALUES ($1,$2,'financial_action',$3,$4,$5,'{}',$6,'user')`,
+    `INSERT INTO audit.private_revision (workspace_id,command_receipt_id,subject_kind,subject_id,subject_version,operation,after_json,recorded_by_user_id,actor_kind) VALUES ($1,$2,'financial_action',$3,$4,$5,'{"acknowledgeNegativeBalance":true}',$6,'user')`,
     [
       f.workspaceId,
       a.receiptId,

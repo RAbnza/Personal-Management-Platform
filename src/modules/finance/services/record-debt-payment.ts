@@ -1,3 +1,6 @@
+import { sql } from "drizzle-orm";
+import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
+import { reviewCashChanges } from "@/modules/finance/repositories/negative-balance-repository";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -59,18 +62,21 @@ async function execute(
   transaction: ScopedTransaction,
   actor: z.output<typeof actorSchema>,
   body: ValidatedDebtPayment,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordDebtPaymentResult> {
   const workspace = await lockActiveFinancialWorkspace(
     transaction,
     actor.workspaceId,
   );
   const { clientCommandId, ...intent } = body;
-  const receipt = await claimFinancialCommandReceipt(transaction, {
-    workspaceId: actor.workspaceId,
-    clientCommandId,
-    commandType: "finance.record_debt_payment",
-    payloadHash: hashFinancialCommandPayload(intent),
-  });
+  const receipt = correction
+    ? { kind: "claimed" as const, receiptId: correction.receiptId }
+    : await claimFinancialCommandReceipt(transaction, {
+        workspaceId: actor.workspaceId,
+        clientCommandId,
+        commandType: "finance.record_debt_payment",
+        payloadHash: hashFinancialCommandPayload(intent),
+      });
   // Replay precedes stale-preview/reference checks: the original result remains
   // recoverable after payment, account archival, or a later schedule change.
   if (receipt.kind === "replay")
@@ -101,18 +107,38 @@ async function execute(
     accountId: body.payingAccountId,
   });
   if (
-    account.archived ||
+    (account.archived && !correction) ||
     account.currency !== debt.currency ||
     body.paymentDate <= account.opening_cutoff_date
   )
     throw new RangeError(
       "Choose an active paying account in the debt currency and a payment date after its opening cutoff.",
     );
+  const negativeBalanceWarnings = await reviewCashChanges(transaction, {
+    workspaceId: actor.workspaceId,
+    acknowledgeNegativeBalance: body.acknowledgeNegativeBalance,
+    changes: [
+      {
+        accountId: body.payingAccountId,
+        effectiveDate: body.paymentDate,
+        signedMinor: -BigInt(body.actualPaidMinor),
+      },
+    ],
+    excludeRevisionId: correction?.previousRevisionId,
+  });
   const balanceAfter = BigInt(account.balance) - BigInt(body.actualPaidMinor);
-  if (balanceAfter < 0n && !body.acknowledgeNegativeBalance)
-    throw new RangeError(
-      "This payment makes the tracked account negative. Review and explicitly acknowledge the incomplete balance before saving.",
+  if (correction) {
+    const original = await transaction.db.execute<{
+      component: string;
+      amount: string;
+    }>(
+      sql`SELECT p.liability_component AS component,sum(p.amount_minor::numeric)::text AS amount FROM finance.posting p JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.role='economic' WHERE p.workspace_id=${actor.workspaceId}::uuid AND p.action_revision_id=${correction.previousRevisionId}::uuid AND p.ledger_account_id=${debt.liability_ledger_account_id}::uuid GROUP BY p.liability_component`,
     );
+    for (const p of original.rows)
+      debt.liability_balances[p.component] = (
+        BigInt(debt.liability_balances[p.component] ?? "0") + BigInt(p.amount)
+      ).toString();
+  }
   const installments = z.array(debtInstallmentReadSchema).parse(
     await readDebtInstallments(transaction, {
       workspaceId: actor.workspaceId,
@@ -161,6 +187,7 @@ async function execute(
     await ensureActiveExpenseCategory(transaction, {
       workspaceId: actor.workspaceId,
       categoryId,
+      historicalRevisionId: correction?.previousRevisionId,
     });
   const preview = buildDebtPaymentPreview(body);
   const expenseLedgerId =
@@ -185,6 +212,7 @@ async function execute(
     receiptId: receipt.receiptId,
     currency: workspace.currency,
     body,
+    correction,
     payingLedgerId: account.ledger_account_id,
     liabilityLedgerId: debt.liability_ledger_account_id,
     clearingLedgerId,
@@ -196,13 +224,16 @@ async function execute(
     commandReceiptId: receipt.receiptId,
     subjectKind: "financial_action",
     subjectId: ids.actionId,
-    subjectVersion: 1,
-    operation: "create",
+    subjectVersion: correction?.revisionNo ?? 1,
+    operation: correction ? "replace" : "create",
+    beforeJson: correction?.before,
+    reason: correction?.reason,
     effectiveDate: body.paymentDate,
     recordedByUserId: actor.userId,
     requestId: actor.requestId ?? null,
     afterJson: {
       ...intent,
+      negativeBalanceWarnings,
       actionKind: "debt_payment",
       actionRevisionId: ids.actionRevisionId,
       paymentId: ids.paymentId,
@@ -239,16 +270,19 @@ async function execute(
     receiptId: receipt.receiptId,
     result,
   });
-  await enforceDeferredFinancialConstraints(transaction);
+  // Corrections may still need a new allocation-correction schedule version
+  // before current payment pools and current maps can be verified together.
+  if (!correction) await enforceDeferredFinancialConstraints(transaction);
   return result;
 }
 
 export function recordDebtPaymentInTransaction(
   transaction: ScopedTransaction,
   input: RecordDebtPaymentInput,
+  correction?: FinancialCorrectionContext,
 ) {
   const { actor, body } = normalize(input);
-  return execute(transaction, actor, body);
+  return execute(transaction, actor, body, correction);
 }
 export function recordDebtPayment(input: RecordDebtPaymentInput) {
   const { actor, body } = normalize(input);

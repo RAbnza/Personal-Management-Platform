@@ -129,6 +129,8 @@ export async function createPrivateFinancialRevision(
     subjectVersion: number;
     operation: string;
     afterJson: Record<string, unknown>;
+    beforeJson?: Record<string, unknown> | null | undefined;
+    reason?: string | null | undefined;
     effectiveDate: string | null;
     recordedByUserId: string;
     requestId: string | null;
@@ -144,10 +146,10 @@ export async function createPrivateFinancialRevision(
     subjectVersion: input.subjectVersion,
     operation: input.operation,
 
-    beforeJson: null,
+    beforeJson: input.beforeJson ?? null,
     afterJson: input.afterJson,
 
-    reason: null,
+    reason: input.reason ?? null,
     effectiveDate: input.effectiveDate,
 
     recordedByUserId: input.recordedByUserId,

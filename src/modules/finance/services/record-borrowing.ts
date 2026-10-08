@@ -1,3 +1,4 @@
+import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
 import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
@@ -124,6 +125,7 @@ async function executeRecordBorrowing(
   transaction: ScopedTransaction,
   actor: z.output<typeof actorSchema>,
   body: ValidatedRecordBorrowing,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordBorrowingResult> {
   const workspace = await lockActiveFinancialWorkspace(
     transaction,
@@ -139,15 +141,17 @@ async function executeRecordBorrowing(
    * those values come from server-owned ActorContext rather than client
    * business intent.
    */
-  const receipt = await claimFinancialCommandReceipt(transaction, {
-    workspaceId: actor.workspaceId,
+  const receipt = correction
+    ? { kind: "claimed" as const, receiptId: correction.receiptId }
+    : await claimFinancialCommandReceipt(transaction, {
+        workspaceId: actor.workspaceId,
 
-    clientCommandId,
+        clientCommandId,
 
-    commandType: RECORD_BORROWING_COMMAND_TYPE,
+        commandType: RECORD_BORROWING_COMMAND_TYPE,
 
-    payloadHash: hashFinancialCommandPayload(intent),
-  });
+        payloadHash: hashFinancialCommandPayload(intent),
+      });
 
   /*
    * Return a previously committed result before consulting mutable references.
@@ -168,11 +172,17 @@ async function executeRecordBorrowing(
     accountId: body.receivingAccountId,
   });
 
-  assertReceivingAccountUsableForBorrowing(receivingAccount, {
-    expectedCurrency: workspace.currency,
+  assertReceivingAccountUsableForBorrowing(
+    {
+      ...receivingAccount,
+      archived: correction ? false : receivingAccount.archived,
+    },
+    {
+      expectedCurrency: workspace.currency,
 
-    borrowingDate: body.borrowingDate,
-  });
+      borrowingDate: body.borrowingDate,
+    },
+  );
 
   /*
    * Resolve all user-supplied fee categories before creating any financial
@@ -191,6 +201,7 @@ async function executeRecordBorrowing(
       workspaceId: actor.workspaceId,
 
       categoryId,
+      historicalRevisionId: correction?.previousRevisionId,
     });
   }
 
@@ -217,6 +228,7 @@ async function executeRecordBorrowing(
     body,
 
     plan,
+    correction,
 
     receivingLedgerAccountId: receivingAccount.ledgerAccountId,
 
@@ -240,9 +252,11 @@ async function executeRecordBorrowing(
 
     subjectId: ids.actionId,
 
-    subjectVersion: 1,
+    subjectVersion: correction?.revisionNo ?? 1,
 
-    operation: "create",
+    operation: correction ? "replace" : "create",
+    beforeJson: correction?.before,
+    reason: correction?.reason,
 
     afterJson: {
       actionRevisionId: ids.actionRevisionId,
@@ -291,60 +305,61 @@ async function executeRecordBorrowing(
     requestId: actor.requestId ?? null,
   });
 
-  await createPrivateFinancialRevision(transaction, {
-    id: randomUUID(),
+  if (!correction) {
+    await createPrivateFinancialRevision(transaction, {
+      id: randomUUID(),
 
-    workspaceId: actor.workspaceId,
+      workspaceId: actor.workspaceId,
 
-    commandReceiptId: receipt.receiptId,
+      commandReceiptId: receipt.receiptId,
 
-    subjectKind: "debt",
+      subjectKind: "debt",
 
-    subjectId: ids.debtId,
+      subjectId: ids.debtId,
 
-    subjectVersion: 1,
+      subjectVersion: 1,
 
-    operation: "create",
+      operation: "create",
 
-    afterJson: {
-      name: body.name,
+      afterJson: {
+        name: body.name,
 
-      lenderName: body.lenderName,
+        lenderName: body.lenderName,
 
-      productName: body.productName,
+        productName: body.productName,
 
-      debtType: body.debtType,
+        debtType: body.debtType,
 
-      currency: workspace.currency,
+        currency: workspace.currency,
 
-      originalPrincipalMinor: plan.principalMinor.toString(),
+        originalPrincipalMinor: plan.principalMinor.toString(),
 
-      recognizedLiabilityMinor: plan.recognizedLiabilityMinor.toString(),
+        recognizedLiabilityMinor: plan.recognizedLiabilityMinor.toString(),
 
-      startDate: body.borrowingDate,
+        startDate: body.borrowingDate,
 
-      openingCutoffDate: null,
+        openingCutoffDate: null,
 
-      breakdownStatus: "known",
+        breakdownStatus: "known",
 
-      borrowingActionId: ids.actionId,
+        borrowingActionId: ids.actionId,
 
-      scheduleVersionId: ids.scheduleVersionId,
+        scheduleVersionId: ids.scheduleVersionId,
 
-      scheduleReason: body.scheduleReason,
+        scheduleReason: body.scheduleReason,
 
-      installmentCount: body.installments.length,
+        installmentCount: body.installments.length,
 
-      notes: body.notes,
-    },
+        notes: body.notes,
+      },
 
-    effectiveDate: body.borrowingDate,
+      effectiveDate: body.borrowingDate,
 
-    recordedByUserId: actor.userId,
+      recordedByUserId: actor.userId,
 
-    requestId: actor.requestId ?? null,
-  });
-
+      requestId: actor.requestId ?? null,
+    });
+  }
   /*
    * Finalize the economic evidence only after every typed detail/posting and
    * audit row has been assembled.
@@ -399,10 +414,11 @@ async function executeRecordBorrowing(
 export async function recordBorrowingInTransaction(
   transaction: ScopedTransaction,
   input: RecordBorrowingInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordBorrowingResult> {
   const { actor, body } = normalizeRecordBorrowingInput(input);
 
-  return executeRecordBorrowing(transaction, actor, body);
+  return executeRecordBorrowing(transaction, actor, body, correction);
 }
 
 export async function recordBorrowing(

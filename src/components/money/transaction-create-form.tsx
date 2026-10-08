@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
@@ -142,6 +142,7 @@ const transactionFormSchema = z
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
 type IncomePayload = {
+  acknowledgeNegativeBalance: boolean;
   actionKind: "income";
 
   receivingAccountId: string;
@@ -162,6 +163,7 @@ type IncomePayload = {
 };
 
 type ExpensePayload = {
+  acknowledgeNegativeBalance: boolean;
   actionKind: "expense";
 
   fundingAccountId: string;
@@ -216,22 +218,37 @@ const incomeClassOptions = [
 async function postFinancialAction(
   command: PendingFinancialCommand,
 ): Promise<Response> {
-  return fetch("/api/v1/financial-actions", {
-    method: "POST",
-
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify({
-      clientCommandId: command.clientCommandId,
-
-      ...command.payload,
-    }),
-
-    cache: "no-store",
-  });
+  const abort = new AbortController(),
+    timeout = setTimeout(() => abort.abort(), 20000);
+  try {
+    const response = await fetch("/api/v1/financial-actions", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clientCommandId: command.clientCommandId,
+        ...command.payload,
+      }),
+      cache: "no-store",
+      signal: abort.signal,
+    });
+    if (response.ok) {
+      const result = z
+        .object({
+          actionKind: z.literal(command.payload.actionKind),
+          actionId: z.uuid(),
+          actionRevisionId: z.uuid(),
+          financialRevision: z.string().regex(/^\d+$/),
+        })
+        .safeParse(await response.json());
+      if (!result.success) throw new Error("Save outcome unconfirmed");
+    }
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export interface TransactionCreateFormProps {
@@ -249,6 +266,9 @@ export function TransactionCreateForm({
 }: TransactionCreateFormProps) {
   const router = useRouter();
 
+  const [acknowledgeNegativeBalance, setAcknowledgeNegativeBalance] =
+    useState(false);
+  const savingRef = useRef(false);
   const [pendingCommand, setPendingCommand] =
     useState<PendingFinancialCommand | null>(null);
 
@@ -419,12 +439,32 @@ export function TransactionCreateForm({
       ? null
       : purchaseAmountMinor - allocatedExpenseMinor;
 
+  useEffect(() => {
+    if (saveState !== "saving" && saveState !== "unconfirmed") return;
+    const guard = (e: BeforeUnloadEvent) => e.preventDefault();
+    const navigation = (e: MouseEvent) => {
+      if ((e.target as Element).closest("a[href]")) {
+        e.preventDefault();
+        setSaveError(
+          "Retry the identical command to resolve its save outcome before leaving.",
+        );
+      }
+    };
+    window.addEventListener("beforeunload", guard);
+    document.addEventListener("click", navigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", guard);
+      document.removeEventListener("click", navigation, true);
+    };
+  }, [saveState]);
   const fieldsDisabled =
     saveState === "saving" ||
     saveState === "unconfirmed" ||
     saveState === "saved";
 
   async function executeFinancialCommand(command: PendingFinancialCommand) {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaveState("saving");
     setSaveError(null);
 
@@ -462,10 +502,13 @@ export function TransactionCreateForm({
       setSaveError(
         "We couldn't confirm whether this transaction was saved. Keep this page open and retry the same save before recording another transaction.",
       );
+    } finally {
+      savingRef.current = false;
     }
   }
 
   async function onSubmit(values: TransactionFormValues) {
+    if (savingRef.current || fieldsDisabled) return;
     const account = accounts.find(
       (item) => item.accountId === values.accountId,
     );
@@ -519,6 +562,7 @@ export function TransactionCreateForm({
     const notes = values.notes.trim();
 
     const common = {
+      acknowledgeNegativeBalance,
       effectiveDate: values.effectiveDate,
 
       description: values.description.trim(),
@@ -620,7 +664,18 @@ export function TransactionCreateForm({
       <form
         noValidate
         className="mt-6 space-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+        onChangeCapture={(event) => {
+          if (!(event.target as HTMLElement).hasAttribute("data-negative-ack"))
+            setAcknowledgeNegativeBalance(false);
+        }}
+        onClickCapture={(event) => {
+          if (
+            saveState === "idle" &&
+            (event.target as Element).closest('button[type="button"]')
+          )
+            setAcknowledgeNegativeBalance(false);
+        }}
       >
         <fieldset disabled={fieldsDisabled} className="space-y-3">
           <legend className="text-sm font-semibold text-foreground">
@@ -1197,6 +1252,22 @@ export function TransactionCreateForm({
           </div>
         ) : null}
 
+        <label className="flex items-start gap-3 rounded-md border border-warning p-3 text-sm">
+          <input
+            type="checkbox"
+            data-negative-ack="true"
+            checked={acknowledgeNegativeBalance}
+            disabled={fieldsDisabled}
+            onChange={(event) =>
+              setAcknowledgeNegativeBalance(event.target.checked)
+            }
+          />
+          <span>
+            I explicitly acknowledge that this genuine transaction may make my
+            tracked account balance negative. Account history may be incomplete.
+            This acknowledgement will be recorded with the command.
+          </span>
+        </label>
         <div className="flex flex-wrap justify-end gap-3">
           {saveState === "unconfirmed" ? (
             <Button
@@ -1214,7 +1285,11 @@ export function TransactionCreateForm({
             type="submit"
             loading={saveState === "saving"}
             loadingLabel="Saving transaction…"
-            disabled={saveState === "unconfirmed" || saveState === "saved"}
+            disabled={
+              saveState === "unconfirmed" ||
+              saveState === "saved" ||
+              (expenseExceedsLoadedBalance && !acknowledgeNegativeBalance)
+            }
           >
             Save transaction
           </Button>

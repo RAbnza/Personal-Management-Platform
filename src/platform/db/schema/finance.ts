@@ -436,7 +436,7 @@ export const actionRevision = financeSchema.table(
           'debt_settlement',
           'debt_payment',
           'payment_reclassification'
-          ,'balance_adjustment'
+          ,'balance_adjustment','refund'
         )
       `,
     ),

@@ -1,3 +1,4 @@
+import type { FinancialCorrectionContext } from "./financial-correction-repository";
 import { randomUUID } from "node:crypto";
 
 import { sql } from "drizzle-orm";
@@ -94,6 +95,7 @@ export async function insertBorrowing(
     receiptId: string;
 
     body: ValidatedRecordBorrowing;
+    correction?: FinancialCorrectionContext | undefined;
     plan: BorrowingPlan;
 
     receivingLedgerAccountId: string;
@@ -101,15 +103,15 @@ export async function insertBorrowing(
     expenseLedgerAccountId: string | null;
   },
 ): Promise<InsertBorrowingResult> {
-  const debtId = randomUUID();
+  const debtId = input.correction?.debtId ?? randomUUID();
 
-  const liabilityLedgerId = randomUUID();
+  const liabilityLedgerId = input.correction?.liabilityLedgerId ?? randomUUID();
 
-  const actionId = randomUUID();
-  const actionRevisionId = randomUUID();
+  const actionId = input.correction?.actionId ?? randomUUID();
+  const actionRevisionId = input.correction?.actionRevisionId ?? randomUUID();
   const journalId = randomUUID();
 
-  const scheduleVersionId = randomUUID();
+  const scheduleVersionId = input.correction?.scheduleVersionId ?? randomUUID();
 
   const scope = {
     workspaceId: input.workspaceId,
@@ -127,108 +129,109 @@ export async function insertBorrowing(
    * -----------------------------------------------------------------------
    */
 
-  await transaction.db.insert(ledgerAccount).values({
-    ...scope,
+  if (!input.correction) {
+    await transaction.db.insert(ledgerAccount).values({
+      ...scope,
 
-    id: liabilityLedgerId,
+      id: liabilityLedgerId,
 
-    code: `debt:${debtId}`,
+      code: `debt:${debtId}`,
 
-    name: input.body.name,
+      name: input.body.name,
 
-    kind: "debt_liability",
+      kind: "debt_liability",
 
-    currency: input.currency,
-  });
+      currency: input.currency,
+    });
 
-  await transaction.db.insert(debt).values({
-    ...scope,
-    ...attribution,
+    await transaction.db.insert(debt).values({
+      ...scope,
+      ...attribution,
 
-    id: debtId,
+      id: debtId,
 
-    name: input.body.name,
+      name: input.body.name,
 
-    lenderName: input.body.lenderName,
+      lenderName: input.body.lenderName,
 
-    productName: input.body.productName,
+      productName: input.body.productName,
 
-    debtType: input.body.debtType,
+      debtType: input.body.debtType,
 
-    currency: input.currency,
+      currency: input.currency,
 
-    liabilityLedgerAccountId: liabilityLedgerId,
+      liabilityLedgerAccountId: liabilityLedgerId,
+
+      /*
+       * D8 may create a payment-clearing ledger if unresolved payment
+       * classification actually requires one. D7 does not create speculative
+       * clearing state.
+       */
+      clearingLedgerAccountId: null,
+
+      originalPrincipalMinor: input.plan.principalMinor,
+
+      startDate: input.body.borrowingDate,
+
+      /*
+       * A new borrowing is actual tracked-period activity. It is not an imported
+       * baseline.
+       */
+      openingCutoffDate: null,
+
+      breakdownStatus: "known",
+
+      currentScheduleVersionId: scheduleVersionId,
+
+      notes: input.body.notes,
+    });
 
     /*
-     * D8 may create a payment-clearing ledger if unresolved payment
-     * classification actually requires one. D7 does not create speculative
-     * clearing state.
+     * -----------------------------------------------------------------------
+     * Financial action
+     * -----------------------------------------------------------------------
      */
-    clearingLedgerAccountId: null,
 
-    originalPrincipalMinor: input.plan.principalMinor,
+    await transaction.db.insert(financialAction).values({
+      ...scope,
 
-    startDate: input.body.borrowingDate,
+      id: actionId,
 
-    /*
-     * A new borrowing is actual tracked-period activity. It is not an imported
-     * baseline.
-     */
-    openingCutoffDate: null,
+      originalCommandReceiptId: input.receiptId,
 
-    breakdownStatus: "known",
+      currentRevisionId: actionRevisionId,
 
-    currentScheduleVersionId: scheduleVersionId,
+      description: input.body.description,
 
-    notes: input.body.notes,
-  });
+      reference: input.body.reference,
 
-  /*
-   * -----------------------------------------------------------------------
-   * Financial action
-   * -----------------------------------------------------------------------
-   */
+      notes: input.body.notes,
 
-  await transaction.db.insert(financialAction).values({
-    ...scope,
+      ...attribution,
+    });
 
-    id: actionId,
+    await transaction.db.insert(actionRevision).values({
+      ...scope,
 
-    originalCommandReceiptId: input.receiptId,
+      id: actionRevisionId,
 
-    currentRevisionId: actionRevisionId,
+      actionId,
 
-    description: input.body.description,
+      revisionNo: 1,
 
-    reference: input.body.reference,
+      commandReceiptId: input.receiptId,
 
-    notes: input.body.notes,
+      changeKind: "create",
 
-    ...attribution,
-  });
+      actionKind: "borrowing",
 
-  await transaction.db.insert(actionRevision).values({
-    ...scope,
+      primaryEffectiveDate: input.body.borrowingDate,
 
-    id: actionRevisionId,
+      currency: input.currency,
 
-    actionId,
-
-    revisionNo: 1,
-
-    commandReceiptId: input.receiptId,
-
-    changeKind: "create",
-
-    actionKind: "borrowing",
-
-    primaryEffectiveDate: input.body.borrowingDate,
-
-    currency: input.currency,
-
-    ...attribution,
-  });
-
+      ...attribution,
+    });
+  }
   await transaction.db.insert(debtActionLink).values({
     ...scope,
 
@@ -461,85 +464,86 @@ export async function insertBorrowing(
    * this and gives later D8 payments a stable schedule context.
    */
 
-  await transaction.db.insert(debtScheduleVersion).values({
-    ...scope,
-    ...attribution,
-
-    id: scheduleVersionId,
-
-    debtId,
-
-    versionNo: 1,
-
-    previousVersionId: null,
-
-    effectiveDate: input.body.borrowingDate,
-
-    revisionKind: "initial",
-
-    reason: input.body.scheduleReason,
-
-    frequency: "manual",
-  });
-
-  for (const [index, installment] of input.body.installments.entries()) {
-    const obligationId = randomUUID();
-
-    await transaction.db.insert(debtObligation).values({
+  if (!input.correction) {
+    await transaction.db.insert(debtScheduleVersion).values({
       ...scope,
       ...attribution,
 
-      id: obligationId,
+      id: scheduleVersionId,
 
       debtId,
 
-      externalLabel: `Installment ${index + 1}`,
+      versionNo: 1,
+
+      previousVersionId: null,
+
+      effectiveDate: input.body.borrowingDate,
+
+      revisionKind: "initial",
+
+      reason: input.body.scheduleReason,
+
+      frequency: "manual",
     });
 
-    await transaction.db.insert(scheduledInstallment).values({
-      ...scope,
+    for (const [index, installment] of input.body.installments.entries()) {
+      const obligationId = randomUUID();
 
-      id: randomUUID(),
+      await transaction.db.insert(debtObligation).values({
+        ...scope,
+        ...attribution,
 
-      debtId,
+        id: obligationId,
 
-      scheduleVersionId,
+        debtId,
 
-      obligationId,
+        externalLabel: `Installment ${index + 1}`,
+      });
 
-      sequenceNo: index + 1,
+      await transaction.db.insert(scheduledInstallment).values({
+        ...scope,
 
-      dueDate: installment.dueDate,
+        id: randomUUID(),
 
-      contractualMinor: BigInt(installment.contractualMinor),
+        debtId,
 
-      knownPrincipalMinor:
-        installment.knownPrincipalMinor === null
-          ? null
-          : BigInt(installment.knownPrincipalMinor),
+        scheduleVersionId,
 
-      knownInterestMinor:
-        installment.knownInterestMinor === null
-          ? null
-          : BigInt(installment.knownInterestMinor),
+        obligationId,
 
-      knownFeeMinor:
-        installment.knownFeeMinor === null
-          ? null
-          : BigInt(installment.knownFeeMinor),
+        sequenceNo: index + 1,
 
-      breakdownComplete: installment.breakdownComplete,
+        dueDate: installment.dueDate,
 
-      /*
-       * New borrowing cannot import already-paid historical amounts.
-       */
-      openingSatisfiedMinor: 0n,
+        contractualMinor: BigInt(installment.contractualMinor),
 
-      notes: installment.notes,
-    });
-  }
+        knownPrincipalMinor:
+          installment.knownPrincipalMinor === null
+            ? null
+            : BigInt(installment.knownPrincipalMinor),
 
-  const finalizedSchedule = await transaction.db.execute<{ id: string }>(sql`
+        knownInterestMinor:
+          installment.knownInterestMinor === null
+            ? null
+            : BigInt(installment.knownInterestMinor),
+
+        knownFeeMinor:
+          installment.knownFeeMinor === null
+            ? null
+            : BigInt(installment.knownFeeMinor),
+
+        breakdownComplete: installment.breakdownComplete,
+
+        /*
+         * New borrowing cannot import already-paid historical amounts.
+         */
+        openingSatisfiedMinor: 0n,
+
+        notes: installment.notes,
+      });
+    }
+
+    const finalizedSchedule = await transaction.db.execute<{ id: string }>(sql`
       UPDATE "finance"."debt_schedule_version"
       SET
         "state" = 'finalized',
@@ -551,10 +555,10 @@ export async function insertBorrowing(
       RETURNING "id"
     `);
 
-  if (!finalizedSchedule.rows[0]) {
-    throw new Error("The initial borrowing schedule could not be finalized.");
+    if (!finalizedSchedule.rows[0]) {
+      throw new Error("The initial borrowing schedule could not be finalized.");
+    }
   }
-
   return {
     debtId,
     liabilityLedgerId,

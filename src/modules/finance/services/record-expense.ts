@@ -29,7 +29,6 @@ import {
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import {
   compareCalendarDates,
-  isCalendarDate,
   parseCalendarDate,
   type CalendarDate,
 } from "@/shared/calendar-date";
@@ -38,50 +37,12 @@ import {
   parseMinorUnits,
 } from "@/shared/money";
 
+import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
+import { reviewCashChanges } from "@/modules/finance/repositories/negative-balance-repository";
+
 const RECORD_EXPENSE_COMMAND_TYPE = "finance.record_expense";
 
-const expenseSplitSchema = z
-  .object({
-    amountMinor: z.string().regex(/^[1-9]\d*$/, {
-      message:
-        "Expense split amount must be a positive minor-unit integer string.",
-    }),
-
-    categoryId: z.uuid().nullable().optional(),
-
-    memo: z.string().max(20_000).nullable().optional(),
-  })
-  .strict();
-
-const recordExpenseInputSchema = z
-  .object({
-    userId: z.uuid(),
-    workspaceId: z.uuid(),
-    clientCommandId: z.uuid(),
-    requestId: z.uuid().optional(),
-
-    fundingAccountId: z.uuid(),
-
-    effectiveDate: z.string().refine(isCalendarDate, {
-      message:
-        "Expense effective date must be a valid YYYY-MM-DD calendar date.",
-    }),
-
-    purchaseMinor: z.string().regex(/^[1-9]\d*$/, {
-      message: "Purchase amount must be a positive minor-unit integer string.",
-    }),
-
-    splits: z.array(expenseSplitSchema).min(1),
-
-    merchantName: z.string().trim().min(1).nullable().optional(),
-
-    description: z.string().trim().min(1).max(2000),
-
-    reference: z.string().trim().min(1).nullable().optional(),
-
-    notes: z.string().max(20_000).nullable().optional(),
-  })
-  .strict();
+import { recordExpenseInputSchema } from "@/modules/finance/domain/manual-financial-action";
 
 const recordExpenseResultSchema = z.object({
   actionId: z.uuid(),
@@ -104,6 +65,7 @@ type NormalizedRecordExpenseInput = {
   workspaceId: string;
   clientCommandId: string;
   requestId: string | null;
+  acknowledgeNegativeBalance: boolean;
 
   fundingAccountId: string;
   effectiveDate: CalendarDate;
@@ -151,6 +113,7 @@ function normalizeRecordExpenseInput(
     workspaceId: parsed.workspaceId,
     clientCommandId: parsed.clientCommandId,
     requestId: parsed.requestId ?? null,
+    acknowledgeNegativeBalance: parsed.acknowledgeNegativeBalance,
 
     fundingAccountId: parsed.fundingAccountId,
     effectiveDate,
@@ -167,6 +130,7 @@ function normalizeRecordExpenseInput(
 async function executeRecordExpense(
   transaction: ScopedTransaction,
   input: NormalizedRecordExpenseInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordExpenseResult> {
   const workspace = await lockActiveFinancialWorkspace(
     transaction,
@@ -174,6 +138,9 @@ async function executeRecordExpense(
   );
 
   const payloadHash = hashFinancialCommandPayload({
+    ...(input.acknowledgeNegativeBalance
+      ? { acknowledgeNegativeBalance: true }
+      : {}),
     fundingAccountId: input.fundingAccountId,
     effectiveDate: input.effectiveDate,
     purchaseMinor: input.purchaseMinor.toString(),
@@ -188,12 +155,14 @@ async function executeRecordExpense(
     notes: input.notes,
   });
 
-  const receipt = await claimFinancialCommandReceipt(transaction, {
-    workspaceId: input.workspaceId,
-    clientCommandId: input.clientCommandId,
-    commandType: RECORD_EXPENSE_COMMAND_TYPE,
-    payloadHash,
-  });
+  const receipt = correction
+    ? { kind: "claimed" as const, receiptId: correction.receiptId }
+    : await claimFinancialCommandReceipt(transaction, {
+        workspaceId: input.workspaceId,
+        clientCommandId: input.clientCommandId,
+        commandType: RECORD_EXPENSE_COMMAND_TYPE,
+        payloadHash,
+      });
 
   /*
    * A completed retry returns its original result before evaluating mutable
@@ -209,7 +178,7 @@ async function executeRecordExpense(
     accountId: input.fundingAccountId,
   });
 
-  if (fundingAccount.archived) {
+  if (fundingAccount.archived && !correction) {
     throw new RangeError(
       "New expenses require an active funding financial account.",
     );
@@ -241,6 +210,7 @@ async function executeRecordExpense(
     await ensureActiveExpenseCategory(transaction, {
       workspaceId: input.workspaceId,
       categoryId,
+      historicalRevisionId: correction?.previousRevisionId,
     });
   }
 
@@ -252,32 +222,47 @@ async function executeRecordExpense(
     },
   );
 
-  const actionId = randomUUID();
-  const actionRevisionId = randomUUID();
+  const negativeBalanceWarnings = await reviewCashChanges(transaction, {
+    workspaceId: input.workspaceId,
+    acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+    changes: [
+      {
+        accountId: input.fundingAccountId,
+        effectiveDate: input.effectiveDate,
+        signedMinor: -input.purchaseMinor,
+      },
+    ],
+    excludeRevisionId: correction?.previousRevisionId,
+  });
+
+  const actionId = correction?.actionId ?? randomUUID();
+  const actionRevisionId = correction?.actionRevisionId ?? randomUUID();
   const journalId = randomUUID();
 
-  await createExpenseFinancialAction(transaction, {
-    id: actionId,
-    workspaceId: input.workspaceId,
-    commandReceiptId: receipt.receiptId,
-    currentRevisionId: actionRevisionId,
-    description: input.description,
-    reference: input.reference,
-    notes: input.notes,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
-  });
+  if (!correction) {
+    await createExpenseFinancialAction(transaction, {
+      id: actionId,
+      workspaceId: input.workspaceId,
+      commandReceiptId: receipt.receiptId,
+      currentRevisionId: actionRevisionId,
+      description: input.description,
+      reference: input.reference,
+      notes: input.notes,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
 
-  await createExpenseActionRevision(transaction, {
-    id: actionRevisionId,
-    workspaceId: input.workspaceId,
-    actionId,
-    commandReceiptId: receipt.receiptId,
-    effectiveDate: input.effectiveDate,
-    currency: workspace.currency,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
-  });
+    await createExpenseActionRevision(transaction, {
+      id: actionRevisionId,
+      workspaceId: input.workspaceId,
+      actionId,
+      commandReceiptId: receipt.receiptId,
+      effectiveDate: input.effectiveDate,
+      currency: workspace.currency,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
+  }
 
   await createPurchaseDetail(transaction, {
     workspaceId: input.workspaceId,
@@ -330,9 +315,13 @@ async function executeRecordExpense(
     commandReceiptId: receipt.receiptId,
     subjectKind: "financial_action",
     subjectId: actionId,
-    subjectVersion: 1,
-    operation: "create",
+    subjectVersion: correction?.revisionNo ?? 1,
+    operation: correction ? "replace" : "create",
+    beforeJson: correction?.before,
+    reason: correction?.reason,
     afterJson: {
+      acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+      negativeBalanceWarnings,
       actionRevisionId,
       actionKind: "expense",
       fundingAccountId: input.fundingAccountId,
@@ -388,8 +377,13 @@ async function executeRecordExpense(
 export async function recordExpenseInTransaction(
   transaction: ScopedTransaction,
   input: RecordExpenseInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordExpenseResult> {
-  return executeRecordExpense(transaction, normalizeRecordExpenseInput(input));
+  return executeRecordExpense(
+    transaction,
+    normalizeRecordExpenseInput(input),
+    correction,
+  );
 }
 
 export async function recordExpense(

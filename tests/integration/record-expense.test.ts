@@ -244,6 +244,7 @@ describe("record expense", () => {
           userId: user.userId,
           workspaceId: user.workspaceId,
           clientCommandId: randomUUID(),
+          acknowledgeNegativeBalance: true,
           requestId: randomUUID(),
 
           fundingAccountId: fundingAccount.accountId,
@@ -499,6 +500,7 @@ describe("record expense", () => {
           userId: user.userId,
           workspaceId: user.workspaceId,
           clientCommandId,
+          acknowledgeNegativeBalance: true,
 
           fundingAccountId: fundingAccount.accountId,
           effectiveDate: "2026-05-02",
@@ -607,6 +609,7 @@ describe("record expense", () => {
             userId: user.userId,
             workspaceId: user.workspaceId,
             clientCommandId: randomUUID(),
+            acknowledgeNegativeBalance: true,
 
             fundingAccountId: fundingAccount.accountId,
             effectiveDate: "2026-06-10",

@@ -211,6 +211,7 @@ describe("record transfer", () => {
           userId: user.userId,
           workspaceId: user.workspaceId,
           clientCommandId: randomUUID(),
+          acknowledgeNegativeBalance: true,
 
           sourceAccountId: source.accountId,
           destinationAccountId: destination.accountId,
@@ -446,6 +447,7 @@ describe("record transfer", () => {
           userId: user.userId,
           workspaceId: user.workspaceId,
           clientCommandId,
+          acknowledgeNegativeBalance: true,
 
           sourceAccountId: source.accountId,
           destinationAccountId: destination.accountId,
@@ -566,6 +568,7 @@ describe("record transfer", () => {
           userId: user.userId,
           workspaceId: user.workspaceId,
           clientCommandId: randomUUID(),
+          acknowledgeNegativeBalance: true,
 
           sourceAccountId: source.accountId,
           destinationAccountId: destination.accountId,

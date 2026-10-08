@@ -225,6 +225,7 @@ describe("TransactionCreateForm", () => {
 
     expect(JSON.parse(request.body as string)).toEqual({
       clientCommandId: expect.any(String),
+      acknowledgeNegativeBalance: false,
 
       actionKind: "income",
 
@@ -334,6 +335,7 @@ describe("TransactionCreateForm", () => {
       JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string),
     ).toEqual({
       clientCommandId: expect.any(String),
+      acknowledgeNegativeBalance: false,
 
       actionKind: "expense",
 
@@ -470,6 +472,7 @@ describe("TransactionCreateForm", () => {
       JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string),
     ).toEqual({
       clientCommandId: expect.any(String),
+      acknowledgeNegativeBalance: false,
 
       actionKind: "expense",
 
@@ -708,7 +711,7 @@ describe("TransactionCreateForm", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("warns but does not prohibit an expense greater than the loaded account balance", async () => {
+  it("requires explicit negative-balance acknowledgement and clears it after editing", async () => {
     render(
       <TransactionCreateForm
         currency="PHP"
@@ -735,5 +738,19 @@ describe("TransactionCreateForm", () => {
           ),
         ),
     ).toBe(true);
+    const acknowledgement = screen.getByRole("checkbox", {
+      name: /explicitly acknowledge/i,
+    });
+    const save = screen.getByRole("button", { name: "Save transaction" });
+    expect(save).toBeDisabled();
+    await user.click(acknowledgement);
+    expect(acknowledgement).toBeChecked();
+    expect(save).toBeEnabled();
+    await user.type(
+      screen.getByRole("textbox", { name: "Description" }),
+      "Changed intent",
+    );
+    expect(acknowledgement).not.toBeChecked();
+    expect(save).toBeDisabled();
   });
 });

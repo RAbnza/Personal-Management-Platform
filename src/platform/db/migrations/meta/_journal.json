@@ -295,6 +295,69 @@
       "when": 1791454308336,
       "tag": "0041_d11_reconciliation_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791457266779,
+      "tag": "0042_d12_refunds",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791457489174,
+      "tag": "0043_d12_correction_refund_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791457948710,
+      "tag": "0044_d12_refund_action_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1791458498758,
+      "tag": "0045_d12_baseline_corrections",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791458635493,
+      "tag": "0046_d12_historical_negative_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791459199460,
+      "tag": "0047_d12_resolution_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1791459213594,
+      "tag": "0048_d12_clearing_fee_and_linked_correction",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1791460557654,
+      "tag": "0049_d12_refund_portion_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791461399347,
+      "tag": "0050_d12_refund_evidence_indexes",
+      "breakpoints": true
     }
   ]
 }

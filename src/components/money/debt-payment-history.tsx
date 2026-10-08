@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,12 @@ export function DebtPaymentHistory({
                 · revision {item.revisionNo}
               </h3>
               <p className="text-sm wrap-break-word">
-                {item.description}
+                <Link
+                  href={`/money/actions/${item.actionId}`}
+                  className="text-link underline"
+                >
+                  {item.description}
+                </Link>
                 {item.reference ? ` · ${item.reference}` : ""}
               </p>
               {item.changeKind !== "void" ? (

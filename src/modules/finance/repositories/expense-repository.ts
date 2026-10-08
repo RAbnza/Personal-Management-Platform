@@ -67,6 +67,7 @@ export async function ensureActiveExpenseCategory(
   input: {
     workspaceId: string;
     categoryId: string;
+    historicalRevisionId?: string | undefined;
   },
 ): Promise<void> {
   const result = await transaction.db.execute<{ id: string }>(sql`
@@ -76,7 +77,11 @@ export async function ensureActiveExpenseCategory(
         "workspace_id" = ${input.workspaceId}::uuid
         AND "id" = ${input.categoryId}::uuid
         AND "kind" = 'expense'
-        AND "archived_at" IS NULL
+        AND ("archived_at" IS NULL OR EXISTS (
+          SELECT 1 FROM finance.posting p JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id
+          WHERE p.workspace_id=${input.workspaceId}::uuid AND p.category_id=${input.categoryId}::uuid
+            AND p.action_revision_id=${input.historicalRevisionId ?? null}::uuid AND j.role='economic' AND j.state='posted'
+        ))
     `);
 
   if (!result.rows[0]) {

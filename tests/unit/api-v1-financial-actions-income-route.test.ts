@@ -118,6 +118,7 @@ describe("POST /api/v1/financial-actions — income", () => {
     expect(response.status).toBe(201);
 
     expect(mocks.recordIncome).toHaveBeenCalledWith({
+      acknowledgeNegativeBalance: false,
       userId: USER_ID,
       workspaceId: WORKSPACE_ID,
 

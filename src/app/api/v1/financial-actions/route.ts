@@ -1,3 +1,7 @@
+import {
+  recordRefund,
+  recordRefundBodySchema,
+} from "@/modules/finance/services/record-refund";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -62,6 +66,7 @@ const positiveFinancialMinorStringSchema = z
 
 const incomeFinancialActionBodySchema = z
   .object({
+    acknowledgeNegativeBalance: z.boolean().default(false),
     actionKind: z.literal("income"),
 
     clientCommandId: z.uuid(),
@@ -103,6 +108,7 @@ const expenseSplitSchema = z
 
 const expenseFinancialActionBodySchema = z
   .object({
+    acknowledgeNegativeBalance: z.boolean().default(false),
     actionKind: z.literal("expense"),
 
     clientCommandId: z.uuid(),
@@ -151,6 +157,7 @@ const transferFeeSchema = z
 
 const transferFinancialActionBodySchema = z
   .object({
+    acknowledgeNegativeBalance: z.boolean().default(false),
     actionKind: z.literal("transfer"),
 
     clientCommandId: z.uuid(),
@@ -192,7 +199,13 @@ const standardFinancialActionBodySchema = z.discriminatedUnion("actionKind", [
 
 const financialActionKindEnvelopeSchema = z
   .object({
-    actionKind: z.enum(["income", "expense", "transfer", "borrowing"]),
+    actionKind: z.enum([
+      "income",
+      "expense",
+      "transfer",
+      "borrowing",
+      "refund",
+    ]),
   })
   .passthrough();
 
@@ -235,6 +248,25 @@ export async function POST(request: Request): Promise<NextResponse> {
     const actionKind =
       financialActionKindEnvelopeSchema.parse(rawBody).actionKind;
 
+    if (actionKind === "refund") {
+      const envelope = z
+        .object({ actionKind: z.literal("refund") })
+        .passthrough()
+        .parse(rawBody);
+      const { actionKind: _kind, ...candidate } = envelope;
+      void _kind;
+      const result = await recordRefund({
+        ...recordRefundBodySchema.parse(candidate),
+        userId: actorResolution.actor.userId,
+        workspaceId: actorResolution.actor.workspaceId,
+        requestId: actorResolution.actor.requestId,
+      });
+      return createApiJsonResponse(
+        { actionKind: "refund", ...result },
+        201,
+        requestId,
+      );
+    }
     if (actionKind === "borrowing") {
       const borrowingEnvelope =
         borrowingFinancialActionEnvelopeSchema.parse(rawBody);
@@ -284,6 +316,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
           clientCommandId: body.clientCommandId,
 
+          acknowledgeNegativeBalance: body.acknowledgeNegativeBalance,
+
           requestId: actorResolution.actor.requestId,
 
           receivingAccountId: body.receivingAccountId,
@@ -326,6 +360,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
           clientCommandId: body.clientCommandId,
 
+          acknowledgeNegativeBalance: body.acknowledgeNegativeBalance,
+
           requestId: actorResolution.actor.requestId,
 
           fundingAccountId: body.fundingAccountId,
@@ -363,6 +399,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           workspaceId: actorResolution.actor.workspaceId,
 
           clientCommandId: body.clientCommandId,
+
+          acknowledgeNegativeBalance: body.acknowledgeNegativeBalance,
 
           requestId: actorResolution.actor.requestId,
 

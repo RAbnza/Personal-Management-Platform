@@ -202,6 +202,7 @@ describe("TransferCreateForm", () => {
       JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string),
     ).toEqual({
       clientCommandId: expect.any(String),
+      acknowledgeNegativeBalance: false,
 
       actionKind: "transfer",
 
@@ -299,6 +300,7 @@ describe("TransferCreateForm", () => {
 
     expect(body).toEqual({
       clientCommandId: expect.any(String),
+      acknowledgeNegativeBalance: false,
 
       actionKind: "transfer",
 

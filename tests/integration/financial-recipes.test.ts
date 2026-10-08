@@ -303,6 +303,10 @@ async function completeCommandReceipt(
   },
 ) {
   await client.query(
+    `INSERT INTO audit.private_revision(workspace_id,command_receipt_id,subject_kind,subject_id,subject_version,operation,after_json,recorded_by_user_id,actor_kind) SELECT workspace_id,command_receipt_id,'financial_action',action_id,revision_no,change_kind,'{"acknowledgeNegativeBalance":true}',recorded_by_user_id,'user' FROM finance.action_revision WHERE workspace_id=$1 AND id=$2`,
+    [input.workspaceId, input.revisionId],
+  );
+  await client.query(
     `
       UPDATE core."command_receipt"
       SET

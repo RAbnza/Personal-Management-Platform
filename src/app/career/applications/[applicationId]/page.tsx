@@ -181,10 +181,6 @@ export default async function JobApplicationDetailPage({
   const careerEnabled =
     modules.find((module) => module.moduleKey === "career")?.enabled === true;
 
-  if (!careerEnabled) {
-    redirect("/career/applications");
-  }
-
   const { applicationId } = await params;
 
   let detail: GetJobApplicationDetailResult | null = null;
@@ -254,6 +250,15 @@ export default async function JobApplicationDetailPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
+        {!careerEnabled && (
+          <p
+            role="status"
+            className="rounded-md border border-border p-3 text-sm"
+          >
+            Career module hidden. This authorized Agenda source remains
+            available.
+          </p>
+        )}
         <header>
           <Link
             href="/career/applications"

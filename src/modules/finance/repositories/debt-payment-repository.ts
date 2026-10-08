@@ -1,3 +1,4 @@
+import type { FinancialCorrectionContext } from "./financial-correction-repository";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 
@@ -109,6 +110,7 @@ export async function insertDebtPayment(
     receiptId: string;
     currency: string;
     body: ValidatedDebtPayment;
+    correction?: FinancialCorrectionContext | undefined;
     actionKind?: "debt_payment" | "debt_settlement";
     payingLedgerId: string;
     liabilityLedgerId: string;
@@ -117,10 +119,10 @@ export async function insertDebtPayment(
   },
 ) {
   const ids = {
-    paymentId: randomUUID(),
+    paymentId: input.correction?.paymentId ?? randomUUID(),
     paymentRevisionId: randomUUID(),
-    actionId: randomUUID(),
-    actionRevisionId: randomUUID(),
+    actionId: input.correction?.actionId ?? randomUUID(),
+    actionRevisionId: input.correction?.actionRevisionId ?? randomUUID(),
     journalId: randomUUID(),
   };
   const scope = { workspaceId: input.workspaceId };
@@ -130,28 +132,30 @@ export async function insertDebtPayment(
     requestId: input.requestId,
   };
   const body = input.body;
-  await transaction.db.insert(financialAction).values({
-    ...scope,
-    ...attribution,
-    id: ids.actionId,
-    originalCommandReceiptId: input.receiptId,
-    currentRevisionId: ids.actionRevisionId,
-    description: body.description,
-    reference: body.reference,
-    notes: body.notes,
-  });
-  await transaction.db.insert(actionRevision).values({
-    ...scope,
-    ...attribution,
-    id: ids.actionRevisionId,
-    actionId: ids.actionId,
-    revisionNo: 1,
-    commandReceiptId: input.receiptId,
-    changeKind: "create",
-    actionKind: input.actionKind ?? "debt_payment",
-    primaryEffectiveDate: body.paymentDate,
-    currency: input.currency,
-  });
+  if (!input.correction) {
+    await transaction.db.insert(financialAction).values({
+      ...scope,
+      ...attribution,
+      id: ids.actionId,
+      originalCommandReceiptId: input.receiptId,
+      currentRevisionId: ids.actionRevisionId,
+      description: body.description,
+      reference: body.reference,
+      notes: body.notes,
+    });
+    await transaction.db.insert(actionRevision).values({
+      ...scope,
+      ...attribution,
+      id: ids.actionRevisionId,
+      actionId: ids.actionId,
+      revisionNo: 1,
+      commandReceiptId: input.receiptId,
+      changeKind: "create",
+      actionKind: input.actionKind ?? "debt_payment",
+      primaryEffectiveDate: body.paymentDate,
+      currency: input.currency,
+    });
+  }
   await transaction.db.insert(debtActionLink).values({
     ...scope,
     debtId: body.debtId,
@@ -159,13 +163,15 @@ export async function insertDebtPayment(
     actionRevisionId: ids.actionRevisionId,
     purpose: input.actionKind === "debt_settlement" ? "settlement" : "payment",
   });
-  await transaction.db.insert(debtPayment).values({
-    ...scope,
-    ...attribution,
-    id: ids.paymentId,
-    debtId: body.debtId,
-    actionId: ids.actionId,
-  });
+  if (!input.correction) {
+    await transaction.db.insert(debtPayment).values({
+      ...scope,
+      ...attribution,
+      id: ids.paymentId,
+      debtId: body.debtId,
+      actionId: ids.actionId,
+    });
+  }
   await transaction.db.insert(debtPaymentRevision).values({
     ...scope,
     id: ids.paymentRevisionId,

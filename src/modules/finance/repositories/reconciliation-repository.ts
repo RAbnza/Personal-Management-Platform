@@ -1,3 +1,4 @@
+import type { FinancialCorrectionContext } from "./financial-correction-repository";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { ScopedTransaction } from "@/platform/db";
@@ -119,10 +120,11 @@ export async function insertAccountAdjustment(
     equityLedgerId: string;
     currency: string;
     body: AdjustAccountBody;
+    correction?: FinancialCorrectionContext;
   },
 ) {
-  const actionId = randomUUID(),
-    actionRevisionId = randomUUID(),
+  const actionId = input.correction?.actionId ?? randomUUID(),
+    actionRevisionId = input.correction?.actionRevisionId ?? randomUUID(),
     journalId = randomUUID(),
     adjustmentId = randomUUID();
   const scope = { workspaceId: input.workspaceId },
@@ -131,28 +133,30 @@ export async function insertAccountAdjustment(
       actorKind: "user",
       requestId: input.requestId,
     };
-  await t.db.insert(financialAction).values({
-    ...scope,
-    ...actor,
-    id: actionId,
-    originalCommandReceiptId: input.receiptId,
-    currentRevisionId: actionRevisionId,
-    description: "Explicit balance adjustment",
-    notes: input.body.reason,
-  });
-  await t.db.insert(actionRevision).values({
-    ...scope,
-    ...actor,
-    id: actionRevisionId,
-    actionId,
-    revisionNo: 1,
-    commandReceiptId: input.receiptId,
-    changeKind: "create",
-    actionKind: "balance_adjustment",
-    primaryEffectiveDate: input.body.effectiveDate,
-    currency: input.currency,
-    reason: input.body.reason,
-  });
+  if (!input.correction) {
+    await t.db.insert(financialAction).values({
+      ...scope,
+      ...actor,
+      id: actionId,
+      originalCommandReceiptId: input.receiptId,
+      currentRevisionId: actionRevisionId,
+      description: "Explicit balance adjustment",
+      notes: input.body.reason,
+    });
+    await t.db.insert(actionRevision).values({
+      ...scope,
+      ...actor,
+      id: actionRevisionId,
+      actionId,
+      revisionNo: 1,
+      commandReceiptId: input.receiptId,
+      changeKind: "create",
+      actionKind: "balance_adjustment",
+      primaryEffectiveDate: input.body.effectiveDate,
+      currency: input.currency,
+      reason: input.body.reason,
+    });
+  }
   await t.db.insert(journal).values({
     ...scope,
     id: journalId,

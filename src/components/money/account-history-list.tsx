@@ -42,6 +42,7 @@ const actionKindContent: Record<string, ActionKindContent> = {
   },
 
   debt_payment: { label: "Debt payment", icon: ArrowUpRight },
+  refund: { label: "Purchase / fee refund", icon: ArrowDownLeft },
   balance_adjustment: { label: "Balance adjustment", icon: Landmark },
 
   transfer: {
@@ -243,7 +244,12 @@ export function AccountHistoryList({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <p className="text-sm font-semibold text-foreground">
-                            {entry.description}
+                            <Link
+                              href={`/money/actions/${entry.actionId}`}
+                              className="text-link underline-offset-4 hover:underline"
+                            >
+                              {entry.description}
+                            </Link>
                           </p>
 
                           <span className="text-xs font-medium text-muted-foreground">

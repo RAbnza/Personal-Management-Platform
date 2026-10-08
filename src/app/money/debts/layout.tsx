@@ -36,6 +36,12 @@ export default async function DebtLayout({
           >
             Debts
           </Link>
+          <Link
+            className="inline-flex min-h-11 items-center"
+            href="/money/actions"
+          >
+            Financial activity
+          </Link>
           <Link className="inline-flex min-h-11 items-center" href="/calendar">
             Agenda
           </Link>

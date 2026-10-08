@@ -1,3 +1,9 @@
+import { recordExpense } from "../../src/modules/finance/services/record-expense";
+import { recordRefund } from "../../src/modules/finance/services/record-refund";
+import {
+  correctFinancialAction,
+  getFinancialActionDetail,
+} from "../../src/modules/finance/services/correct-financial-action";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { loadEnvFile } from "node:process";
@@ -1376,6 +1382,91 @@ async function main() {
     );
     console.log(
       "D11 committed comparisons, no automatic adjustment, explicit cash/equity posting, cutoff invalidation, history consistency, concurrent replay and stale-version conflicts passed.",
+    );
+    const purchase = await recordExpense({
+      ...owner,
+      clientCommandId: randomUUID(),
+      fundingAccountId: receivingAccount.accountId,
+      effectiveDate: "2026-10-08",
+      purchaseMinor: "1000",
+      splits: [{ amountMinor: "1000" }],
+      description: "D12 committed purchase",
+      acknowledgeNegativeBalance: true,
+    });
+    const correction = {
+      ...owner,
+      actionId: purchase.actionId,
+      clientCommandId: randomUUID(),
+      expectedActionRevisionId: purchase.actionRevisionId,
+      expectedFinancialRevision: purchase.financialRevision,
+      reason: "Corrected receipt amount and date",
+      replacement: {
+        actionKind: "expense" as const,
+        fundingAccountId: receivingAccount.accountId,
+        effectiveDate: "2026-10-09",
+        purchaseMinor: "800",
+        splits: [{ amountMinor: "800" }],
+        description: "D12 corrected purchase",
+        acknowledgeNegativeBalance: true,
+      },
+    };
+    const corrected = await Promise.all([
+      correctFinancialAction(correction),
+      correctFinancialAction(correction),
+    ]);
+    assert.deepEqual(corrected[0], corrected[1]);
+    assert.equal(corrected[0]!.actionId, purchase.actionId);
+    await assert.rejects(
+      correctFinancialAction({ ...correction, reason: "Changed payload" }),
+      FinancialCommandConflictError,
+    );
+    const evidence = await getFinancialActionDetail({
+      ...owner,
+      actionId: purchase.actionId,
+    });
+    assert.equal(evidence.history.length, 2);
+    const refund = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      purchaseActionId: purchase.actionId,
+      receivingAccountId: receivingAccount.accountId,
+      effectiveDate: "2026-10-10",
+      allocations: [
+        {
+          originalPurchasePostingId: evidence.refundSources[0]!.postingId,
+          amountMinor: "200",
+          allocationKind: "purchase" as const,
+        },
+      ],
+      description: "D12 genuine later refund",
+      acknowledgeNegativeBalance: true,
+    };
+    const refunded = await Promise.all([
+      recordRefund(refund),
+      recordRefund(refund),
+    ]);
+    assert.deepEqual(refunded[0], refunded[1]);
+    const d12History = await getAccountHistory({
+      ...owner,
+      accountId: receivingAccount.accountId,
+    });
+    assert.equal(
+      d12History.entries
+        .filter((e) => e.actionId === purchase.actionId)
+        .reduce((sum, e) => sum + BigInt(e.signedAmountMinor), 0n),
+      -800n,
+    );
+    assert.equal(
+      d12History.entries
+        .filter((e) => e.actionId === refunded[0]!.actionId)
+        .reduce((sum, e) => sum + BigInt(e.signedAmountMinor), 0n),
+      200n,
+    );
+    await assert.rejects(
+      getFinancialActionDetail({ ...other, actionId: purchase.actionId }),
+    );
+    console.log(
+      "D12 committed reversal/replacement, current logical identity, genuine refund, signed account history, concurrent replay, changed-payload conflicts and owner isolation passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();

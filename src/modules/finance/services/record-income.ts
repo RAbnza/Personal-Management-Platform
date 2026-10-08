@@ -30,7 +30,6 @@ import {
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import {
   compareCalendarDates,
-  isCalendarDate,
   parseCalendarDate,
   type CalendarDate,
 } from "@/shared/calendar-date";
@@ -39,43 +38,12 @@ import {
   parseMinorUnits,
 } from "@/shared/money";
 
+import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
+import { reviewCashChanges } from "@/modules/finance/repositories/negative-balance-repository";
+
 const RECORD_INCOME_COMMAND_TYPE = "finance.record_income";
 
-const incomeClassSchema = z.enum(["earned", "gift", "reward", "other"]);
-
-const recordIncomeInputSchema = z
-  .object({
-    userId: z.uuid(),
-    workspaceId: z.uuid(),
-    clientCommandId: z.uuid(),
-    requestId: z.uuid().optional(),
-
-    receivingAccountId: z.uuid(),
-
-    effectiveDate: z.string().refine(isCalendarDate, {
-      message:
-        "Income effective date must be a valid YYYY-MM-DD calendar date.",
-    }),
-
-    amountMinor: z.string().regex(/^[1-9]\d*$/, {
-      message: "Income amount must be a positive minor-unit integer string.",
-    }),
-
-    incomeClass: incomeClassSchema,
-
-    categoryId: z.uuid().nullable().optional(),
-
-    senderName: z.string().trim().min(1).nullable().optional(),
-
-    sourceLabel: z.string().trim().min(1).nullable().optional(),
-
-    description: z.string().trim().min(1).max(2000),
-
-    reference: z.string().trim().min(1).nullable().optional(),
-
-    notes: z.string().max(20_000).nullable().optional(),
-  })
-  .strict();
+import { recordIncomeInputSchema } from "@/modules/finance/domain/manual-financial-action";
 
 const recordIncomeResultSchema = z.object({
   actionId: z.uuid(),
@@ -92,6 +60,7 @@ type NormalizedRecordIncomeInput = {
   workspaceId: string;
   clientCommandId: string;
   requestId: string | null;
+  acknowledgeNegativeBalance: boolean;
 
   receivingAccountId: string;
   effectiveDate: CalendarDate;
@@ -123,6 +92,7 @@ function normalizeRecordIncomeInput(
     workspaceId: parsed.workspaceId,
     clientCommandId: parsed.clientCommandId,
     requestId: parsed.requestId ?? null,
+    acknowledgeNegativeBalance: parsed.acknowledgeNegativeBalance,
 
     receivingAccountId: parsed.receivingAccountId,
     effectiveDate,
@@ -142,6 +112,7 @@ function normalizeRecordIncomeInput(
 async function executeRecordIncome(
   transaction: ScopedTransaction,
   input: NormalizedRecordIncomeInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordIncomeResult> {
   const workspace = await lockActiveFinancialWorkspace(
     transaction,
@@ -149,6 +120,9 @@ async function executeRecordIncome(
   );
 
   const payloadHash = hashFinancialCommandPayload({
+    ...(input.acknowledgeNegativeBalance
+      ? { acknowledgeNegativeBalance: true }
+      : {}),
     receivingAccountId: input.receivingAccountId,
     effectiveDate: input.effectiveDate,
     amountMinor: input.amountMinor.toString(),
@@ -161,12 +135,14 @@ async function executeRecordIncome(
     notes: input.notes,
   });
 
-  const receipt = await claimFinancialCommandReceipt(transaction, {
-    workspaceId: input.workspaceId,
-    clientCommandId: input.clientCommandId,
-    commandType: RECORD_INCOME_COMMAND_TYPE,
-    payloadHash,
-  });
+  const receipt = correction
+    ? { kind: "claimed" as const, receiptId: correction.receiptId }
+    : await claimFinancialCommandReceipt(transaction, {
+        workspaceId: input.workspaceId,
+        clientCommandId: input.clientCommandId,
+        commandType: RECORD_INCOME_COMMAND_TYPE,
+        payloadHash,
+      });
 
   /*
    * Replay must return the original committed result before checking mutable
@@ -183,7 +159,7 @@ async function executeRecordIncome(
     accountId: input.receivingAccountId,
   });
 
-  if (receivingAccount.archived) {
+  if (receivingAccount.archived && !correction) {
     throw new RangeError(
       "New income requires an active receiving financial account.",
     );
@@ -209,6 +185,7 @@ async function executeRecordIncome(
     await ensureActiveIncomeCategory(transaction, {
       workspaceId: input.workspaceId,
       categoryId: input.categoryId,
+      historicalRevisionId: correction?.previousRevisionId,
     });
   }
 
@@ -220,32 +197,47 @@ async function executeRecordIncome(
     },
   );
 
-  const actionId = randomUUID();
-  const actionRevisionId = randomUUID();
+  const negativeBalanceWarnings = await reviewCashChanges(transaction, {
+    workspaceId: input.workspaceId,
+    acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+    changes: [
+      {
+        accountId: input.receivingAccountId,
+        effectiveDate: input.effectiveDate,
+        signedMinor: input.amountMinor,
+      },
+    ],
+    excludeRevisionId: correction?.previousRevisionId,
+  });
+
+  const actionId = correction?.actionId ?? randomUUID();
+  const actionRevisionId = correction?.actionRevisionId ?? randomUUID();
   const journalId = randomUUID();
 
-  await createIncomeFinancialAction(transaction, {
-    id: actionId,
-    workspaceId: input.workspaceId,
-    commandReceiptId: receipt.receiptId,
-    currentRevisionId: actionRevisionId,
-    description: input.description,
-    reference: input.reference,
-    notes: input.notes,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
-  });
+  if (!correction) {
+    await createIncomeFinancialAction(transaction, {
+      id: actionId,
+      workspaceId: input.workspaceId,
+      commandReceiptId: receipt.receiptId,
+      currentRevisionId: actionRevisionId,
+      description: input.description,
+      reference: input.reference,
+      notes: input.notes,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
 
-  await createIncomeActionRevision(transaction, {
-    id: actionRevisionId,
-    workspaceId: input.workspaceId,
-    actionId,
-    commandReceiptId: receipt.receiptId,
-    effectiveDate: input.effectiveDate,
-    currency: workspace.currency,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
-  });
+    await createIncomeActionRevision(transaction, {
+      id: actionRevisionId,
+      workspaceId: input.workspaceId,
+      actionId,
+      commandReceiptId: receipt.receiptId,
+      effectiveDate: input.effectiveDate,
+      currency: workspace.currency,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
+  }
 
   await createIncomeReceiptDetail(transaction, {
     workspaceId: input.workspaceId,
@@ -296,9 +288,13 @@ async function executeRecordIncome(
     commandReceiptId: receipt.receiptId,
     subjectKind: "financial_action",
     subjectId: actionId,
-    subjectVersion: 1,
-    operation: "create",
+    subjectVersion: correction?.revisionNo ?? 1,
+    operation: correction ? "replace" : "create",
+    beforeJson: correction?.before,
+    reason: correction?.reason,
     afterJson: {
+      acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+      negativeBalanceWarnings,
       actionRevisionId,
       actionKind: "income",
       receivingAccountId: input.receivingAccountId,
@@ -352,8 +348,13 @@ async function executeRecordIncome(
 export async function recordIncomeInTransaction(
   transaction: ScopedTransaction,
   input: RecordIncomeInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordIncomeResult> {
-  return executeRecordIncome(transaction, normalizeRecordIncomeInput(input));
+  return executeRecordIncome(
+    transaction,
+    normalizeRecordIncomeInput(input),
+    correction,
+  );
 }
 
 export async function recordIncome(

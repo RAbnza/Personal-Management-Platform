@@ -92,8 +92,8 @@ export async function readAccountHistoryPage(
             'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
           ) AS "recorded_at",
 
-          action."description",
-          action."reference",
+          COALESCE(evidence.after_json->>'description',action."description") AS "description",
+          CASE WHEN evidence.after_json ? 'reference' THEN evidence.after_json->>'reference' ELSE action."reference" END AS "reference",
 
           sum(
             posting."amount_minor"::numeric
@@ -126,6 +126,8 @@ export async function readAccountHistoryPage(
           AND action."id" =
             journal."action_id"
 
+        LEFT JOIN LATERAL (SELECT v.after_json FROM audit.private_revision v WHERE v.workspace_id=revision.workspace_id AND v.command_receipt_id=revision.command_receipt_id AND v.subject_kind='financial_action' AND v.subject_id=revision.action_id AND v.subject_version=revision.revision_no ORDER BY v.created_at DESC LIMIT 1) evidence ON TRUE
+
         WHERE
           journal."state" = 'posted'
           AND revision."state" = 'posted'
@@ -140,7 +142,8 @@ export async function readAccountHistoryPage(
           revision."action_kind",
           revision."created_at",
           action."description",
-          action."reference"
+          action."reference",
+          evidence.after_json
       ),
 
       "running_entries" AS (

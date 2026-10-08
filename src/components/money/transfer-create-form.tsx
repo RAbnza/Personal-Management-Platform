@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
@@ -213,6 +213,7 @@ type TransferFeePayload = {
 };
 
 type TransferPayload = {
+  acknowledgeNegativeBalance: boolean;
   actionKind: "transfer";
 
   sourceAccountId: string;
@@ -276,22 +277,37 @@ function addAccountEffect(
 async function postTransfer(
   command: PendingTransferCommand,
 ): Promise<Response> {
-  return fetch("/api/v1/financial-actions", {
-    method: "POST",
-
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify({
-      clientCommandId: command.clientCommandId,
-
-      ...command.payload,
-    }),
-
-    cache: "no-store",
-  });
+  const abort = new AbortController(),
+    timeout = setTimeout(() => abort.abort(), 20000);
+  try {
+    const response = await fetch("/api/v1/financial-actions", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clientCommandId: command.clientCommandId,
+        ...command.payload,
+      }),
+      cache: "no-store",
+      signal: abort.signal,
+    });
+    if (response.ok) {
+      const result = z
+        .object({
+          actionKind: z.literal("transfer"),
+          actionId: z.uuid(),
+          actionRevisionId: z.uuid(),
+          financialRevision: z.string().regex(/^\d+$/),
+        })
+        .safeParse(await response.json());
+      if (!result.success) throw new Error("Save outcome unconfirmed");
+    }
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export interface TransferCreateFormProps {
@@ -309,6 +325,9 @@ export function TransferCreateForm({
 }: TransferCreateFormProps) {
   const router = useRouter();
 
+  const [acknowledgeNegativeBalance, setAcknowledgeNegativeBalance] =
+    useState(false);
+  const savingRef = useRef(false);
   const [pendingCommand, setPendingCommand] =
     useState<PendingTransferCommand | null>(null);
 
@@ -503,12 +522,32 @@ export function TransferCreateForm({
       parseMinorUnits(account.currentBalanceMinor) + effectMinor < 0n,
   );
 
+  useEffect(() => {
+    if (saveState !== "saving" && saveState !== "unconfirmed") return;
+    const guard = (e: BeforeUnloadEvent) => e.preventDefault();
+    const navigation = (e: MouseEvent) => {
+      if ((e.target as Element).closest("a[href]")) {
+        e.preventDefault();
+        setSaveError(
+          "Retry the identical command to resolve its save outcome before leaving.",
+        );
+      }
+    };
+    window.addEventListener("beforeunload", guard);
+    document.addEventListener("click", navigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", guard);
+      document.removeEventListener("click", navigation, true);
+    };
+  }, [saveState]);
   const fieldsDisabled =
     saveState === "saving" ||
     saveState === "unconfirmed" ||
     saveState === "saved";
 
   async function executeTransfer(command: PendingTransferCommand) {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaveState("saving");
     setSaveError(null);
 
@@ -546,10 +585,13 @@ export function TransferCreateForm({
       setSaveError(
         "We couldn't confirm whether this transfer was saved. Keep this page open and retry the same save before recording another financial action.",
       );
+    } finally {
+      savingRef.current = false;
     }
   }
 
   async function onSubmit(values: TransferFormValues) {
+    if (savingRef.current || fieldsDisabled) return;
     const source = accounts.find(
       (account) => account.accountId === values.sourceAccountId,
     );
@@ -685,6 +727,7 @@ export function TransferCreateForm({
     const notes = values.notes.trim();
 
     const payload: TransferPayload = {
+      acknowledgeNegativeBalance,
       actionKind: "transfer",
 
       sourceAccountId: values.sourceAccountId,
@@ -754,7 +797,18 @@ export function TransferCreateForm({
       <form
         noValidate
         className="mt-6 space-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+        onChangeCapture={(event) => {
+          if (!(event.target as HTMLElement).hasAttribute("data-negative-ack"))
+            setAcknowledgeNegativeBalance(false);
+        }}
+        onClickCapture={(event) => {
+          if (
+            saveState === "idle" &&
+            (event.target as Element).closest('button[type="button"]')
+          )
+            setAcknowledgeNegativeBalance(false);
+        }}
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
@@ -1470,6 +1524,22 @@ export function TransferCreateForm({
           </div>
         ) : null}
 
+        <label className="flex items-start gap-3 rounded-md border border-warning p-3 text-sm">
+          <input
+            type="checkbox"
+            data-negative-ack="true"
+            checked={acknowledgeNegativeBalance}
+            disabled={fieldsDisabled}
+            onChange={(event) =>
+              setAcknowledgeNegativeBalance(event.target.checked)
+            }
+          />
+          <span>
+            I explicitly acknowledge that this genuine transaction may make my
+            tracked account balance negative. Account history may be incomplete.
+            This acknowledgement will be recorded with the command.
+          </span>
+        </label>
         <div className="flex flex-wrap justify-end gap-3">
           {saveState === "unconfirmed" ? (
             <Button
@@ -1487,7 +1557,11 @@ export function TransferCreateForm({
             type="submit"
             loading={saveState === "saving"}
             loadingLabel="Saving transfer…"
-            disabled={saveState === "unconfirmed" || saveState === "saved"}
+            disabled={
+              saveState === "unconfirmed" ||
+              saveState === "saved" ||
+              (accountsBelowZero.length > 0 && !acknowledgeNegativeBalance)
+            }
           >
             Save completed transfer
           </Button>

@@ -34,7 +34,6 @@ import {
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import {
   compareCalendarDates,
-  isCalendarDate,
   parseCalendarDate,
   type CalendarDate,
 } from "@/shared/calendar-date";
@@ -44,67 +43,12 @@ import {
   parseMinorUnits,
 } from "@/shared/money";
 
+import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
+import { reviewCashChanges } from "@/modules/finance/repositories/negative-balance-repository";
+
 const RECORD_TRANSFER_COMMAND_TYPE = "finance.record_transfer";
 
-const transferFeeTreatmentSchema = z.enum([
-  "withheld",
-  "source_additional",
-  "separate",
-]);
-
-const transferFeeSchema = z
-  .object({
-    label: z.string().trim().min(1).max(200),
-
-    amountMinor: z.string().regex(/^[1-9]\d*$/, {
-      message:
-        "Transfer fee amount must be a positive minor-unit integer string.",
-    }),
-
-    effectiveDate: z
-      .string()
-      .refine(isCalendarDate, {
-        message: "Transfer fee date must be a valid YYYY-MM-DD calendar date.",
-      })
-      .optional(),
-
-    bearingAccountId: z.uuid().optional(),
-
-    treatment: transferFeeTreatmentSchema,
-
-    categoryId: z.uuid().nullable().optional(),
-  })
-  .strict();
-
-const recordTransferInputSchema = z
-  .object({
-    userId: z.uuid(),
-    workspaceId: z.uuid(),
-    clientCommandId: z.uuid(),
-    requestId: z.uuid().optional(),
-
-    sourceAccountId: z.uuid(),
-    destinationAccountId: z.uuid(),
-
-    effectiveDate: z.string().refine(isCalendarDate, {
-      message:
-        "Transfer effective date must be a valid YYYY-MM-DD calendar date.",
-    }),
-
-    destinationPrincipalMinor: z.string().regex(/^[1-9]\d*$/, {
-      message:
-        "Transfer principal must be a positive minor-unit integer string.",
-    }),
-
-    fees: z.array(transferFeeSchema).max(20).default([]),
-
-    description: z.string().trim().min(1).max(2000),
-
-    reference: z.string().trim().min(1).nullable().optional(),
-
-    notes: z.string().max(20_000).nullable().optional(),
-  })
-  .strict();
+import { recordTransferInputSchema } from "@/modules/finance/domain/manual-financial-action";
 
 const recordTransferResultSchema = z.object({
   actionId: z.uuid(),
@@ -130,6 +74,7 @@ type NormalizedRecordTransferInput = {
   workspaceId: string;
   clientCommandId: string;
   requestId: string | null;
+  acknowledgeNegativeBalance: boolean;
 
   sourceAccountId: string;
   destinationAccountId: string;
@@ -247,6 +192,7 @@ function normalizeRecordTransferInput(
     workspaceId: parsed.workspaceId,
     clientCommandId: parsed.clientCommandId,
     requestId: parsed.requestId ?? null,
+    acknowledgeNegativeBalance: parsed.acknowledgeNegativeBalance,
 
     sourceAccountId: parsed.sourceAccountId,
     destinationAccountId: parsed.destinationAccountId,
@@ -270,9 +216,10 @@ function assertAccountUsableForTransfer(
     role: string;
     expectedCurrency: string;
     effectiveDate: CalendarDate;
+    correction?: boolean;
   },
 ): void {
-  if (account.archived) {
+  if (account.archived && !input.correction) {
     throw new RangeError(
       `New transfers require an active ${input.role} financial account.`,
     );
@@ -296,6 +243,7 @@ function assertAccountUsableForTransfer(
 async function executeRecordTransfer(
   transaction: ScopedTransaction,
   input: NormalizedRecordTransferInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordTransferResult> {
   const workspace = await lockActiveFinancialWorkspace(
     transaction,
@@ -303,6 +251,9 @@ async function executeRecordTransfer(
   );
 
   const payloadHash = hashFinancialCommandPayload({
+    ...(input.acknowledgeNegativeBalance
+      ? { acknowledgeNegativeBalance: true }
+      : {}),
     sourceAccountId: input.sourceAccountId,
     destinationAccountId: input.destinationAccountId,
     effectiveDate: input.effectiveDate,
@@ -320,12 +271,14 @@ async function executeRecordTransfer(
     notes: input.notes,
   });
 
-  const receipt = await claimFinancialCommandReceipt(transaction, {
-    workspaceId: input.workspaceId,
-    clientCommandId: input.clientCommandId,
-    commandType: RECORD_TRANSFER_COMMAND_TYPE,
-    payloadHash,
-  });
+  const receipt = correction
+    ? { kind: "claimed" as const, receiptId: correction.receiptId }
+    : await claimFinancialCommandReceipt(transaction, {
+        workspaceId: input.workspaceId,
+        clientCommandId: input.clientCommandId,
+        commandType: RECORD_TRANSFER_COMMAND_TYPE,
+        payloadHash,
+      });
 
   /*
    * Replay returns the original committed IDs before evaluating mutable
@@ -363,12 +316,14 @@ async function executeRecordTransfer(
 
   assertAccountUsableForTransfer(sourceAccount, {
     role: "source",
+    correction: !!correction,
     expectedCurrency: workspace.currency,
     effectiveDate: input.effectiveDate,
   });
 
   assertAccountUsableForTransfer(destinationAccount, {
     role: "destination",
+    correction: !!correction,
     expectedCurrency: workspace.currency,
     effectiveDate: input.effectiveDate,
   });
@@ -378,6 +333,7 @@ async function executeRecordTransfer(
 
     assertAccountUsableForTransfer(bearingAccount, {
       role: "fee-bearing",
+      correction: !!correction,
       expectedCurrency: workspace.currency,
       effectiveDate: fee.effectiveDate,
     });
@@ -395,6 +351,7 @@ async function executeRecordTransfer(
     await ensureActiveExpenseCategory(transaction, {
       workspaceId: input.workspaceId,
       categoryId,
+      historicalRevisionId: correction?.previousRevisionId,
     });
   }
 
@@ -406,31 +363,56 @@ async function executeRecordTransfer(
           currency: workspace.currency,
         });
 
-  const actionId = randomUUID();
-  const actionRevisionId = randomUUID();
-
-  await createTransferFinancialAction(transaction, {
-    id: actionId,
+  const negativeBalanceWarnings = await reviewCashChanges(transaction, {
     workspaceId: input.workspaceId,
-    commandReceiptId: receipt.receiptId,
-    currentRevisionId: actionRevisionId,
-    description: input.description,
-    reference: input.reference,
-    notes: input.notes,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
+    acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+    changes: [
+      {
+        accountId: input.sourceAccountId,
+        effectiveDate: input.effectiveDate,
+        signedMinor: -input.destinationPrincipalMinor,
+      },
+      {
+        accountId: input.destinationAccountId,
+        effectiveDate: input.effectiveDate,
+        signedMinor: input.destinationPrincipalMinor,
+      },
+      ...input.fees.map((f) => ({
+        accountId: f.bearingAccountId,
+        effectiveDate: f.effectiveDate,
+        signedMinor: -f.amountMinor,
+      })),
+    ],
+    excludeRevisionId: correction?.previousRevisionId,
   });
 
-  await createTransferActionRevision(transaction, {
-    id: actionRevisionId,
-    workspaceId: input.workspaceId,
-    actionId,
-    commandReceiptId: receipt.receiptId,
-    effectiveDate: input.effectiveDate,
-    currency: workspace.currency,
-    recordedByUserId: input.userId,
-    requestId: input.requestId,
-  });
+  const actionId = correction?.actionId ?? randomUUID();
+  const actionRevisionId = correction?.actionRevisionId ?? randomUUID();
+
+  if (!correction) {
+    await createTransferFinancialAction(transaction, {
+      id: actionId,
+      workspaceId: input.workspaceId,
+      commandReceiptId: receipt.receiptId,
+      currentRevisionId: actionRevisionId,
+      description: input.description,
+      reference: input.reference,
+      notes: input.notes,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
+
+    await createTransferActionRevision(transaction, {
+      id: actionRevisionId,
+      workspaceId: input.workspaceId,
+      actionId,
+      commandReceiptId: receipt.receiptId,
+      effectiveDate: input.effectiveDate,
+      currency: workspace.currency,
+      recordedByUserId: input.userId,
+      requestId: input.requestId,
+    });
+  }
 
   await createTransferDetail(transaction, {
     workspaceId: input.workspaceId,
@@ -588,9 +570,13 @@ async function executeRecordTransfer(
     commandReceiptId: receipt.receiptId,
     subjectKind: "financial_action",
     subjectId: actionId,
-    subjectVersion: 1,
-    operation: "create",
+    subjectVersion: correction?.revisionNo ?? 1,
+    operation: correction ? "replace" : "create",
+    beforeJson: correction?.before,
+    reason: correction?.reason,
     afterJson: {
+      acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+      negativeBalanceWarnings,
       actionRevisionId,
       actionKind: "transfer",
       sourceAccountId: input.sourceAccountId,
@@ -655,10 +641,12 @@ async function executeRecordTransfer(
 export async function recordTransferInTransaction(
   transaction: ScopedTransaction,
   input: RecordTransferInput,
+  correction?: FinancialCorrectionContext,
 ): Promise<RecordTransferResult> {
   return executeRecordTransfer(
     transaction,
     normalizeRecordTransferInput(input),
+    correction,
   );
 }
 
