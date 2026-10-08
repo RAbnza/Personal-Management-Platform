@@ -1,0 +1,2 @@
+ALTER TABLE "time"."source_reminder_setting" ADD COLUMN "notification_generation" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "ck_reminder_setting_generation" CHECK ("time"."source_reminder_setting"."notification_generation">0 AND ("time"."source_reminder_setting"."debt_obligation_id" IS NOT NULL OR "time"."source_reminder_setting"."notification_generation"=1));

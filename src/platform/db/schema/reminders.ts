@@ -104,6 +104,12 @@ export const sourceReminderSetting = timeSchema.table(
   {
     ...scope(),
     mode: text("mode").default("inherit").notNull(),
+    // A resolved debt due can become actionable again after a correction in
+    // the same immutable schedule. Keep its notification epoch in reminder
+    // metadata; financial/obligation evidence remains untouched.
+    notificationGeneration: integer("notification_generation")
+      .default(1)
+      .notNull(),
   },
   (t) => [
     unique("uq_reminder_setting_scope_id").on(t.workspaceId, t.id),
@@ -146,6 +152,10 @@ export const sourceReminderSetting = timeSchema.table(
     check(
       "ck_reminder_setting_mode",
       sql`${t.mode} IN ('inherit','override','off') AND ${t.version}>0`,
+    ),
+    check(
+      "ck_reminder_setting_generation",
+      sql`${t.notificationGeneration}>0 AND (${t.debtObligationId} IS NOT NULL OR ${t.notificationGeneration}=1)`,
     ),
   ],
 );

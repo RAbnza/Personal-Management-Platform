@@ -73,6 +73,51 @@ async function personal(client: PoolClient, f: DebtFixture) {
 }
 afterAll(closeRuntimeDatabasePools);
 describe("V1 in-app reminders", () => {
+  it("a corrected full payment makes the surviving obligation due under a fresh generation", async () =>
+    withFixture(async (c, f) => {
+      await control(c, f, debtSource(f), {
+        kind: "dismiss",
+        ruleKey: "0:09:00",
+      });
+      const original = await payment(c, f, {
+        contractual: "1000",
+        due: "1000",
+      });
+      await c.query(
+        "UPDATE finance.debt SET version=version+1 WHERE workspace_id=$1 AND id=$2",
+        [f.workspaceId, f.debtId],
+      );
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE");
+      await c.query("SET CONSTRAINTS ALL DEFERRED");
+      expect(
+        (
+          await getReminderInTransaction(
+            transaction(c),
+            f.workspaceId,
+            debtSource(f),
+          )
+        ).eligible,
+      ).toBe(false);
+      await payment(c, f, {
+        previous: original,
+        contractual: "400",
+        due: "400",
+      });
+      await c.query(
+        "UPDATE finance.debt SET version=version+1 WHERE workspace_id=$1 AND id=$2",
+        [f.workspaceId, f.debtId],
+      );
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE");
+      const reopened = await getReminderInTransaction(
+        transaction(c),
+        f.workspaceId,
+        debtSource(f),
+      );
+      expect(reopened.remainingMinor).toBe("600");
+      expect(reopened.rules[0]?.state).toBe("active");
+      expect(reopened.sourceGeneration).toBeGreaterThan(1);
+      expect(reopened.history[0]?.state).toBe("cancelled");
+    }));
   it("attention includes older overdue sources, aggregates by source and excludes dismissed/snoozed/off rules", async () =>
     withFixture(async (c, f) => {
       const e = await personal(c, f);
