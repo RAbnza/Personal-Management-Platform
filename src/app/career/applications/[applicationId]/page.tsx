@@ -13,6 +13,7 @@ import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
 import { AuthCard } from "@/components/auth/auth-card";
 import { ApplicationEventActions } from "@/components/career/application-event-actions";
 import { ApplicationEventCreateForm } from "@/components/career/application-event-create-form";
+import { CareerObservationForm } from "@/components/career/career-observation-form";
 import { ApplicationStageTransitionForm } from "@/components/career/application-stage-transition-form";
 import { AppShell } from "@/components/shell/app-shell";
 import { Panel } from "@/components/ui/panel";
@@ -459,6 +460,10 @@ export default async function JobApplicationDetailPage({
               applicationId={application.applicationId}
               applicationVersion={application.version}
               workspaceTimezone={workspace.timezone}
+            />
+            <CareerObservationForm
+              applicationId={application.applicationId}
+              applicationVersion={application.version}
             />
           </div>
         )}

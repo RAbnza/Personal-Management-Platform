@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { LayoutDashboard, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  ChartNoAxesCombined,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
@@ -15,6 +19,7 @@ const navigationItems: readonly NavigationItem[] = [
     label: "Dashboard",
     icon: LayoutDashboard,
   },
+  { href: "/reports", label: "Reports", icon: ChartNoAxesCombined },
 ];
 
 export interface AppNavigationProps {

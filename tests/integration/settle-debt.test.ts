@@ -36,6 +36,12 @@ import { DebtUnavailableError } from "@/modules/finance/services/read-debts";
 import { FinancialAccountReferenceUnavailableError } from "@/modules/finance/domain/financial-reference";
 import { scoped, action, post, finish } from "./helpers/debt-payment-fixture";
 import * as settlementRepo from "@/modules/finance/repositories/debt-settlement-repository";
+import { getFinancialReportInTransaction } from "@/modules/reporting/services/get-reports";
+const report = (c: PoolClient, f: DebtFixture) =>
+  getFinancialReportInTransaction(tx(c), {
+    workspaceId: f.workspaceId,
+    query: { period: "custom", startDate: "2026-10-01", endDate: "2026-10-31" },
+  });
 const foreignRoots: ProvisionedTestUser[] = [];
 afterAll(async () => {
   for (const root of foreignRoots)
@@ -307,6 +313,15 @@ describe("D10 explicit settlement", () => {
       const after = await amounts(c, f);
       expect(BigInt(before.cash) - BigInt(after.cash)).toBe(1110n);
       expect(after.spending).toBe("110");
+      expect((await report(c, f)).metrics).toMatchObject({
+        interest: "100",
+        fees: "10",
+        debt_charges: "110",
+        net: "110",
+        cash_out: "1110",
+        debt_payments: "1110",
+        waivers: "0",
+      });
       expect((await detail(c, f)).installments[0]?.paymentSatisfiedMinor).toBe(
         "1100",
       );
@@ -333,6 +348,14 @@ describe("D10 explicit settlement", () => {
       });
       const r = await save(c, f, b);
       expect((await amounts(c, f)).offsets).toBe("0");
+      expect((await report(c, f)).metrics).toMatchObject({
+        gross: "0",
+        offsets: "0",
+        net: "0",
+        waivers: "0",
+        cash_out: "1000",
+        closing_liability: "0",
+      });
       expect((await detail(c, f)).installments[0]).toMatchObject({
         contractualMinor: "1400",
         paymentSatisfiedMinor: "1000",
@@ -531,6 +554,20 @@ describe("D10 explicit settlement", () => {
       expect(after.liability).toBe("0");
       expect(after.spending).toBe("40000");
       expect(after.offsets).toBe("-40000");
+      const canonical = await report(c, loan);
+      expect(canonical.metrics).toMatchObject({
+        gross: "40000",
+        offsets: "40000",
+        net: "0",
+        interest: "40000",
+        waivers: "40000",
+        cash_out: "600000",
+        principal: "600000",
+      });
+      expect(canonical.identities).toEqual({
+        cashMatches: true,
+        liabilityMatches: true,
+      });
       expect((await detail(c, loan)).debt.recognizedLiabilityMinor).toBe("0");
       expect(await save(c, loan, b)).toEqual(r);
       expect((await amounts(c, loan)).offsets).toBe("-40000");

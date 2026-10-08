@@ -28,6 +28,9 @@ vi.mock("@/components/career/application-event-create-form", () => ({
 vi.mock("@/components/career/application-stage-transition-form", () => ({
   ApplicationStageTransitionForm: () => null,
 }));
+vi.mock("@/components/career/career-observation-form", () => ({
+  CareerObservationForm: () => null,
+}));
 import Page from "@/app/career/applications/[applicationId]/page";
 import { JobApplicationUnavailableError } from "@/modules/career/domain/application";
 import type { GetJobApplicationDetailResult } from "@/modules/career/services/get-job-application-detail";

@@ -1528,6 +1528,112 @@ async function main() {
     console.log(
       "V1-C1 committed Dashboard/spending snapshot, signed correction/refund contributions, account history consistency, logical activity and owner isolation passed.",
     );
+    const { getFinancialReport, getFinancialDetail, getCareerReport } =
+      await import("../../src/modules/reporting/services/get-reports");
+    const { prepareCsvExport } =
+      await import("../../src/modules/reporting/services/export-csv");
+    const { parse } = await import("csv-parse/sync");
+    const reportQuery = {
+      period: "custom" as const,
+      startDate: "2026-10-08",
+      endDate: "2026-10-10",
+    };
+    const report = await getFinancialReport({ ...owner, query: reportQuery });
+    assert.equal(report.metrics.net, contributions.summary.netMinor);
+    assert.deepEqual(report.identities, {
+      cashMatches: true,
+      liabilityMatches: true,
+    });
+    const detail = await getFinancialDetail({
+      ...owner,
+      query: { ...reportQuery, metric: "net" },
+    });
+    assert.equal(detail.amountMinor, report.metrics.net);
+    const prepared = await prepareCsvExport({
+      ...owner,
+      kind: "report",
+      query: reportQuery,
+    });
+    const csvRows = parse(prepared.buffer, {
+      bom: true,
+      columns: true,
+    }) as Record<string, string>[];
+    assert.equal(csvRows[0]!.record_type, "manifest");
+    assert.equal(csvRows[0]!.financial_revision, report.financialRevision);
+    assert.equal(
+      csvRows.find((r) => r.metric === "net")?.amount_minor,
+      report.metrics.net,
+    );
+    const provenance = await withDomainTransaction(
+      owner,
+      (t) =>
+        t.db.execute(
+          sql`SELECT state FROM ops.export_run WHERE id=${prepared.exportRunId}::uuid`,
+        ),
+      { readOnlySnapshot: true },
+    );
+    assert.equal(provenance.rows[0]!.state, "completed");
+    const otherProvenance = await withDomainTransaction(
+      other,
+      (t) =>
+        t.db.execute(
+          sql`SELECT id FROM ops.export_run WHERE id=${prepared.exportRunId}::uuid`,
+        ),
+      { readOnlySnapshot: true },
+    );
+    assert.equal(otherProvenance.rows.length, 0);
+    assert.equal(
+      (await getFinancialReport({ ...owner, query: reportQuery }))
+        .financialRevision,
+      report.financialRevision,
+    );
+    assert.equal(
+      (await getCareerReport({ ...other, query: reportQuery })).summary
+        .responseRate,
+      null,
+    );
+    // Prove a multi-query report remains on its repeatable read snapshot while
+    // an independent command commits. This is distinct from freshness on reload.
+    const { recordIncome } =
+      await import("../../src/modules/finance/services/record-income");
+    await withDomainTransaction(
+      owner,
+      async (t) => {
+        const first = await (
+          await import("../../src/modules/reporting/services/get-reports")
+        ).getFinancialReportInTransaction(t, {
+          workspaceId: owner.workspaceId,
+          query: reportQuery,
+        });
+        await recordIncome({
+          ...owner,
+          clientCommandId: randomUUID(),
+          receivingAccountId: receivingAccount.accountId,
+          effectiveDate: "2026-10-10",
+          amountMinor: "1",
+          incomeClass: "earned",
+          description: "Snapshot concurrent fixture income",
+          acknowledgeNegativeBalance: true,
+        });
+        const second = await (
+          await import("../../src/modules/reporting/services/get-reports")
+        ).getFinancialReportInTransaction(t, {
+          workspaceId: owner.workspaceId,
+          query: reportQuery,
+        });
+        assert.deepEqual(second.metrics, first.metrics);
+        assert.equal(second.financialRevision, first.financialRevision);
+      },
+      { readOnlySnapshot: true },
+    );
+    const fresh = await getFinancialReport({ ...owner, query: reportQuery });
+    assert.equal(
+      BigInt(fresh.metrics.income),
+      BigInt(report.metrics.income) + 1n,
+    );
+    console.log(
+      "V1-C2 committed reports/drilldown/CSV provenance, exact values, owner isolation, nonfinancial export and concurrent repeatable snapshot passed.",
+    );
   } finally {
     await closeRuntimeDatabasePools();
 

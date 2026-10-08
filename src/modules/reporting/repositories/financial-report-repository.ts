@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { ScopedTransaction } from "@/platform/db";
 import type { ReportPeriod } from "../domain/period";
+import { postingFacts, metricExpression } from "./posting-facts";
 
 export async function readFinancialCoverage(
   t: ScopedTransaction,
@@ -40,15 +41,12 @@ export async function readSpendingSummary(
     offsetsMinor: string;
     netMinor: string;
     baselineMinor: string;
-  }>(sql`
-    SELECT COALESCE(sum(p.amount_minor::numeric) FILTER (WHERE p.expense_class='gross'),0)::text AS "grossMinor",
-      (-COALESCE(sum(p.amount_minor::numeric) FILTER (WHERE p.expense_class IN ('refund_offset','rebate_offset','waiver_offset')),0))::text AS "offsetsMinor",
-      COALESCE(sum(p.amount_minor::numeric) FILTER (WHERE p.expense_class<>'none'),0)::text AS "netMinor",
-      COALESCE(sum(p.amount_minor::numeric) FILTER (WHERE p.cash_flow_kind='opening'),0)::text AS "baselineMinor"
-    FROM finance.posting p JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.action_revision_id=p.action_revision_id AND j.state='posted'
-    JOIN finance.action_revision r ON r.workspace_id=p.workspace_id AND r.id=p.action_revision_id AND r.state='posted'
-    WHERE p.workspace_id=${workspaceId}::uuid AND j.effective_date>=${period.startDate}::date AND j.effective_date<${period.endDateExclusive}::date
-  `);
+  }>(sql`${postingFacts(workspaceId)}
+    SELECT COALESCE(sum(${metricExpression("gross")}),0)::text AS "grossMinor",
+      COALESCE(sum(${metricExpression("offsets")}),0)::text AS "offsetsMinor",
+      COALESCE(sum(${metricExpression("net")}),0)::text AS "netMinor",
+      COALESCE(sum(${metricExpression("baseline")}),0)::text AS "baselineMinor"
+    FROM facts WHERE effective_date>=${period.startDate}::date AND effective_date<${period.endDateExclusive}::date`);
   return result.rows[0]!;
 }
 
