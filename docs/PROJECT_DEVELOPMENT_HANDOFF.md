@@ -8,7 +8,7 @@
 
 **Handoff date:** October 8, 2026
 
-**Current verified implementation `main` HEAD:** `f536c019622d25a239098286e7fb81e343a932bb` — `feat(money): add financial corrections refunds and durable acknowledgements`
+**Current verified implementation `main` HEAD:** `91624010767254461297f55eff238aa260ab07df` — `feat(dashboard): connect source-backed attention and summaries`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** is the next milestone.
+The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** is complete. **V1-C2 — Reports, Drilldowns, and CSV Exports** is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -609,7 +609,34 @@ Verification:
 
 Documented dependent-record restrictions remain visible in the read model/UI and reject commands before changing evidence: borrowing-origin reversal, corrections/reversals under a finalized debt settlement/closing schedule, incompatible refund source/category changes, and source payments with active linked clearing resolutions. This milestone does not introduce grouped multi-action dependent settlement reopening or a coverage-rebaselining workflow. These restrictions preserve released immutable accounting and closure rather than automatically reopening or forcing a balance to zero.
 
-D12 stops here. Connected Dashboard, full Reports, V2/V3 and broad visual redesign remain separate assignments. Next milestone: **V1-C1 — Connected Dashboard**.
+D12 stopped with V1-C1 as its next assignment; V1-C1 is completed below. Full Reports, V2/V3 and broad visual redesign remain separate assignments.
+
+### 5.13 V1-C1 — Connected Dashboard
+
+Verified implementation commit: `91624010767254461297f55eff238aa260ab07df` — `feat(dashboard): connect source-backed attention and summaries`.
+
+V1-C1 is complete. Work continued from clean, synchronized `main` at `c92ab018f7b4c6bbf4f1de83c57744937b7cbc22` (D12 implementation `f536c019622d25a239098286e7fb81e343a932bb`). D12 was verified first with all 18 financial-correction PostgreSQL tests. Review was limited to the authoritative Dashboard, reporting, snapshot, coverage and design sections needed for this milestone.
+
+Released behavior:
+
+- `/` is now the connected, attention-first Dashboard. It reads tracked liquid accounts, outstanding recognized liabilities, selected-period gross/offset/net spending, current contractual dues, active Career applications, upcoming interviews/assessments/follow-ups, mixed Agenda, reconciliation/incomplete-information attention, current logical activity and useful quick actions from authoritative server records.
+- `src/modules/dashboard` owns the Dashboard service/repository and `GET /api/v1/dashboard` exposes the same trusted-actor query. Browser ownership identifiers, duplicate parameters and unsupported filters are rejected. Authentication, source failures and unavailable data never become invented zero totals; responses are private/no-store.
+- Dashboard queries run in one read-only `REPEATABLE READ` domain transaction. `src/modules/reporting` contains shared period/context/spending definitions for later reuse: workspace week start, week/month/calendar-quarter/year/custom periods, half-open effective-date boundaries, currency, timezone, definition version, financial revision, generation time and coverage. Custom ranges are inclusive in the UI and limited to 366 days. Timed Career/Agenda sources use workspace-timezone UTC boundaries. Agenda's transaction-local date now uses `transaction_timestamp()` so it shares the snapshot date.
+- Exact sums use posted signed evidence, retaining original/reversal/replacement legs in the correct effective periods. Refund/rebate/waiver offsets are separate from gross spending. Opening cash is baseline evidence; transfers, principal, available credit, clearing and adjustments are not spending. Financial activity counts each current logical action once. Clearing is excluded from liquid funds and tracked net position; recognized debt credit balances, incomplete breakdowns, missing schedules and opening cutoffs remain explicit. Negative and archived cash accounts remain in balances.
+- Current due totals use `finance.current_installment_due_v`, including opening satisfaction, direct payments and mapped payments. Contractual payable is displayed separately from recognized liability. Missing active schedules remain unknown even when recognized liability is zero. Overdue debts, unresolved clearing, unapplied contractual pools, negative cash, stale/difference reconciliations and scheduled Career/Time attention link to their supporting sources.
+- `DashboardView` uses existing shell, panels, tokens and Agenda components. `DashboardFilters` only navigates server-owned period/source filters; client components contain no money formulas. Responsive layouts include loading, empty, invalid-filter, source-error and pending states. Supporting account/debt/application/event lists and metric links expose source evidence. Hidden modules remain navigation preferences; owned account history now opens from Dashboard with a hidden-module cue, consistent with D12 source-link behavior.
+- `/dashboard/spending` is a narrowly required signed-contribution drilldown for the exact selected dates. It preserves correction/refund classification, category splits, revision evidence, source links, coverage and deterministic 100-row pagination while its summary covers the entire period. This does not release the complete Reports module or CSV exports.
+
+Verification:
+
+- Full unit/component/API gate: **86 files, 581 tests passed** (`pnpm test --maxWorkers=2 --testTimeout=20000`). The 27 new tests cover calendar boundaries/invalid inputs, trusted ownership, snapshot options, exact values beyond JavaScript number precision, separate liability credit/clearing, attention order, supporting navigation, hidden modules, filters, loading and safe source errors.
+- Full PostgreSQL/runtime-role integration gate: **48 files, 353 tests passed** (`pnpm test:integration`). The nine Dashboard cases cover the documented PHP 36,915 closing-cash / PHP 13,085 recognized-liability fixture, fee/principal/transfer semantics, actual current due allocations, correction/category/refund periods, current logical activity, unknown schedule/clearing coverage, backdated reconciliation invalidation, Career/Agenda source filters, timed timezone boundaries, pagination and foreign-workspace isolation.
+- Production browser gate: **3 tests passed** (`$env:PMP_BROWSER_CHANNEL='msedge'; pnpm test:browser`) against an isolated production server on localhost:3100 and guarded test database. Tests exercise real verified synthetic-owner login, mobile empty/unknown coverage and quick-action navigation, custom-date/source filtering, signed spending/source drilldown, hidden-module account history, invalid filters, another owner's empty snapshot/foreign history rejection and anonymous API rejection. Desktop/mobile screenshots were inspected and mobile horizontal overflow was checked.
+- Playwright `1.63.0` is a pinned development-only addition; existing architectural dependency versions remain unchanged. `pnpm exec playwright install chromium` timed out against its CDN in this environment, so verification used installed Edge. Default browser execution uses installed Playwright Chromium; alternatively set `PMP_BROWSER_CHANNEL` to an installed compatible channel. Build first, provide the guarded `.env.test` database/roles, then run `pnpm test:browser`. The harness never reuses a user server; synthetic committed fixtures are removed through guarded test-only administrator cleanup. Multiple synthetic logins share localhost; the test honors the existing authentication limiter's explicit 429 retry interval without weakening production settings. Next logged a nonfatal destination-stream cancellation during browser teardown/navigation; all asserted pages and responses passed.
+- `pnpm check` and `pnpm build`: passed. `git diff --cached --check`: passed before the implementation commit.
+- `pnpm db:generate --name=v1_c1_verified_drift`: **no schema changes**. No migration or development database change was required. `pnpm db:verify:chain`: **51 migrations and a no-op repeat passed** on an empty disposable database, retaining D6b–D12 committed smoke and adding Dashboard/spending equality, signed correction/refund contributions, account-history consistency, current logical activity and owner isolation.
+
+No unresolved V1-C1 blocker remains. Full Reports/CSV exports, reminder controls, other remaining coherent-V1 lifecycle surfaces, V2/V3 and broad redesign remain outside this milestone. Next milestone: **V1-C2 — Reports, Drilldowns, and CSV Exports**.
 
 ---
 
@@ -624,7 +651,7 @@ At the current handoff point, the repository includes functional page routes for
   - sign up
   - verify email
 - onboarding
-- Dashboard/home foundation
+- Connected Dashboard, source-backed attention/summaries and exact-period spending drilldown
 - Money:
   - accounts
   - account history
@@ -646,17 +673,17 @@ At the current handoff point, the repository includes functional page routes for
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include Connected Dashboard, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include full reporting/CSV exports and other coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: V1-C1 — Connected Dashboard
+### Next milestone: V1-C2 — Reports, Drilldowns, and CSV Exports
 
-Continue from the verified D12 state. Inspect current `main`, this handoff and only the authoritative sections relevant to source-backed Dashboard queries and attention/coverage behavior. Verify D12 before building on it.
+Continue from the verified V1-C1 state. Inspect current `main`, this handoff and only the authoritative reporting, drilldown, export, period and coverage sections needed for the milestone. Verify V1-C1 before building on it; reuse its shared server-side definitions and read-only snapshot contract.
 
-Preserve immutable financial evidence, exact signed all-posting sums, current logical-action counts, refund expense offsets, negative-balance acknowledgement, current direct/mapped schedule satisfaction, reconciliation invalidation and authorized hidden-module Agenda links. Respect the documented dependent-record correction restrictions recorded in section 5.12. Reuse shared server-owned query definitions rather than adding UI money formulas. Do not rebuild D6b-D12 or begin full Reports, V2/V3 or broad redesign without a separate assignment.
+Preserve immutable financial evidence, exact signed all-posting sums, current logical-action counts, refund expense offsets, negative-balance acknowledgement, current direct/mapped schedule satisfaction, reconciliation invalidation and authorized hidden-module source links. Respect the documented dependent-record correction restrictions recorded in section 5.12. Reports, drilldowns and CSV must share server-owned definitions, filters, source revision and explicit coverage; balances, income, spending, cash movement, principal and scheduled payable remain separate. Do not rebuild D6b–D12/Dashboard or begin V2/V3 or broad redesign.
 
 ---
 
@@ -678,7 +705,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11 and D12 are complete; V1-C1 — Connected Dashboard is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12 and V1-C1 are complete; V1-C2 — Reports, Drilldowns, and CSV Exports is next.
 
 ### A. Existing debt import and read model
 
@@ -815,6 +842,8 @@ Corrections must:
 After financial-core correctness is stable, complete the connected application.
 
 ### A. Connected Dashboard
+
+Complete and verified in V1-C1; see section 5.13. Preserve the following source-backed contract when adding Reports.
 
 The Dashboard should answer "What needs my attention?"
 
@@ -1491,13 +1520,13 @@ Resolved in D12. Manual income/expense/transfer and correction/refund commands n
 
 ### 14.2 Agenda source links for hidden modules
 
-Resolved in D12. Authorized hidden Career application sources open with a hidden-module cue; unavailable/foreign sources remain unavailable. Existing Agenda source links and Personal/Money source behavior were preserved. Module hiding is a navigation preference, not an ownership denial.
+Resolved in D12. Authorized hidden Career application sources open with a hidden-module cue; unavailable/foreign sources remain unavailable. Existing Agenda source links and Personal/Money source behavior were preserved. V1-C1 extends the same rule to owned account-history supporting links from Dashboard. Module hiding is a navigation preference, not an ownership denial.
 
 ### 14.3 Debt correction dependencies
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C1 — Connected Dashboard**. No D12 accounting-release blocker remains within the documented V1 dependent-record restrictions. Full Reports, V2/V3 and broad redesign are not started.
+The immediate continuation is **V1-C2 — Reports, Drilldowns, and CSV Exports**. No D12 accounting-release or V1-C1 blocker remains within the documented V1 dependent-record restrictions. Full Reports, V2/V3 and broad redesign are not started.
 
 ---
 
@@ -1530,6 +1559,7 @@ Useful milestone commits currently on `main`:
 | Explicit verified debt settlement | `1960dcb607d4207797ff4476db18302d69d6ff98` |
 | Reconciliation and explicit balance adjustments | `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` |
 | Financial corrections/refunds/accounting cleanup | `f536c019622d25a239098286e7fb81e343a932bb` |
+| Connected Dashboard | `91624010767254461297f55eff238aa260ab07df` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1558,7 +1588,7 @@ As of this handoff:
 - Foundation proof: complete enough to support continued development.
 - First usable Money slice: complete.
 - Career and Agenda stage: complete.
-- Financial Core Completion: D6a-D12 complete within documented V1 dependent-record restrictions; Coherent V1 work is next.
+- Financial Core Completion: D6a-D12 complete within documented V1 dependent-record restrictions; Coherent V1 Dashboard is complete.
 - Debt database/integrity foundation D6a: complete.
 - Existing-debt import/read D6b: complete.
 - Borrowing/net proceeds D7: complete.
@@ -1568,8 +1598,9 @@ As of this handoff:
 - Early Debt Settlement D10: complete and verified; one-action payoff/adjustments, exact zero-residual closure, immutable history and Agenda cleanup; test/development migrations applied.
 - Reconciliation and Balance Adjustments D11: complete and verified; immutable cutoff comparisons, derived review status, explicit cash/equity actions, safe replay, and test/development migrations applied.
 - Financial Corrections and V1 Accounting Cleanup D12: complete and verified; explicit immutable corrections/refunds/classification, durable negative acknowledgement and hidden Agenda links; test/development migrations applied.
-- **Next task: V1-C1 — Connected Dashboard.**
-- Coherent V1 dashboard/reports/reminders/exports/lifecycle: still ahead.
+- Connected Dashboard V1-C1: complete and verified; source-backed attention, exact snapshot summaries, coverage, Career/Agenda, supporting records and narrow spending drilldown; no schema changes.
+- **Next task: V1-C2 — Reports, Drilldowns, and CSV Exports.**
+- Coherent V1 full reports/reminders/exports/lifecycle: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 
