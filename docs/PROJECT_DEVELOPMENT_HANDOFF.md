@@ -8,7 +8,7 @@
 
 **Handoff date:** October 9, 2026
 
-**Current verified implementation `main` HEAD:** `4ac6e14d383dabedc5821b633150426123fd895d` — `fix(time): renew reminders when corrected payments reopen dues`
+**Current verified implementation `main` HEAD:** `84e989e72b90bbd4175ed497101c14f5b7f1555d` — `feat(core): complete V1 settings, sessions, help and lifecycle`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard** and **V1-C2 — Reports, Drilldowns, and CSV Exports** are complete. **V1-C3 — In-App Due and Reminder Controls** is the next milestone.
+The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard**, **V1-C2 — Reports, Drilldowns, and CSV Exports**, **V1-C3 — In-App Due and Reminder Controls** and **V1-C4 — Settings, Help, Session, and Data Lifecycle** are complete. The final V1 milestone is **V1-C5 — Production Readiness and Final V1 Acceptance**. V1 is not yet declared production-ready.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -693,6 +693,31 @@ No unresolved C3 blocker remains within the released source types and documented
 
 ---
 
+### 5.16 V1-C4 — Settings, Help, Session, and Data Lifecycle
+
+Complete on the implementation HEAD recorded above. C3 was verified first with its focused integration regression (15 tests), and current `main`/the updated handoff/relevant authoritative settings, authentication and lifecycle sections were inspected. Existing onboarding, theme, workspace/module preferences, reminders, archive behavior and report definitions were reused. V2/V3, external scheduled notifications and broad redesign were not started.
+
+Released behavior:
+
+- `/settings` exposes versioned profile changes, the existing theme/workspace controls, financial-currency locking and independent module visibility/Agenda/reminder preferences. Settings mode does not submit onboarding progress. Profile and preference changes record private audit evidence with command receipts in the same transaction. Unknown profile/module saves lock their exact command for safe retry; stale changes require reload.
+- `/help` provides task guides, archive/hide/deletion explanations, resumable Getting Started and a replayable instructional tour that cannot create business records. `/help/support` prepares only user-entered feedback, offers copy or a configured `SUPPORT_EMAIL` draft, and never claims delivery. Without a configured contact, its message explicitly says so. Settings and Help have desktop/mobile navigation, loading and error states using the existing design system.
+- `/settings/sessions` reviews owner-scoped active devices/timestamps, marks the current session and requires explicit revocation review. Raw tokens, IPs and user-agent strings never enter its response. Supported Better Auth revocation invalidates individual/all/other sessions; foreign session IDs are rejected. Password change uses the library's current-password verification and revokes other sessions. Sign-out, successful sign-in/account switching and password recovery notify other tabs with no private payload and discard their rendered state. Authentication forms retain password-manager/paste support and expose password visibility controls.
+- Recovery acceptance uses the actual local Mailpit flow: reset fragments are cleared from the URL, reused fragments on the same route are recaptured safely, the one-time reset rejects replay and every prior session is revoked. Missing-account responses retain a generic acknowledgement; operational/rate-limit failures show a retry message.
+- `/settings/lifecycle` is a dedicated whole-workspace-and-sign-in-identity review. It includes exact record-type counts across hidden modules, financial/audit/command history, export provenance and all three reminder tables; it states that V1 has no uploaded files, server-stored CSV objects or shared history. A typed confirmation plus a five-minute server-owned password proof is required. Better Auth protects the challenge with its password verifier, origins and persistent five-attempt/minute limit. Session renewal is not proof.
+- Requests use an exact scope snapshot and command hash, reject stale/changed commands, atomically block ordinary domain access and coordinate library session revocation afterward. A validated marker can be saved only once pre-request sessions are absent. The distinct credential connections are not falsely described as one transaction: auth failure leaves access blocked with an uncertain result. Limited verified sign-in allows status, exact request replay and fresh-proof cancellation only within seven-day grace. Pending ownership roots cannot receive ordinary edits. Cancellation preserves all source/economic history and restores normal access; purging cannot reactivate.
+- Separate `lifecycle_operator` maintenance performs durable start/revoke and bounded projection steps, followed by one atomic private graph/identity purge. Default graph budget is 10,000 rows, maximum 100,000; dependency/budget failure rolls back, retains the checkpoint and requires an operator-reviewed retry. Global profile/workspace/request lock order and locked state rechecks handle competing steps. Immutable evidence can be deleted only in the approved expired-grace operator scope, never by the ordinary runtime. Deferred completion checks require the exact completing transaction. Four circular current-history pointers use deferred `NO ACTION` rather than nondeferring `RESTRICT`, preserving composite ownership/current-version integrity at commit.
+- Completion scrubs manifests/progress, detaches older cancelled requests and retains minimal identity/date tombstones. The deletion-register exporter creates a new file without overwriting a prior register. Auth-only bounded maintenance removes expired/absolute-lifetime sessions, stale proofs, expired verification credentials and counters inactive for thirty days; a concurrent counter renewal is preserved. Backup expiry and production maintenance cadence remain explicitly unverified. The recommended thirty-day tombstone date does not automatically erase it, and immediate backup removal is never promised. See [ADR 0003](adr/0003-v1-c4-reviewed-lifecycle-maintenance.md) and [the lifecycle runbook](LIFECYCLE_OPERATIONS.md).
+
+Verification:
+
+- Complete unit/component regression: **93 files / 648 tests passed**. The affected authentication/settings subset then passed again (**5 files / 32 tests**) after the final password-visibility/account-switch changes. Complete integration regression: **52 files / 394 tests passed**, including financial regressions, ownership, fresh/expired/foreign proof, stale/replay/conflict, blocked reads/writes, rollback, grace cancellation, complete multi-module purge, bounded retry, minimal evidence and concurrent cleanup. One existing correction case transiently exceeded the default five-second timeout in the first run; the full rerun used twenty seconds without changing repository defaults. All 18 correction tests then passed under the original limit; that case took 157 ms. No persistent timing defect was reproduced.
+- Real Edge against isolated production port 3100 and the test database: **14 browser tests passed** (Dashboard 3, Reports 3, reminders 3, C4 5). C4 verifies cross-tab account switching, profile/module retention and restoration, safe Help/mobile support, owner-scoped individual/all session revocation, deletion/grace cancellation and actual one-time password recovery. The mobile support capture was visually inspected. Existing development port 3000 was preserved. Synthetic fixtures and local Mailpit were used; no real workspace was deleted.
+- Final `pnpm check`, production `pnpm build`, staged whitespace and runtime role/context checks passed. Drizzle generation reports no schema changes. Structural migrations `0058`/`0060` and reviewed integrity/security migrations `0059`/`0061`–`0066` were applied to test first, then development only after the gates. Fresh disposable database: **67 migrations / 56 tables**, no-op repeat and committed D6b–C4 smoke passed, including complete scoped purge/tombstone and other-owner preservation. Both test and development now include `0066_v1_c4_purge_transaction_scope.sql`.
+
+No unresolved C4 product blocker remains within documented V1 scope. Production maintenance scheduling, independent register retention/restore reapplication, actual backup expiry, security metadata cadence, support contact, durable security-email delivery, operational monitoring and the complete release acceptance remain C5 gates. Do not treat local workflow verification as production acceptance. Next/final milestone: **V1-C5 — Production Readiness and Final V1 Acceptance**.
+
+---
+
 ## 6. Current functional route surface
 
 At the current handoff point, the repository includes functional page routes for:
@@ -733,17 +758,25 @@ At the current handoff point, the repository includes functional page routes for
   - source-specific in-app reminder controls and history
   - Calendar attention and module reminder defaults
 
-Major V1 routes/workflows still to be added include remaining coherent-V1 support/settings/session/lifecycle surfaces.
+- Settings:
+  - profile, theme, workspace and module preferences
+  - session/device review and password change
+  - limited workspace/account lifecycle review, confirmation, status and grace cancellation
+- Help:
+  - task guides and replayable instructional tour
+  - support/feedback draft
+
+The coherent V1 product surfaces are complete within documented bounds. Production Readiness and Final V1 Acceptance remains.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: V1-C4 — Settings, Help, Session, and Data Lifecycle
+### Next/final milestone: V1-C5 — Production Readiness and Final V1 Acceptance
 
-Continue from the verified V1-C3 state. Inspect current `main`, this handoff and only the authoritative settings, Help, session and data-lifecycle sections required for C4. Verify C3 before building on it; preserve its source/reminder separation, stable occurrence identities, ownership, generation checks and safe command replay, along with shared report/CSV definitions and read-only snapshots.
+Continue from the verified V1-C4 state. Inspect current `main`, this handoff and the authoritative production/security/operations/acceptance sections needed for C5. Verify C4 before continuing. Preserve the reviewed lifecycle role, immutable financial history, source/reminder independence, shared reports, exact exports and cross-user authorization.
 
-Implement C4 only. Preserve existing financial/Career evidence, explicit adjustments/corrections, current due mappings, coverage disclosures, hidden-module links and reminder-state independence. Complete the documented V1 support/settings/session/lifecycle surfaces through their reviewed ownership and lifecycle paths. Include `ops.export_run` and the three reminder tables in lifecycle planning without weakening ordinary runtime guards. Do not rebuild D6b–D12/Dashboard/Reports/reminders or begin external scheduled delivery, V2/V3 or broad redesign.
+Implement C5 only. Complete the V1 production gates and acceptance scenarios using the selected architecture, including durable security mail/required maintenance, actual retention and restore with an independent deletion register. Review the lifecycle runbook and ADRs 0002/0003 before enabling scheduling. Verify realistic performance, security/isolation, accessibility, failure handling, monitoring and deployment/configuration. Do not rebuild released financial/Dashboard/Reports/reminder/settings workflows, begin external scheduled user notifications, V2/V3 or broad redesign. No production release is implied by the C4 completion.
 
 ---
 
@@ -765,7 +798,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12, V1-C1, V1-C2 and V1-C3 are complete; V1-C4 — Settings, Help, Session, and Data Lifecycle is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12 and V1-C1–C4 are complete; the final milestone is V1-C5 — Production Readiness and Final V1 Acceptance.
 
 ### A. Existing debt import and read model
 
@@ -987,7 +1020,7 @@ Export behavior must:
 
 ### E. Settings/help/support completion
 
-Complete the normal V1 product surface for:
+Completed in V1-C4 using existing workflows where applicable:
 
 - profile/preferences;
 - theme;
@@ -1000,7 +1033,7 @@ Complete the normal V1 product surface for:
 
 ### F. Module hide/restore behavior
 
-Verify:
+Verified through V1-C3/C4:
 
 - hiding does not delete module data;
 - restoring returns data;
@@ -1008,13 +1041,11 @@ Verify:
 - reminder behavior is stated;
 - reports follow the documented module-visibility semantics.
 
-Known review item:
-
-- re-check the current Agenda source-link behavior for hidden modules against the architecture/design contract.
+Hidden modules retain history/report coverage and owned read-only Agenda source access. Agenda visibility and reminder enablement remain independent preferences; hide/restore does not alter source evidence.
 
 ### G. Account/data lifecycle
 
-Complete the V1 lifecycle flows defined by the docs:
+Released in V1-C4 through the reviewed path:
 
 - archive versus deletion;
 - session revocation;
@@ -1024,7 +1055,7 @@ Complete the V1 lifecycle flows defined by the docs:
 - retention wording consistent with actual backup behavior;
 - no ordinary runtime bypass role.
 
-Do not promise instant deletion from backups unless the implemented retention process supports it.
+Production scheduling, independent deletion-register retention/restore drill and actual retained-backup expiry remain V1-C5 gates. The current product does not promise instant backup erasure or a configured maintenance cadence.
 
 ---
 
@@ -1586,7 +1617,11 @@ Resolved in D12. Authorized hidden Career application sources open with a hidden
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C4 — Settings, Help, Session, and Data Lifecycle**. No D12 accounting-release or V1-C1/C2/C3 blocker remains within the documented V1 dependent-record restrictions, report/export bounds and released reminder source types. In-app reminder controls are complete; remaining lifecycle/support completion, V2/V3 and broad redesign are not started.
+The immediate continuation is **V1-C5 — Production Readiness and Final V1 Acceptance**. No D12 or V1-C1–C4 product blocker remains within the documented dependent-record, report/export, reminder and lifecycle bounds. V2/V3 and broad redesign are not started.
+
+### 14.4 Production lifecycle and authentication operations
+
+C4 supplies reviewed resumable purge, register export and auth housekeeping processes, not a configured scheduler. Actual backup expiry/recovery guarantees are unverified; tombstones are retained rather than automatically expired. C5 must configure and demonstrate maintenance, independent register retention, restore reapplication, security-metadata cadence, support contact, durable security-email delivery and monitoring. See section 5.16, ADR 0003 and the lifecycle runbook. This is an explicit production acceptance boundary, not permission to use a runtime bypass or erase retained backup evidence.
 
 ---
 
@@ -1623,6 +1658,7 @@ Useful milestone commits currently on `main`:
 | Reports, drilldowns and scoped CSV exports | `d1e94142ceb56586d36072551dbe7f077672de0f` |
 | In-app due/reminder controls | `69d00e0e8608b221744e9632695d087f0ee49798` |
 | Reminder generation after corrected due satisfaction | `4ac6e14d383dabedc5821b633150426123fd895d` |
+| Settings, Help, sessions and reviewed data lifecycle | `84e989e72b90bbd4175ed497101c14f5b7f1555d` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1664,8 +1700,9 @@ As of this handoff:
 - Connected Dashboard V1-C1: complete and verified; source-backed attention, exact snapshot summaries, coverage, Career/Agenda, supporting records and narrow spending drilldown; no schema changes.
 - Reports, Drilldowns, and CSV Exports V1-C2: complete and verified; shared exact period/financial/Career definitions, supporting records, bounded owner-scoped exports and provenance; test/development migrations applied.
 - In-App Due and Reminder Controls V1-C3: complete and verified; source-safe controls, stable generations, reminder attention/history, safe retry and test/development migrations applied.
-- **Next task: V1-C4 — Settings, Help, Session, and Data Lifecycle.**
-- Remaining coherent-V1 support/settings/session/lifecycle work: still ahead.
+- Settings, Help, Session, and Data Lifecycle V1-C4: complete and verified; versioned audited preferences/profile, safe instructional guidance, owner-scoped security controls, exact deletion review, grace cancellation, separate resumable purge and honest retention; test/development migrations applied.
+- **Next/final task: V1-C5 — Production Readiness and Final V1 Acceptance.**
+- Coherent V1 product surfaces: complete within documented scope. Production configuration, operational evidence and final acceptance remain.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 
