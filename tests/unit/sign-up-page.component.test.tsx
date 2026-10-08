@@ -30,6 +30,17 @@ describe("SignUpPage", () => {
     });
 
     render(<SignUpPage />);
+    await user.click(screen.getByRole("button", { name: "Show passwords" }));
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "text");
+    expect(screen.getByLabelText("Confirm password")).toHaveAttribute(
+      "type",
+      "text",
+    );
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "autocomplete",
+      "new-password",
+    );
+    await user.click(screen.getByRole("button", { name: "Hide passwords" }));
 
     await user.type(
       screen.getByRole("textbox", {

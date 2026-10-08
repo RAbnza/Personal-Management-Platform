@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
+import { createPrivateRevision } from "@/modules/audit/repositories/private-revision-repository";
 
 import { hashCommandPayload } from "@/modules/core/domain/command";
 import {
@@ -156,6 +158,10 @@ async function executeUpdateModulePreference(
   }
 
   let updated: UpdateModulePreferenceResult | null;
+  const before = await readStoredModulePreference(transaction, {
+    workspaceId: input.workspaceId,
+    moduleKey: input.moduleKey,
+  });
 
   if (input.expectedVersion === 0) {
     /*
@@ -217,6 +223,22 @@ async function executeUpdateModulePreference(
 
     version: updated.version,
   };
+  await createPrivateRevision(transaction, {
+    id: randomUUID(),
+    workspaceId: input.workspaceId,
+    commandReceiptId: receipt.receiptId,
+    subjectKind: `module_preference:${input.moduleKey}`,
+    subjectId: input.workspaceId,
+    subjectVersion: result.version,
+    operation: before ? "update" : "create",
+    beforeJson: before ? { ...before } : null,
+    afterJson: { ...result },
+    reason: null,
+    effectiveDate: null,
+    recordedByUserId: input.userId,
+    actorKind: "user",
+    requestId: null,
+  });
 
   await completeCommandReceipt(transaction, {
     workspaceId: input.workspaceId,

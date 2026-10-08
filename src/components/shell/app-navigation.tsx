@@ -2,6 +2,8 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   ChartNoAxesCombined,
+  Settings,
+  CircleHelp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,6 +22,8 @@ const navigationItems: readonly NavigationItem[] = [
     icon: LayoutDashboard,
   },
   { href: "/reports", label: "Reports", icon: ChartNoAxesCombined },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/help", label: "Help", icon: CircleHelp },
 ];
 
 export interface AppNavigationProps {
@@ -32,7 +36,9 @@ export function AppNavigation({ activePath, onNavigate }: AppNavigationProps) {
     <ul className="space-y-1">
       {navigationItems.map((item) => {
         const Icon = item.icon;
-        const isActive = activePath === item.href;
+        const isActive =
+          activePath === item.href ||
+          (item.href !== "/" && activePath.startsWith(`${item.href}/`));
 
         return (
           <li key={item.href}>

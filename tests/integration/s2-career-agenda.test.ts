@@ -1238,16 +1238,7 @@ describe("S2 career, guidance and agenda database integrity", () => {
     try {
       await expect(
         runScopedTransactionOnClient(client, user, async () => {
-          await client.query(
-            `
-              UPDATE core."user_profile"
-              SET
-                lifecycle = 'deletion_pending',
-                deletion_requested_at = clock_timestamp()
-              WHERE user_id = $1
-            `,
-            [user.userId],
-          );
+          await makeDeletionPending(client, user);
 
           await insertPersonalEvent(client, user, {
             title: "Must be blocked",
@@ -1449,3 +1440,4 @@ describe("S2 career, guidance and agenda database integrity", () => {
     }
   });
 });
+import { makeDeletionPending } from "./helpers/lifecycle-proof";

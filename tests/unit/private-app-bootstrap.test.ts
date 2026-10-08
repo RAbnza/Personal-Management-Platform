@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getVerifiedAuthenticatedSession: vi.fn(),
   provisionPersonalWorkspace: vi.fn(),
   getCurrentUserOverview: vi.fn(),
+  getIdentityProfile: vi.fn(),
 }));
 
 vi.mock("@/platform/auth/session-boundary", () => ({
@@ -33,9 +34,28 @@ beforeEach(() => {
   mocks.getVerifiedAuthenticatedSession.mockReset();
   mocks.provisionPersonalWorkspace.mockReset();
   mocks.getCurrentUserOverview.mockReset();
+  mocks.getIdentityProfile.mockReset().mockResolvedValue(null);
 });
 
 describe("private application bootstrap", () => {
+  it.each(["deletion_pending", "purging"])(
+    "blocks ordinary bootstrap while lifecycle is %s",
+    async (lifecycle) => {
+      mocks.getVerifiedAuthenticatedSession.mockResolvedValue({
+        user: { id: USER_ID },
+      });
+      mocks.getIdentityProfile.mockResolvedValue({
+        lifecycle,
+        displayName: "Retained",
+      });
+      expect(await resolvePrivateAppBootstrap(createHeaders())).toEqual({
+        kind: "unavailable",
+        lifecyclePending: true,
+      });
+      expect(mocks.provisionPersonalWorkspace).not.toHaveBeenCalled();
+      expect(mocks.getCurrentUserOverview).not.toHaveBeenCalled();
+    },
+  );
   it("rejects access when no verified authenticated session is available", async () => {
     mocks.getVerifiedAuthenticatedSession.mockResolvedValue(null);
 
@@ -218,3 +238,6 @@ describe("private application bootstrap", () => {
     expect(mocks.getCurrentUserOverview).not.toHaveBeenCalled();
   });
 });
+vi.mock("@/modules/core/services/profile", () => ({
+  getIdentityProfile: mocks.getIdentityProfile,
+}));

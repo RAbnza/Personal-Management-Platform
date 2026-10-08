@@ -4,6 +4,7 @@ import {
 } from "@/modules/core/services/get-current-user-overview";
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
 import { getVerifiedAuthenticatedSession } from "@/platform/auth/session-boundary";
+import { getIdentityProfile } from "@/modules/core/services/profile";
 
 export type PrivateAppBootstrapResult =
   | {
@@ -28,6 +29,7 @@ export type PrivateAppBootstrapResult =
     }
   | {
       kind: "unavailable";
+      lifecyclePending?: boolean;
     };
 
 /**
@@ -51,6 +53,9 @@ export async function resolvePrivateAppBootstrap(
       };
     }
 
+    const profile = await getIdentityProfile(authenticatedSession.user.id);
+    if (profile && profile.lifecycle !== "active")
+      return { kind: "unavailable", lifecyclePending: true };
     const provisionedWorkspace = await provisionPersonalWorkspace({
       userId: authenticatedSession.user.id,
       displayName: authenticatedSession.user.name,
@@ -66,7 +71,7 @@ export async function resolvePrivateAppBootstrap(
 
       user: {
         id: authenticatedSession.user.id,
-        name: authenticatedSession.user.name,
+        name: profile?.displayName ?? authenticatedSession.user.name,
         email: authenticatedSession.user.email,
       },
 

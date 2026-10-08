@@ -17,6 +17,7 @@ import {
   sendAuthVerificationEmail,
 } from "./email-delivery";
 import { AUTH_EMAIL_LINK_EXPIRY_SECONDS } from "./email-links";
+import { reauthenticationPlugin } from "./reauthentication";
 import {
   SESSION_EXPIRY_SECONDS,
   SESSION_FRESH_AGE_SECONDS,
@@ -46,6 +47,7 @@ const authDatabase = drizzle({
  * generated Better Auth database fields cannot silently drift apart.
  */
 export const auth = betterAuth({
+  plugins: [reauthenticationPlugin],
   secret: environment.BETTER_AUTH_SECRET,
   baseURL: environment.BETTER_AUTH_URL,
 
@@ -116,6 +118,7 @@ export const auth = betterAuth({
   rateLimit: {
     storage: "database",
     modelName: "rate_limit",
+    customRules: { "/reauthenticate": { window: 60, max: 5 } },
   },
 
   advanced: {

@@ -59,16 +59,7 @@ describe("financial write workspace boundary", () => {
     try {
       await expect(
         runScopedTransactionOnClient(client, user, async (transaction) => {
-          await client.query(
-            `
-              UPDATE core."user_profile"
-              SET
-                lifecycle = 'deletion_pending',
-                deletion_requested_at = clock_timestamp()
-              WHERE user_id = $1
-            `,
-            [user.userId],
-          );
+          await makeDeletionPending(client, user);
 
           await openFinancialAccountInTransaction(transaction, {
             userId: user.userId,
@@ -95,3 +86,4 @@ describe("financial write workspace boundary", () => {
     }
   });
 });
+import { makeDeletionPending } from "./helpers/lifecycle-proof";

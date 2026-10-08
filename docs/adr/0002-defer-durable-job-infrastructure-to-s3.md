@@ -106,5 +106,11 @@ active system capability; it is not removed.
 Authentication email reliability must be revisited as part of S3 before the
 application is considered production-ready.
 
+V1-C4 explicitly brings forward the documented scoped deletion maintenance
+path through [ADR 0003](0003-v1-c4-reviewed-lifecycle-maintenance.md). Its deletion
+request is durable lifecycle intent/checkpoint, with a separate operator process;
+it does not introduce a general queue or claim a configured scheduler. General
+durable delivery and production scheduling remain V1-C5 acceptance work.
+
 Any future pre-S3 design that introduces required asynchronous side effects
 must explicitly revisit this ADR instead of silently adding background work.

@@ -407,6 +407,69 @@
       "when": 1791482706071,
       "tag": "0057_v1_c3_debt_reminder_reactivation",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1791491155358,
+      "tag": "0058_pale_malcolm_colcord",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791491234810,
+      "tag": "0059_v1_c4_lifecycle_checkpoint",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791491316991,
+      "tag": "0060_funny_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791491476559,
+      "tag": "0061_v1_c4_purge_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791492151903,
+      "tag": "0062_v1_c4_purge_graph_pointers",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1791492234314,
+      "tag": "0063_v1_c4_revocation_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1791492657908,
+      "tag": "0064_v1_c4_tombstone_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1791492791216,
+      "tag": "0065_v1_c4_pending_write_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1791494984812,
+      "tag": "0066_v1_c4_purge_transaction_scope",
+      "breakpoints": true
     }
   ]
 }

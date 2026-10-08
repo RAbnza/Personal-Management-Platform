@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { LockKeyhole } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { SessionNoticeListener } from "@/components/auth/session-notice-listener";
 import { AppNavigation } from "@/components/shell/app-navigation";
 import { MobileNavigation } from "@/components/shell/mobile-navigation";
 import {
@@ -35,6 +36,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <SessionNoticeListener />
       <a
         href="#main-content"
         className={[

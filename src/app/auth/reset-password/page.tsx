@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { authClient } from "@/platform/auth/client";
+import { notifySessionChanged } from "@/platform/auth/session-notice";
 
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
@@ -24,12 +25,6 @@ export default function ResetPasswordPage() {
   );
 
   useEffect(() => {
-    if (initialized.current) {
-      return;
-    }
-
-    initialized.current = true;
-
     function initializeReset() {
       const fragment = new URLSearchParams(window.location.hash.slice(1));
 
@@ -46,14 +41,20 @@ export default function ResetPasswordPage() {
         `${window.location.pathname}${window.location.search}`,
       );
 
-      if (!token.current) {
-        setState("invalid");
-      }
-
+      setPassword("");
+      setPasswordConfirmation("");
+      setValidationMessage(null);
+      setState(token.current ? "ready" : "invalid");
       setTokenChecked(true);
     }
 
-    queueMicrotask(initializeReset);
+    const fragmentChanged = () => queueMicrotask(initializeReset);
+    window.addEventListener("hashchange", fragmentChanged);
+    if (!initialized.current) {
+      initialized.current = true;
+      queueMicrotask(initializeReset);
+    }
+    return () => window.removeEventListener("hashchange", fragmentChanged);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -97,6 +98,7 @@ export default function ResetPasswordPage() {
       token.current = null;
       setPassword("");
       setPasswordConfirmation("");
+      notifySessionChanged();
       setState("success");
     } catch {
       setState("error");

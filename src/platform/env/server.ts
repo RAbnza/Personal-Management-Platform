@@ -34,6 +34,7 @@ const serverEnvironmentSchema = z
 
     MAILPIT_API_URL: httpUrlSchema.optional(),
     RESEND_API_KEY: z.string().min(1).optional(),
+    SUPPORT_EMAIL: z.email().optional(),
   })
   .superRefine((environment, context) => {
     const domainRole = decodeURIComponent(

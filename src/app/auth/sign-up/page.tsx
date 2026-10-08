@@ -49,6 +49,7 @@ const SIGN_UP_ERROR_MESSAGE =
 
 export default function SignUpPage() {
   const [state, setState] = useState<SignUpState>("form");
+  const [showPasswords, setShowPasswords] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(
     null,
   );
@@ -197,7 +198,7 @@ export default function SignUpPage() {
           <Input
             {...register("password")}
             id="sign-up-password"
-            type="password"
+            type={showPasswords ? "text" : "password"}
             autoComplete="new-password"
             minLength={MIN_PASSWORD_LENGTH}
             maxLength={MAX_PASSWORD_LENGTH}
@@ -215,7 +216,7 @@ export default function SignUpPage() {
           <Input
             {...register("passwordConfirmation")}
             id="sign-up-password-confirmation"
-            type="password"
+            type={showPasswords ? "text" : "password"}
             autoComplete="new-password"
             minLength={MIN_PASSWORD_LENGTH}
             maxLength={MAX_PASSWORD_LENGTH}
@@ -224,6 +225,15 @@ export default function SignUpPage() {
           />
         </FormField>
 
+        <Button
+          type="button"
+          variant="secondary"
+          aria-pressed={showPasswords}
+          disabled={isSubmitting}
+          onClick={() => setShowPasswords(!showPasswords)}
+        >
+          {showPasswords ? "Hide passwords" : "Show passwords"}
+        </Button>
         {registrationError ? (
           <div
             role="alert"

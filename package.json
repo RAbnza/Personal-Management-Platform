@@ -30,6 +30,9 @@
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "db:migrate:test": "drizzle-kit migrate --config=drizzle.test.config.ts",
     "db:verify:chain": "tsx scripts/db/verify-migration-chain.ts",
+    "lifecycle:purge": "tsx scripts/lifecycle/purge.ts",
+    "lifecycle:register": "tsx scripts/lifecycle/export-deletion-register.ts",
+    "auth:housekeeping": "tsx scripts/lifecycle/auth-housekeeping.ts",
     "auth:schema:generate": "auth generate --config ./src/platform/auth/schema-generation.ts --output ./src/platform/db/schema/auth.generated.ts --yes"
   },
   "dependencies": {

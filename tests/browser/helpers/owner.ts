@@ -61,6 +61,13 @@ export async function removeBrowserOwner(owner: BrowserOwner) {
     );
     if (root.rowCount !== 1) throw new Error("Fixture ownership root mismatch");
     await c.query("SET LOCAL session_replication_role='replica'");
+    await c.query(
+      "DELETE FROM ops.deletion_tombstone WHERE target_user_id=$1",
+      [owner.userId],
+    );
+    await c.query("DELETE FROM ops.deletion_request WHERE target_user_id=$1", [
+      owner.userId,
+    ]);
     const tables = await c.query<{ table_schema: string; table_name: string }>(
       `SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema IN ('core','finance','career','time','audit','ops')`,
     );

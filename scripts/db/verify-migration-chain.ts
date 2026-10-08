@@ -17,6 +17,16 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { loadEnvFile } from "node:process";
 import { readFile } from "node:fs/promises";
+import { parseEnv } from "node:util";
+import {
+  getDeletionPreview,
+  requestDeletionInTransaction,
+} from "../../src/modules/core/services/workspace-lifecycle";
+import {
+  getIdentityProfile,
+  updateProfile,
+} from "../../src/modules/core/services/profile";
+import { purgeDeletionStep } from "../../src/platform/lifecycle/purge";
 
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -1721,6 +1731,114 @@ async function main() {
     );
     console.log(
       "V1-C3 committed reminder replay/conflict, source cancellation, owner isolation, read-time attention and financial independence passed.",
+    );
+    const profile = (await getIdentityProfile(owner.userId))!;
+    const profileCommand = {
+      clientCommandId: randomUUID(),
+      expectedVersion: profile.version,
+      displayName: "Verified lifecycle fixture",
+    };
+    assert.equal(
+      (await updateProfile(owner, profileCommand)).displayName,
+      profileCommand.displayName,
+    );
+    assert.equal(
+      (await updateProfile(owner, profileCommand)).displayName,
+      profileCommand.displayName,
+    );
+    const deletionPreview = await getDeletionPreview(owner);
+    const proofSession = randomUUID();
+    await getAuthPool().query(
+      "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '7 days')",
+      [proofSession, owner.userId, randomUUID()],
+    );
+    await getAuthPool().query(
+      "INSERT INTO auth.session_assurance(session_id,method,verified_at) VALUES($1,'password',clock_timestamp())",
+      [proofSession],
+    );
+    const deletionActor = { ...owner, sessionId: proofSession };
+    const deletionCommand = {
+      clientCommandId: randomUUID(),
+      expectedSnapshot: deletionPreview.snapshot,
+      confirmation: "DELETE MY WORKSPACE AND ACCOUNT" as const,
+    };
+    const deletion = await withDomainTransaction(owner, (t) =>
+      requestDeletionInTransaction(t, deletionActor, deletionCommand),
+    );
+    assert.deepEqual(
+      await withDomainTransaction(owner, (t) =>
+        requestDeletionInTransaction(t, deletionActor, deletionCommand),
+      ),
+      deletion,
+    );
+    const bootstrapSecrets = parseEnv(await readFile(".env.bootstrap", "utf8"));
+    const operatorUrl = new URL(inDatabase(process.env.DATABASE_URL!));
+    operatorUrl.username = "lifecycle_operator";
+    operatorUrl.password = bootstrapSecrets.LIFECYCLE_OPERATOR_PASSWORD!;
+    const operator = new Client({ connectionString: operatorUrl.toString() });
+    const fixtureAdministrator = new Client({
+      connectionString: inDatabase(process.env.TEST_DATABASE_ADMIN_URL!),
+    });
+    try {
+      await operator.connect();
+      await fixtureAdministrator.connect();
+      // Disposable synthetic database only: advance this request's test clock.
+      await fixtureAdministrator.query("BEGIN");
+      await fixtureAdministrator.query(
+        "SET LOCAL session_replication_role='replica'",
+      );
+      await fixtureAdministrator.query(
+        "UPDATE ops.deletion_request SET requested_at=clock_timestamp()-interval '8 days',purge_after=clock_timestamp()-interval '1 day' WHERE id=$1 AND target_user_id=$2",
+        [deletion.requestId, owner.userId],
+      );
+      await fixtureAdministrator.query("COMMIT");
+      let complete = false;
+      for (let step = 0; step < 10; step++) {
+        if (
+          (await purgeDeletionStep(operator, deletion.requestId, 10000))
+            .state === "completed"
+        ) {
+          complete = true;
+          break;
+        }
+      }
+      assert.equal(complete, true);
+      assert.equal(
+        (await purgeDeletionStep(operator, deletion.requestId)).state,
+        "completed",
+      );
+      assert.equal(
+        (
+          await fixtureAdministrator.query(
+            "SELECT id FROM core.workspace WHERE id=$1",
+            [owner.workspaceId],
+          )
+        ).rowCount,
+        0,
+      );
+      assert.equal(
+        (
+          await operator.query(
+            "SELECT id FROM ops.deletion_tombstone WHERE target_user_id=$1",
+            [owner.userId],
+          )
+        ).rowCount,
+        1,
+      );
+      assert.equal(
+        (
+          await getAuthPool().query('SELECT id FROM auth."user" WHERE id=$1', [
+            other.userId,
+          ])
+        ).rowCount,
+        1,
+      );
+    } finally {
+      await operator.end();
+      await fixtureAdministrator.end();
+    }
+    console.log(
+      "V1-C4 profile audit/replay, restricted deletion request, complete scoped evidence purge, tombstone and other-owner preservation passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();

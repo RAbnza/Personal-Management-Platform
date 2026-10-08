@@ -142,4 +142,28 @@ describe("ForgotPasswordPage", () => {
       "A temporary problem prevented the request.",
     );
   });
+  it.each([429, 500])(
+    "does not claim an accepted request after an operational %s error",
+    async (status) => {
+      authMocks.requestPasswordReset.mockResolvedValue({
+        data: null,
+        error: { status },
+      });
+      const user = userEvent.setup();
+      render(<ForgotPasswordPage />);
+      await user.type(
+        screen.getByRole("textbox", { name: "Email address" }),
+        "person@example.com",
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Send reset instructions" }),
+      );
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "A temporary problem prevented the request.",
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Check your email" }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });

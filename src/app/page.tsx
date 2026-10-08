@@ -27,11 +27,24 @@ export default async function Home({
     return (
       <AuthCard
         eyebrow="Private workspace"
-        title="We couldn't prepare your workspace"
-        description="Private workspace services are temporarily unavailable."
+        title={
+          bootstrap.lifecyclePending
+            ? "Workspace deletion is pending"
+            : "We couldn't prepare your workspace"
+        }
+        description={
+          bootstrap.lifecyclePending
+            ? "Ordinary workspace access is blocked. Review deletion status or cancel during the grace period."
+            : "Private workspace services are temporarily unavailable."
+        }
       >
-        <Link href="/" className="text-link underline">
-          Retry workspace setup
+        <Link
+          href={bootstrap.lifecyclePending ? "/settings/lifecycle" : "/"}
+          className="text-link underline"
+        >
+          {bootstrap.lifecyclePending
+            ? "Review account lifecycle"
+            : "Retry workspace setup"}
         </Link>
       </AuthCard>
     );

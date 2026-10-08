@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/platform/auth/client";
+import { notifySessionChanged } from "@/platform/auth/session-notice";
 
 export interface SignOutButtonProps {
   className?: string | undefined;
@@ -31,6 +32,7 @@ export function SignOutButton({ className }: SignOutButtonProps) {
         return;
       }
 
+      notifySessionChanged();
       router.replace("/auth/sign-in");
       router.refresh();
     } catch {

@@ -227,12 +227,14 @@ export interface WorkspacePreferencesFormProps {
   workspace: WorkspacePreferencesSnapshot;
   modules: readonly ModulePreferenceItem[];
   stepState: OnboardingStepState;
+  settingsMode?: boolean;
 }
 
 export function WorkspacePreferencesForm({
   workspace,
   modules,
   stepState,
+  settingsMode = false,
 }: WorkspacePreferencesFormProps) {
   const router = useRouter();
 
@@ -301,7 +303,7 @@ export function WorkspacePreferencesForm({
       return;
     }
 
-    if (stepState !== "completed") {
+    if (!settingsMode && stepState !== "completed") {
       try {
         await completePreferencesStep();
       } catch {
@@ -343,13 +345,17 @@ export function WorkspacePreferencesForm({
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-link">Second setup step</p>
+          <p className="text-xs font-medium text-link">
+            {settingsMode ? "Workspace settings" : "Second setup step"}
+          </p>
 
           <h2
             id="workspace-preferences-title"
             className="mt-1 text-lg font-semibold text-foreground"
           >
-            Confirm workspace preferences
+            {settingsMode
+              ? "Workspace preferences"
+              : "Confirm workspace preferences"}
           </h2>
 
           <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
@@ -358,7 +364,7 @@ export function WorkspacePreferencesForm({
           </p>
         </div>
 
-        {stepState === "completed" ? (
+        {!settingsMode && stepState === "completed" ? (
           <div className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
             <CheckCircle2
               aria-hidden="true"

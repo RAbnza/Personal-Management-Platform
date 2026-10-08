@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/platform/auth/client";
+import { notifySessionChanged } from "@/platform/auth/session-notice";
 
 const signInSchema = z.object({
   email: z
@@ -29,6 +30,7 @@ const SIGN_IN_ERROR_MESSAGE =
 
 export default function SignInPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const [authenticationError, setAuthenticationError] = useState<string | null>(
     null,
@@ -60,6 +62,7 @@ export default function SignInPage() {
         return;
       }
 
+      notifySessionChanged();
       router.replace("/");
       router.refresh();
     } catch {
@@ -119,13 +122,22 @@ export default function SignInPage() {
           <Input
             {...register("password")}
             id="sign-in-password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             aria-invalid={Boolean(errors.password)}
             aria-describedby={passwordErrorId}
           />
         </FormField>
 
+        <Button
+          type="button"
+          variant="secondary"
+          aria-pressed={showPassword}
+          disabled={isSubmitting}
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? "Hide password" : "Show password"}
+        </Button>
         <div className="flex justify-end">
           <Link
             href="/auth/forgot-password"

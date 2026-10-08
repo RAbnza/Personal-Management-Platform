@@ -126,10 +126,10 @@ describe("D8a PostgreSQL payment foundation", () => {
     await withFixture(async (c, f) => {
       await payment(c, f);
       await c.query(immediate);
-      await c.query(
-        `UPDATE core.user_profile SET lifecycle='deletion_pending',deletion_requested_at=clock_timestamp() WHERE user_id=$1`,
-        [f.userId],
-      );
+      await makeDeletionPending(c, {
+        userId: f.userId,
+        workspaceId: f.workspaceId,
+      });
       for (const table of tables)
         expect(
           (await c.query(`SELECT count(*)::int AS n FROM finance.${table}`))
@@ -799,12 +799,7 @@ describe("D8a PostgreSQL payment foundation", () => {
           relrowsecurity: true,
           relforcerowsecurity: true,
         });
-        for (const role of [
-          "auth_adapter",
-          "queue_broker",
-          "worker_domain",
-          "lifecycle_operator",
-        ]) {
+        for (const role of ["auth_adapter", "queue_broker", "worker_domain"]) {
           expect(
             (
               await c.query(
@@ -814,6 +809,22 @@ describe("D8a PostgreSQL payment foundation", () => {
             ).rows[0].allowed,
           ).toBe(false);
         }
+        expect(
+          (
+            await c.query(
+              "SELECT has_table_privilege('lifecycle_operator',$1,'INSERT,UPDATE,TRUNCATE') AS allowed",
+              ["finance." + t],
+            )
+          ).rows[0].allowed,
+        ).toBe(false);
+        expect(
+          (
+            await c.query(
+              "SELECT has_table_privilege('lifecycle_operator',$1,'SELECT,DELETE') AS allowed",
+              ["finance." + t],
+            )
+          ).rows[0].allowed,
+        ).toBe(true);
       }
       expect(
         (
@@ -892,3 +903,4 @@ describe("D8a PostgreSQL payment foundation", () => {
     }
   });
 });
+import { makeDeletionPending } from "./helpers/lifecycle-proof";

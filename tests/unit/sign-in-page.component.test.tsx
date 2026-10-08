@@ -6,6 +6,7 @@ import SignInPage from "@/app/auth/sign-in/page";
 
 const authMocks = vi.hoisted(() => ({
   signInEmail: vi.fn(),
+  notifySessionChanged: vi.fn(),
 }));
 
 const routerMocks = vi.hoisted(() => ({
@@ -27,10 +28,14 @@ vi.mock("next/navigation", () => ({
     refresh: routerMocks.refresh,
   }),
 }));
+vi.mock("@/platform/auth/session-notice", () => ({
+  notifySessionChanged: authMocks.notifySessionChanged,
+}));
 
 describe("SignInPage", () => {
   beforeEach(() => {
     authMocks.signInEmail.mockReset();
+    authMocks.notifySessionChanged.mockReset();
     routerMocks.replace.mockReset();
     routerMocks.refresh.mockReset();
   });
@@ -44,6 +49,17 @@ describe("SignInPage", () => {
     });
 
     render(<SignInPage />);
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "type",
+      "password",
+    );
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "text");
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "autocomplete",
+      "current-password",
+    );
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
 
     await user.type(
       screen.getByRole("textbox", {
@@ -71,6 +87,7 @@ describe("SignInPage", () => {
 
     expect(routerMocks.replace).toHaveBeenCalledWith("/");
     expect(routerMocks.refresh).toHaveBeenCalledOnce();
+    expect(authMocks.notifySessionChanged).toHaveBeenCalledOnce();
   });
 
   it("shows local validation errors without calling the authentication API", async () => {

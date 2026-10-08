@@ -88,6 +88,14 @@ export async function removeProvisionedTestUser(
 
     try {
       await administrator.query(
+        "DELETE FROM audit.private_activity WHERE workspace_id=$1",
+        [user.workspaceId],
+      );
+      await administrator.query(
+        "DELETE FROM audit.private_revision WHERE workspace_id=$1",
+        [user.workspaceId],
+      );
+      await administrator.query(
         `
           DELETE FROM core."command_receipt"
           WHERE workspace_id = $1

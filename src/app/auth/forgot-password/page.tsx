@@ -50,9 +50,13 @@ export default function ForgotPasswordPage() {
        * raw Better Auth token and stores that token in the URL fragment rather
        * than a query string.
        */
-      await authClient.requestPasswordReset({
+      const result = await authClient.requestPasswordReset({
         email: values.email,
       });
+      // Keep missing-account responses indistinguishable from accepted requests,
+      // while rate limits and transport/provider failures remain retryable.
+      if (result.error && result.error.status !== 404)
+        throw new Error("Recovery request could not be accepted.");
 
       /*
        * Always show the same acknowledgement for a completed auth request.

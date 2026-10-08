@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
+import { createPrivateRevision } from "@/modules/audit/repositories/private-revision-repository";
 
 import { hashCommandPayload } from "@/modules/core/domain/command";
 import {
@@ -226,6 +228,27 @@ async function executeUpdateWorkspaceSettings(
 
     currencyChangeAllowed: !hasFinancialStructure,
   };
+  await createPrivateRevision(transaction, {
+    id: randomUUID(),
+    workspaceId: input.workspaceId,
+    commandReceiptId: receipt.receiptId,
+    subjectKind: "workspace_settings",
+    subjectId: input.workspaceId,
+    subjectVersion: result.version,
+    operation: "update",
+    beforeJson: {
+      currency: current.currency,
+      timezone: current.timezone,
+      weekStart: current.weekStart,
+      version: current.version,
+    },
+    afterJson: { ...result },
+    reason: null,
+    effectiveDate: null,
+    recordedByUserId: input.userId,
+    actorKind: "user",
+    requestId: null,
+  });
 
   await completeCommandReceipt(transaction, {
     workspaceId: input.workspaceId,
