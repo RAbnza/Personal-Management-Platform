@@ -44,6 +44,14 @@ import {
 import { listAgendaItems } from "../../src/modules/time/services/list-agenda-items";
 import { withDomainTransaction } from "../../src/platform/db";
 import {
+  getAccountReconciliationSetup,
+  previewAccountReconciliation,
+  previewAccountAdjustment,
+  reconcileAccount,
+  adjustAccountBalance,
+} from "../../src/modules/finance/services/reconcile-account";
+import { ReconciliationPreviewStaleError } from "../../src/modules/finance/domain/reconciliation";
+import {
   closeRuntimeDatabasePools,
   getAuthPool,
 } from "../../src/platform/db/pools";
@@ -1217,6 +1225,157 @@ async function main() {
     );
     console.log(
       "D10 committed settlement, server preview, one account deduction, immutable closing history, Agenda cleanup, resolved unapplied pools, concurrent replay and competing-version conflicts passed.",
+    );
+    const reconciliationScope = {
+      ...owner,
+      financialAccountId: receivingAccount.accountId,
+    };
+    const accountSetup =
+      await getAccountReconciliationSetup(reconciliationScope);
+    const matchedCommand = {
+      ...reconciliationScope,
+      clientCommandId: randomUUID(),
+      expectedFinancialRevision: accountSetup.financialRevision,
+      expectedAccountVersion: accountSetup.account.version,
+      cutoffDate: "2026-10-10",
+      observedMinor: accountSetup.account.currentBalanceMinor,
+      reference: "D11 statement",
+      notes: "Provider comparison",
+    };
+    assert.equal(
+      (await previewAccountReconciliation(matchedCommand)).status,
+      "verified",
+    );
+    const matched = await Promise.all([
+      reconcileAccount(matchedCommand),
+      reconcileAccount(matchedCommand),
+    ]);
+    assert.deepEqual(matched[0], matched[1]);
+    assert.equal(
+      (await getAccountReconciliationSetup(reconciliationScope))
+        .financialRevision,
+      accountSetup.financialRevision,
+    );
+    const differenceCommand = {
+      ...matchedCommand,
+      clientCommandId: randomUUID(),
+      observedMinor: (BigInt(matchedCommand.observedMinor) + 100n).toString(),
+      supersedesReconciliationId: matched[0]!.reconciliationId,
+    };
+    const difference = await reconcileAccount(differenceCommand);
+    assert.equal(difference.preview.differenceMinor, "100");
+    assert.equal(
+      (await getAccountReconciliationSetup(reconciliationScope)).account
+        .currentBalanceMinor,
+      accountSetup.account.currentBalanceMinor,
+    );
+    const adjustmentCommand = {
+      ...reconciliationScope,
+      clientCommandId: randomUUID(),
+      expectedFinancialRevision: accountSetup.financialRevision,
+      expectedAccountVersion: accountSetup.account.version,
+      effectiveDate: "2026-10-10",
+      signedAdjustmentMinor: "100",
+      reconciliationId: difference.reconciliationId,
+      reason: "Explicit unexplained statement difference",
+      acknowledgeNegativeBalance: true,
+    };
+    assert.equal(
+      (await previewAccountAdjustment(adjustmentCommand)).reconciliation
+        ?.differenceAfterMinor,
+      "0",
+    );
+    const adjusted = await Promise.all([
+      adjustAccountBalance(adjustmentCommand),
+      adjustAccountBalance(adjustmentCommand),
+    ]);
+    assert.deepEqual(adjusted[0], adjusted[1]);
+    assert.equal(
+      adjusted[0]!.financialRevision,
+      (BigInt(accountSetup.financialRevision) + 1n).toString(),
+    );
+    const adjustedSetup =
+      await getAccountReconciliationSetup(reconciliationScope);
+    assert.equal(
+      adjustedSetup.account.currentBalanceMinor,
+      differenceCommand.observedMinor,
+    );
+    assert.equal(
+      adjustedSetup.history.find(
+        (r) => r.reconciliationId === difference.reconciliationId,
+      )?.status,
+      "needs_review",
+    );
+    assert.equal(
+      adjustedSetup.history.find(
+        (r) => r.reconciliationId === difference.reconciliationId,
+      )?.calculatedMinor,
+      accountSetup.account.currentBalanceMinor,
+    );
+    assert.equal(adjustedSetup.adjustments.length, 1);
+    const adjustedHistory = await getAccountHistory({
+      ...owner,
+      accountId: receivingAccount.accountId,
+    });
+    assert.equal(
+      adjustedHistory.account.currentBalanceMinor,
+      adjustedSetup.account.currentBalanceMinor,
+    );
+    assert.deepEqual(
+      adjustedHistory.entries
+        .filter((e) => e.actionId === adjusted[0]!.actionId)
+        .map((e) => e.signedAmountMinor),
+      ["100"],
+    );
+    await assert.rejects(
+      adjustAccountBalance({ ...adjustmentCommand, reason: "Changed payload" }),
+      FinancialCommandConflictError,
+    );
+    await assert.rejects(
+      adjustAccountBalance({
+        ...adjustmentCommand,
+        clientCommandId: randomUUID(),
+      }),
+      ReconciliationPreviewStaleError,
+    );
+    assert.deepEqual(await reconcileAccount(differenceCommand), difference);
+    const verifiedAgain = await reconcileAccount({
+      ...differenceCommand,
+      clientCommandId: randomUUID(),
+      expectedFinancialRevision: adjustedSetup.financialRevision,
+      supersedesReconciliationId: difference.reconciliationId,
+    });
+    assert.equal(verifiedAgain.preview.status, "verified");
+    const competingAdjustments = await Promise.allSettled(
+      ["100", "-100"].map((signedAdjustmentMinor) =>
+        adjustAccountBalance({
+          ...adjustmentCommand,
+          clientCommandId: randomUUID(),
+          expectedFinancialRevision: adjustedSetup.financialRevision,
+          reconciliationId: verifiedAgain.reconciliationId,
+          signedAdjustmentMinor,
+        }),
+      ),
+    );
+    assert.equal(
+      competingAdjustments.filter((r) => r.status === "fulfilled").length,
+      1,
+    );
+    assert.ok(
+      competingAdjustments.some(
+        (r) =>
+          r.status === "rejected" &&
+          r.reason instanceof ReconciliationPreviewStaleError,
+      ),
+    );
+    assert.equal(
+      (await getAccountReconciliationSetup(reconciliationScope)).history.find(
+        (r) => r.reconciliationId === verifiedAgain.reconciliationId,
+      )?.status,
+      "needs_review",
+    );
+    console.log(
+      "D11 committed comparisons, no automatic adjustment, explicit cash/equity posting, cutoff invalidation, history consistency, concurrent replay and stale-version conflicts passed.",
     );
   } finally {
     await closeRuntimeDatabasePools();

@@ -1,6 +1,6 @@
+import { getOrCreateAdjustmentEquityLedger } from "../repositories/adjustment-equity-repository";
 import { createPrivateRevision } from "@/modules/audit/repositories/private-revision-repository";
 import { randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { type ScopedTransaction, withDomainTransaction } from "@/platform/db";
 import { listCategoriesInTransaction } from "@/modules/core/services/list-categories";
@@ -274,15 +274,10 @@ async function execute(t: ScopedTransaction, a: Actor, b: SettlementBody) {
       : null;
   let adjustmentLedgerId: string | null = null;
   if (b.adjustments.some((c) => c.unknownOpening)) {
-    await t.db.execute(
-      sql`INSERT INTO finance.ledger_account(workspace_id,code,name,kind,currency) VALUES(${a.workspaceId}::uuid,'adjustment:shared','Disclosed adjustments','adjustment_equity',${workspace.currency}) ON CONFLICT(workspace_id,code) DO NOTHING`,
-    );
-    const r = await t.db.execute<{ id: string }>(
-      sql`SELECT id FROM finance.ledger_account WHERE workspace_id=${a.workspaceId}::uuid AND code='adjustment:shared' AND kind='adjustment_equity' AND currency=${workspace.currency} AND archived_at IS NULL`,
-    );
-    if (!r.rows[0])
-      throw new RangeError("The disclosed adjustment ledger is unavailable.");
-    adjustmentLedgerId = r.rows[0].id;
+    adjustmentLedgerId = await getOrCreateAdjustmentEquityLedger(t, {
+      workspaceId: a.workspaceId,
+      currency: workspace.currency,
+    });
   }
   const ids = await insertSettlement(t, {
     ...a,

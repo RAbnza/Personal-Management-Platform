@@ -205,6 +205,12 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                       />
                       View history
                     </Link>
+                    <Link
+                      href={`/money/accounts/${account.accountId}/reconcile`}
+                      className="ml-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                    >
+                      Reconcile balance
+                    </Link>
                   </div>
                 </div>
               </div>
