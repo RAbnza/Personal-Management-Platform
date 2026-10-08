@@ -8,7 +8,7 @@
 
 **Handoff date:** October 9, 2026
 
-**Current verified implementation `main` HEAD:** `d1e94142ceb56586d36072551dbe7f077672de0f` — `feat(reports): add exact period reports and scoped CSV exports`
+**Current verified implementation `main` HEAD:** `4ac6e14d383dabedc5821b633150426123fd895d` — `fix(time): renew reminders when corrected payments reopen dues`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -668,6 +668,31 @@ No unresolved V1-C2 blocker remains within the documented coverage/bounds. Remin
 
 ---
 
+### 5.15 V1-C3 — In-App Due and Reminder Controls
+
+Completed and verified on current `main`, after verifying V1-C2 with its 14 report integration tests and 29 reporting unit/component tests. Only the authoritative Calendar/Agenda/reminder and source-lifecycle contracts were needed. No previous financial workflow was reimplemented.
+
+Released behavior:
+
+- Owner-scoped `time.reminder_rule`, `time.source_reminder_setting` and `time.reminder_occurrence` implement the documented closed union of concrete personal-event, Career-event and stable debt-obligation references. Composite source/rule FKs, logical uniqueness including nulls, source/module relation checks, immutable occurrence identity/generation, lifecycle guards, restricted runtime grants and forced ownership RLS protect these records. V1 channel is strictly `in_app`.
+- Reads compute reminders without inserts or updates. The initial inherited rule is a virtual due-day reminder at 09:00; its physical rule is materialized only when a command needs it. Source mode is explicitly inherit/override/off, including an empty override. Module defaults and source overrides support up to eight distinct 0–365-day/local-time rules; the UI offers comma-separated offsets such as 7, 1, 0. Rule time/offset changes use new identities; disabling/re-enabling advances rule generation. Module/navigation hiding, Agenda inclusion and reminder enablement remain independent.
+- Dismiss, snooze, restore and settings commands use the existing lifecycle lock, owner scope, canonical command receipt, source locks, reminder-write serialization and immutable private audit revisions. A snapshot hash covers the expected source version/occurrence/generation, timezone, preferences, rules, settings and occurrence versions. Replay resolves before stale-source checks; changed payloads conflict. A source resolved or changed during review must be reloaded. Snooze accepts a future explicit instant within one year and preserves the source deadline. Debt resolution advances a notification epoch in reminder settings, preserving mode; a financial correction that makes the same obligation due again within the same schedule gets a fresh generation instead of inheriting a cancellation. The effective generation is schedule version number + reminder epoch − 1. Personal/Career event generations remain source-owned. No financial or immutable schedule evidence is changed by this metadata.
+- Source-driven Agenda still contains no duplicate editable domain appointments. Debt items retain `debt_obligation` IDs and now encode the current immutable schedule ID in `occurrence_key`, as required by the reminder contract. Current residuals use the existing opening + direct + mapped allocation view; later payments never rewrite opening satisfaction. Partial payment updates the displayed exact residual while preserving dismissal. A satisfied obligation, settlement, replaced schedule, Career reschedule/cancel/archive or personal-event reschedule/cancel suppresses obsolete reminders. Deferred cancellation runs in the source transaction after mappings/payment evidence finalize; reads independently recheck current eligibility/generation. Irrelevant event-note edits preserve notification generation and acknowledgement.
+- Calendar has an in-app attention area independent of its selected date range, so older overdue sources remain reachable. It aggregates source/rule rows to one source before counting, shows the first 25 due sources with its full source count and an explicit bound, and excludes dismissed, future-snoozed and disabled reminders. Agenda retains textual Overdue/Today/Upcoming indicators and adds textual Due/dismissed/snoozed/off reminder state. Hidden sources retain authorized links. Amount display reuses exact PHP minor-unit formatting.
+- `GET /api/v1/reminders` reads a source or module-default target; same-origin `POST` accepts strict reminder commands with authenticated ownership. Calendar and personal/Career/debt detail records link to `/calendar/reminders/[sourceKind]/[sourceId]`. Controls provide explicit review/confirmation, pending/error/empty/resolved states, source navigation, latest occurrence generations/cancellation reasons and immutable user-action history. An uncertain save locks editing and retries the identical command; confirmed save plus failed follow-up read requires reloading rather than presenting an uncertain financial/source outcome. Accessible loading/error boundaries and hydration-safe controls follow the existing shell and design tokens.
+- Reminder commands never pay a debt, complete an event, change a source deadline, insert a financial action or increment financial revision. Source acknowledgement is distinct from the authoritative scheduled commitment. Completed response/no-response/offer/note Career observations remain history, not actionable reminders. External delivery, queue/delivery records, quiet-hour controls, recurrence, unreleased card/bill/tracker sources, V2/V3 and broad redesign remain outside C3.
+
+Verification:
+
+- Focused reminder integration: **15 tests**, covering pure GET/default scheduling, three Career source kinds, rescheduling/cancellation/archive, partial/full due satisfaction, corrected-payment reactivation in the same schedule, schedule replacement, hidden-module preferences, rule inheritance/override/off, attention grain/suppression, source/module relation rejection, immutable generations, replay/conflict, rollback and missing/foreign references. The real settlement regression also verifies persisted reminder cancellation and retained history. Final source-lifecycle review exposed the same-schedule reactivation gap; its regression first reproduced the cancelled-state error and then passed after the notification-epoch fix.
+- Complete unit/component regression: **91 files / 625 tests passed**; the final reminder API/control/Agenda subset passed again (**17 tests**) after the metadata fix. Complete integration regression: **50 files / 382 tests passed**, rerun after that fix. `pnpm check` and production `pnpm build` passed again on the final code state. Staged whitespace checks passed.
+- Real Edge production-browser suite: **9 tests passed**, including Dashboard/Reports regressions plus mobile overdue attention, exact reviewed controls, source navigation, snooze, stale-preview reload, module hide/restore, cancellation, a deliberately lost committed response followed by exact-command replay, and foreign-owner isolation. The new tests initially needed punctuation/Next route-announcer selector corrections; the final full suite passed. The 390px reminder screenshot was visually inspected and the horizontal-overflow assertion passed. Existing nonfatal Next destination-stream-closed messages appeared during navigation; assertions and final gates passed.
+- Generated `0053_exotic_silk_fever.sql` creates the three reminder tables. Reviewed `0054_v1_c3_reminder_integrity.sql` adds security, immutability/relation/source-cancellation triggers and debt occurrence keys; `0055_v1_c3_reminder_suppression.sql` preserves acknowledgement during preference suppression independently of source lifecycle. Generated `0056_legal_cargill.sql` and reviewed `0057_v1_c3_debt_reminder_reactivation.sql` add the debt reminder epoch, transactional advancement and same-schedule reactivation generation, including repair of already-cancelled current identities. Test migrations were applied first and development migrations only after verification. Drizzle reports no schema drift. Fresh disposable database: **58 migrations / 53 tables plus no-op repeat passed**, retaining D6b–C2 committed smoke and adding C3 committed replay/conflict, owner isolation, source cancellation, attention and unchanged financial revision.
+
+No unresolved C3 blocker remains within the released source types and documented bounds. Future reviewed lifecycle purge must include all three reminder tables, their restricted source/rule links and immutable audit/receipt evidence, alongside `ops.export_run`; ordinary runtime deletion is not enabled. Next milestone: **V1-C4 — Settings, Help, Session, and Data Lifecycle**.
+
+---
+
 ## 6. Current functional route surface
 
 At the current handoff point, the repository includes functional page routes for:
@@ -705,18 +730,20 @@ At the current handoff point, the repository includes functional page routes for
 - Calendar:
   - agenda/calendar
   - personal event detail
+  - source-specific in-app reminder controls and history
+  - Calendar attention and module reminder defaults
 
-Major V1 routes/workflows still to be added include in-app due/reminder controls and remaining coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include remaining coherent-V1 support/settings/session/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: V1-C3 — In-App Due and Reminder Controls
+### Next milestone: V1-C4 — Settings, Help, Session, and Data Lifecycle
 
-Continue from the verified V1-C2 state. Inspect current `main`, this handoff and only the authoritative in-app due/reminder, source lifecycle and Agenda sections needed for the milestone. Verify V1-C2 before building on it; preserve its shared reporting/CSV definitions and read-only snapshot contract.
+Continue from the verified V1-C3 state. Inspect current `main`, this handoff and only the authoritative settings, Help, session and data-lifecycle sections required for C4. Verify C3 before building on it; preserve its source/reminder separation, stable occurrence identities, ownership, generation checks and safe command replay, along with shared report/CSV definitions and read-only snapshots.
 
-Implement V1 in-app due/reminder controls only. Source payment/completion/cancellation remains authoritative; reminder acknowledgement/snooze/dismissal must not mutate financial balances, contractual satisfaction or source completion. Preserve current direct/mapped due calculations, immutable financial/Career evidence, unknown coverage, ownership/version boundaries and authorized hidden-module source links. Dated response/no-response/offer/note observations are completed history, not scheduled actionable reminders. Do not rebuild D6b–D12/Dashboard/Reports or begin external delivery, V2/V3 or broad redesign. Include `ops.export_run` in future reviewed lifecycle scope rather than weakening its guards during this milestone.
+Implement C4 only. Preserve existing financial/Career evidence, explicit adjustments/corrections, current due mappings, coverage disclosures, hidden-module links and reminder-state independence. Complete the documented V1 support/settings/session/lifecycle surfaces through their reviewed ownership and lifecycle paths. Include `ops.export_run` and the three reminder tables in lifecycle planning without weakening ordinary runtime guards. Do not rebuild D6b–D12/Dashboard/Reports/reminders or begin external scheduled delivery, V2/V3 or broad redesign.
 
 ---
 
@@ -738,7 +765,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12, V1-C1 and V1-C2 are complete; V1-C3 — In-App Due and Reminder Controls is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12, V1-C1, V1-C2 and V1-C3 are complete; V1-C4 — Settings, Help, Session, and Data Lifecycle is next.
 
 ### A. Existing debt import and read model
 
@@ -1559,7 +1586,7 @@ Resolved in D12. Authorized hidden Career application sources open with a hidden
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C3 — In-App Due and Reminder Controls**. No D12 accounting-release, V1-C1 or V1-C2 blocker remains within the documented V1 dependent-record restrictions and report/export bounds. In-app reminder controls, remaining lifecycle/support completion, V2/V3 and broad redesign are not started.
+The immediate continuation is **V1-C4 — Settings, Help, Session, and Data Lifecycle**. No D12 accounting-release or V1-C1/C2/C3 blocker remains within the documented V1 dependent-record restrictions, report/export bounds and released reminder source types. In-app reminder controls are complete; remaining lifecycle/support completion, V2/V3 and broad redesign are not started.
 
 ---
 
@@ -1594,6 +1621,8 @@ Useful milestone commits currently on `main`:
 | Financial corrections/refunds/accounting cleanup | `f536c019622d25a239098286e7fb81e343a932bb` |
 | Connected Dashboard | `91624010767254461297f55eff238aa260ab07df` |
 | Reports, drilldowns and scoped CSV exports | `d1e94142ceb56586d36072551dbe7f077672de0f` |
+| In-app due/reminder controls | `69d00e0e8608b221744e9632695d087f0ee49798` |
+| Reminder generation after corrected due satisfaction | `4ac6e14d383dabedc5821b633150426123fd895d` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1634,8 +1663,9 @@ As of this handoff:
 - Financial Corrections and V1 Accounting Cleanup D12: complete and verified; explicit immutable corrections/refunds/classification, durable negative acknowledgement and hidden Agenda links; test/development migrations applied.
 - Connected Dashboard V1-C1: complete and verified; source-backed attention, exact snapshot summaries, coverage, Career/Agenda, supporting records and narrow spending drilldown; no schema changes.
 - Reports, Drilldowns, and CSV Exports V1-C2: complete and verified; shared exact period/financial/Career definitions, supporting records, bounded owner-scoped exports and provenance; test/development migrations applied.
-- **Next task: V1-C3 — In-App Due and Reminder Controls.**
-- Coherent V1 due/reminder controls and remaining support/settings/lifecycle work: still ahead.
+- In-App Due and Reminder Controls V1-C3: complete and verified; source-safe controls, stable generations, reminder attention/history, safe retry and test/development migrations applied.
+- **Next task: V1-C4 — Settings, Help, Session, and Data Lifecycle.**
+- Remaining coherent-V1 support/settings/session/lifecycle work: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 
