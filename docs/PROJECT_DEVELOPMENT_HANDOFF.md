@@ -8,7 +8,7 @@
 
 **Handoff date:** October 8, 2026
 
-**Current verified implementation `main` HEAD:** `1960dcb607d4207797ff4476db18302d69d6ff98` — `feat(money): add explicit verified debt settlement`
+**Current verified implementation `main` HEAD:** `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` — `feat(money): add reconciliation and explicit balance adjustments`
 
 **HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
 
@@ -171,7 +171,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, and D10 early debt settlement are complete. D11 reconciliation and balance adjustments is the next milestone.
+The repository is progressing through **Financial Core Completion**. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, and D11 reconciliation and balance adjustments are complete. D12 financial corrections and V1 accounting cleanup is the next milestone.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -521,7 +521,47 @@ Verification:
 - Browser surface remained unavailable from the D9 environment check; no browser verification is claimed. Component tests cover the settlement review, stale/error/loading, uncertain response, navigation/unload protection, frozen snapshot, identical retry and history flows.
 - `git diff --cached --check` passed before the implementation commit. One trailing blank line was normalized during final whitespace review without changing SQL behavior; integrity fixes remain follow-up migrations.
 
-D10 stops here. Reconciliation/balance adjustments, Dashboard/Reports, user-facing financial payment correction/reclassification, V2/V3 and broad redesign remain separate work. Next milestone: **D11 — Reconciliation and Balance Adjustments**.
+D10 stopped with D11 as the next assignment; D11 is completed below. Dashboard/Reports, user-facing financial payment correction/reclassification, V2/V3 and broad redesign remain separate work.
+
+---
+
+### 5.11 D11 — Reconciliation and Balance Adjustments
+
+D11 is complete and verified. D10 was verified before implementation. Test migrations were applied first; development migrations were applied only after the focused tests, full regressions, repository gates, and fresh-chain verification passed.
+
+Released behavior:
+
+- An immutable comparison records the owned financial account, end-of-day cutoff, signed observed/provider balance, exact calculated tracked balance, derived observed-minus-calculated difference, workspace financial revision, cutoff source version, optional provider/statement reference, notes, actor/request attribution and optional same-account predecessor. A new comparison supersedes evidence without editing it. Matches and differences create only a command receipt and audit evidence; they create no financial action/posting and do not advance the financial revision.
+- `source_journal_count` is an additional exact temporal source version. The account's posted journal identities and their postings are immutable and cannot disappear; the existing account/history binding preserves its cash ledger. All posted original, reversal and replacement legs count at or before the cutoff. This detects even a net-zero backdated correction. Current status is derived as `verified`, `difference`, `needs_review` or `superseded`, with a separate review flag. Later-dated or other-account activity does not falsely invalidate an unchanged cutoff comparison. No mutable verified flag or background invalidation job is required.
+- Balance adjustments are explicit financial actions. A bounded nonzero signed cash movement has exactly one cash posting (`adjustment` flow/direction) and an equal opposite adjustment-equity posting; neither is income or spending. Reason/date are required. The optional reconciliation link is constrained to the same workspace/account, must be current rather than superseded/stale, and must have a cutoff affected by the chosen date. A partial adjustment is allowed and the remaining comparison difference is previewed exactly. A standalone explicit adjustment is also supported.
+- The original comparison becomes needing review after an affected adjustment; saving an adjustment does not silently manufacture a new verified observation. The user compares again to verify the result. Archived accounts can be compared/read, but reject ordinary adjustments until restored. Adjustments are after the opening cutoff; changing opening evidence remains a correction workflow. Negative balances at the effective date or currently require retained explicit acknowledgement.
+- Workspace serialization, expected financial revision/account version, scoped references, immutable typed evidence, exact deferred posting/audit validation, mandatory command receipts, and one atomic financial revision increment protect adjustment saves. Same-command replay recovers the original immutable result before mutable checks; changed payload conflicts. Foreign references, stale comparisons and late failures cannot commit partial effects.
+
+Layers and routes:
+
+- `domain/reconciliation.ts`, `schema/reconciliation.ts`, `repositories/reconciliation-repository.ts`, `services/reconcile-account.ts`, and `platform/http/account-reconciliation.ts` implement contracts, cutoff balances, immutable comparisons, current history/statuses, adjustment history, previews, and commands. The existing settlement adjustment-equity resolver was extracted unchanged into `adjustment-equity-repository.ts` and reused; D10 behavior remains verified.
+- `GET /api/v1/accounts/[accountId]/reconciliations` reads one owned account/source/history snapshot. `POST .../reconciliations/preview` and `POST .../adjustments/preview` validate read-only snapshots. `POST .../reconciliations` records evidence; `POST .../adjustments` posts an explicit action. Same-origin guards, server-bound actor/account scope, strict bodies, bounded JSON, no-store responses and masked problems remain in force.
+- `/money/accounts/[accountId]/reconcile`, loading/setup error states, account-list navigation, account-history adjustment labels, `AccountReconciliationForm` and `ReconciliationHistory` provide the workflow. Review shows exact balances/difference/date/reference/notes or cash/equity effects, linked comparison, residual difference, reason and negative-balance acknowledgement before final confirmation. History includes investigation links, immutable supersession and linked/standalone adjustments.
+- The form freezes the complete setup and exact command in memory. Uncertain network/server/malformed-success outcomes lock editing and retain identical retry even through refreshed props. Request timeout and navigation/unload protection preserve the retry path. Freshness conflicts require reload/review. Potentially outdated history badges are hidden after a save, uncertain outcome or changed source snapshot until current history loads. No private command is stored in browser storage. Command-result previews are original reviewed evidence; current reconciliation status comes from the history read model.
+
+Migrations:
+
+- `0040_d11_reconciliation.sql`: generated comparison and adjustment tables, signed/bounded values, scoped account/receipt/action/revision/reconciliation FKs, indexes/uniqueness, and release of `balance_adjustment`.
+- `0041_d11_reconciliation_integrity.sql`: FORCE owner RLS, append-only grants/triggers, same-account predecessor binding, serialized exact snapshot capture, immutable audit requirements, linked-comparison validation and the dedicated exact two-posting cash/equity recipe. Previously applied SQL was not rewritten.
+
+Verification:
+
+- D10 continuation baseline: all 29 settlement integration tests passed before implementation.
+- Focused D11 integration: 20 PostgreSQL tests passed, covering matched/positive/negative comparisons, no automatic posting, positive/negative and partial explicit adjustments, source/cutoff accuracy, later-dated/other-account immunity, backdated and net-zero reversal/replacement invalidation, immutable/superseded evidence, stale versions/links, foreign-owner RLS isolation, replay/changed payload, rollback/retry, forged snapshot rejection, duplicate cash rejection, and account-list/history/report-classification consistency.
+- New domain/API/component coverage: 48 tests passed, including exact signed integer/decimal validation, ownership/origin boundaries, masked problems, exact review, matched evidence without a transaction, explicit equity effects, loading/errors/stale state, frozen refreshed props, uncertain response, identical retry and navigation/unload protection.
+- `pnpm test --maxWorkers=1`: 79 files / 536 unit/component tests passed.
+- `pnpm test:integration`: 46 files / 326 PostgreSQL tests passed, retaining D8a/D8b/D9/D10 and account-history regressions.
+- `pnpm check`: lint, TypeScript and repository formatting passed. `pnpm build`: passed with all reconciliation/adjustment API, preview and page routes.
+- `pnpm db:verify:chain`: 42 migrations and a no-op repeat passed on an empty disposable database. All D6b through D10 committed smoke remains; D11 adds committed preview/comparison, no automatic adjustment, cash/equity effect, cutoff invalidation, history consistency, concurrent same-command replay and competing stale-version commands.
+- `pnpm db:generate --name=d11_drift_check`: no schema changes or extra migration. `pnpm db:migrate`: development migrations applied after verification.
+- `git diff --cached --check` passed before the implementation commit. Browser surface remains unavailable; no browser QA is claimed. Component tests and production build verify the released UI behavior.
+
+D11 stops here. Full Dashboard/Reports, user-facing financial correction/reclassification, V2/V3 and broad redesign remain separate work. No D11 blocker remains. Next milestone: **D12 — Financial Corrections and V1 Accounting Cleanup**.
 
 ---
 
@@ -540,6 +580,7 @@ At the current handoff point, the repository includes functional page routes for
 - Money:
   - accounts
   - account history
+  - account reconciliation, immutable comparison history and explicit balance adjustment review
   - transaction entry
   - transfer entry
   - debt list and detail
@@ -556,17 +597,17 @@ At the current handoff point, the repository includes functional page routes for
   - agenda/calendar
   - personal event detail
 
-Major V1 routes/workflows still to be added include payment correction/reclassification entry, reconciliation, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
+Major V1 routes/workflows still to be added include payment correction/reclassification entry, full reporting, and other coherent-V1 support/settings/lifecycle surfaces.
 
 ---
 
 ## 7. Immediate next step
 
-### Next milestone: D11 — Reconciliation and Balance Adjustments
+### Next milestone: D12 — Financial Corrections and V1 Accounting Cleanup
 
-Continue from the verified D10 state. Inspect current `main`, this handoff and only the authoritative reconciliation/balance-adjustment sections required by the separately assigned milestone. Verify D10 before building on it.
+Continue from the verified D11 state. Inspect current `main`, this handoff and only the authoritative financial correction/accounting sections required by the separately assigned milestone. Verify D11 before building on it.
 
-D10 is complete. Preserve its one-action payoff, exact component/source accounting, immutable closing schedule, confirmed pool disposition, zero-residual/clearing closure, ownership and safe replay behavior. Do not rebuild D6b/D7/D8a/D8b/D9/D10 or begin Dashboard/Reports, V2/V3 or broad redesign without a separate assignment.
+D11 is complete. Preserve immutable comparisons, cutoff-specific source invalidation, explicit cash/adjustment-equity posting, same-account links, exact previews, owner isolation and safe replay. Corrections must preserve original/reversal/replacement ledger semantics and make affected comparisons need review, even when their net balance is unchanged. Do not rebuild D6b through D11 or begin full Dashboard/Reports, V2/V3 or broad redesign without a separate assignment.
 
 ---
 
@@ -588,7 +629,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9 and D10 are complete; D11 is next.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10 and D11 are complete; D12 is next.
 
 ### A. Existing debt import and read model
 
@@ -693,7 +734,7 @@ Do not implement an automatic loan settlement calculator that guesses provider m
 
 ### G. Reconciliation and balance adjustment
 
-Implement explicit reconciliation rather than silently changing balances.
+Completed and verified in D11. Preserve explicit reconciliation rather than silently changing balances, including current cutoff-source invalidation and immutable evidence.
 
 Support:
 
@@ -1399,7 +1440,7 @@ Do not hide a logic/performance problem by increasing a test timeout without und
 
 Before V1 release, verify the architecture requirement for explicit acknowledgement when a manual transaction would create a negative account balance.
 
-D8b debt payments now require and retain negative-balance acknowledgement evidence. Review the other manual financial transaction types before V1 release; a UI warning alone may not satisfy the requirement if their backend does not record acknowledgement.
+D8b debt payments, D10 settlements and D11 balance adjustments require and retain negative-balance acknowledgement evidence. Review the other manual financial transaction types before V1 release; a UI warning alone may not satisfy the requirement if their backend does not record acknowledgement.
 
 ### 14.2 Agenda source links for hidden modules
 
@@ -1409,7 +1450,7 @@ Re-check whether Agenda items from a hidden module should remain source-linkable
 
 D6b import/read, D7 borrowing, D8b payment entry/history, D9 schedule revisions/history and D10 explicit settlement/history are released workflows. User-facing financial payment correction/reclassification remains future work. D9 allocation correction maps contractual satisfaction only; it does not correct financial payment evidence or classify clearing.
 
-The immediate continuation is **D11 — Reconciliation and Balance Adjustments**. No D10 blocker remains; the separate release review items above remain applicable before V1 completion.
+The immediate continuation is **D12 — Financial Corrections and V1 Accounting Cleanup**. No D11 blocker remains; the separate release review items above remain applicable before V1 completion.
 
 ---
 
@@ -1440,6 +1481,7 @@ Useful milestone commits currently on `main`:
 | Debt payment workflow | `5f69a0e054705e8fc40dd7b572e3e26189a4eba0` |
 | Debt schedule revisions | `038d387e1cab8096c5c6dcd729d1e6481dd59b40` |
 | Explicit verified debt settlement | `1960dcb607d4207797ff4476db18302d69d6ff98` |
+| Reconciliation and explicit balance adjustments | `aea675049cc5dc246b97d5a099b66e4ccfa68dd2` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1476,7 +1518,8 @@ As of this handoff:
 - Debt Payment Workflow D8b: complete and verified; current dues/Agenda, payment/audit history, and test/development migration applied.
 - Debt Schedule Revisions D9: complete and verified; immutable history, exhaustive payment mapping, explicit noncash charge and current Agenda projections.
 - Early Debt Settlement D10: complete and verified; one-action payoff/adjustments, exact zero-residual closure, immutable history and Agenda cleanup; test/development migrations applied.
-- **Next task: D11 — Reconciliation and Balance Adjustments.**
+- Reconciliation and Balance Adjustments D11: complete and verified; immutable cutoff comparisons, derived review status, explicit cash/equity actions, safe replay, and test/development migrations applied.
+- **Next task: D12 — Financial Corrections and V1 Accounting Cleanup.**
 - Coherent V1 dashboard/reports/reminders/exports/lifecycle: still ahead.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
