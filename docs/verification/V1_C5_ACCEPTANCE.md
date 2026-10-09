@@ -2,6 +2,13 @@
 
 Scope: final V1 verification, following C4 code `84e989e72b90bbd4175ed497101c14f5b7f1555d` and handoff `b71bf98`. V2/V3 and visual redesign remain excluded. This record distinguishes local evidence from production deployment evidence. A pending row is not a pass.
 
+> **Development sequencing note — October 9, 2026:** The remaining production
+> infrastructure gates recorded in this document are intentionally deferred until
+> after V2 and V3 because the application will not be publicly released before
+> then. This changes development sequencing only. The gates remain mandatory
+> before production release, and no pending production item in this record should
+> be interpreted as passed.
+
 ## Coherent V1 matrix
 
 Source references below are under `src/`; bare financial `services/*` references mean `modules/finance/services/*`. Automated references are under `tests/`. Browser evidence comes from the production build on isolated port 3100, using synthetic owners and `personal_management_test`. Browser assertions verify source APIs as well as visible review/history; they do not substitute client-side calculations for server authority.

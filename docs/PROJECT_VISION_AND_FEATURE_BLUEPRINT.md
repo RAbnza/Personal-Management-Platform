@@ -128,6 +128,12 @@ Support search, date filters, account filters, category totals, spending compari
 
 Support splitting one purchase across expense categories in V1: a PHP 1,000 receipt might contain PHP 700 groceries and PHP 300 household supplies. Category portions must equal the purchase amount, and adding splits must not create another account deduction. Associated fees remain separately identified. Split funding across multiple payment accounts can follow later and must satisfy the same total checks.
 
+Credit-card and shared-expense support extend this purchase-entry experience rather than creating duplicate purchase trackers. When V2 is released, a credit card can be selected as the funding source for an expense. The purchase is still recorded once: spending is recognized when the purchase occurs, while the funding effect is card liability rather than a cash deduction. Paying the card later reduces cash and liability without recording the purchase expense again.
+
+A purchase can also be marked as shared with a group. The same real-world purchase should not need to be entered once as a private expense and again as a shared expense. The shared workflow records payer contributions and participant shares while the private financial integration records only the current user's authorized financial effects. A purchase may eventually be both card-funded and shared without duplicating spending or liability.
+
+Use progressive disclosure for advanced funding and sharing details. An ordinary expense should remain simple when no card, installment, or participant-sharing behavior is needed.
+
 ### 6.4 Transfers and fees
 
 Moving money between owned accounts does not create income or spending. Associated fees are expenses.
@@ -201,24 +207,51 @@ Allow partial refunds and multiple refund events linked to one purchase. Show gr
 
 ### 6.7 Credit cards
 
-Credit cards are liability accounts with their own billing workflow. They are part of the full vision and a dedicated later release.
+Credit cards are liability accounts with their own billing lifecycle, but a credit-card purchase remains a purchase and should integrate with the ordinary expense-entry workflow rather than requiring duplicate entry in a separate card tracker.
 
-Track issuer/name, credit limit, outstanding posted balance, available credit estimate, statement cycles, statement balance, remaining statement amount due, minimum due, due date, payments, fees, interest, refunds, and optional installment plans.
+When V2 is released, the user can select a credit card as the funding source for an expense. A posted purchase increases spending and card liability without reducing liquid cash. A later card payment reduces the selected cash account and card liability without creating the purchase expense again.
+
+Keep these events distinct:
+
+Credit-card purchase: recognizes the purchase expense and card liability.
+
+Installment plan: describes provider-confirmed scheduling for an already recognized purchase and must not repeat the purchase expense every month.
+
+Credit-card payment: moves actual cash to reduce card liability and does not create another purchase expense.
+
+Track issuer/name, credit limit, outstanding posted balance, available credit estimate, statement cycles, statement balance, remaining statement amount due, minimum due, due date, payments, fees, interest, refunds, card credits/overpayments, and optional installment plans.
 
 Keep these concepts distinct:
 
-- **Transaction date:** when a purchase occurred.
-- **Posting date:** when the provider posted it.
-- **Statement period/date:** which billing cycle includes it.
-- **Outstanding balance:** all recognized unpaid card activity.
-- **Statement balance:** the fixed balance recorded for a closed cycle.
-- **Remaining statement amount due:** that cycle’s amount still unpaid after applicable payments and credits.
+Transaction date: when a purchase occurred.
 
-Purchases increase spending and card liability. Card payments reduce cash and liability without repeating the purchase expense. Interest and fees are separate expenses. Refunds reduce liability or create a card credit and link to the original purchase when possible.
+Posting date: when the provider posted it.
 
-Use manually verified statement values initially. Do not assume that payment allocation, interest, minimum payment, or available-credit rules are identical across issuers. Clearly label app-calculated values as estimates where provider behavior can differ.
+Statement period/date: which verified billing cycle includes it.
 
-Utilization can be shown as outstanding balance / credit limit × 100, with the balance date identified. Handle a missing/zero limit without dividing by zero. Aggregate utilization uses total eligible balances divided by total eligible limits, not the average of card percentages. Card overpayments should appear as credits rather than negative debt.
+Outstanding posted balance: all recognized unpaid posted card activity.
+
+Statement balance: the fixed provider balance recorded for a closed cycle.
+
+Remaining statement amount due: that cycle's amount still unpaid after applicable payments and credits.
+
+Card credit: an overpayment or excess credit on the card; it is not liquid cash.
+
+Pending authorizations are informational until they become recognized posted activity. Do not treat a pending authorization as a finalized purchase or statement entry.
+
+The ordinary expense form should remain the primary entry surface for purchases. Selecting a card may progressively expose card-specific details such as posting state/date, provider reference, or installment information. A dedicated Credit Cards surface still manages card-specific liability, statements, reconciliation, payments, utilization, fees, interest, refunds, installment plans, and history; it is not a second expense tracker.
+
+Use manually verified statement values initially. Closing or recording a statement creates provider evidence, not another purchase or liability posting. Statement corrections preserve versions. Remaining statement due derives from the verified statement and applicable payment/credit allocations rather than being independently editable.
+
+Do not assume that payment allocation, interest, minimum-payment, statement membership, installment math, or available-credit rules are identical across issuers. Provider-confirmed information and explicit user evidence take precedence over guessed formulas.
+
+A card installment plan links the original recognized purchase to provider-confirmed expected obligations. Merely selecting an installment count must not cause the application to invent interest, fees, total repayment, or provider due-date rules.
+
+Refunds reduce the applicable spending and card liability, or create/increase a card credit where appropriate. Link them to the original purchase when possible. Card fees and recognized interest are separate expenses.
+
+Utilization can be shown as eligible outstanding balance divided by eligible credit limit, with the balance date identified. Handle a missing or zero limit without dividing by zero. Aggregate utilization uses total eligible outstanding balances divided by total eligible limits, not the average of individual percentages. Credit balances are excluded from used-credit amounts. Available credit remains an estimate and is never cash.
+
+A purchase may also participate in Shared Expenses. For example, one user can pay a restaurant bill using a credit card and split the bill with friends. The purchase, card liability, personal share, and group receivable must remain linked without requiring duplicate entry or exposing the user's private card information to other group members.
 
 ### 6.8 Reconciliation and corrections
 
@@ -265,13 +298,40 @@ Product references: [Splitwise](https://secure.splitwise.com/), [Settle Up](http
 
 A shared expense includes group, description, date, currency, total, payer contributions, selected participants, each person's share, category, notes, optional receipt, creator, and change history.
 
-Start with one payer and equal or exact custom splits. Later add multiple payers, percentages, weighted shares, and itemized allocations. The payer need not consume a share, and not every group member must participate in every bill.
+V2 supports one or multiple payers for the same shared expense. Single payer remains the default simple interaction, with additional payers added progressively when needed. Each payer records an exact contribution amount.
 
-Total paid and total allocated must each equal the expense total. Use exact centavos and preview rounding: PHP 100 divided three ways becomes PHP 33.34, PHP 33.33, and PHP 33.33 with an identified recipient of the extra centavo. Start with PHP-only groups. Bill fees can be shared or assigned explicitly.
+Payer contributions and participant shares are separate dimensions:
 
-Show amounts paid, shares consumed, settlements, and remaining net position per person. Group net balances must sum to zero. Distinguish category splits within one purchase from participant splits across people.
+a payer can contribute more or less than their own share;
 
-#### Family example and private financial integration
+a payer may consume no share;
+
+a participant may consume a share without paying;
+
+only a subset of group members may participate in a particular bill.
+
+For every finalized bill:
+
+sum(payer contributions) = expense total
+sum(participant shares) = expense total
+
+Both equalities must hold independently and exactly.
+
+V2 initially supports equal and exact/custom participant splits. Percentage, weighted, and detailed itemized splits may follow later unless separately promoted into scope.
+
+Use exact centavos and preview rounding. PHP 100 divided three ways becomes PHP 33.34, PHP 33.33, and PHP 33.33, with the recipient of the extra centavo identified and retained.
+
+Start with PHP-only groups. Bill fees can be shared or assigned explicitly.
+
+Shared expenses are not isolated debts that must each be settled independently. Current participant positions derive across all effective bills, refunds, and confirmed settlements. Preserve each bill as source evidence while presenting continuously derived group and participant balances.
+
+Reciprocal obligations cancel in the current balance. If one effective bill means A owes B PHP 1,000 and another means B owes A PHP 800, the current relationship is A owing B PHP 200. Both original bills remain visible and explainable.
+
+Show amounts paid, shares consumed, refunds, confirmed settlements, pending settlements, and current net position per person. Confirmed group net positions must sum to zero.
+
+Distinguish category splits within a purchase from participant splits across people.
+
+#### Shared-expense example and private financial integration
 
 You pay PHP 1,200 from GCash for dinner with two brothers, split equally:
 
@@ -287,23 +347,77 @@ Link an existing private purchase/payment rather than deducting it again. If the
 
 #### Settlements and disputes
 
-A settlement records payer, recipient, amount, date, group, optional reference, allocations, and state: proposed, confirmed, disputed, or reversed. A suggested settlement is not a payment. The application records payments made elsewhere; it does not execute bank/wallet transfers.
+A settlement records payer, recipient, amount, date, group, optional reference, allocations, and state such as proposed/pending, confirmed, disputed, cancelled, or reversed. The application records payments made elsewhere; it does not execute bank or wallet transfers.
 
-For registered participants, reported payments remain pending until the recipient confirms receipt. Pending/disputed settlements do not reduce confirmed group balances. The payer can record cash actually sent privately before confirmation, held pending allocation so confirmation does not deduct it again. The recipient records actual receipt when appropriate. Manual confirmation involving nonregistered participants must identify who confirmed it and its verification limitation.
+V2 supports:
 
-Allow partial repayments. Overpayments preview the resulting reverse balance or advance instead of silently zeroing the debt. A settlement transfer fee is the payer's own expense unless a separately agreed group allocation shares it.
+full settlement of a current balance;
 
-Initially only the expense creator revises their bill; owners can flag disputes or propose corrections rather than silently rewriting others' entries. Edits retain before/after values and notify affected registered members. Changes to settled bills require explicit corrections. Disputed amounts remain visible, with automatic settlement prompts paused for those amounts.
+a user-entered custom partial amount;
 
-A shared purchase refund reverses the applicable participant shares. If participants already settled, the correction can create amounts owed back; show those balances rather than erase prior payments.
+settlement allocated to selected shared expenses;
 
-#### Optional settlement simplification and improvements
+partial settlement of one shared expense;
 
-Later, offer fewer-payment settlement suggestions within an agreed group. For example, if A owes B PHP 300 and B owes C PHP 300, suggest A paying C PHP 300 while preserving all three net positions. Explain the calculation and obtain involved members' agreement before applying redirected allocations.
+one settlement allocated across multiple shared expenses;
 
-Suggestions do not rewrite original bills. Keep the settlement allocations that discharge intermediate obligations. Never simplify across unrelated groups, currencies, private loans, or disputed records. Do not promise the mathematically fewest payments unless the chosen algorithm guarantees it.
+explicit overpayment/advance treatment rather than silently truncating excess.
 
-Prioritize explainable balances, payment confirmation, private ledger linking, explicit fee allocation, contextual tutorials, group reports, and member-controlled reminders. The dashboard distinguishes lender debt, card balances, group payables, and group receivables. Family membership does not imply collective ownership of all money.
+Settlement allocations explain which obligations were discharged. Paying one participant must not silently discharge an amount owed to another participant unless an explicitly supported redirected-settlement path has been agreed.
+
+For registered participants, a reported payment remains pending until the recipient confirms receipt. Pending and disputed settlements do not reduce the confirmed group balance.
+
+The interface must clearly distinguish:
+
+confirmed current balance;
+
+outgoing settlements waiting for another participant;
+
+incoming settlements requiring the current user's confirmation;
+
+projected balance if pending settlements are confirmed.
+
+A sender who already reported payment should be able to see that the payment exists and is awaiting acknowledgement. A recipient should be able to confirm or dispute the reported payment. Pending settlement details should retain their source-expense allocations and age/status.
+
+The payer may record actual private cash sent before recipient confirmation through the supported private clearing path so confirmation does not deduct cash again. The recipient similarly controls their own private receipt/linkage. Group confirmation never selects or exposes another user's private account.
+
+Manual confirmation involving a nonregistered participant must identify who recorded the confirmation and clearly state that authenticated recipient confirmation was unavailable.
+
+Allow partial repayments. Overpayments preview the resulting reverse balance or advance instead of silently zeroing the obligation. A settlement transfer fee is the payer's private expense unless a separately agreed group allocation shares it.
+
+Initially only the expense creator revises their bill. Owners may flag disputes or propose corrections rather than silently rewriting another participant's bill. Edits retain before/after versions and affected registered participants are informed. Changes to settled bills require explicit corrections.
+
+A shared purchase refund reverses the applicable participant shares and payer effects without deleting prior settlements. If participants already settled, the refund can create new amounts owed back.
+
+#### Netting and settlement suggestions
+
+V2 includes explainable settlement suggestions based on the current confirmed net positions of participants.
+
+The authoritative source remains the effective bills, payer contributions, participant shares, refunds, and confirmed settlements. Suggestions are derived views and never rewrite those records.
+
+For example, if:
+
+A owes B PHP 300;
+
+B owes C PHP 300;
+
+the application may suggest:
+
+A pays C PHP 300.
+
+The suggestion preserves every participant's final net position while potentially reducing the number of payments.
+
+A suggestion is not a payment and does not alter any balance until actual settlements are recorded and confirmed.
+
+Do not promise the mathematically minimum possible number of payments unless the implemented algorithm guarantees that property. Present the result as a suggested way to settle.
+
+Direct reciprocal netting is part of normal balance derivation. Redirecting payment through participants who do not have a direct current obligation requires the applicable participants' explicit agreement/confirmation. Never simplify across unrelated groups, currencies, private loans, or disputed amounts.
+
+Preserve allocations explaining which source obligations a redirected settlement discharges.
+
+Prioritize explainable balances, pending-payment visibility, confirmation, private-ledger linking, exact payer contributions, explicit fee allocation, contextual guidance, group reports, and member-controlled reminders.
+
+The Dashboard distinguishes lender debt, card balances, group payables, group receivables, and pending shared settlements. Group membership never implies collective ownership or visibility of private money.
 
 ## 7. Financial accuracy rules and examples
 
@@ -476,7 +590,7 @@ The full vision is a roadmap, not a commitment to implement everything before la
 | First usable slice | Sign-in, settings, accounts, income/expense/transfer with fees, account history, basic application list/stages, agenda, short onboarding | Reliable daily tracking for money and job search |
 | V1: coherent core | Debts with manual schedules, partial payments and explicit settlement/adjustments, reconciliation, connected dashboard, period reports for all requested intervals, in-app due indicators, history, CSV export | Complete core workflows with financial accuracy and user separation |
 | V2: financial maturity | Credit cards/statements, recurring obligations, budgets, savings goals, forecasts, richer career analytics, scheduled opted-in notifications | Card and planning workflows verified with realistic cases |
-| V2 companion release: family shared expenses | Accepted invitations, equal/custom splits, one payer, balances, partial settlements, confirmation/history, private ledger links | Family users complete a shared bill and repayment without exposing private data or duplicating spending |
+| V2: shared expenses and settlements | Groups for family/friends/roommates/trips, registered/manual participants, one or multiple payers, equal/exact splits, net balances, partial/full/selected-expense settlements, pending confirmation, settlement suggestions, private ledger links | Participants can record and settle realistic shared spending without exposing private data or duplicating financial effects |
 | V3: adaptable trackers | Preset trackers, then user-created templates/custom fields, richer tracker reporting, calendar integration | Existing records survive customization and synchronization changes |
 | Later, selectively | Receipt OCR, suggested categorization, import integrations, investments, multiple currencies, shared workspaces, annual-review exports | Added only for a demonstrated user need and supportable accuracy |
 
@@ -484,7 +598,7 @@ Tutorials and contextual guidance evolve with each release. They are part of the
 
 Initially defer automatic provider fee lookup, bank connections, payment execution, automatic loan settlement calculations, credit scoring, AI financial recommendations, collaborative editing, and a fully general no-code builder. The app records and organizes information; executing bank payments is a separate future product decision.
 
-Additional release boundaries: V1 includes separate sign-in accounts/private workspaces for multiple users, category splits, loan net-disbursement entry, manual schedule revisions, recovery, and account/data lifecycle controls. V2 can add supporting-file uploads, CSV imports, and portable workspace export/restore. The shared-expense release includes the group receivables/payables needed for its ledger integration; general standalone lending, multiple payers, richer split methods, and settlement simplification follow later. Transfers in transit, refinancing, split payment sources, and offline synchronization remain later features. Core refund/correction rules apply when the corresponding transaction type is released. Shared expenses are required in the completed product, even though staged after V1.
+Additional release boundaries: V1 includes separate sign-in accounts/private workspaces for multiple users, category splits, loan net-disbursement entry, manual schedule revisions, recovery, and account/data lifecycle controls. V2 can add supporting-file uploads, CSV imports, and portable workspace export/restore. Credit-card purchases integrate with the existing expense-entry experience while card-specific statements, payments and liability remain specialized. Shared Expenses and Settlements support family, friends, roommates, trips and other groups; they include group receivables/payables, one or multiple payers per bill, equal/exact participant shares, reciprocal netting, partial/full/selected-expense settlements, pending recipient confirmation, and explainable settlement suggestions. Percentage/weighted/itemized split methods, general standalone lending, mathematically optimal settlement minimization, transfers in transit, refinancing, split funding from multiple private payment accounts, and offline synchronization remain later unless separately promoted. Core refund/correction rules apply when the corresponding transaction type is released.
 
 ## 15. Conceptual model and engineering boundaries
 

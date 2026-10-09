@@ -702,15 +702,35 @@ Habit streaks require dated check-in records and timezone rules; they cannot be 
 
 ### 15.1 Cards and statements, V2
 
-Map a card to a liability ledger account with issuer/name/limit metadata. Purchases and recognized fees/interest post spending/liability; payments post cash reduction and liability reduction; refunds offset spending and liability or create an overpayment credit. Pending authorizations are separate informational records until recognized as posted activity.
+Map a card to a liability ledger account with issuer/name/limit metadata. A credit-card purchase remains an expense-entry workflow even though its funding recipe differs from cash.
 
-Persist transaction date, posting date and statement membership separately. Recommended report default is transaction-date spending for recognized purchases, with explicit provider-posted cutoff views for reconciliation. Statement assignment follows verified posting/cycle information, not a guessed date rule. Confirm this basis before card implementation because it changes cross-period reports.
+The UI should use the existing purchase/expense experience as the primary entry surface. When the selected funding source is a credit card, the server uses the card-purchase financial recipe:
 
-`CardStatement` stores immutable verified cycle dates, statement balance, minimum due and due date. `StatementEntry` links recognized activity; allocation records explain payments/credits against the statement. Closing a statement does not create another purchase or recalculate its original balance after payment. Remaining statement due changes through allocations; missing allocation rules are labeled unknown/manual.
+recognized spending increases;
 
-Do not assume minimum-payment or payment-allocation formulas across issuers. A manual closed statement snapshot can reveal unrecorded transactions; reconciliation must resolve them explicitly. Card installment plans link the original spending and scheduled obligations without recognizing the same purchase every month. Interest/fees not already recognized become separate actions.
+card liability increases;
 
-An overpaid card is shown as a card credit asset in presentation, excluded from liquid funds; a negative credit-normal ledger balance is not displayed as negative debt. Utilization handles missing/zero limits, identifies balance date, and computes aggregate eligible outstanding balances divided by aggregate eligible limits. Exclude credit balances from used-credit numerator and disclose missing-limit cards. Available credit remains an estimate and is never cash.
+liquid cash does not move.
+
+Do not require the user to enter the purchase once in Expenses and again in a Cards module.
+
+The dedicated Cards surface manages liability, activity, statements, payments, reconciliation, fees, interest, refunds, card credits, utilization and installment plans rather than acting as another purchase tracker.
+
+Purchases and recognized fees/interest post spending/liability; payments post cash reduction and liability reduction; refunds offset spending and liability or create an overpayment credit. Pending authorizations are separate informational records until recognized as posted activity.
+
+Persist transaction date, posting date and statement membership separately. Recommended report default is transaction-date spending for recognized purchases, with explicit provider-posted cutoff views for reconciliation. Statement assignment follows verified posting/cycle information rather than a guessed date rule.
+
+CardStatement stores immutable verified cycle dates, statement balance, minimum due and due date. StatementEntry links recognized activity; allocation records explain payments/credits against the statement. Closing a statement does not create another purchase or recalculate its original balance after payment. Remaining statement due changes through effective allocations while the original verified statement balance remains fixed.
+
+Do not assume minimum-payment, interest, available-credit or payment-allocation formulas across issuers. A manual closed statement snapshot can reveal unrecorded transactions; reconciliation must resolve them explicitly rather than manufacturing postings.
+
+Card installment plans link the original spending and provider-confirmed scheduled obligations without recognizing the same purchase every month. Installment count alone is insufficient evidence for interest, fees, total repayment or due-date behavior. Newly recognized provider charges become separate financial actions.
+
+An overpaid card is shown as card credit in presentation and excluded from liquid funds. A credit-normal card balance is not displayed as negative debt.
+
+Utilization handles missing/zero limits, identifies its balance date, and computes aggregate eligible outstanding balances divided by aggregate eligible limits. Exclude card-credit balances from the used-credit numerator and disclose missing-limit cards. Available credit remains an estimate and is never cash.
+
+When a card-funded purchase is also a shared expense, the same real-world purchase is entered once. Private Finance records the card liability and the owner's private spending/receivable effects; group authority records payer contribution and participant shares. Other group members never receive the payer's private card/account identifiers.
 
 ### 15.2 Planning, budgets and savings goals
 
@@ -739,23 +759,54 @@ Nonregistered participants have display names and a manual-recording flag, no au
 Recommended former-member policy: retain read-only access to records visible before exit and subsequent resolution/corrections of those existing obligations; hide unrelated new bills, contacts and uploads. Implement this with explicit visibility bounds/record entitlements, not only `membership.active`. Removal revokes write rights and unrelated access immediately. Leaving preserves obligations; archived groups preserve history. Finalize this policy and its deletion implications before building invitations.
 
 ### 16.2 Group financial model
+SharedExpense versions contain description/date/currency/total and their PayerContribution and ParticipantShare rows.
 
-`SharedExpense` versions contain description/date/currency/total and their `PayerContribution` and `ParticipantShare` rows. Start with one payer and equal/exact splits in PHP. The payer need not consume a share; any subset of members can participate. The sums of contributions and shares must both equal the bill total. Category splitting and participant splitting are different dimensions.
+V2 supports one or multiple payers per bill. Single payer remains the simplest/default UI, but the model and service rules must not assume exactly one contribution.
 
-Store group-level corrections as explicit reversals/revisions, not edits without evidence. Confirmed settlements contain payer, recipient, date, amount, allocations, confirmer, version and state. Recommended state flow: proposed → confirmed or disputed; disputed → resolved/confirmed or cancelled; confirmed → reversed through an explicit corrective action. Preserve transitions and actors. A cancelled proposal never affects balances.
+For every finalized current bill revision:
 
-For each participant:
+sum(PayerContribution.amount) = bill total
+sum(ParticipantShare.amount) = bill total
 
-```text
+Validate both independently under the group lock.
+
+The payer need not consume a share, a participant need not pay, and any subset of members may participate.
+
+Initial V2 participant split methods are equal and exact/custom. Category splitting and participant splitting remain separate dimensions.
+
+Store group-level corrections as explicit revisions rather than editing finalized evidence.
+
+The current participant balance is derived across all current effective bills, refunds and confirmed settlements:
+
 Group net receivable
-  = Contributions paid for bills - Shares consumed
-  + Confirmed settlements paid - Confirmed settlements received
-  + Signed bill/settlement corrections
-```
+  = Current contributions paid for bills
+  - Current shares consumed
+  - Effective refund amounts returned to payers
+  + Effective refund reductions of consumed shares
+  + Confirmed settlements paid
+  - Confirmed settlements received
 
-All participant net positions sum to zero. Positive means owed money, negative means owes money. Proposed/disputed settlement amounts do not reduce confirmed balances. Bill disputes leave the underlying obligation visible with a disputed component and suppress automatic settlement prompts for that component. Deterministic centavo allocation handles PHP 100 / 3 as 33.34, 33.33, 33.33 with the extra recipient identified.
+Positive means the group owes the participant money. Negative means the participant owes the group.
 
-Serialize writes by group row/version, separate from private workspace locks. Explicit private-link commands touching both scopes lock in a documented order (group first, then workspace IDs ascending), revalidate memberships and use one local transaction. Do not acquire the reverse order in another service.
+All current participant net positions must sum exactly to zero.
+
+Reciprocal obligations therefore net automatically in current presentation while original bills remain unchanged. If A owes B PHP 1,000 from one bill and B owes A PHP 800 from another, their current relationship is A owing B PHP 200.
+
+Pairwise relationship views and whole-group settlement suggestions are derived projections, not mutable balance stores.
+
+Reported/proposed/disputed settlements contribute zero to confirmed group balances. The read model may additionally expose pending outgoing/incoming settlement amounts and a clearly labeled projected balance if those pending settlements are confirmed.
+
+Confirmed settlements contain payer, recipient, date, amount, allocations, confirmer, version and state. Support full settlement, custom partial amounts, selected-expense allocations, partial settlement of one bill, and allocation of one settlement across multiple eligible bills.
+
+Overpayment is explicit and becomes an advance/reverse position rather than being truncated.
+
+Settlement suggestions may match group debtors to creditors to reduce payment count while preserving participant net positions. Suggestions never post money or alter balances. Do not claim mathematically minimal transfer count unless the algorithm guarantees it. Redirected settlement through indirect obligations requires explicit agreement/confirmation from the affected participants.
+
+Bill disputes keep the obligation visible with disputed meaning and suppress automatic settlement suggestions for that disputed amount.
+
+Deterministic centavo allocation handles PHP 100 / 3 as PHP 33.34, PHP 33.33 and PHP 33.33 with the extra recipient identified.
+
+Serialize writes by group row/version, separate from private workspace locks. Explicit private-link commands touching both scopes lock in the documented order: group first, then workspace IDs ascending. Revalidate membership after acquiring locks. Do not acquire the reverse order elsewhere.
 
 ### 16.3 Optional per-user private posting
 
@@ -778,15 +829,43 @@ Actual cash sent before recipient confirmation can debit settlement-clearing/cre
 
 Link an existing private purchase through an explicit conversion: reverse/reclassify the other participants' expense shares into receivable without another cash movement. Existing private transfers/payments are linked and reclassified, never reposted. A private action cannot be linked twice for the same amount/purpose. Group payable/receivable subaccounts cannot also be created as lender debts for the same obligation.
 
-### 16.4 Corrections, overpayments and future simplification
+The user-entry experience should avoid duplicate representation of one real-world purchase. If the current user records an expense and marks it as shared, the application may create the linked private financial evidence and group bill through one reviewed workflow. Likewise, a card-funded shared purchase may create card liability, the user's own spending share and group receivable without duplicate spending or duplicate card liability.
 
-Bill edits retain versions and notify affected registered members. A group correction changes group balances atomically but never silently rewrites another user's private ledger. Their previously posted version becomes visibly out of sync and offers a prefilled corrective posting for approval. Reports show pending differences. A confirmed settlement reversal follows the same rule; group reversal does not pretend a real cash transfer was returned.
+For a multi-payer bill, each registered payer controls only their own private financial adoption. The group records exact contribution amounts but does not expose how another participant funded that contribution. One participant may privately use cash while another uses a credit card without exposing those account/card details to the group.
 
-Refunds reverse relevant participant shares. A fully settled member can become owed a refund after correction; retain prior payments. Overpayments require a preview and create a reverse balance or advance rather than truncating at zero. A payer's transfer fee is private spending unless a distinct agreed shared fee is recorded.
+Group confirmation never grants authority to write another participant's private ledger.
 
-Nonregistered settlement confirmations identify the recording member and explicitly state that no registered recipient verified receipt. Dispute resolution retains evidence and before/after allocations. Do not use a group owner's role as an automatic adjudication override.
+### 16.4 Corrections, overpayments and settlement suggestions
 
-Later simplification suggests redirected payments within one group/currency while preserving each participant's net position and original bills. Exclude disputed obligations; require involved members' agreement. Store allocations that discharge intermediate obligations. A greedy simplifier can reduce payment count but must not claim a mathematically minimal solution without a proven algorithm.
+Bill edits retain versions and notify affected registered members. A group correction changes group balances atomically but never silently rewrites another user's private ledger. Their previously adopted private version becomes visibly out of sync and offers a reviewed corrective path. Reports disclose pending differences.
+
+A confirmed settlement reversal follows the same rule: reversing group settlement evidence does not pretend that a real-world cash transfer was physically returned.
+
+Refunds reverse the relevant payer/share effects. A fully settled participant can become owed money after a refund or correction; retain prior payments rather than erasing them.
+
+Overpayments require a preview and create a reverse balance or advance rather than truncating at zero. A payer's transfer fee remains private spending unless a distinct agreed shared fee is recorded.
+
+Nonregistered settlement confirmations identify the recording member and explicitly state that no authenticated recipient verified receipt. Dispute resolution retains evidence and before/after allocations. A group owner's role is not an automatic adjudication override.
+
+V2 includes settlement suggestions derived from current confirmed participant net positions. A deterministic simplifier may match debtors and creditors to suggest fewer transfers while preserving every participant's net position.
+
+Suggestions:
+
+never rewrite original bills;
+
+never count as payments;
+
+never affect confirmed balances;
+
+exclude disputed amounts;
+
+remain within one group/currency;
+
+preserve explainable allocations when applied;
+
+do not claim mathematically minimal transfers unless proven.
+
+Direct reciprocal netting is inherent in current balance derivation and requires no destructive rewriting. Redirected discharge through participants without a direct obligation requires explicit agreement/confirmation from the affected participants before the resulting settlement is applied.
 
 ## 17. Security, privacy, audit, and lifecycle
 

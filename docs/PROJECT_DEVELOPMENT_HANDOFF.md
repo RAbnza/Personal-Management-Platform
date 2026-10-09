@@ -10,7 +10,7 @@
 
 **Current verified implementation `main` HEAD:** `26ece41a05b40784032a917794be455001917c2d` — `fix(ci): generate route types before clean-checkout validation`
 
-**HEAD continuity:** This document follows that implementation commit in a handoff-only commit. Run `git rev-parse main` for the branch tip; the implementation hash above is the exact code state covered by the evidence below. Local V1 acceptance and hardening are verified. Production acceptance remains open; this is not a final V1 release or the approved starting point for V2.
+**HEAD continuity:** Run `git rev-parse main` for the current branch tip. V1 functional development, local acceptance, hosted CI, migration verification, browser acceptance and local operational hardening are complete for the documented V1 scope. Infrastructure-dependent production release acceptance is intentionally deferred until after V2 and V3 because the application will not be publicly released before then. V2 development is now authorized from the verified V1 baseline. See `docs/V2_DEVELOPMENT_HANDOFF.md` for the current phase boundary and sequencing decision. Production-readiness requirements remain mandatory before public release.
 
 ---
 
@@ -811,11 +811,29 @@ The coherent V1 product surfaces and local acceptance are complete within docume
 
 ## 7. Immediate next step
 
-### Next/final milestone: V1-C5 — Production Readiness and Final V1 Acceptance
+### Next phase: V2 — Financial Maturity
 
-Continue from the C5 implementation hash at the top, verify current `main`/the following handoff-only commit and inspect section 5.17 plus the acceptance matrix and operations/ADR 0004/lifecycle documentation. C4 and all eighteen coherent scenarios have been verified locally. Preserve the reviewed roles, immutable financial history, source/reminder independence, shared reports, exact exports and cross-user authorization.
+V1 functional scope and local acceptance are complete.
 
-Complete only the remaining C5 production gates on the actual approved infrastructure: deployed migration/role/configuration checks, verified Resend sender and recovery/revocation, healthy monitored worker/required maintenance, independent private encrypted backups/deletion register and enforced retention, hosted PITR/restore/reapplication, support contact and measured paid-plan capacity/promotion. Keep lifecycle automation disabled until independent checkpoint readback works. Repeat affected local gates only when new changes require it. Do not rebuild released workflows, begin external scheduled user notifications, V2/V3 or broad redesign. Final V1 release and a V2 starting-point hash require all production gates to pass first.
+The remaining infrastructure-dependent production gates are intentionally
+deferred until after V2 and V3 because the application will not be publicly
+released before then. This deferral changes development sequencing only; it
+does not remove or weaken any production-readiness requirement.
+
+Continue from the verified V1 repository state and
+`docs/V2_DEVELOPMENT_HANDOFF.md`.
+
+The first V2 assignment is:
+
+**V2-A — Credit Cards and Statements**
+
+Before implementation, inspect the relevant credit-card sections of the
+authoritative blueprint, system architecture and database architecture together
+with the current Finance implementation. Break V2-A into small verified
+milestones rather than implementing the full card system in one change.
+
+Do not begin V3 trackers, broad redesign or the family shared-expense companion
+while establishing V2-A unless separately assigned.
 
 ---
 
@@ -1116,6 +1134,13 @@ Do not leave this as UI-only warning behavior if the authoritative architecture 
 
 ## 8.5 V1-D — Production readiness
 
+> **Sequencing update — October 9, 2026:** The requirements in this section
+> remain the mandatory production launch gate, but their infrastructure-dependent
+> execution is intentionally deferred until after V2 and V3. They are not a
+> blocker to continued V2/V3 functional development. Normal security, financial,
+> migration, regression, browser and accessibility verification continues during
+> every milestone.
+
 After coherent V1 workflows are complete, harden them before declaring V1 done.
 
 Required categories include:
@@ -1201,6 +1226,14 @@ Update:
 
 ## 8.6 V1 completion gate
 
+The eighteen coherent-V1 functional acceptance scenarios have now been verified
+locally and through the applicable automated/browser evidence. For continued
+development, V1 is considered **functionally complete and locally accepted**.
+
+This does not mean the application is production-released. Hosted production
+infrastructure acceptance is intentionally deferred to the final release phase
+after V3.
+
 Before marking V1 complete, validate all coherent-V1 acceptance scenarios from `PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`, including:
 
 1. transfer with fee;
@@ -1228,9 +1261,18 @@ Update this handoff with the final V1 state before starting the V2 chat.
 
 # 9. V2 plan
 
-A V2-specific chat should begin only after verifying the repository's current V1 state.
+V2 may begin from the verified, functionally complete V1 baseline.
 
-V2 consists of the documented financial-maturity release plus the required shared-expense companion release and other features explicitly assigned to this stage by the authoritative docs.
+Infrastructure-dependent production release acceptance is intentionally
+deferred until after V3 because the application will not be publicly released
+before then. That deferral must not be used to weaken per-milestone engineering
+verification.
+
+V2 consists of the documented financial-maturity release plus the required
+shared-expense companion release and other features explicitly assigned to this
+stage by the authoritative docs.
+
+Read `docs/V2_DEVELOPMENT_HANDOFF.md` before starting V2 implementation.
 
 Do not implement V3 trackers during V2.
 
@@ -1238,43 +1280,29 @@ Do not implement V3 trackers during V2.
 
 ## 9.1 V2-A — Credit cards and statements
 
-Implement the documented card model rather than treating a card as a cash account.
+Implement the documented card-liability and statement model while integrating card-funded purchases into the existing expense-entry experience.
 
-Core concepts include:
+Detailed V2 requirements are maintained in:
 
-- `credit_card`;
-- dedicated card liability ledger;
-- `card_activity`;
-- transaction date versus posting date;
-- verified statement snapshots;
-- versioned statement corrections;
-- statement entries;
-- statement allocations;
-- overpayment/card credit;
-- card fees and interest;
-- refunds;
-- card installment plans.
+`docs/v2/CREDIT_CARDS_AND_STATEMENTS.md`
 
-Rules:
+Core principles:
 
-- no independently editable card balance;
-- posted card activity drives recognized liability;
-- statement is provider evidence, not a second posting source;
-- remaining statement due derives from the statement plus effective allocations;
-- credit limit is not cash;
-- pending authorization is not posted activity;
-- unknown provider lines require explicit reconciliation;
-- no invented minimum-payment/interest formula.
+- a credit card is a liability, not a cash account;
+- a card purchase is still entered as a purchase/expense;
+- selecting a card changes the funding recipe rather than creating a duplicate purchase workflow;
+- posted card purchases create spending and liability without cash movement;
+- card payments reduce cash and liability without repeating spending;
+- statements are provider evidence rather than a second posting source;
+- statement balances remain fixed evidence while remaining due derives from allocations;
+- fees and interest are separate recognized expenses;
+- refunds offset spending/liability or create card credit;
+- overpayment is card credit, not liquid cash;
+- installment plans do not recognize the same purchase repeatedly;
+- provider formulas are not guessed;
+- card-funded shared expenses must not duplicate the purchase or expose private card information.
 
-Required V2 card acceptance includes:
-
-- purchase;
-- statement closure;
-- partial payment;
-- refund;
-- fee;
-- overpayment;
-- installment behavior.
+Required card acceptance includes purchase, statement closure, partial payment, refund, fee, recognized interest, overpayment/card credit, installment behavior, reconciliation, corrections, ownership isolation, retry/idempotency and report consistency.
 
 ---
 
@@ -1411,54 +1439,106 @@ Report CSV export and portable workspace backup/export are different products.
 
 ---
 
-# 10. V2 companion — Family shared expenses
+# 10. V2-I — Shared Expenses and Settlements
 
-Shared expenses are required by the completed product roadmap, but use a **separate group permission boundary** from private workspaces.
+Shared Expenses and Settlements is a required V2 capability inspired by Splitwise/Settle Up-style workflows.
 
-Implement after the private V2 financial model is stable.
+It is not family-only.
+
+Supported group contexts include family, siblings, friends, couples, roommates, trips, temporary groups and similar shared-spending situations.
+
+Detailed requirements are maintained in:
+
+`docs/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
+
+Implement after the private V2 financial model is sufficiently stable.
 
 Core scope includes:
 
 - expense groups;
 - registered/manual/deleted participants;
-- invitations;
-- accepted membership;
+- invitations and accepted membership;
 - owner/member roles;
-- one payer initially;
-- equal and exact/custom splits;
-- group bills;
-- participant shares;
-- payer advances/receivables;
-- group balances;
-- partial settlements;
-- settlement confirmation/history;
-- disputes/reversals where documented;
+- one or multiple payers per shared expense;
+- exact payer contributions;
+- equal and exact/custom participant shares;
+- group bills and immutable corrections;
+- refunds;
+- continuously derived participant net positions;
+- reciprocal netting across effective expenses;
+- pairwise explanation views;
+- whole-group settlement suggestions;
+- full settlements;
+- arbitrary partial settlements;
+- settlement of selected expenses;
+- partial settlement of an individual expense;
+- one settlement allocated across multiple expenses;
+- explicit overpayment/advance handling;
+- pending recipient confirmation;
+- `Needs my confirmation` and `Waiting for others` views;
+- confirmed/disputed/reversed settlement history;
+- pending/projected balance presentation;
 - explicit private-ledger links;
-- correction behavior;
-- group reports.
+- integration with ordinary Add Expense;
+- credit-card-funded shared purchases;
+- group reporting;
+- Dashboard attention where applicable.
 
 Security rules:
 
 - membership grants access only to group-owned records;
 - a group owner cannot access another participant's private workspace;
-- private salary/account/debt/application records remain private;
+- private salary/account/card/debt/application records remain private;
+- private account/card funding choices remain invisible to other group members;
 - invitations must not become a user directory;
-- leaving/deleting identity must preserve allowed shared-history evidence under the lifecycle policy.
+- manual participants cannot be silently matched to real users;
+- leaving/deleting identity preserves allowed historical evidence.
 
-Accounting rule:
+Accounting rules:
 
 **Do not count one real-world expense twice in personal and group reporting.**
 
-Required family shared-expense acceptance includes:
+**For every finalized shared expense, payer contributions and participant shares must independently sum exactly to the bill total.**
 
-1. two users retain private data isolation while sharing a group;
-2. the documented PHP 1,200 dinner example balances correctly;
-3. pending/partial/confirmed/disputed/reversed/overpaid settlements remain explainable;
-4. manual participants are not silently merged with registered users;
-5. rounding/refunds/corrections/leaving preserve history and zero-sum group balances;
-6. later simplification, if released, cannot apply without agreement.
+**Current group positions derive across all effective bills, refunds and confirmed settlements rather than treating each expense as an isolated debt.**
 
-Update this handoff with the actual V2 completion state before starting the V3 chat.
+**Confirmed group participant positions must sum to zero.**
+
+**Pending/disputed settlements do not reduce confirmed balances.**
+
+**Settlement suggestions do not change balances until actual settlements are recorded and confirmed.**
+
+Required acceptance includes:
+
+1. single-payer equal split;
+2. multiple payers on one bill;
+3. exact/custom participant split;
+4. subset participation;
+5. reciprocal netting across multiple expenses;
+6. zero-sum whole-group positions;
+7. full settlement;
+8. arbitrary partial settlement;
+9. selected-expense settlement;
+10. partial payment of a selected expense;
+11. one settlement allocated across several expenses;
+12. pending recipient confirmation;
+13. sender `Waiting for others` visibility;
+14. recipient `Needs my confirmation` visibility;
+15. confirmed settlement balance update;
+16. dispute/reversal behavior;
+17. overpayment/advance;
+18. manual participant behavior;
+19. refund after settlement;
+20. bill correction/history;
+21. explainable settlement suggestions;
+22. private ledger adoption without duplicate cash/spending;
+23. card-funded shared purchase without duplicate card liability/spending;
+24. strict group/private isolation;
+25. exact rounding;
+26. idempotency/concurrency;
+27. responsive/accessibility acceptance.
+
+Update this handoff with the actual V2 completion state before starting V3.
 
 ---
 
@@ -1743,9 +1823,15 @@ As of this handoff:
 - In-App Due and Reminder Controls V1-C3: complete and verified; source-safe controls, stable generations, reminder attention/history, safe retry and test/development migrations applied.
 - Settings, Help, Session, and Data Lifecycle V1-C4: complete and verified; versioned audited preferences/profile, safe instructional guidance, owner-scoped security controls, exact deletion review, grace cancellation, separate resumable purge and honest retention; test/development migrations applied.
 - V1-C5 local acceptance/hardening: eighteen scenarios, D6b browser closure, complete private catalog/API/runtime-role coverage, broad financial regressions, accessibility, actual ten-year capacity, migrations and encrypted restore verified; test/development migrations through `0075` applied. See section 5.17 for exact hosted CI status.
-- **Next/final task: complete V1-C5 production deployment and operational acceptance.**
-- Coherent V1 product surfaces: complete within documented scope and locally accepted. Production configuration/evidence remain blocked by missing infrastructure details; V1 is not yet declared complete or production-ready.
+- V1-C5 functional/local acceptance: complete and verified. All eighteen
+  coherent-V1 scenarios have automated/browser evidence; hosted CI, migration
+  verification, local capacity and encrypted restore evidence are retained.
+- V1 production release acceptance: intentionally deferred until after V2 and
+  V3 because no public release will occur before then. The requirements remain
+  mandatory and are not waived.
+- **Next phase: V2-A — Credit Cards and Statements.**
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
+- Final production-readiness/release phase: scheduled after V3. 
 
 Continue from the repository itself, not from assumptions.

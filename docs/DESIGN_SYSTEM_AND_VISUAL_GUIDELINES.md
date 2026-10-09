@@ -494,19 +494,168 @@ Keep reminders accessible from their source and a clear attention area. V1 is in
 
 ### 11.4 Cards and planning, when released
 
-Card details separate posted outstanding balance, fixed statement balance, remaining statement due, minimum due and provider-based credit estimate. Use explicit labels and dates rather than one large ambiguous “Balance.” Missing limits show no utilization value; overpayment is a card credit, not cash. Transaction date and posting date have distinct display labels in details.
+Credit-card purchases reuse the ordinary purchase/expense-entry experience. Selecting a credit card as the funding source changes the financial meaning but should not force the user into a duplicate card-purchase form.
 
-Expected salary/bills use a planned badge and are excluded from actual totals until linked/recorded. A “Record actual payment” control differs from “Skip occurrence.” Recurrence changes preview the next dates and distinguish one occurrence from future occurrences. Budget progress has a labeled period/basis and explicit overspend/remaining amount; savings reservations show funded/underfunded coverage without becoming another asset card.
+Keep the default purchase flow simple. Card-specific controls use progressive disclosure, for example:
+
+- posting status/date;
+- provider reference;
+- regular versus installment purchase;
+- provider-confirmed installment details.
+
+Do not require ordinary users to understand statement allocation or liability accounting when recording a basic purchase.
+
+The dedicated Credit Cards surface is a management view rather than a second expense tracker.
+
+Card details separately display:
+
+- posted outstanding balance;
+- fixed statement balance;
+- remaining statement due;
+- minimum due;
+- due date;
+- card credit/overpayment;
+- provider-based available-credit estimate;
+- utilization.
+
+Use explicit labels and dates rather than one large ambiguous "Balance."
+
+Missing limits show no utilization value. Overpayment is shown as card credit, not cash. Transaction date and posting date use separate labels.
+
+Card payment uses language such as **Pay card**, identifies the selected private paying account, and previews cash reduction and card-liability reduction separately. It must not visually imply another purchase expense.
+
+Installment setup remains secondary to the purchase. Clearly state that the purchase is recognized once and that future scheduled installments do not automatically create spending. Provider-confirmed charges are displayed separately.
+
+When a card-funded purchase is also shared, the user enters the purchase once. The review separates card liability, the user's own spending share and group receivable without exposing private card information to other participants.
+
+Expected salary/bills use a planned badge and remain excluded from actual totals until linked/recorded. A **Record actual payment** action remains distinct from **Skip occurrence**. Recurrence changes preview the next dates and distinguish one occurrence from future occurrences. Budget progress shows period/basis and explicit overspend/remaining amount; savings reservations show funded/underfunded coverage without becoming another asset card.
 
 ### 11.5 Shared expenses, when released
 
-Group pages clearly display the group name and **Shared with this group** context; private adoption/account selection explicitly says **Only you can see this account selection**. These are scoped surfaces under Money, not a global switch into a shared family workspace.
+Shared Expenses supports family, friends, roommates, couples, trips and other groups. Do not label the module as family-only.
 
-Use separate columns for amount paid, share consumed, confirmed settlements and remaining net position. Person selection and category selection are different controls. Equal splits expose the extra centavo recipient; exact splits show an exact remaining total. A manual participant is labeled “Not registered · recorded manually,” never represented as an authenticated member.
+Group pages clearly display the group name and **Shared with this group** context. Private adoption/account selection explicitly says **Only you can see this account selection**. These are scoped Money surfaces, not a global switch into a shared workspace.
 
-For a PHP 1,200 dinner split three ways, the payer's preview shows cash −PHP 1,200.00, own spending PHP 400.00 and receivable PHP 800.00. Other members' personal accounts and balances never appear. “Post my share”/“Link my existing record” is separate from confirming the group bill, and group corrections show “Your private record needs review” rather than silently updating it.
+Shared-expense creation uses progressive disclosure.
 
-Pending/disputed settlements keep their confirmed-balance exclusion visible. Registered recipients have an explicit “Confirm receipt” action. An overpayment previews the advance/reverse amount; a refund after settlement can create money owed back. Invitations and leaving-group dialogs explain visibility/history policy using the finalized policy, not guessed promises. Group owners do not receive visual controls suggesting access to others' private workspaces.
+Default payer UI may show:
+
+```text
+Who paid?
+Brother 1
+
++ Add another payer
+```
+
+Adding payers reveals exact contribution inputs. Show:
+
+- bill total;
+- each payer contribution;
+- total paid;
+- remaining/unallocated amount if invalid.
+
+Do not force users to choose a separate "single payer" versus "multiple payer" expense type.
+
+Payer selection and participant-share selection are separate controls.
+
+For each bill show:
+
+- who paid;
+- how much each payer contributed;
+- who participated;
+- each person's share;
+- split method;
+- exact rounding result;
+- source history.
+
+Equal splits expose the extra-centavo recipient. Exact splits show the exact remaining amount until allocations balance.
+
+A manual participant is labeled **Not registered · recorded manually**, never represented as an authenticated member.
+
+Current group summary should emphasize net positions across all effective group activity rather than presenting every expense as an isolated debt.
+
+For a participant relationship, allow an explanation such as:
+
+```text
+Dinner                 You owe PHP 1,000
+Groceries              Owed to you PHP 800
+------------------------------------------
+Current net            You owe PHP 200
+```
+
+Preserve links to both source bills.
+
+Group summary distinguishes:
+
+- amount paid;
+- shares consumed;
+- confirmed settlements;
+- current confirmed position;
+- pending outgoing settlements;
+- pending incoming settlements;
+- projected position if pending settlements confirm.
+
+Pending values must never visually masquerade as confirmed balances.
+
+Settlement entry provides clear options for:
+
+- full balance;
+- custom amount;
+- selected expenses.
+
+Selected expenses may be partially settled. One settlement can allocate across multiple selected bills.
+
+Before save, show:
+
+- settlement amount;
+- recipient;
+- source allocations;
+- remaining confirmed balance;
+- overpayment/advance if applicable.
+
+For registered recipients, a reported settlement displays **Awaiting confirmation** until the recipient accepts it. The sender must be able to see that they have already reported payment. The recipient receives an explicit **Confirm receipt** and **Dispute** action.
+
+Useful settlement filters include:
+
+- Needs my confirmation
+- Waiting for others
+- Confirmed
+- Disputed
+- Reversed/Cancelled
+- All
+
+Pending settlement attention may also appear on the Dashboard.
+
+Settlement suggestions are presented separately from actual payments. Use wording such as **Suggested way to settle** rather than claiming a mathematically minimal solution. Suggestions do not alter balances until resulting settlements are recorded and confirmed.
+
+For a PHP 1,200 dinner split three ways, a single payer's private preview can show cash −PHP 1,200, own spending PHP 400 and group receivable PHP 800.
+
+For a PHP 4,000 dinner with multiple payers, the group review can show:
+
+```text
+Paid:
+You                  PHP 1,500
+Brother 1            PHP 2,500
+
+Shares:
+You                  PHP 1,000
+Brother 1            PHP 1,000
+Brother 2            PHP 1,000
+Brother 3            PHP 1,000
+```
+
+and derive each participant's resulting position.
+
+Other participants' private account/card choices never appear.
+
+**Post my share**, **Link my existing record**, and private funding/account selection are separate from confirming the group bill.
+
+A card-funded shared purchase remains one purchase-entry experience while clearly separating private card effects from group effects.
+
+Group corrections display **Your private record needs review** rather than silently updating another user's financial records.
+
+An overpayment previews the reverse balance/advance. A refund after settlement may create money owed back. Invitations and leaving-group dialogs explain visibility/history policy using finalized rules. Group owners never receive controls suggesting access to another participant's private workspace.
+
 
 ### 11.6 Trackers, imports, files and account settings
 

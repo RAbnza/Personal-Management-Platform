@@ -623,14 +623,28 @@ Group membership is 1:N historical intervals for a registered participant, with 
 
 | Table / bundle | Columns beyond bundle | Constraints, indexes and lifecycle |
 | --- | --- | --- |
-| `sharing.shared_expense` / G,M | `created_by_participant_id uuid!`; `current_revision_id uuid!`; `original_command_receipt_id uuid!` | GFK creator/receipt; deferred same-expense revision pointer; UQ receipt; one logical bill, never physically delete a confirmed historical bill. |
+| `sharing.shared_expense` / G,M | `created_by_participant_id uuid!`; `current_revision_id uuid!`; `original_command_receipt_id uuid!` | GFK creator/receipt; deferred same-expense revision pointer; UQ receipt; one logical bill, never physically delete confirmed historical evidence. |
 | `sharing.expense_revision` / G | `expense_id uuid!`; `revision_no integer!`; `previous_revision_id uuid?`; `command_receipt_id,actor_participant_id uuid!`; `description text!`; `expense_date date!`; `total_minor bigint!`; `split_method text!` in equal/exact; `category_label text?`; `notes text?`; `reason text?`; `state text!` in building/finalized/void | Same-expense previous FK and UQs `(group_id,expense_id,revision_no)`, `(group_id,expense_id,id)`; GFK actor/receipt. Positive total; previous+reason for correction; finalized immutable. Void is a new revision with no effective contributions/shares; old evidence persists. Index `(group_id,expense_date,id)`. |
-| `sharing.payer_contribution` / G | `expense_id,expense_revision_id,participant_id uuid!`; `amount_minor bigint!` | Same-expense revision FK; GFK participant; UQ `(group_id,expense_revision_id,participant_id)` and `(group_id,expense_revision_id,id)`; positive. Exactly one row in initial release; sum=revision total. Can relax one-payer trigger only with future multi-payer implementation. |
-| `sharing.participant_share` / G | `expense_id,expense_revision_id,participant_id uuid!`; `amount_minor bigint!`; `rounding_rank integer!`; `rounding_extra_minor smallint! = 0` | Same-expense revision FK; GFK participant; UQ `(group_id,expense_revision_id,participant_id)`, `(group_id,expense_revision_id,rounding_rank)`, `(group_id,expense_revision_id,id)`; amount>=0, rank>=0, extra 0/1 for equal split. Sum=total. Zero share is allowed explicitly; omitted member need not have a row. |
+| `sharing.payer_contribution` / G | `expense_id,expense_revision_id,participant_id uuid!`; `amount_minor bigint!` | Same-expense revision FK; GFK participant; UQ `(group_id,expense_revision_id,participant_id)` and `(group_id,expense_revision_id,id)`; positive. One or more rows are allowed. Deferred aggregate validation requires exact sum = current revision total. |
+| `sharing.participant_share` / G | `expense_id,expense_revision_id,participant_id uuid!`; `amount_minor bigint!`; `rounding_rank integer!`; `rounding_extra_minor smallint! = 0` | Same-expense revision FK; GFK participant; UQ `(group_id,expense_revision_id,participant_id)`, `(group_id,expense_revision_id,rounding_rank)`, `(group_id,expense_revision_id,id)`; amount>=0, rank>=0, extra 0/1 for equal split. Deferred aggregate validation requires exact sum = current revision total. Zero share is allowed explicitly; omitted member need not have a row. |
 
-Only current nonvoid bill revisions contribute to present group balances. Historic reports with an explicit saved revision use that revision. Do not sum all full replacement revisions or they will duplicate bills. This differs deliberately from the journal, where originals and signed reversals must all be summed.
+Only current nonvoid bill revisions contribute to present group balances. Historic reports with an explicit saved revision use that revision. Do not sum all replacement revisions or bills will be duplicated.
 
-One payer can pay for a subset without consuming a share. Equal split uses quotient/remainder with persisted rank; exact split ignores rounding_extra and requires user-entered sum equality. Shared bill fees are included explicitly in shares/total, with explanation; the payer's private settlement-transfer fee remains separate unless a new agreed bill/share covers it.
+Multiple payer contributions are part of the initial V2 shared-expense contract. Do not add a trigger restricting a finalized revision to exactly one payer.
+
+The contribution axis and share axis are independent:
+
+```text
+sum(current payer contributions) = expense total
+sum(current participant shares) = expense total
+```
+
+A participant may pay without consuming a share, consume a share without paying, or contribute an amount different from their share.
+
+Equal split uses quotient/remainder with persisted rank. Exact split ignores `rounding_extra_minor` and requires exact user-entered sum equality.
+
+Shared bill fees included in the group bill participate in the agreed bill/share totals. A payer's private settlement-transfer fee remains separate unless the group records a distinct agreed shared fee.
+
 
 ### 13.3 Group refunds
 
@@ -655,9 +669,19 @@ Group refunds affect group balances as negative contributions for the refunded p
 | `audit.group_revision` / G | `actor_participant_id uuid?`; `actor_kind text!` in participant/system; `command_receipt_id uuid!`; `subject_kind text!`; `subject_id uuid!`; `subject_version integer!`; `operation text!`; `before_json,after_json jsonb?`; `reason text?` | GFK actor/group receipt; unique command+subject+version+operation; subject timeline index. Immutable, group-authorized. No private account identifiers or financial balances in payload. |
 | `audit.group_activity` / G | `revision_id uuid?`; `activity_kind text!`; `subject_kind text!`; `subject_id uuid!`; `summary_json jsonb!`; `occurred_at timestamptz!` | GFK revision; dedupe revision/kind; group/time index. Presentation only; honors historical visibility and redaction policy. |
 
-The first settlement release permits direct debtor→creditor bill allocation and explicit overpayment advances. Redirected discharges require the later simplification agreement model; do not silently allow arbitrary pair allocations to act as simplification. In all cases, the settlement's payer/recipient net effects are the balance source; allocation rows explain which obligations were discharged and do not create another transfer total.
+Settlement amounts may discharge the full eligible balance, a custom partial amount, one selected bill, part of one bill, or multiple selected bills. `settlement_allocation` is the explanatory source for which obligations are discharged.
 
-Leaving snapshots full entitlements for previously visible records. Later revisions of those same bills remain visible, while unrelated new bills do not. A future settlement mixing old and unrelated new obligations must not expose its full payload to a former member. Use an allocation-only historical-resolution projection that returns only entitled allocation amounts and safe attribution. Base-table RLS allows former members only full entitlements; a narrowly audited projection/function supplies allocation-only data. This is a concrete implementation consequence of the architecture's historical-access recommendation, which must still be approved before G2.
+The sum of effective settlement allocations must equal the settlement amount. Explicit `advance` allocation represents an accepted overpayment/reverse position; excess must never be silently truncated.
+
+A direct payment to one participant cannot discharge another participant's obligation unless it follows the explicit redirected-settlement/simplification agreement model.
+
+For registered participants, a newly reported payment remains proposed/pending until recipient confirmation. Proposed/disputed/cancelled settlements contribute zero to confirmed balances. Confirmation transitions the settlement into the current balance source; it must not create another private cash movement if the sender/recipient already recorded that movement through their private clearing/link path.
+
+Read models should expose pending outgoing and incoming settlement amounts separately from confirmed balances and may derive a clearly labeled projected balance after pending confirmation. Do not persist that projection as authoritative financial state.
+
+Settlement suggestions are derived from current confirmed participant net positions and are not stored as completed settlements merely because they were displayed. Redirected suggestions preserve original bills and participant net positions and require the applicable agreement before becoming real settlement evidence.
+
+Leaving members retain only their authorized historical entitlements. Later revisions resolving previously visible obligations remain visible according to the approved historical-access policy; unrelated new group records remain hidden. Allocation-only historical projections must not leak another participant's unrelated current activity.
 
 ### 13.5 Private adoption records
 
@@ -679,12 +703,42 @@ Registered members can use the group without adopting their private allocation. 
 
 ```text
 net_receivable(participant)
- = current bill contributions - current consumed shares
- - effective refund-to-payer amounts + effective refund-of-share amounts
- + confirmed settlement amounts paid - confirmed settlement amounts received
+ = current bill contributions
+ - current consumed shares
+ - effective refund-to-payer amounts
+ + effective refund-of-share amounts
+ + confirmed settlement amounts paid
+ - confirmed settlement amounts received
 ```
 
-Reversed/cancelled/proposed/disputed settlements contribute zero to the current confirmed-settlement term, while transition history preserves earlier confirmation. Current group balances sum to zero. Personal journal postings are not added to this formula. Each private ledger is separately correct for the subset its owner adopted.
+Reversed, cancelled, proposed/pending and disputed settlements contribute zero to the current confirmed-settlement term. Transition history preserves their evidence.
+
+Current participant balances always derive from the current effective bill/refund/settlement state. Do not persist pairwise "A owes B" balances as an independently mutable source of truth.
+
+Current group balances must sum exactly to zero:
+
+```text
+sum(net_receivable(all current participants)) = 0
+```
+
+Positive means the participant is owed money. Negative means the participant owes money.
+
+Because the current balance is derived across all group activity, reciprocal effects cancel automatically. For example, if one bill produces A owing B PHP 1,000 and another produces B owing A PHP 800, their current pairwise presentation may show A owing B PHP 200 while both source bills remain intact.
+
+Whole-group settlement suggestions are derived by matching current negative positions with current positive positions. A suggestion is not persisted as a payment and does not affect this formula until the resulting settlement is actually recorded and confirmed.
+
+Pending reported settlements may have a separate derived projection for presentation:
+
+```text
+projected_net_after_pending_confirmation(participant)
+ = confirmed net position
+ + eligible pending settlements paid
+ - eligible pending settlements received
+```
+
+This projection must be clearly labeled and is not authoritative while confirmation remains pending.
+
+Personal journal postings are not added directly to the group-balance formula. Each private ledger remains independently correct for the subset of group records its owner adopted.
 
 ```mermaid
 erDiagram
@@ -700,6 +754,7 @@ erDiagram
     WORKSPACE ||--o{ PRIVATE_GROUP_LINK : privately_accepts
     PRIVATE_GROUP_LINK ||--|{ PRIVATE_GROUP_LINK_REVISION : preserves
     ACTION_REVISION ||--o{ PRIVATE_GROUP_LINK_REVISION : posts
+
 ```
 
 ## 14. Trackers and template evolution (T3)
@@ -1066,7 +1121,7 @@ The established stack and ownership/journal decisions are not reopened here. The
 | 8. Onboarding skip/resume/replay | onboarding_step plus normal idempotent setup commands | Guide replay creates no money or application rows. |
 | 9. Backdated correction | same-action revision chain and original/reversal/replacement sums | Historical balances/reports change together; prior reconciliation can become stale. |
 | 10. User isolation | workspace/group scope, composite FKs, RLS and service actor checks | Cross-user account/application/attachment/export references fail. |
-| 11. Category split | categorized purchase expense postings and purchase total validator | 700+300 expense portions; one 1,000 funding deduction. |
+|    Category split | categorized purchase expense postings and purchase total validator | 700+300 expense portions; one 1,000 funding deduction. |
 | 12. Net disbursement | borrowing receipt + debt link + fee expense | Cash 9,800, liability 10,000, fee 200, no income. |
 | 13. Schedule revision | stable obligations, immutable versions and complete allocation maps | Terms and payments retained; no duplicated cash or due satisfaction. |
 | 14. Recovery and revocation | Better Auth credential/session/verification records and assurance | Reset invalidates sessions; revoked session cannot read domain data. |
