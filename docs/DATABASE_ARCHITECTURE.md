@@ -886,7 +886,7 @@ Enforcement labels: **DB** = declarative constraint; **TR** = trigger/finalizati
 | DEBT-05 | Unknown breakdown remains unknown; clearing is not invented principal | SV typed component policy + report T; classification reuses cash without reposting. |
 | DEBT-06 | Settled lifecycle requires zero recognized residual and resolved clearing/allocations | TR closure + SV confirmation; mismatches reject, no forced zero. |
 | DEBT-07 | Avoided future interest has no recognized-expense reversal | CK effect_posting=NULL for avoided component + TR/T. |
-| GROUP-01 | Bill contributions and shares each equal bill total, in exact minor units | TR under group lock; one payer initially and centavo rounding tests. |
+| GROUP-01 | Bill contributions and shares each equal bill total, in exact minor units | TR under group lock; one-or-many payer contribution totals, share totals, and centavo rounding tests. |
 | GROUP-02 | Sum of all group net positions equals zero | Contribution/refund/settlement TRs + independent property tests. |
 | GROUP-03 | Pending/disputed settlements do not reduce confirmed balance | State transition rules + query T; actual private cash may remain in clearing. |
 | GROUP-04 | Registered recipient confirmation is required; manual evidence cannot impersonate them | SV actor checks + immutable transition evidence; owner override rejected. |
