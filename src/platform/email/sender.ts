@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { z } from "zod";
 
-import { getServerEnvironment } from "@/platform/env/server";
+import { getEmailEnvironment } from "@/platform/env/server";
 
 const EMAIL_DELIVERY_TIMEOUT_MS = 10_000;
 
@@ -17,6 +17,14 @@ const emailMessageSchema = z.object({
 });
 
 export type EmailMessage = z.infer<typeof emailMessageSchema>;
+export class EmailProviderError extends Error {
+  constructor(
+    public readonly outcome: "rejected" | "uncertain",
+    message: string,
+  ) {
+    super(message);
+  }
+}
 
 let resendClient: Resend | undefined;
 let resendClientApiKey: string | undefined;
@@ -31,7 +39,7 @@ function getResendClient(apiKey: string) {
 }
 
 async function sendWithMailpit(message: EmailMessage) {
-  const environment = getServerEnvironment();
+  const environment = getEmailEnvironment();
 
   if (!environment.MAILPIT_API_URL) {
     throw new Error("Mailpit email delivery is not configured.");
@@ -68,18 +76,26 @@ async function sendWithMailpit(message: EmailMessage) {
       signal: AbortSignal.timeout(EMAIL_DELIVERY_TIMEOUT_MS),
     });
   } catch {
-    throw new Error("Mailpit could not accept the email message.");
+    throw new EmailProviderError(
+      "uncertain",
+      "Mailpit could not confirm email acceptance.",
+    );
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new EmailProviderError(
+      "rejected",
       `Mailpit rejected the email message with HTTP ${response.status}.`,
     );
   }
+  const receipt = await response.json().catch(() => ({}));
+  return {
+    providerMessageId: typeof receipt.ID === "string" ? receipt.ID : null,
+  };
 }
 
-async function sendWithResend(message: EmailMessage) {
-  const environment = getServerEnvironment();
+async function sendWithResend(message: EmailMessage, idempotencyKey?: string) {
+  const environment = getEmailEnvironment();
 
   if (!environment.RESEND_API_KEY) {
     throw new Error("Resend email delivery is not configured.");
@@ -87,7 +103,7 @@ async function sendWithResend(message: EmailMessage) {
 
   const client = getResendClient(environment.RESEND_API_KEY);
 
-  const { error } = await client.emails.send(
+  const { error, data } = await client.emails.send(
     {
       from: `${environment.EMAIL_FROM_NAME} <${environment.EMAIL_FROM_ADDRESS}>`,
       to: [message.to],
@@ -101,12 +117,17 @@ async function sendWithResend(message: EmailMessage) {
     },
     {
       signal: AbortSignal.timeout(EMAIL_DELIVERY_TIMEOUT_MS),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
     },
   );
 
   if (error) {
-    throw new Error("Resend rejected the email message.");
+    throw new EmailProviderError(
+      error.name === "application_error" ? "uncertain" : "rejected",
+      "Resend could not confirm email acceptance.",
+    );
   }
+  return { providerMessageId: data?.id ?? null };
 }
 
 /**
@@ -117,16 +138,20 @@ async function sendWithResend(message: EmailMessage) {
  * leak message content into ordinary logs or error reporting.
  */
 export async function sendEmail(input: EmailMessage): Promise<void> {
+  await sendEmailWithReceipt(input);
+}
+export async function sendEmailWithReceipt(
+  input: EmailMessage,
+  idempotencyKey?: string,
+): Promise<{ providerMessageId: string | null }> {
   const message = emailMessageSchema.parse(input);
-  const environment = getServerEnvironment();
+  const environment = getEmailEnvironment();
 
   switch (environment.EMAIL_PROVIDER) {
     case "mailpit":
-      await sendWithMailpit(message);
-      return;
+      return sendWithMailpit(message);
 
     case "resend":
-      await sendWithResend(message);
-      return;
+      return sendWithResend(message, idempotencyKey);
   }
 }

@@ -31,7 +31,10 @@ import { GET } from "@/app/api/v1/financial-actions/[actionId]/route";
 import { POST } from "@/app/api/v1/financial-actions/[actionId]/corrections/route";
 import { POST as REVERSE } from "@/app/api/v1/financial-actions/[actionId]/reversals/route";
 import { POST as REFUND } from "@/app/api/v1/refunds/route";
-import { FinancialCorrectionStaleError } from "@/modules/finance/domain/financial-correction";
+import {
+  FinancialCorrectionStaleError,
+  FinancialActionUnavailableError,
+} from "@/modules/finance/domain/financial-correction";
 import { FinancialCommandConflictError } from "@/modules/finance/domain/financial-command";
 import { paymentIds as ids } from "./helpers/debt-payment";
 const context = { params: Promise.resolve({ actionId: ids.payment }) };
@@ -75,6 +78,16 @@ beforeEach(() => {
   mocks.refund.mockResolvedValue({ actionId: ids.payment });
 });
 describe("financial correction API", () => {
+  it("returns the same unavailable response for missing and foreign financial action IDs", async () => {
+    mocks.detail.mockRejectedValue(new FinancialActionUnavailableError());
+    const response = await GET(
+      new Request("https://app.example.test/api/v1/financial-actions/a"),
+      context,
+    );
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(await response.text()).not.toMatch(/postgresql:|stack|SELECT /);
+  });
   it("binds actor and path while preserving durable acknowledgement and reason", async () => {
     const r = await POST(request(body()), context);
     expect(r.status).toBe(201);

@@ -335,12 +335,7 @@ async function main() {
   console.log("Runtime roles: CONNECT only");
 }
 
-main().catch((error: unknown) => {
-  const message =
-    error instanceof Error
-      ? error.message
-      : "Unknown test database provisioning error.";
-
-  console.error(message);
+main().catch(() => {
+  console.error("Test database provisioning failed.");
   process.exitCode = 1;
 });

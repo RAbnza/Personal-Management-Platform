@@ -1,7 +1,20 @@
 # ADR 0001: Use Better Auth session freshness instead of a custom session-assurance table
 
-- Status: Accepted
+- Status: Superseded for consequential V1 actions by V1-C4
 - Date: 2026-10-06
+
+## V1-C4 update (2026-10-09)
+
+The historical decision below describes the initial authentication slice. C4
+implemented `auth.session_assurance` and explicit password verification bound to
+the current session for deletion, cancellation and session revocation. Ordinary
+session creation or renewal does not substitute for that explicit proof. The
+server still enforces the absolute session lifetime and database-backed
+validation. See `src/platform/auth/reauthentication.ts`,
+`src/platform/auth/session-boundary.ts` and the C4 handoff.
+
+The following text is retained as the original decision, not current permission
+to omit the C4 assurance model.
 
 ## Context
 

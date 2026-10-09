@@ -46,3 +46,9 @@ This is milestone evidence, not a V1 completion claim. Borrowing, payments,
 schedule revisions, settlement, corrections/reconciliation, connected reports,
 lifecycle controls, and operational release gates still require implementation
 and verification. No V2 work has started.
+
+## C5 browser gate closure — 9 October 2026
+
+The previously open D6b browser gate is now verified by the real production-build browser workflow in `tests/browser/financial-acceptance.spec.ts`. The tests import recognized liability PHP 6,400 with explicitly unclassified components, retain the paid-at-cutoff installment, show overdue and future installments as text, and verify exact remaining amounts and Agenda exclusion of the historical satisfied due. The import review receives focus and shows zero cash/income/spending. Automated accessibility checks and viewport-width assertions pass at 320px. A second case retains missing schedule coverage as unknown and deliberately loses the committed response, then proves identical-command replay creates one import.
+
+The passing cases were rerun in C5 combined acceptance on isolated port 3100 against synthetic owners in `personal_management_test`. The 320px [review capture](assets/v1-c5/d6b-review-320.png) and [detail capture](assets/v1-c5/d6b-detail-320.png) were visually inspected and retained. Both preserve exact amounts, coverage wording, readable stacked controls and non-color status labels. Global C5 acceptance and production deployment remain separately tracked in `V1_C5_ACCEPTANCE.md`; this closes the D6b gate without declaring V1 production-ready.

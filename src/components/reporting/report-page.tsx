@@ -217,7 +217,12 @@ export async function ReportPage({
               </p>
             )}
             {detail.items.length ? (
-              <div className="mt-3 overflow-x-auto">
+              <div
+                className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                tabIndex={0}
+                role="region"
+                aria-label="Financial report supporting records table"
+              >
                 <table className="w-full text-left text-sm">
                   <caption className="sr-only">
                     Exact financial posting contributions

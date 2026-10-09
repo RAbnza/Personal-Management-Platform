@@ -6,6 +6,9 @@
     "node": "24.21.0"
   },
   "scripts": {
+    "jobs:migrate": "tsx scripts/jobs/migrate.ts",
+    "jobs:migrate:test": "tsx scripts/jobs/migrate.ts --test",
+    "worker": "tsx scripts/jobs/worker.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -33,9 +36,14 @@
     "lifecycle:purge": "tsx scripts/lifecycle/purge.ts",
     "lifecycle:register": "tsx scripts/lifecycle/export-deletion-register.ts",
     "auth:housekeeping": "tsx scripts/lifecycle/auth-housekeeping.ts",
-    "auth:schema:generate": "auth generate --config ./src/platform/auth/schema-generation.ts --output ./src/platform/db/schema/auth.generated.ts --yes"
+    "auth:schema:generate": "auth generate --config ./src/platform/auth/schema-generation.ts --output ./src/platform/db/schema/auth.generated.ts --yes",
+    "backup:daily": "tsx scripts/backup/daily.ts",
+    "verify:restore": "tsx scripts/testing/restore-drill.ts",
+    "verify:containers": "tsx scripts/testing/container-smoke.ts",
+    "verify:performance": "tsx scripts/testing/performance.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1140.0",
     "@better-auth/drizzle-adapter": "1.7.7",
     "@date-fns/tz": "1.5.0",
     "@hookform/resolvers": "5.9.1",
@@ -49,15 +57,19 @@
     "next": "16.3.8",
     "next-themes": "0.4.6",
     "pg": "8.23.1",
+    "pg-boss": "12.36.0",
+    "pino": "10.4.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "7.89.0",
     "recharts": "3.10.1",
     "resend": "6.32.0",
     "tailwind-merge": "3.7.0",
+    "tsx": "4.23.15",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "10.4.2",
@@ -77,7 +89,6 @@
     "jsdom": "30.0.0",
     "prettier": "3.9.9",
     "tailwindcss": "^4",
-    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "4.1.11"
   },

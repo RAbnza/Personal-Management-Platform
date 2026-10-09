@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { z } from "zod";
+import { notFound } from "next/navigation";
+import { FinancialActionUnavailableError } from "@/modules/finance/domain/financial-correction";
 import { FinancialActionReviewForm } from "@/components/money/financial-action-review-form";
 import { Panel } from "@/components/ui/panel";
 import { getFinancialActionDetail } from "@/modules/finance/services/correct-financial-action";
@@ -14,8 +16,7 @@ export default async function FinancialActionPage({
 }) {
   const { user, workspace } = await debtWorkspace(),
     id = z.uuid().safeParse((await params).actionId);
-  if (!id.success)
-    return <p>Financial action unavailable in this private workspace.</p>;
+  if (!id.success) notFound();
   let detail, accounts, categories;
   try {
     [detail, accounts, categories] = await Promise.all([
@@ -35,7 +36,8 @@ export default async function FinancialActionPage({
         includeArchived: true,
       }),
     ]);
-  } catch {
+  } catch (error) {
+    if (error instanceof FinancialActionUnavailableError) notFound();
     return (
       <Panel
         title="Financial evidence unavailable"

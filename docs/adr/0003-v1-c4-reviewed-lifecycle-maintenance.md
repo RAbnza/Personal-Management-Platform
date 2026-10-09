@@ -3,6 +3,17 @@
 - Status: Accepted under the explicitly requested V1-C4 lifecycle scope
 - Date: 2026-10-09
 
+## V1-C5 update
+
+The separate worker can run bounded lifecycle maintenance only when explicitly
+enabled. Before each purge step it publishes and reads back an immutable
+minimal deletion checkpoint in independently configured S3 storage; publication
+failure blocks purge. C5 also adds an isolated encrypted PostgreSQL restore
+drill and a guarded deletion-register reapplication path. These local controls
+do not prove production storage independence, backup expiration, PITR or
+monitoring configuration. See [ADR 0004](0004-v1-c5-security-mail-and-recovery.md)
+and [operations](../V1_OPERATIONS.md).
+
 V1-C4 brings forward the documented deletion request, grace, scoped purge and
 tombstone path. `ops.deletion_request` is the authoritative durable lifecycle
 intent and checkpoint, not a replacement general job queue. The request commits

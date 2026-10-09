@@ -1,4 +1,5 @@
 import type { ImplementedModuleKey } from "@/platform/db/schema/core";
+import { z } from "zod";
 
 export const ONBOARDING_GUIDE_VERSION = 1 as const;
 
@@ -20,6 +21,14 @@ export const ONBOARDING_STEP_KEYS = [
 ] as const;
 
 export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
+
+export const setOnboardingStepStateResultSchema = z.object({
+  guideVersion: z.literal(ONBOARDING_GUIDE_VERSION),
+  stepKey: z.enum(ONBOARDING_STEP_KEYS),
+  state: z.enum(ONBOARDING_STEP_STATES),
+  completedAt: z.iso.datetime().nullable(),
+  updatedAt: z.iso.datetime(),
+});
 
 export type OnboardingStepDefinition = {
   stepKey: OnboardingStepKey;

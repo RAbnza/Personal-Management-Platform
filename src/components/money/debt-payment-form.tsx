@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useClientReady } from "@/shared/use-client-ready";
 import {
   useFieldArray,
   useForm,
@@ -254,7 +255,8 @@ export function DebtPaymentForm({
       document.removeEventListener("click", navigate, true);
     };
   }, [dirty, stage]);
-  const disabled = stage !== "editing";
+  const clientReady = useClientReady();
+  const disabled = stage !== "editing" || !clientReady;
   const selectedAccount = accounts.find(
     (a) => a.accountId === (pending?.payingAccountId ?? values.payingAccountId),
   );
@@ -931,7 +933,9 @@ export function DebtPaymentForm({
         ) : null}
         <div className="flex flex-wrap justify-end gap-3">
           {stage === "editing" ? (
-            <Button type="submit">Review payment</Button>
+            <Button type="submit" disabled={!clientReady}>
+              Review payment
+            </Button>
           ) : null}
           {stage === "reviewing" ? (
             <>

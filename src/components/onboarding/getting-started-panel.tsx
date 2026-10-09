@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { Panel } from "@/components/ui/panel";
+import { OnboardingStepControls } from "./onboarding-step-controls";
 import { cn } from "@/lib/cn";
 import type {
   OnboardingStepKey,
@@ -207,6 +208,14 @@ export function GettingStartedPanel({
                   <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
                     {content.description}
                   </p>
+                  {!showGuideLink && (
+                    <OnboardingStepControls
+                      key={`${step.stepKey}:${step.state}`}
+                      stepKey={step.stepKey}
+                      state={step.state}
+                      title={content.title}
+                    />
+                  )}
                 </div>
               </li>
             );

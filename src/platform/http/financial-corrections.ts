@@ -4,6 +4,7 @@ import {
   reverseFinancialActionBodySchema,
   resolveClearingBodySchema,
   FinancialCorrectionStaleError,
+  FinancialActionUnavailableError,
 } from "@/modules/finance/domain/financial-correction";
 import { resolvePaymentClearing } from "@/modules/finance/services/resolve-payment-clearing";
 import { FinancialCommandConflictError } from "@/modules/finance/domain/financial-command";
@@ -40,7 +41,8 @@ export function financialCorrectionProblem(error: unknown, requestId: string) {
     return createSchemaValidationProblemResponse(error, requestId);
   if (
     error instanceof FinancialAccountReferenceUnavailableError ||
-    error instanceof FinancialCategoryReferenceUnavailableError
+    error instanceof FinancialCategoryReferenceUnavailableError ||
+    error instanceof FinancialActionUnavailableError
   )
     return createApiProblemResponse({
       status: 404,

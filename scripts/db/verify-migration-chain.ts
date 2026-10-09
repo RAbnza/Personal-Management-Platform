@@ -16,7 +16,16 @@ import {
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { loadEnvFile } from "node:process";
-import { readFile } from "node:fs/promises";
+import {
+  readFile,
+  mkdtemp,
+  mkdir,
+  copyFile,
+  writeFile,
+  rm,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve, dirname } from "node:path";
 import { parseEnv } from "node:util";
 import {
   getDeletionPreview,
@@ -27,6 +36,7 @@ import {
   updateProfile,
 } from "../../src/modules/core/services/profile";
 import { purgeDeletionStep } from "../../src/platform/lifecycle/purge";
+import { migrateJobStorage } from "../jobs/migrate";
 
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -150,7 +160,98 @@ async function main() {
       migrationsTable: "__drizzle_migrations",
     };
 
+    if (process.argv.includes("--upgrade")) {
+      const priorJournal = JSON.parse(
+        await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
+      ) as { entries: Array<{ tag: string }> };
+      assert.ok(priorJournal.entries.length > 67);
+      const folder = await mkdtemp(join(tmpdir(), "pmp-c4-upgrade-"));
+      try {
+        await mkdir(join(folder, "meta"));
+        const entries = priorJournal.entries.slice(0, 67);
+        for (const entry of entries)
+          await copyFile(
+            join(config.migrationsFolder, entry.tag + ".sql"),
+            join(folder, entry.tag + ".sql"),
+          );
+        await writeFile(
+          join(folder, "meta", "_journal.json"),
+          JSON.stringify({ ...priorJournal, entries }),
+        );
+        await migrate(db, { ...config, migrationsFolder: folder });
+        assert.equal(
+          (
+            await migration.query(
+              "SELECT count(*)::int count FROM drizzle.__drizzle_migrations",
+            )
+          ).rows[0].count,
+          67,
+        );
+        process.env.DATABASE_URL = inDatabase(process.env.DATABASE_URL!);
+        process.env.AUTH_DATABASE_URL = inDatabase(
+          process.env.AUTH_DATABASE_URL!,
+        );
+        const userId = randomUUID();
+        await getAuthPool().query(
+          "INSERT INTO auth.\"user\"(id,name,email,email_verified) VALUES($1,'C4 upgrade fixture',$2,true)",
+          [userId, `${userId}@example.test`],
+        );
+        const { workspaceId } = await provisionPersonalWorkspace({
+          userId,
+          displayName: "C4 upgrade fixture",
+        });
+        const account = await openFinancialAccount({
+          userId,
+          workspaceId,
+          clientCommandId: randomUUID(),
+          name: "Preserved C4 account",
+          accountType: "checking",
+          openingCutoffDate: "2026-09-30",
+          openingBalanceMinor: "200000",
+        });
+        await (
+          await import("../../src/modules/finance/services/record-income")
+        ).recordIncome({
+          userId,
+          workspaceId,
+          clientCommandId: randomUUID(),
+          receivingAccountId: account.accountId,
+          effectiveDate: "2026-10-01",
+          amountMinor: "100",
+          incomeClass: "gift",
+          description: "Preserved C4 financial evidence",
+        });
+        await migrate(db, config);
+        const history = await getAccountHistory({
+          userId,
+          workspaceId,
+          accountId: account.accountId,
+          pageSize: 50,
+        });
+        assert.ok(
+          JSON.stringify(history).includes("Preserved C4 financial evidence"),
+        );
+        const report = await (
+          await import("../../src/modules/reporting/services/get-reports")
+        ).getFinancialReport({
+          userId,
+          workspaceId,
+          query: { period: "month", anchorDate: "2026-10-01" },
+        });
+        assert.equal(report.metrics.income, "100");
+        assert.equal(report.metrics.closing_cash, "200100");
+        console.log(
+          "C4 67-migration upgrade preserves committed account/history and exact report totals.",
+        );
+      } finally {
+        assert.equal(dirname(resolve(folder)), resolve(tmpdir()));
+        assert.ok(resolve(folder).includes("pmp-c4-upgrade-"));
+        await rm(folder, { recursive: true, force: true });
+      }
+    }
     await migrate(db, config);
+    await migrateJobStorage(inDatabase(source.toString()));
+    await migrateJobStorage(inDatabase(source.toString()));
 
     const journal = JSON.parse(
       await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),

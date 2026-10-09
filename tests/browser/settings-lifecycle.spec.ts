@@ -103,18 +103,24 @@ test("Settings retains hidden module history, restores access and replays Help o
   const { applicationId } = await created.json();
   await page.goto("/settings");
   await page.getByLabel("Display name").fill("Settings owner");
+  const profileSaved = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/v1/settings/profile") &&
+      r.request().method() === "PATCH",
+  );
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
-  await expect(
-    page.getByText("Saved. Current settings are being refreshed."),
-  ).toBeVisible();
+  expect((await profileSaved).status()).toBe(200);
   await page.reload();
   await expect(page.getByLabel("Display name")).toHaveValue("Settings owner");
   const career = page.getByRole("group", { name: "Career", exact: true });
   await career.getByLabel("Show module in normal access").uncheck();
+  const hidden = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/v1/module-preferences/career") &&
+      r.request().method() === "PATCH",
+  );
   await career.getByRole("button", { name: "Save Career preferences" }).click();
-  await expect(
-    career.getByText("Saved. Current settings are being refreshed."),
-  ).toBeVisible();
+  expect((await hidden).status()).toBe(200);
   await page.reload();
   await expect(
     career.getByLabel("Show module in normal access"),
@@ -126,10 +132,13 @@ test("Settings retains hidden module history, restores access and replays Help o
     (await page.request.get(`/api/v1/applications/${applicationId}`)).status(),
   ).toBe(200);
   await career.getByLabel("Show module in normal access").check();
+  const restored = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/v1/module-preferences/career") &&
+      r.request().method() === "PATCH",
+  );
   await career.getByRole("button", { name: "Save Career preferences" }).click();
-  await expect(
-    career.getByText("Saved. Current settings are being refreshed."),
-  ).toBeVisible();
+  expect((await restored).status()).toBe(200);
   await page.reload();
   await expect(career.getByLabel("Show module in normal access")).toBeChecked();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -307,17 +316,24 @@ test("password recovery consumes its one-time link and revokes every prior sessi
       );
     // Fetch only this unique synthetic fixture's mail. Bearer links remain in
     // test memory and never enter repository logs or public provider delivery.
-    const result = await page.request.get(
-      `${api}/api/v1/search?query=${encodeURIComponent("to:" + owner.email)}`,
-    );
-    expect(result.status()).toBe(200);
-    const messages = (await result.json()).messages;
-    const mail = messages.find(
-      (m: { Subject: string }) => m.Subject === "Reset your password",
-    );
-    expect(mail).toBeTruthy();
+    let mail: { ID: string } | undefined;
+    await expect
+      .poll(
+        async () => {
+          const result = await page.request.get(
+            `${api}/api/v1/search?query=${encodeURIComponent("to:" + owner.email)}`,
+          );
+          expect(result.status()).toBe(200);
+          mail = (await result.json()).messages.find(
+            (m: { Subject: string }) => m.Subject === "Reset your password",
+          );
+          return Boolean(mail);
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true);
     const full = await (
-      await page.request.get(`${api}/api/v1/message/${mail.ID}`)
+      await page.request.get(`${api}/api/v1/message/${mail!.ID}`)
     ).json();
     const link = full.Text.match(
       /http:\/\/localhost:3100\/auth\/reset-password#[^\s]+/,

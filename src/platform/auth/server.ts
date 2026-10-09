@@ -11,6 +11,7 @@ import {
   verification,
 } from "@/platform/db/schema/auth.generated";
 import { getServerEnvironment } from "@/platform/env/server";
+import { logOperationalEvent } from "@/platform/observability/logger";
 
 import {
   sendAuthPasswordResetEmail,
@@ -47,6 +48,10 @@ const authDatabase = drizzle({
  * generated Better Auth database fields cannot silently drift apart.
  */
 export const auth = betterAuth({
+  logger: {
+    level: "error",
+    log: () => logOperationalEvent("authentication_error"),
+  },
   plugins: [reauthenticationPlugin],
   secret: environment.BETTER_AUTH_SECRET,
   baseURL: environment.BETTER_AUTH_URL,
@@ -71,6 +76,7 @@ export const auth = betterAuth({
      */
     sendVerificationEmail: async ({ user, token }) => {
       await sendAuthVerificationEmail({
+        userId: user.id,
         to: user.email,
         token,
       });
@@ -96,6 +102,7 @@ export const auth = betterAuth({
 
     sendResetPassword: async ({ user, token }) => {
       await sendAuthPasswordResetEmail({
+        userId: user.id,
         to: user.email,
         token,
       });

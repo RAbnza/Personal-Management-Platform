@@ -119,7 +119,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
       </Panel>
       {sections.map((section) => (
         <Panel key={section.title} title={section.title}>
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            tabIndex={0}
+            role="region"
+            aria-label={`${section.title} table`}
+          >
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 {section.title} for {data.period.startDate} through{" "}
@@ -212,7 +217,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
           </>
         )}
         {data.categories.length ? (
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            tabIndex={0}
+            role="region"
+            aria-label="Spending by category table"
+          >
             <table className="w-full text-left text-sm">
               <thead>
                 <tr>
@@ -263,7 +273,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
               <summary className="min-h-11 cursor-pointer font-medium">
                 View exact daily data
               </summary>
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                tabIndex={0}
+                role="region"
+                aria-label="Daily activity table"
+              >
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr>
@@ -323,7 +338,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
             : ""}
         </p>
         {data.schedule.length ? (
-          <div className="mt-3 overflow-x-auto">
+          <div
+            className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            tabIndex={0}
+            role="region"
+            aria-label="Current scheduled payable table"
+          >
             <table className="w-full text-left text-sm">
               <thead>
                 <tr>
@@ -376,7 +396,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         title="Cash movement by meaning"
         description="Cash posting grain; inherited directions preserve correction signs. Internal legs net to zero in consolidated scope."
       >
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          tabIndex={0}
+          role="region"
+          aria-label="Cash movement by meaning table"
+        >
           <table className="w-full text-left text-sm">
             <thead>
               <tr>
@@ -428,7 +453,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         title="Liability component roll-forward"
         description="Recognized posting components only. Unclassified is retained; no principal/interest proportions are estimated."
       >
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          tabIndex={0}
+          role="region"
+          aria-label="Liability component roll-forward table"
+        >
           <table className="w-full text-left text-sm">
             <thead>
               <tr>
@@ -485,7 +515,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         title="Supporting recognized debt balances"
         description="Period-end credit-normal balances. Negative values are recognized debt credit states, separately visible here; future schedules are not counted as liability."
       >
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          tabIndex={0}
+          role="region"
+          aria-label="Supporting recognized debt balances table"
+        >
           <table className="w-full text-left text-sm">
             <thead>
               <tr>

@@ -1,7 +1,17 @@
 # ADR 0002: Defer durable job infrastructure to the S3 operations phase
 
-- Status: Accepted
+- Status: Deferral fulfilled locally by V1-C5; production operations pending
 - Date: 2026-10-06
+
+## V1-C5 update (2026-10-09)
+
+C5 introduces the pinned pg-boss namespace, separate migration/worker processes,
+encrypted security-email intents and a rollback-proven intent/job transaction
+using the public Drizzle adapter. It replaces the interim direct authentication
+sender. Better Auth's preceding user/token transaction remains library-owned;
+the callback does not claim atomicity with that hidden transaction. See
+[ADR 0004](0004-v1-c5-security-mail-and-recovery.md). Actual cloud scheduling,
+delivery, retention and staging acceptance remain deployment gates.
 
 ## Context
 

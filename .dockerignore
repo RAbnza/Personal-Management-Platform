@@ -1,0 +1,12 @@
+.git
+.next
+.next-release
+node_modules
+.env*
+test-results
+playwright-report
+coverage
+*.tsbuildinfo
+docs
+README.md
+.github

@@ -1,4 +1,7 @@
 .next/
+.next-release/
+test-results/
+playwright-report/
 node_modules/
 coverage/
 out/

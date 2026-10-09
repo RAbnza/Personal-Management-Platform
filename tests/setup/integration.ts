@@ -73,6 +73,10 @@ try {
 }
 
 const result = integrationEnvironmentSchema.safeParse(process.env);
+// Synthetic security-mail key; this setup refuses all non-test databases.
+process.env.EMAIL_PAYLOAD_KEY ??= "12".repeat(32);
+process.env.EMAIL_PAYLOAD_KEY_ID ??= "test-v1";
+process.env.PMP_DEPLOYMENT_ENV = "test";
 
 if (!result.success) {
   const details = result.error.issues

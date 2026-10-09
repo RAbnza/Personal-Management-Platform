@@ -91,12 +91,7 @@ async function main() {
   }
 }
 
-main().catch((error: unknown) => {
-  const message =
-    error instanceof Error
-      ? error.message
-      : "Unknown database connection error.";
-
-  console.error(message);
+main().catch(() => {
+  console.error("Bootstrap connection verification failed.");
   process.exitCode = 1;
 });

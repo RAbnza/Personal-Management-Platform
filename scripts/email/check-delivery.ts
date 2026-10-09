@@ -48,10 +48,7 @@ async function main() {
   console.log("Inspect the captured message in the Mailpit web UI.");
 }
 
-main().catch((error: unknown) => {
-  const message =
-    error instanceof Error ? error.message : "Unknown email delivery error.";
-
-  console.error(message);
+main().catch(() => {
+  console.error("Local email verification failed.");
   process.exitCode = 1;
 });

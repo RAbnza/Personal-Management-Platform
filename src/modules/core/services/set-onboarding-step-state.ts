@@ -4,6 +4,7 @@ import {
   ONBOARDING_GUIDE_VERSION,
   ONBOARDING_STEP_KEYS,
   ONBOARDING_STEP_STATES,
+  setOnboardingStepStateResultSchema,
 } from "@/modules/core/domain/onboarding";
 import { hashCommandPayload } from "@/modules/core/domain/command";
 import {
@@ -28,18 +29,6 @@ const setOnboardingStepStateInputSchema = z
     state: z.enum(ONBOARDING_STEP_STATES),
   })
   .strict();
-
-const setOnboardingStepStateResultSchema = z.object({
-  guideVersion: z.literal(ONBOARDING_GUIDE_VERSION),
-
-  stepKey: z.enum(ONBOARDING_STEP_KEYS),
-
-  state: z.enum(ONBOARDING_STEP_STATES),
-
-  completedAt: z.iso.datetime().nullable(),
-
-  updatedAt: z.iso.datetime(),
-});
 
 export type SetOnboardingStepStateInput = z.input<
   typeof setOnboardingStepStateInputSchema

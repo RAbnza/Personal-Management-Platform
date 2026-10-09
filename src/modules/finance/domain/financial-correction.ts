@@ -1,4 +1,10 @@
 import { z } from "zod";
+export class FinancialActionUnavailableError extends Error {
+  constructor() {
+    super("Financial action is unavailable in this workspace.");
+    this.name = "FinancialActionUnavailableError";
+  }
+}
 import { isCalendarDate } from "@/shared/calendar-date";
 import { MAX_FINANCIAL_COMPONENT_MINOR } from "@/shared/money";
 import {

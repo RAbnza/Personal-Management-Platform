@@ -12,6 +12,30 @@ export async function readDebts(
     financial_revision: string;
     items: unknown;
   }>(sql`
+    WITH selected_debts AS MATERIALIZED (
+      SELECT d.* FROM finance.debt d WHERE d.workspace_id=${input.workspaceId}::uuid
+        ${input.debtId ? sql`AND d.id=${input.debtId}::uuid` : sql``}
+        ${input.after ? sql`AND d.id>${input.after}::uuid` : sql``}
+      ORDER BY d.id LIMIT 51
+    ), balances AS MATERIALIZED (
+      SELECT p.ledger_account_id,-sum(p.amount_minor::numeric) AS total,
+        sum(p.amount_minor::numeric) AS balance,
+        -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='principal') AS principal,
+        -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='interest') AS interest,
+        -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='fee') AS fee,
+        -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='penalty') AS penalty,
+        -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='unclassified') AS unknown
+      FROM finance.posting p
+      JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id
+        AND j.action_revision_id=p.action_revision_id AND j.state='posted'
+      JOIN finance.action_revision r ON r.workspace_id=p.workspace_id
+        AND r.id=p.action_revision_id AND r.state='posted'
+      WHERE p.workspace_id=${input.workspaceId}::uuid AND p.ledger_account_id IN (
+        SELECT liability_ledger_account_id FROM selected_debts
+        UNION SELECT clearing_ledger_account_id FROM selected_debts
+      )
+      GROUP BY p.ledger_account_id
+    )
     SELECT w.financial_revision::text AS financial_revision, COALESCE((
       SELECT jsonb_agg(item ORDER BY id) FROM (
         SELECT d.id,jsonb_build_object(
@@ -29,30 +53,14 @@ export async function readDebts(
           'paymentClearingMinor',COALESCE(c.balance,0)::text,
           'unappliedContractualMinor',(COALESCE(u.amount,0)-COALESCE((SELECT st.resolved_unapplied_minor FROM finance.debt_settlement st WHERE st.workspace_id=d.workspace_id AND st.debt_id=d.id AND st.closing_schedule_version_id=v.id),0))::text
         ) AS item
-        FROM finance.debt d
-        LEFT JOIN LATERAL (
-          SELECT -sum(p.amount_minor::numeric) AS total,
-            -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='principal') AS principal,
-            -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='interest') AS interest,
-            -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='fee') AS fee,
-            -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='penalty') AS penalty,
-            -sum(p.amount_minor::numeric) FILTER (WHERE p.liability_component='unclassified') AS unknown
-          FROM finance.posting p
-          JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.action_revision_id=p.action_revision_id AND j.state='posted'
-          JOIN finance.action_revision r ON r.workspace_id=p.workspace_id AND r.id=p.action_revision_id AND r.state='posted'
-          WHERE p.workspace_id=d.workspace_id AND p.ledger_account_id=d.liability_ledger_account_id
-        ) b ON true
+        FROM selected_debts d
+        LEFT JOIN balances b ON b.ledger_account_id=d.liability_ledger_account_id
         LEFT JOIN finance.debt_schedule_version v ON v.workspace_id=d.workspace_id AND v.debt_id=d.id AND v.id=d.current_schedule_version_id AND v.state='finalized'
         LEFT JOIN LATERAL (
           SELECT CASE WHEN count(*)>0 THEN COALESCE(sum(i.remaining_minor) FILTER (WHERE i.disposition='scheduled'),0) ELSE NULL END AS remaining, count(*)::integer AS count
           FROM finance.current_installment_due_v i WHERE i.workspace_id=d.workspace_id AND i.debt_id=d.id AND i.schedule_version_id=v.id
         ) s ON true
-        LEFT JOIN LATERAL (
-          SELECT sum(p.amount_minor::numeric) AS balance FROM finance.posting p
-          JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.state='posted'
-          JOIN finance.action_revision r ON r.workspace_id=p.workspace_id AND r.id=p.action_revision_id AND r.state='posted'
-          WHERE p.workspace_id=d.workspace_id AND p.ledger_account_id=d.clearing_ledger_account_id
-        ) c ON true
+        LEFT JOIN balances c ON c.ledger_account_id=d.clearing_ledger_account_id
         LEFT JOIN LATERAL (
           SELECT sum(CASE WHEN p.paid_against_schedule_version_id=v.id THEN p.unapplied_contractual_minor::numeric ELSE
             COALESCE((SELECT sum(m.amount_minor::numeric) FROM finance.schedule_allocation_map m

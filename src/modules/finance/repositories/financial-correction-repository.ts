@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { ScopedTransaction } from "@/platform/db";
 import { finalizeJournal } from "./financial-write-repository";
+import { FinancialActionUnavailableError } from "../domain/financial-correction";
 
 // Internal capability, never accepted from an HTTP body. The command owning
 // this context has already locked the workspace and claimed its receipt.
@@ -41,8 +42,7 @@ export async function readCurrentFinancialAction(
     COALESCE((SELECT v.after_json FROM audit.private_revision v WHERE v.workspace_id=a.workspace_id AND v.subject_kind='financial_action' AND v.subject_id=a.id AND v.command_receipt_id=r.command_receipt_id ORDER BY v.created_at DESC LIMIT 1),'{}'::jsonb) AS evidence
     FROM finance.financial_action a JOIN finance.action_revision r ON r.workspace_id=a.workspace_id AND r.id=a.current_revision_id AND r.state='posted' JOIN core.workspace w ON w.id=a.workspace_id
     WHERE a.workspace_id=${workspaceId}::uuid AND a.id=${actionId}::uuid`);
-  if (!r.rows[0])
-    throw new RangeError("Financial action is unavailable in this workspace.");
+  if (!r.rows[0]) throw new FinancialActionUnavailableError();
   return r.rows[0];
 }
 

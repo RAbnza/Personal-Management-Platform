@@ -187,6 +187,9 @@ export async function purgeDeletionStep(
     await client.query("DELETE FROM auth.verification WHERE value=$1", [
       r.target_user_id,
     ]);
+    await client.query("DELETE FROM ops.email_delivery WHERE user_id=$1", [
+      r.target_user_id,
+    ]);
     await client.query("DELETE FROM auth.account WHERE user_id=$1", [
       r.target_user_id,
     ]);

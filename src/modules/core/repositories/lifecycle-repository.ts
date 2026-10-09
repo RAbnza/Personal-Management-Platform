@@ -60,7 +60,8 @@ export async function readDeletionScope(
     schemaVersion: 1,
     ...root,
     records,
-    identity: "Profile, sign-in credentials, recovery tokens and all sessions",
+    identity:
+      "Profile, sign-in credentials, recovery tokens, encrypted security email and all sessions. Non-secret queue metadata expires separately within seven days.",
     files: "No uploaded files or server-stored CSV files in this V1 release",
     sharedHistory: "No shared workspaces or group records in this V1 release",
   };

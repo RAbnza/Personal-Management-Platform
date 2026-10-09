@@ -62,6 +62,17 @@ export async function removeBrowserOwner(owner: BrowserOwner) {
     if (root.rowCount !== 1) throw new Error("Fixture ownership root mismatch");
     await c.query("SET LOCAL session_replication_role='replica'");
     await c.query(
+      "DELETE FROM pgboss.job WHERE data->>'deliveryId' IN(SELECT id::text FROM ops.email_delivery WHERE user_id=$1)",
+      [owner.userId],
+    );
+    await c.query("DELETE FROM ops.email_delivery WHERE user_id=$1", [
+      owner.userId,
+    ]);
+    await c.query(
+      "DELETE FROM auth.session_assurance WHERE session_id IN(SELECT id FROM auth.session WHERE user_id=$1)",
+      [owner.userId],
+    );
+    await c.query(
       "DELETE FROM ops.deletion_tombstone WHERE target_user_id=$1",
       [owner.userId],
     );

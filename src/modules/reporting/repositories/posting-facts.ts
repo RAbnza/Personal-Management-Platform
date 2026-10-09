@@ -1,6 +1,21 @@
 import { sql } from "drizzle-orm";
 import type { FinancialMetric } from "../domain/reports";
 
+/** Balance grain remains one posted posting. Historical balances need signed
+ * amounts and ledger kinds, without period-only charge/source enrichment. */
+export function balancePostingFacts(workspaceId: string) {
+  return sql`WITH facts AS (
+    SELECT p.amount_minor::numeric AS amount,j.effective_date,l.kind AS ledger_kind
+    FROM finance.posting p
+    JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id
+      AND j.action_revision_id=p.action_revision_id AND j.state='posted'
+    JOIN finance.action_revision r ON r.workspace_id=p.workspace_id
+      AND r.id=p.action_revision_id AND r.state='posted'
+    JOIN finance.ledger_account l ON l.workspace_id=p.workspace_id AND l.id=p.ledger_account_id
+    WHERE p.workspace_id=${workspaceId}::uuid
+  )`;
+}
+
 /** Grain: exactly one immutable posted posting. Category/account/source rows
  * are one-to-one. Many-side metadata is EXISTS or reduced to one row before
  * joining; tags, due allocations and schedule entries never enter this grain.

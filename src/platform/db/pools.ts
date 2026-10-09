@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 
 import { getServerEnvironment } from "@/platform/env/server";
+import { logOperationalEvent } from "@/platform/observability/logger";
 
 type RuntimeDatabasePools = {
   domain: Pool;
@@ -19,10 +20,8 @@ function createPool(connectionString: string, applicationName: string) {
     application_name: applicationName,
   });
 
-  pool.on("error", (error) => {
-    console.error(
-      `[database:${applicationName}] unexpected idle client error: ${error.message}`,
-    );
+  pool.on("error", () => {
+    logOperationalEvent("database_idle_error");
   });
 
   return pool;

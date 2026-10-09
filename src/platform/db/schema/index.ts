@@ -13,3 +13,5 @@ export * from "./refunds";
 export * from "./exports";
 export * from "./reminders";
 export * from "./lifecycle";
+export * from "./email-delivery";
+export * from "./restore";

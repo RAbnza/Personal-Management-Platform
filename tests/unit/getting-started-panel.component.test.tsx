@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { GettingStartedPanel } from "@/components/onboarding/getting-started-panel";
 import type { ListOnboardingProgressResult } from "@/modules/core/services/list-onboarding-progress";
@@ -84,6 +86,19 @@ describe("GettingStartedPanel", () => {
     expect(screen.getByText("Completed")).toBeInTheDocument();
     expect(screen.getByText("Skipped")).toBeInTheDocument();
     expect(screen.getByText("To do")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Skip for now: Confirm workspace preferences",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Resume: Add a job application" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: "Skip for now: Choose a starting goal",
+      }),
+    ).not.toBeInTheDocument();
 
     expect(
       screen.queryByRole("link", {

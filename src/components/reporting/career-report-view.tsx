@@ -199,7 +199,12 @@ export function CareerReportView({ data }: { data: CareerReport }) {
         description={`Resolved observations for the submitted cohort through ${data.asOfDate}; repeated stages remain separate visits.`}
       >
         {data.stages.length ? (
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            tabIndex={0}
+            role="region"
+            aria-label="Time in stage supporting history table"
+          >
             <table className="w-full text-left text-sm">
               <thead>
                 <tr>

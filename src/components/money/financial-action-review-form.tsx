@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useClientReady } from "@/shared/use-client-ready";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
@@ -240,7 +241,8 @@ export function FinancialActionReviewForm({
   const changed =
     provided.current.actionRevisionId !== detail.current.actionRevisionId ||
     provided.current.financialRevision !== detail.current.financialRevision;
-  const locked = stage !== "editing" || changed;
+  const clientReady = useClientReady();
+  const locked = stage !== "editing" || changed || !clientReady;
   useEffect(() => {
     if (stage !== "saving" && stage !== "unconfirmed") return;
     const guard = (e: BeforeUnloadEvent) => e.preventDefault(),
@@ -751,6 +753,7 @@ export function FinancialActionReviewForm({
             <Button
               type="submit"
               disabled={
+                !clientReady ||
                 changed ||
                 (mode === "correct" &&
                   (!detail.replacement ||

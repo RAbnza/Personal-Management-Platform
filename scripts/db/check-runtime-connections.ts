@@ -164,12 +164,7 @@ async function main() {
   }
 }
 
-main().catch((error: unknown) => {
-  const message =
-    error instanceof Error
-      ? error.message
-      : "Unknown runtime database verification error.";
-
-  console.error(message);
+main().catch(() => {
+  console.error("Restricted runtime connection verification failed.");
   process.exitCode = 1;
 });

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useClientReady } from "@/shared/use-client-ready";
 import {
   useFieldArray,
   useForm,
@@ -109,6 +110,10 @@ export function DebtScheduleRevisionForm({
 }) {
   const router = useRouter();
   const form = useForm<Draft>({ defaultValues: defaults(setup, today) });
+  // Server-rendered controls cannot accept edits before the form's handlers
+  // and field-array refs are attached. Otherwise hydration can replace an
+  // early native date edit with the original schedule default.
+  const hydrated = useClientReady();
   const entries = useFieldArray({ control: form.control, name: "entries" });
   const mappings = useFieldArray({ control: form.control, name: "mappings" });
   const values = useWatch({ control: form.control }) as Draft;
@@ -367,7 +372,7 @@ export function DebtScheduleRevisionForm({
       ) : null}
       <form onSubmit={form.handleSubmit(review)} className="space-y-6">
         <fieldset
-          disabled={locked || stale}
+          disabled={locked || stale || !hydrated}
           onChange={(e) => {
             const target = e.target;
             if (
@@ -726,7 +731,7 @@ export function DebtScheduleRevisionForm({
           ) : null}
         </fieldset>
         {stage === "editing" ? (
-          <Button type="submit" disabled={stale}>
+          <Button type="submit" disabled={stale || !hydrated}>
             Review schedule revision
           </Button>
         ) : null}
@@ -746,7 +751,12 @@ export function DebtScheduleRevisionForm({
             {pending.revisionKind.replaceAll("_", " ")} Â· effective{" "}
             {pending.effectiveDate} Â· {pending.reason}
           </p>
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-ring"
+            tabIndex={0}
+            role="region"
+            aria-label="Old versus new schedule comparison table"
+          >
             <table className="w-full text-left text-sm">
               <caption className="mb-3 text-left font-semibold">
                 Old versus new schedule and Agenda projection

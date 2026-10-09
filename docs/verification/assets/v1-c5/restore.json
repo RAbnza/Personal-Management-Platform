@@ -1,0 +1,21 @@
+{
+  "completedAt": "2026-10-09T10:54:22.223Z",
+  "source": "personal_management_test",
+  "encryptedDumpSha256": "aa0c0a65ded8ce81ec05308b26446529324477c2c42044131427093cdafdde55",
+  "migrationCount": "76",
+  "relations": 72,
+  "checks": [
+    "encrypted dump/decrypt",
+    "actual pg_restore",
+    "exact counts/ledger balances",
+    "balanced journals",
+    "owner-scoped report",
+    "real-role RLS",
+    "restored session/token revocation",
+    "independent post-backup deletion reapplication",
+    "pending deletion restored from backup resumes and purges",
+    "deletion-register replay before and after completion",
+    "other owner preserved"
+  ],
+  "productionGuarantee": false
+}

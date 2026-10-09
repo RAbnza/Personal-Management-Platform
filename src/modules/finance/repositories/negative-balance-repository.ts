@@ -51,16 +51,20 @@ export async function reviewCashChanges(
         ...changes.map((c) => c.effectiveDate),
       ]),
     ].sort();
-    for (const date of dates.filter((d) => d >= earliest)) {
-      const before = rows.rows
-        .filter((r) => r.date <= date)
-        .reduce((s, r) => s + BigInt(r.amount), 0n);
-      const after =
-        before +
-        changes
-          .filter((c) => c.effectiveDate <= date)
-          .reduce((s, c) => s + c.signedMinor, 0n);
-      if (after < 0n)
+    const tracked = new Map(rows.rows.map((r) => [r.date, BigInt(r.amount)]));
+    const proposed = new Map<string, bigint>();
+    for (const change of changes)
+      proposed.set(
+        change.effectiveDate,
+        (proposed.get(change.effectiveDate) ?? 0n) + change.signedMinor,
+      );
+    let before = 0n,
+      delta = 0n;
+    for (const date of dates) {
+      before += tracked.get(date) ?? 0n;
+      delta += proposed.get(date) ?? 0n;
+      const after = before + delta;
+      if (date >= earliest && after < 0n)
         warnings.push({
           accountId,
           effectiveDate: date,

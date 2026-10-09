@@ -1,0 +1,20 @@
+{
+  "completedAt": "2026-10-09T11:13:03.180Z",
+  "targets": [
+    "web",
+    "worker",
+    "backup"
+  ],
+  "checks": [
+    "non-root",
+    "no environment files",
+    "no development dependencies",
+    "restricted web/worker roles",
+    "web and worker health",
+    "private API rejects anonymous",
+    "bounded graceful worker shutdown",
+    "PostgreSQL 17.11 backup client",
+    "unconfigured backup fails closed"
+  ],
+  "cloudBackupVerified": false
+}

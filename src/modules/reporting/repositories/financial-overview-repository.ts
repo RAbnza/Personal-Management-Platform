@@ -6,6 +6,7 @@ import {
   metricDatePredicate,
   metricExpression,
   postingFacts,
+  balancePostingFacts,
 } from "./posting-facts";
 
 export async function readFinancialMetrics(
@@ -14,14 +15,31 @@ export async function readFinancialMetrics(
   period: ReportPeriod,
 ) {
   const metrics = Object.keys(financialMetrics) as FinancialMetric[];
-  const selections = metrics.map(
-    (m) =>
-      sql`COALESCE(sum(${metricExpression(m)}) FILTER (WHERE ${metricDatePredicate(m, period.startDate, period.endDateExclusive)}),0)::text AS ${sql.identifier(m)}`,
+  const balanceMetrics = new Set<FinancialMetric>([
+    "opening_cash",
+    "closing_cash",
+    "opening_liability",
+    "closing_liability",
+    "clearing",
+    "tracked_net",
+  ]);
+  const selections = (selected: FinancialMetric[]) =>
+    selected.map(
+      (m) =>
+        sql`COALESCE(sum(${metricExpression(m)}) FILTER (WHERE ${metricDatePredicate(m, period.startDate, period.endDateExclusive)}),0)::text AS ${sql.identifier(m)}`,
+    );
+  // Period classification is evaluated only for period postings. Historical
+  // balances aggregate independently, without repeating charge metadata joins
+  // across every year of spending. Both retain the shared metric definitions.
+  const activity = await t.db.execute<Record<FinancialMetric, string>>(
+    sql`${postingFacts(workspaceId)} SELECT ${sql.join(selections(metrics.filter((m) => !balanceMetrics.has(m))), sql`, `)} FROM facts
+      WHERE effective_date>=${period.startDate}::date AND effective_date<${period.endDateExclusive}::date`,
   );
-  const r = await t.db.execute<Record<FinancialMetric, string>>(
-    sql`${postingFacts(workspaceId)} SELECT ${sql.join(selections, sql`, `)} FROM facts`,
+  const balances = await t.db.execute<Record<FinancialMetric, string>>(
+    sql`${balancePostingFacts(workspaceId)} SELECT ${sql.join(selections(metrics.filter((m) => balanceMetrics.has(m))), sql`, `)} FROM facts
+      WHERE effective_date<${period.endDateExclusive}::date`,
   );
-  return r.rows[0]!;
+  return { ...activity.rows[0]!, ...balances.rows[0]! };
 }
 export type FinancialContribution = {
   postingId: string;
