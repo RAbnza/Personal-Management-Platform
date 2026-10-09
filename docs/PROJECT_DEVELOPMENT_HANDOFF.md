@@ -8,9 +8,9 @@
 
 **Handoff date:** October 9, 2026
 
-**Current verified implementation `main` HEAD:** `84e989e72b90bbd4175ed497101c14f5b7f1555d` — `feat(core): complete V1 settings, sessions, help and lifecycle`
+**Current verified implementation `main` HEAD:** `26ece41a05b40784032a917794be455001917c2d` — `fix(ci): generate route types before clean-checkout validation`
 
-**HEAD continuity:** This document is committed immediately after that implementation commit in a documentation-only commit. Run `git rev-parse main` for the final branch tip; the implementation hash above is the exact code state verified by the gates recorded below.
+**HEAD continuity:** This document follows that implementation commit in a handoff-only commit. Run `git rev-parse main` for the branch tip; the implementation hash above is the exact code state covered by the evidence below. Local V1 acceptance and hardening are verified. Production acceptance remains open; this is not a final V1 release or the approved starting point for V2.
 
 ---
 
@@ -101,6 +101,10 @@ Current documented/implemented stack includes:
 - next-themes 0.4.6
 - `@date-fns/tz` 1.5.0
 - pnpm 12.9.1
+- Node.js 24.21.0
+- pg-boss 12.36.0, Pino 10.4.0 and AWS S3 SDK 3.1140.0
+- Playwright 1.63.0 and axe-core Playwright 4.13.0 (development acceptance tools)
+- PostgreSQL/container tools 17.11 for the verified local and CI environment
 
 Use the current `package.json`, lockfile, and `SYSTEM_ARCHITECTURE.md` as the real dependency authority.
 
@@ -171,7 +175,7 @@ These remain non-negotiable:
 
 ## 5. Current implementation status
 
-The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard**, **V1-C2 — Reports, Drilldowns, and CSV Exports**, **V1-C3 — In-App Due and Reminder Controls** and **V1-C4 — Settings, Help, Session, and Data Lifecycle** are complete. The final V1 milestone is **V1-C5 — Production Readiness and Final V1 Acceptance**. V1 is not yet declared production-ready.
+The repository has completed **Financial Core Completion** within the documented V1 dependent-record restrictions. D6a debt integrity, D6b existing-debt import, D7 borrowing/net proceeds, D8a debt-payment database foundation, D8b payment workflow, D9 schedule revisions, D10 early debt settlement, D11 reconciliation and balance adjustments, and D12 financial corrections and V1 accounting cleanup are complete. **V1-C1 — Connected Dashboard**, **V1-C2 — Reports, Drilldowns, and CSV Exports**, **V1-C3 — In-App Due and Reminder Controls** and **V1-C4 — Settings, Help, Session, and Data Lifecycle** are complete. **V1-C5 local acceptance/hardening is verified**, with evidence in section 5.17. Production acceptance remains the final V1 milestone. V1 is not yet declared production-ready.
 
 ### 5.1 Completed foundation/UI infrastructure
 
@@ -695,7 +699,7 @@ No unresolved C3 blocker remains within the released source types and documented
 
 ### 5.16 V1-C4 — Settings, Help, Session, and Data Lifecycle
 
-Complete on the implementation HEAD recorded above. C3 was verified first with its focused integration regression (15 tests), and current `main`/the updated handoff/relevant authoritative settings, authentication and lifecycle sections were inspected. Existing onboarding, theme, workspace/module preferences, reminders, archive behavior and report definitions were reused. V2/V3, external scheduled notifications and broad redesign were not started.
+Complete on C4 implementation `84e989e72b90bbd4175ed497101c14f5b7f1555d`. C3 was verified first with its focused integration regression (15 tests), and current `main`/the updated handoff/relevant authoritative settings, authentication and lifecycle sections were inspected. Existing onboarding, theme, workspace/module preferences, reminders, archive behavior and report definitions were reused. V2/V3, external scheduled notifications and broad redesign were not started.
 
 Released behavior:
 
@@ -715,6 +719,41 @@ Verification:
 - Final `pnpm check`, production `pnpm build`, staged whitespace and runtime role/context checks passed. Drizzle generation reports no schema changes. Structural migrations `0058`/`0060` and reviewed integrity/security migrations `0059`/`0061`–`0066` were applied to test first, then development only after the gates. Fresh disposable database: **67 migrations / 56 tables**, no-op repeat and committed D6b–C4 smoke passed, including complete scoped purge/tombstone and other-owner preservation. Both test and development now include `0066_v1_c4_purge_transaction_scope.sql`.
 
 No unresolved C4 product blocker remains within documented V1 scope. Production maintenance scheduling, independent register retention/restore reapplication, actual backup expiry, security metadata cadence, support contact, durable security-email delivery, operational monitoring and the complete release acceptance remain C5 gates. Do not treat local workflow verification as production acceptance. Next/final milestone: **V1-C5 — Production Readiness and Final V1 Acceptance**.
+
+---
+
+### 5.17 V1-C5 — Local acceptance and hardening; production acceptance open
+
+C4 was verified first with twelve lifecycle/auth-housekeeping PostgreSQL tests. The authoritative V1 acceptance, security, accounting, design and operational requirements were reviewed. All eighteen coherent-V1 scenarios now have explicit source, automated and browser evidence in [the acceptance matrix](verification/V1_C5_ACCEPTANCE.md). D6b's outstanding browser gate is closed with actual 320px exact-review/detail evidence, including paid, overdue, future and unknown dues and a lost committed response followed by identical-command replay. Earlier D9–D12 browser boundaries are covered by the final financial acceptance suite. No V2/V3, external scheduled reminder delivery or broad redesign was implemented.
+
+Acceptance fixes and operational implementation:
+
+- Onboarding exposes the existing skip/resume commands and Help replay without creating business records. Unknown outcomes retain the same command. Missing/foreign financial-action reads now share a safe unavailable/404 response. Corrections/refunds, payment and revision forms disable native edits until hydration so reviewed dates cannot silently revert. Scrollable tables have labelled keyboard focus regions.
+- Private catalog tests enumerate every private table/view and check forced RLS/invoker views, absent/foreign contexts and escalation/schema-creation rejection through actual runtime roles. Browser/API inventory covers every exported private V1 method, including workspace bootstrap, anonymous/spoofed context and authenticated foreign references. Financial regressions cover exact arithmetic, recipe classification, correction/refund periods, balanced journals, stale/replay/conflict, races, rollback and durable negative acknowledgements.
+- `src/platform/jobs/boss.ts`, security-mail repositories/services and `scripts/jobs/{migrate,worker}.ts` implement restricted pg-boss security-mail intent/job enqueue, encrypted recipients/payloads and stable deduplication. Intent and queue insertion share the callback transaction; the preceding Better Auth token/user transaction is explicitly separate. The worker rechecks source eligibility and records uncertainty before provider I/O, bounds retries and lifetime, wipes terminal secrets, retains bounded nonsecret metadata, runs auth housekeeping and exposes fresh heartbeat health with graceful shutdown. Provider acceptance does not prove delivery. External reminder delivery remains excluded.
+- `src/platform/backup`, `scripts/backup/daily.ts` and reviewed lifecycle scripts implement authenticated encrypted backup envelopes, separate private S3/KMS identities, conditional exact readback/checksums, bounded client timeouts/size and a separately retained minimal deletion register. Automated purge is disabled unless independently stored checkpoints can be verified before each phase. Normal runtime roles never gain a bypass. Offline restore authorization is limited to a uniquely named isolated recovery database and exact independently authorized targets. Restored credentials, queued security secrets and source access are invalidated before reopening.
+- Logger inputs are fixed event codes and bounded allowlisted metadata. Pool/auth/CLI errors discard raw SQL, arguments, recipient addresses and private provider bodies. Private API failures remain generic with request IDs. Environment validation rejects unsafe deployed configuration, unverified TLS and missing independent encryption/support settings. No external monitoring service or production sender is falsely claimed configured.
+- `Dockerfile` supplies distinct nonroot web, worker and PostgreSQL-17.11 backup artifacts; runtime images exclude environment files, test tools and migration credentials. `tsx` is a production dependency because worker/backup entrypoints require it after pruning. `.github/workflows/v1-acceptance.yml` pins actions/runtime, installs the frozen lockfile, provisions restricted test roles and runs complete checks, migrations, browser, restore, Linux build/runtime and dependency audit. Clean-checkout type checking explicitly generates Next route types before strict TypeScript.
+
+Migrations and query changes:
+
+- Added `0067`–`0071` for encrypted mail/RLS, isolated restore authorization, narrowly scoped deletion-date access, owner-scoped mail-source checks that preserve forced RLS, and ciphertext/terminal-secret integrity.
+- `0072` schedules the unchanged deferred negative-acknowledgement validator at finalization, avoiding a redundant building-insert scan. `0073` is an already-applied unchanged no-op after a failed migration-writing helper; its checksum is preserved. `0074` independently aggregates direct/mapped current-installment satisfaction; `0075` selects owned liability postings before joining posted journals. All existing financial guards, deferred validation, opening satisfaction and NULL semantics remain intact.
+- Capacity profiling exposed repeated per-installment/owner ledger scans. Debt page balances now aggregate once at the selected-page grain. Reports reuse shared exact metric definitions while historical balance facts avoid unnecessary period-classification metadata. The negative-balance query accumulates exact daily values once. No integrity constraint, test assertion, timeout or performance budget was weakened.
+- Final numbered chain: **76 migrations / 58 tables**, plus separately pinned pg-boss schema/grants. Fresh/no-op and the committed C4 **67 → 76** upgrade preserve balances/history/reports and pass all D6b–C4 smokes. Drizzle generation reports no drift. All migrations were verified in test/fresh databases before development application. Test and development include `0075`; existing applied files were not rewritten.
+
+Final local evidence:
+
+- **674 unit/component tests / 101 files** and **400 integration/database tests / 57 files** passed with original assertions/timeouts. A pagination-seed timeout occurred while the large retained capacity fixture was present; after capacity and restore proof, guarded removal of that named synthetic fixture restored the complete original-limit suite. No product deletion or test weakening was used.
+- **27 production browser tests passed**, followed by **two focused private-API inventory checks** including workspace bootstrap. Real Chrome uses an isolated production server on port 3100 and the guarded test database. Eleven critical routes at 320px pass page-overflow/axe checks; dark contrast/error states, keyboard modal trap/Escape/focus restoration, financial validation/review focus, table semantics and delayed hydration are covered. Recovery consumes actual queued Mailpit mail and revokes sessions. D6b [review](verification/assets/v1-c5/d6b-review-320.png) and [detail](verification/assets/v1-c5/d6b-detail-320.png) captures were visually inspected.
+- Formatting, lint, type checking, Windows production build, dependency audit, runtime-role/context and final Linux web/worker/backup builds passed. Windows standalone symlink warnings are platform-specific; the actual Linux artifact and runtime checks passed. [Container evidence](verification/assets/v1-c5/containers.json) records nonroot isolation, web health/private-API rejection, worker freshness/graceful shutdown and matching backup client/fail-closed configuration.
+- Actual ten-year capacity proof used **100 owners / 20 active owners**, **50,000 seeded actions plus 60 measured commands**, **300,142 postings**, **5,000 applications / 5,000 events**, ten debts with 1,320 current obligations and eleven retained versions. Writes used normal domain-role building-to-posted transitions with integrity enabled. All required local p95 budgets passed: command including commit 711.07 ms; account history 654.91; debt list/detail 459.94/337.39; Career list/history 8.54/9.49; Agenda 99.24; Dashboard 870.08; Financial/Career report 1,186.88/9.89; twenty-active reads/commands 31.45/258.49. [Samples/query plan and methodology](verification/assets/v1-c5/performance.json) distinguish the resumed final run from full construction and HTTP/hosted capacity.
+- [Actual encrypted restore evidence](verification/assets/v1-c5/restore.json) covers the final **76-migration / 72-relation** database with the capacity fixture: exact counts/balances, balanced journals, report/runtime RLS, offline session/token/mail revocation, independent post-backup deletion and already-pending deletion, replay and another owner's preservation. The unique recovery database was removed. No real workspace was deleted. Cloud PITR, retention and hosted restore are not established by this local drill.
+- Hosted CI: **passed** for exact implementation `26ece41a05b40784032a917794be455001917c2d`, [run 37923381999](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/37923381999), completed October 9, 2026 at 11:33:46 UTC. The clean Ubuntu checkout passed frozen installation, checks, **674 unit/component / 400 integration / 27 browser tests**, fresh/no-op and C4 upgrade migrations, production build, actual encrypted restore, all three Linux artifact builds/restricted runtime checks and a clean production dependency audit. The initial route-type-generation failure was fixed without changing application behavior or weakening checking. This completed hosted evidence supersedes the acceptance matrix's earlier pending-at-creation entry. Hosted CI is not production hosting acceptance.
+
+Local development is migrated and healthy on port **3000**; the separate local worker is healthy on **3102**. Earlier user/runtime processes disappeared during execution; this work did not kill them. They were restarted hidden, preserving existing environment secrets and adding only missing local deployment/encryption settings. Worker configuration is ignored, uses separate credentials and keeps automated lifecycle purge disabled. Runtime logs live under ignored `node_modules/.cache/pmp-v1-c5-runtime`.
+
+Read [README/setup](../README.md), [V1 operations](V1_OPERATIONS.md), [user guide](V1_USER_GUIDE.md), [ADR 0004](adr/0004-v1-c5-security-mail-and-recovery.md) and the lifecycle runbook before deployment. Remaining C5 blockers require the actual approved deployment target/paid plan, verified security-mail sender, independent private backup/register location with enforced retention, operational support contact, monitoring and hosted capacity/PITR/restore/promotion evidence. Those credentials/configuration were not supplied. **V1 is not declared complete or production-ready. The continuation remains C5 production acceptance; V2 must not begin from this partial release checkpoint.**
 
 ---
 
@@ -766,7 +805,7 @@ At the current handoff point, the repository includes functional page routes for
   - task guides and replayable instructional tour
   - support/feedback draft
 
-The coherent V1 product surfaces are complete within documented bounds. Production Readiness and Final V1 Acceptance remains.
+The coherent V1 product surfaces and local acceptance are complete within documented bounds. `/api/health` provides generic readiness; the worker exposes separate heartbeat health. Production deployment and operational acceptance remain open as recorded in section 5.17.
 
 ---
 
@@ -774,9 +813,9 @@ The coherent V1 product surfaces are complete within documented bounds. Producti
 
 ### Next/final milestone: V1-C5 — Production Readiness and Final V1 Acceptance
 
-Continue from the verified V1-C4 state. Inspect current `main`, this handoff and the authoritative production/security/operations/acceptance sections needed for C5. Verify C4 before continuing. Preserve the reviewed lifecycle role, immutable financial history, source/reminder independence, shared reports, exact exports and cross-user authorization.
+Continue from the C5 implementation hash at the top, verify current `main`/the following handoff-only commit and inspect section 5.17 plus the acceptance matrix and operations/ADR 0004/lifecycle documentation. C4 and all eighteen coherent scenarios have been verified locally. Preserve the reviewed roles, immutable financial history, source/reminder independence, shared reports, exact exports and cross-user authorization.
 
-Implement C5 only. Complete the V1 production gates and acceptance scenarios using the selected architecture, including durable security mail/required maintenance, actual retention and restore with an independent deletion register. Review the lifecycle runbook and ADRs 0002/0003 before enabling scheduling. Verify realistic performance, security/isolation, accessibility, failure handling, monitoring and deployment/configuration. Do not rebuild released financial/Dashboard/Reports/reminder/settings workflows, begin external scheduled user notifications, V2/V3 or broad redesign. No production release is implied by the C4 completion.
+Complete only the remaining C5 production gates on the actual approved infrastructure: deployed migration/role/configuration checks, verified Resend sender and recovery/revocation, healthy monitored worker/required maintenance, independent private encrypted backups/deletion register and enforced retention, hosted PITR/restore/reapplication, support contact and measured paid-plan capacity/promotion. Keep lifecycle automation disabled until independent checkpoint readback works. Repeat affected local gates only when new changes require it. Do not rebuild released workflows, begin external scheduled user notifications, V2/V3 or broad redesign. Final V1 release and a V2 starting-point hash require all production gates to pass first.
 
 ---
 
@@ -798,7 +837,7 @@ The authoritative V1 acceptance scenarios in the blueprint must be satisfied.
 
 ## 8.2 V1-A — Finish Financial Core Completion
 
-Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12 and V1-C1–C4 are complete; the final milestone is V1-C5 — Production Readiness and Final V1 Acceptance.
+Continue in small reviewed milestones. D6b, D7, D8a, D8b, D9, D10, D11, D12 and V1-C1–C4 are complete. C5 local acceptance/hardening is verified; production acceptance remains the final milestone.
 
 ### A. Existing debt import and read model
 
@@ -1055,13 +1094,13 @@ Released in V1-C4 through the reviewed path:
 - retention wording consistent with actual backup behavior;
 - no ordinary runtime bypass role.
 
-Production scheduling, independent deletion-register retention/restore drill and actual retained-backup expiry remain V1-C5 gates. The current product does not promise instant backup erasure or a configured maintenance cadence.
+C5 supplies the guarded worker, bounded encrypted backup/register operations and actual local restore/reapplication evidence. Deployed scheduling, independent retention/expiry and cloud recovery remain C5 gates. The product does not promise instant backup erasure or an unverified production cadence.
 
 ---
 
 ## 8.4 V1-C — Known release issue to correct
 
-Before V1 is considered complete, re-check and correct the currently tracked negative-balance acknowledgement issue.
+Resolved in D12 and reverified during C5 through service, direct-runtime SQL, report and browser regressions. Manual actions that create a negative balance require explicit acknowledgement in authoritative command/evidence data, including backdated effects.
 
 The architecture requires that a manual account transaction that would result in a negative balance receives:
 
@@ -1069,7 +1108,7 @@ The architecture requires that a manual account transaction that would result in
 - explicit user acknowledgement;
 - recorded warning outcome/evidence.
 
-The current expense UI warns when an expense exceeds the loaded account balance, but earlier implementation did not establish an obvious backend acknowledgement field/contract.
+The released UI shows the exact warning and the backend rejects missing acknowledgement. C5's query/finalization optimization preserves that contract and enabled integrity checks.
 
 Do not leave this as UI-only warning behavior if the authoritative architecture still requires explicit acknowledgement.
 
@@ -1617,11 +1656,11 @@ Resolved in D12. Authorized hidden Career application sources open with a hidden
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C5 — Production Readiness and Final V1 Acceptance**. No D12 or V1-C1–C4 product blocker remains within the documented dependent-record, report/export, reminder and lifecycle bounds. V2/V3 and broad redesign are not started.
+The immediate continuation is **V1-C5 production acceptance**. All eighteen coherent scenarios and local security/accessibility/financial/capacity/restore gates pass. No D12 or V1-C1–C4 product blocker remains within documented bounds. Production gates in section 5.17 remain open; V2/V3 and broad redesign are not started.
 
 ### 14.4 Production lifecycle and authentication operations
 
-C4 supplies reviewed resumable purge, register export and auth housekeeping processes, not a configured scheduler. Actual backup expiry/recovery guarantees are unverified; tombstones are retained rather than automatically expired. C5 must configure and demonstrate maintenance, independent register retention, restore reapplication, security-metadata cadence, support contact, durable security-email delivery and monitoring. See section 5.16, ADR 0003 and the lifecycle runbook. This is an explicit production acceptance boundary, not permission to use a runtime bypass or erase retained backup evidence.
+C5 supplies the restricted security-mail/housekeeping worker, separately migrated queue, fresh health, bounded encrypted backup and independent deletion-register operations, guarded purge and actual local recovery reapplication. Automated purge is disabled until independently stored checkpoints can be verified. Production sender/support, maintenance/backup cadence, private bucket policy/KMS/retention, paid PITR/recovery, monitoring and measured deployment remain unverified. Tombstones do not automatically expire; immediate retained-backup erasure is never promised. See section 5.17, ADR 0004 and the operations/lifecycle runbooks. No ordinary runtime bypass is permitted.
 
 ---
 
@@ -1659,6 +1698,8 @@ Useful milestone commits currently on `main`:
 | In-app due/reminder controls | `69d00e0e8608b221744e9632695d087f0ee49798` |
 | Reminder generation after corrected due satisfaction | `4ac6e14d383dabedc5821b633150426123fd895d` |
 | Settings, Help, sessions and reviewed data lifecycle | `84e989e72b90bbd4175ed497101c14f5b7f1555d` |
+| C5 local acceptance, performance and operational hardening | `e74e61b386fb17ca3371c1d87e26e078b99b1c19` |
+| C5 clean-checkout Next route-type validation | `26ece41a05b40784032a917794be455001917c2d` |
 
 Always verify current `main` rather than assuming these remain the latest commits.
 
@@ -1701,8 +1742,9 @@ As of this handoff:
 - Reports, Drilldowns, and CSV Exports V1-C2: complete and verified; shared exact period/financial/Career definitions, supporting records, bounded owner-scoped exports and provenance; test/development migrations applied.
 - In-App Due and Reminder Controls V1-C3: complete and verified; source-safe controls, stable generations, reminder attention/history, safe retry and test/development migrations applied.
 - Settings, Help, Session, and Data Lifecycle V1-C4: complete and verified; versioned audited preferences/profile, safe instructional guidance, owner-scoped security controls, exact deletion review, grace cancellation, separate resumable purge and honest retention; test/development migrations applied.
-- **Next/final task: V1-C5 — Production Readiness and Final V1 Acceptance.**
-- Coherent V1 product surfaces: complete within documented scope. Production configuration, operational evidence and final acceptance remain.
+- V1-C5 local acceptance/hardening: eighteen scenarios, D6b browser closure, complete private catalog/API/runtime-role coverage, broad financial regressions, accessibility, actual ten-year capacity, migrations and encrypted restore verified; test/development migrations through `0075` applied. See section 5.17 for exact hosted CI status.
+- **Next/final task: complete V1-C5 production deployment and operational acceptance.**
+- Coherent V1 product surfaces: complete within documented scope and locally accepted. Production configuration/evidence remain blocked by missing infrastructure details; V1 is not yet declared complete or production-ready.
 - V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 
