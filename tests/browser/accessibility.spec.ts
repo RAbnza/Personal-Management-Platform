@@ -58,6 +58,18 @@ test("saved dark theme preserves contrast and error cues at 320px", async ({
     await page.goto(path);
     await expect(page.locator("html")).toHaveClass(/dark/);
     await expect(page.getByRole("main")).toBeVisible();
+    const skipTarget = await page
+      .getByRole("link", { name: "Skip to main content", exact: true })
+      .getAttribute("href");
+    expect(
+      await page
+        .getByRole("main")
+        .evaluate(
+          (main, href) => document.getElementById(href!.slice(1)) === main,
+          skipTarget,
+        ),
+      path,
+    ).toBe(true);
     if (path === "/money/debts/import") {
       await page
         .getByRole("button", { name: "Review import", exact: true })

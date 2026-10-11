@@ -4,6 +4,7 @@ import { withDomainTransaction } from "@/platform/db";
 import {
   deriveStatementReconciliation,
   StatementUnavailableError,
+  statementIdentifierSchema,
 } from "../domain/card-statement";
 import {
   readStatementSnapshot,
@@ -15,9 +16,9 @@ import {
 import { getCreditCardDetailInTransaction } from "./read-credit-cards";
 const input = z
   .object({
-    userId: z.uuid(),
-    workspaceId: z.uuid(),
-    cardId: z.uuid(),
+    userId: statementIdentifierSchema,
+    workspaceId: statementIdentifierSchema,
+    cardId: statementIdentifierSchema,
     offset: z.number().int().min(0).max(10000).default(0),
   })
   .strict();
@@ -63,8 +64,8 @@ export function getStatementEntrySetup(i: z.input<typeof input>) {
   );
 }
 const detailInput = input.omit({ offset: true }).extend({
-  statementId: z.uuid(),
-  revisionId: z.uuid().optional(),
+  statementId: statementIdentifierSchema,
+  revisionId: statementIdentifierSchema.optional(),
   historyOffset: z.number().int().min(0).max(10000).default(0),
 });
 export function getCardStatement(i: z.input<typeof detailInput>) {

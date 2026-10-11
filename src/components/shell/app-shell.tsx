@@ -34,23 +34,28 @@ export function AppShell({
   workspacePreferenceVersion,
   gettingStartedDismissed,
 }: AppShellProps) {
+  // Retained routes can keep another shell hidden in the same document. Each
+  // skip link must resolve to its own route's visible, focusable main landmark.
+  const mainContentId = `main-content-${activePath}`;
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <SessionNoticeListener />
-      <a
-        href="#main-content"
-        className={[
-          "fixed left-4 top-4 z-(--z-notice)",
-          "-translate-y-24 rounded-button border border-primary-border",
-          "bg-primary px-4 py-2.5 text-sm font-semibold",
-          "text-primary-foreground shadow-level-2",
-          "transition-transform duration-(--motion-duration-fast)",
-          "focus:translate-y-0",
-          "motion-reduce:transition-none",
-        ].join(" ")}
-      >
-        Skip to main content
-      </a>
+      <nav aria-label="Skip navigation" className="contents">
+        <a
+          href={`#${mainContentId}`}
+          className={[
+            "fixed left-4 top-4 z-(--z-notice)",
+            "-translate-y-24 rounded-button border border-primary-border",
+            "bg-primary px-4 py-2.5 text-sm font-semibold",
+            "text-primary-foreground shadow-level-2",
+            "transition-transform duration-(--motion-duration-fast)",
+            "focus:translate-y-0",
+            "motion-reduce:transition-none",
+          ].join(" ")}
+        >
+          Skip to main content
+        </a>
+      </nav>
 
       <aside className="hidden min-h-screen border-r border-border bg-surface lg:flex lg:flex-col">
         <div className="flex min-h-16 items-center border-b border-border px-5">
@@ -139,7 +144,7 @@ export function AppShell({
         </header>
 
         <main
-          id="main-content"
+          id={mainContentId}
           tabIndex={-1}
           className="mx-auto w-full max-w-(--layout-content-max) px-4 py-6 sm:px-6 sm:py-8"
         >

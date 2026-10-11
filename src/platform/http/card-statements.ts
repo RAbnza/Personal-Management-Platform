@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CreditCardUnavailableError } from "@/modules/finance/domain/credit-card";
 import {
   statementEvidenceSchema,
+  statementIdentifierSchema,
   StatementConflictError,
   StatementUnavailableError,
 } from "@/modules/finance/domain/card-statement";
@@ -27,7 +28,7 @@ import {
 } from "./api-v1-mutation";
 type Params = { cardId: string; statementId?: string };
 const createBody = statementEvidenceSchema.extend({
-  clientCommandId: z.uuid(),
+  clientCommandId: statementIdentifierSchema,
 });
 const reviseBody = createBody.extend({
   expectedVersion: z.number().int().min(1).max(2147483646),

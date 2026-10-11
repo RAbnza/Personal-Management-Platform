@@ -18,6 +18,31 @@ const command = () => ({
   entries: [],
 });
 describe("statement provider evidence", () => {
+  it("normalizes UUIDs and detects duplicate links across equivalent representations", () => {
+    const body = command(),
+      source = randomUUID(),
+      entry = {
+        description: "Provider purchase",
+        postingDate: "2026-10-12",
+        amountMinor: "10",
+        actionRevisionId: source.toUpperCase(),
+      };
+    const parsed = statementCommandSchema.parse({
+      ...body,
+      cardId: body.cardId.toUpperCase(),
+      clientCommandId: body.clientCommandId.toUpperCase(),
+      entries: [entry],
+    });
+    expect(parsed.cardId).toBe(body.cardId);
+    expect(parsed.clientCommandId).toBe(body.clientCommandId);
+    expect(parsed.entries[0]?.actionRevisionId).toBe(source);
+    expect(
+      statementCommandSchema.safeParse({
+        ...body,
+        entries: [entry, { ...entry, actionRevisionId: source }],
+      }).success,
+    ).toBe(false);
+  });
   it("derives exact recorded due without inventing an allocation or unknown opening balance", () => {
     expect(
       deriveStatementReconciliation(statementCommandSchema.parse(command())),

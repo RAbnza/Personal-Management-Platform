@@ -229,6 +229,53 @@ async function rawStatement(
   });
 }
 describe("V2-A3 statements", () => {
+  it("canonicalizes case-insensitive UUID references before immutable snapshot/audit comparison and replay", () =>
+    fixture(async (o) => {
+      const c = await card(o),
+        p = await purchase(o, c.cardId),
+        base = command(o, c.cardId);
+      const upper = {
+        ...base,
+        cardId: c.cardId.toUpperCase(),
+        clientCommandId: base.clientCommandId.toUpperCase(),
+        entries: [
+          {
+            description: "Provider purchase",
+            postingDate: "2026-10-12",
+            amountMinor: "300001",
+            actionRevisionId: p.actionRevisionId.toUpperCase(),
+          },
+        ],
+      };
+      const result = await recordCardStatement(upper);
+      expect(
+        await recordCardStatement({
+          ...upper,
+          cardId: c.cardId,
+          clientCommandId: base.clientCommandId,
+          entries: [
+            { ...upper.entries[0]!, actionRevisionId: p.actionRevisionId },
+          ],
+        }),
+      ).toEqual(result);
+      const detail = await getCardStatement({
+        ...o,
+        cardId: c.cardId.toUpperCase(),
+        statementId: result.statementId.toUpperCase(),
+        revisionId: result.revisionId.toUpperCase(),
+      });
+      expect(detail.snapshot.entries[0]?.actionRevisionId).toBe(
+        p.actionRevisionId,
+      );
+      const revised = await recordCardStatement({
+        ...upper,
+        clientCommandId: randomUUID(),
+        statementId: result.statementId.toUpperCase(),
+        expectedVersion: 1,
+        reason: "Provider reference confirmed",
+      });
+      expect(revised.version).toBe(2);
+    }));
   it("retains archived-card statements, exact provider bigint credit evidence and explicit out-of-cycle membership", () =>
     fixture(async (o) => {
       const c = await card(o),

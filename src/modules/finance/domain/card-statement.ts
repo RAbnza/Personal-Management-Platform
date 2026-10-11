@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { isCalendarDate } from "@/shared/calendar-date";
+// PostgreSQL UUID output is lowercase. Canonicalize accepted representations
+// before hashing intent or comparing immutable provider snapshots with audit.
+export const statementIdentifierSchema = z
+  .uuid()
+  .transform((value) => value.toLowerCase());
 const date = z.string().refine(isCalendarDate, "Enter a valid calendar date.");
 const amount = z
   .string()
@@ -17,7 +22,7 @@ export const statementEntrySchema = z
     postingDate: date.nullable().default(null),
     amountMinor: amount.nullable().default(null),
     providerReference: reference,
-    actionRevisionId: z.uuid().nullable().default(null),
+    actionRevisionId: statementIdentifierSchema.nullable().default(null),
   })
   .strict()
   .refine(
@@ -42,9 +47,9 @@ export const statementEvidenceSchema = z
   .strict();
 export const statementCommandSchema = statementEvidenceSchema
   .extend({
-    clientCommandId: z.uuid(),
-    cardId: z.uuid(),
-    statementId: z.uuid().optional(),
+    clientCommandId: statementIdentifierSchema,
+    cardId: statementIdentifierSchema,
+    statementId: statementIdentifierSchema.optional(),
     expectedVersion: z.number().int().min(1).max(2147483646).optional(),
     reason: z.string().trim().min(1).max(20000).optional(),
   })

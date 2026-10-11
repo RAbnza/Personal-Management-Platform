@@ -36,9 +36,9 @@ describe("AppShell", () => {
       screen.getByRole("link", {
         name: "Skip to main content",
       }),
-    ).toHaveAttribute("href", "#main-content");
+    ).toHaveAttribute("href", "#main-content-/");
 
-    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content-/");
 
     expect(screen.getByText("Jane Example")).toBeInTheDocument();
 
@@ -54,6 +54,32 @@ describe("AppShell", () => {
 
     expect(dashboardLink).toHaveAttribute("href", "/");
     expect(dashboardLink).toHaveAttribute("aria-current", "page");
+
+    const retained = render(
+      <>
+        <div style={{ display: "none" }}>
+          <AppShell {...shellProps} activePath="/onboarding">
+            Retained onboarding
+          </AppShell>
+        </div>
+        <AppShell {...shellProps} activePath="/settings">
+          Current Settings
+        </AppShell>
+      </>,
+    );
+    const mains = screen.getAllByRole("main", { hidden: true });
+    expect(new Set(mains.map((main) => main.id)).size).toBe(mains.length);
+    const currentMain = within(retained.container).getByRole("main");
+    const skipNavigation = within(retained.container).getByRole("navigation", {
+      name: "Skip navigation",
+    });
+    const currentSkip = within(skipNavigation).getByRole("link", {
+      name: "Skip to main content",
+    });
+    expect(
+      document.getElementById(currentSkip.getAttribute("href")!.slice(1)),
+    ).toBe(currentMain);
+    expect(currentMain).toHaveAttribute("tabindex", "-1");
   });
 
   it("opens and closes the mobile navigation dialog accessibly", async () => {
