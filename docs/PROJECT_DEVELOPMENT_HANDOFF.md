@@ -753,7 +753,7 @@ Final local evidence:
 
 Local development is migrated and healthy on port **3000**; the separate local worker is healthy on **3102**. Earlier user/runtime processes disappeared during execution; this work did not kill them. They were restarted hidden, preserving existing environment secrets and adding only missing local deployment/encryption settings. Worker configuration is ignored, uses separate credentials and keeps automated lifecycle purge disabled. Runtime logs live under ignored `node_modules/.cache/pmp-v1-c5-runtime`.
 
-Read [README/setup](../README.md), [V1 operations](V1_OPERATIONS.md), [user guide](V1_USER_GUIDE.md), [ADR 0004](adr/0004-v1-c5-security-mail-and-recovery.md) and the lifecycle runbook before deployment. Remaining C5 blockers require the actual approved deployment target/paid plan, verified security-mail sender, independent private backup/register location with enforced retention, operational support contact, monitoring and hosted capacity/PITR/restore/promotion evidence. Those credentials/configuration were not supplied. **V1 is not declared complete or production-ready. The continuation remains C5 production acceptance; V2 must not begin from this partial release checkpoint.**
+Read [README/setup](../README.md), [V1 operations](V1_OPERATIONS.md), [user guide](V1_USER_GUIDE.md), [ADR 0004](adr/0004-v1-c5-security-mail-and-recovery.md) and the lifecycle runbook before deployment. Remaining production acceptance requires the actual approved deployment target/paid plan, verified security-mail sender, independent private backup/register location with enforced retention, operational support contact, monitoring and hosted capacity/PITR/restore/promotion evidence. Those credentials/configuration were not supplied. **The later V2 transition decision supersedes this section's original release-continuation gate: V1 is functionally complete and locally accepted; V2 development is authorized. Public production release and its infrastructure acceptance remain deferred until after V3.** See [the V2 handoff](V2_DEVELOPMENT_HANDOFF.md) for current milestone progress.
 
 ---
 
@@ -1736,7 +1736,7 @@ Resolved in D12. Authorized hidden Career application sources open with a hidden
 
 D6b-D11 debt workflows and D12 active-debt payment correction/provider-confirmed clearing classification are released. Financial corrections after schedule mapping rebuild an immutable allocation-correction version; classifications never deduct cash again. Borrowing-origin reversal, finalized settlement/closed-debt corrections, active linked classification dependencies and incompatible refund/source changes remain explicit dependent-resolution rejections, as documented in section 5.12. No automatic settlement reopening or balance-zeroing exists.
 
-The immediate continuation is **V1-C5 production acceptance**. All eighteen coherent scenarios and local security/accessibility/financial/capacity/restore gates pass. No D12 or V1-C1–C4 product blocker remains within documented bounds. Production gates in section 5.17 remain open; V2/V3 and broad redesign are not started.
+All eighteen coherent scenarios and local security/accessibility/financial/capacity/restore gates pass. No D12 or V1-C1–C4 product blocker remains within documented bounds. Production gates in section 5.17 remain open and are deferred until after V3. The current continuation is the explicitly assigned V2 milestone recorded in [the V2 handoff](V2_DEVELOPMENT_HANDOFF.md); V3 and broad redesign remain unstarted.
 
 ### 14.4 Production lifecycle and authentication operations
 
@@ -1829,8 +1829,9 @@ As of this handoff:
 - V1 production release acceptance: intentionally deferred until after V2 and
   V3 because no public release will occur before then. The requirements remain
   mandatory and are not waived.
-- **Next phase: V2-A — Credit Cards and Statements.**
-- V2 financial maturity/shared expenses: not started.
+- **Current V2 milestone: V2-A1 — Card Integrity Foundation.** Implementation and acceptance evidence are recorded in [the V2 handoff](V2_DEVELOPMENT_HANDOFF.md).
+- **Next milestone after accepted A1: V2-A2 — Card Purchases and Unified Expense Entry**, only when explicitly assigned.
+- Remaining V2 financial maturity/shared expenses: not started.
 - V3 adaptable trackers: not started.
 - Final production-readiness/release phase: scheduled after V3. 
 

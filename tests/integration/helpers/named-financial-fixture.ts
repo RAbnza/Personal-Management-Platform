@@ -3,6 +3,7 @@ const labels = [
   "C5 performance fixture",
   "C5 restore fixture",
   "C5 email lifecycle fixture",
+  "V2-A1 card fixture",
 ] as const;
 /** Committed, large synthetic fixture teardown only. Never called by product
  * services. Mirrors established administrator fixture cleanup, with database,

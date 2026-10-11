@@ -420,10 +420,62 @@ No production requirement is waived by this sequence.
 
 ## 15. Immediate next step
 
-Create and review the V2 domain documentation.
+V2-A1 is implemented and locally accepted. Its scope and evidence are recorded below.
 
-Then officially start:
+After accepted V2-A1, the next assignment is:
 
-> **V2-A — Credit Cards and Statements**
+> **V2-A2 — Card Purchases and Unified Expense Entry**
 
-Continue from the repository itself, not from assumptions.
+Start it only when explicitly assigned. No later milestone is authorized by this handoff.
+
+---
+
+## 16. V2-A1 — Card Integrity Foundation
+
+**Implementation date:** October 11, 2026 (Asia/Manila).
+
+**Baseline:** clean `main`, `be160e934945e08f1a66e3b0d5a908c46eb71130`.
+
+**Acceptance:** completed and locally accepted; no A1 acceptance blocker remains. Production release is still deferred.
+
+**Commit lookup:** the milestone commit is `feat(finance): add v2-a1 card integrity foundation` on `main`; resolve its SHA with `git log -1 --format=%H -- src/platform/db/schema/credit-cards.ts`. The completion report records the actual SHA and verified push result. Hosted CI for this new commit is not claimed by the local evidence below.
+
+Implemented scope:
+
+- `finance.credit_card` stores name/issuer, optional exact provider limit and verification date, notes, archive state, immutable creation attribution and an optimistic version. Every card binds one dedicated, same-workspace, same-currency `card_liability` ledger. The binding, currency, scope and attribution cannot be repurposed even before any posting exists. Names/providers may repeat.
+- Trusted-server services create cards and update complete metadata/archive/restore intent. These commands use the existing profile/workspace locks, permanent command receipts, normalized intent hashes, audit revisions, workspace financial revision advancement and deferred constraint enforcement. Identical commands replay their original result, including a metadata command with an old expected version; changed intent conflicts. Request attribution is excluded from hashing. Creation does not record an opening amount or create an action, journal or posting.
+- Card metadata changes require matching versioned audit evidence and a completed permanent receipt at database commit. The metadata update contract replaces the full metadata payload; omitted optional values normalize to null. Currency and ledger binding are server controlled. These are internal services, not browser input contracts or publicly exposed card routes.
+- Scoped, bounded list/detail read models derive the credit-normal position from all posted original/reversal/replacement postings, without filtering to current action revisions. Outstanding liability and card credit are separate exact integer strings. Card credit and limits are never liquid cash. Missing/foreign card references share the same unavailable error. Archived cards retain identity/history and can be read explicitly.
+- `finance.card_activity` is reserved revision-scoped evidence with separate transaction/posting dates, nonzero signed liability, same-card identity and scoped action/revision FKs. App access is SELECT only; inserts/updates are additionally blocked by a database gate. There is no posted activity in A1.
+- Reserved action kinds are `opening_card`, `card_purchase`, `card_payment`, `card_fee`, `card_interest`, `card_refund`, `card_adjustment`; reserved activity kinds are purchase/payment/fee/interest/refund/opening/adjustment. Reservation does not enable financial execution. All seven action kinds and all card-liability postings are explicitly rejected by additional triggers; existing recipe/classification/finalization validators are unchanged.
+- Both new private tables have forced RLS with active owned profile/workspace predicates and scope-first relationships. Auth/queue/worker roles gain no card access. The separate lifecycle operator receives only the established approved-request SELECT/DELETE policy. Existing catalog-driven deletion previews and ordered graph purge include the new tables without widening runtime privileges.
+
+Database decisions:
+
+- Forward-only Drizzle structural migration `0076_blue_maddog.sql` and reviewed custom integrity migration `0077_v2_a1_card_integrity.sql`, with journal/snapshots. The numbered chain now contains **78 migrations / 60 declarative tables**; pinned auth/queue migrations retain their existing ownership.
+- Credit limits are nonnegative provider metadata, not journal components. They accept the full signed PostgreSQL bigint positive range, including zero/null, without Number conversion; actual posting limits remain unchanged. No utilization/provider allocation/minimum-payment formula is introduced.
+- Metadata creation/edit services are the narrow foundation dependency for independently exercising identity, versioning, audit, retry and lifecycle acceptance. There is no card-management UI/API or change to expense entry. Opening/import financial commands remain blocked until their own reviewed recipes exist.
+- The newer V2 transition and current assignment supersede the old C5 continuation text in the project handoff. Public production release remains deferred until after V3.
+
+Actual verification:
+
+- `pnpm db:migrate:test`: passed; existing V1 test database upgraded before database tests.
+- `pnpm exec vitest run tests/unit/credit-card.test.ts`: **21 passed**.
+- `pnpm exec vitest run --config=vitest.integration.config.ts tests/integration/credit-card-foundation.test.ts`: **19 passed**, including runtime SQL, exact metadata, no money movement, audit/rollback, absent/foreign/spoofed scope, restricted-role catalog/FKs, replay/conflict, independent-connection races, profile/workspace lock contention against deletion/raw card roots, and approved operator purge with another owner preserved. The added lock fixture initially used an inconsistent SQL parameter cast; that test-only query was corrected and all nineteen passed.
+- `pnpm db:verify:chain`: passed fresh/no-op **78-migration** chain and committed D6b–C4 financial/report/reminder/lifecycle smokes plus A1 card checks and actual card purge.
+- `pnpm db:verify:chain --upgrade-v1`: passed committed **76 → 78** upgrade, preserved V1 cash/history/report totals, then the complete fresh-chain smokes and card/lifecycle acceptance.
+- The existing acceptance workflow retains its V1 checks and C4 upgrade proof, and now also runs `--upgrade-v1` on future pushes/PRs.
+- `pnpm db:generate`: no schema drift.
+- `pnpm test --maxWorkers=2`: **695 unit/component tests / 102 files passed**. An unrestricted `pnpm test` attempt was interrupted after existing component timeout failures under many simultaneous workers; the bounded run preserves every original assertion/timeout.
+- `pnpm test:integration`: final run **419 integration/database tests / 58 files passed**, including the added lock test and all existing financial/security/lifecycle regressions. The preceding 418-test full run and final focused nineteen-test card run also passed.
+- `pnpm check`: lint, generated route types/TypeScript and full formatting passed. Final documentation formatting is rechecked before commit.
+- `pnpm build`: passed on Windows; the existing Windows standalone symlink warnings remain. `docker build --target web --tag pmp-v2-a1-web .` also passed on Linux, followed by a nonroot standalone-artifact check that loads `pg` and verifies no environment files/development test tooling. No public deployment occurred.
+- `pnpm db:migrate` and `pnpm db:check:runtime`: passed after test migration, financial regression and isolated chain verification. Development is now migrated through `0077`; restricted runtime connections and transaction-local scope cleanup are verified.
+- `$env:PMP_BROWSER_CHANNEL='chrome'; pnpm test:browser`: **27 production-browser tests passed**, including 320px reflow/axe, dark-theme contrast, keyboard focus, financial corrections/refunds/debt/reconciliation, private API inventory, reminders/reports/CSV, account switching, deletion and real one-time recovery. Card UI remains outside A1.
+- Structured snapshot review confirms only the two new card tables and two kind CHECK expansions differ from `0075`; the custom snapshot matches the structural schema. Complete diff review, full formatting and `git diff --check` pass. Only milestone implementation/tests/documentation/CI changes are included; no dependency, environment-secret, V1 UI or unrelated changes are included.
+
+Remaining boundary and next prerequisites:
+
+- No V2-A2 purchases, unified expense-entry changes, statement/reconciliation, payments/fees/interest/refunds, installments, shared expenses, other V2 domains, V3 or broad redesign.
+- A2 must implement and prove the purchase recipe, exact activity-to-revision liability movement, category/funding validation, immutable parent guards, posted dates, correction behavior and reporting semantics before selectively replacing any A1 gate or granting activity INSERT. It must preserve the gates for unreleased card commands. SQL balance projections beyond zero require acceptance fixtures posted through those complete recipes; A1 tests the sign/credit arithmetic in the domain and zero-only database position.
+- Full card browser/accessibility workflows belong to later assigned UI milestones. A1 introduces no UI surface; existing V1 browser/accessibility regression remains applicable. Production hosting/sender/PITR/retention/monitoring acceptance remains deferred, not waived.

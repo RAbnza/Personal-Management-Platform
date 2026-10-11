@@ -79,7 +79,8 @@ export const ledgerAccount = financeSchema.table(
           'opening_equity',
           'adjustment_equity',
           'debt_liability',
-          'payment_clearing_asset'
+          'payment_clearing_asset',
+          'card_liability'
         )
       `,
     ),
@@ -436,7 +437,14 @@ export const actionRevision = financeSchema.table(
           'debt_settlement',
           'debt_payment',
           'payment_reclassification'
-          ,'balance_adjustment','refund'
+          ,'balance_adjustment','refund',
+          'opening_card',
+          'card_purchase',
+          'card_payment',
+          'card_fee',
+          'card_interest',
+          'card_refund',
+          'card_adjustment'
         )
       `,
     ),

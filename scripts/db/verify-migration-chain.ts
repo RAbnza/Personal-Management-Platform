@@ -56,6 +56,14 @@ import { FinancialCommandConflictError } from "../../src/modules/finance/domain/
 import { getAccountHistory } from "../../src/modules/finance/services/get-account-history";
 import { importExistingDebt } from "../../src/modules/finance/services/import-existing-debt";
 import { openFinancialAccount } from "../../src/modules/finance/services/open-financial-account";
+import {
+  createCreditCard,
+  updateCreditCard,
+} from "../../src/modules/finance/services/credit-cards";
+import {
+  getCreditCardDetail,
+  listCreditCards,
+} from "../../src/modules/finance/services/read-credit-cards";
 import { recordBorrowing } from "../../src/modules/finance/services/record-borrowing";
 import { recordDebtPayment } from "../../src/modules/finance/services/record-debt-payment";
 import { PaymentPreviewStaleError } from "../../src/modules/finance/domain/debt-payment";
@@ -160,15 +168,19 @@ async function main() {
       migrationsTable: "__drizzle_migrations",
     };
 
-    if (process.argv.includes("--upgrade")) {
+    if (
+      process.argv.includes("--upgrade") ||
+      process.argv.includes("--upgrade-v1")
+    ) {
+      const baselineCount = process.argv.includes("--upgrade-v1") ? 76 : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
-      assert.ok(priorJournal.entries.length > 67);
+      assert.ok(priorJournal.entries.length > baselineCount);
       const folder = await mkdtemp(join(tmpdir(), "pmp-c4-upgrade-"));
       try {
         await mkdir(join(folder, "meta"));
-        const entries = priorJournal.entries.slice(0, 67);
+        const entries = priorJournal.entries.slice(0, baselineCount);
         for (const entry of entries)
           await copyFile(
             join(config.migrationsFolder, entry.tag + ".sql"),
@@ -185,7 +197,7 @@ async function main() {
               "SELECT count(*)::int count FROM drizzle.__drizzle_migrations",
             )
           ).rows[0].count,
-          67,
+          baselineCount,
         );
         process.env.DATABASE_URL = inDatabase(process.env.DATABASE_URL!);
         process.env.AUTH_DATABASE_URL = inDatabase(
@@ -241,7 +253,7 @@ async function main() {
         assert.equal(report.metrics.income, "100");
         assert.equal(report.metrics.closing_cash, "200100");
         console.log(
-          "C4 67-migration upgrade preserves committed account/history and exact report totals.",
+          `${baselineCount}-migration upgrade preserves committed account/history and exact report totals.`,
         );
       } finally {
         assert.equal(dirname(resolve(folder)), resolve(tmpdir()));
@@ -1847,6 +1859,66 @@ async function main() {
       (await updateProfile(owner, profileCommand)).displayName,
       profileCommand.displayName,
     );
+    const cardReportBefore = await getFinancialReport({
+      ...owner,
+      query: reportQuery,
+    });
+    const cardCommand = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      name: "Verification card",
+      issuerName: "Test issuer",
+      creditLimitMinor: "9007199254740993",
+    };
+    const card = await createCreditCard(cardCommand);
+    assert.deepEqual(
+      await createCreditCard({ ...cardCommand, requestId: randomUUID() }),
+      card,
+    );
+    await assert.rejects(
+      createCreditCard({ ...cardCommand, name: "Conflicting card" }),
+      FinancialCommandConflictError,
+    );
+    assert.equal(
+      (await getCreditCardDetail({ ...owner, cardId: card.cardId })).card
+        .postedOutstandingMinor,
+      "0",
+    );
+    assert.equal(
+      (await getCreditCardDetail({ ...owner, cardId: card.cardId })).card
+        .creditLimitMinor,
+      "9007199254740993",
+    );
+    const preservedCard = await createCreditCard({
+      ...other,
+      clientCommandId: randomUUID(),
+      name: "Preserved other card",
+      issuerName: "Other issuer",
+    });
+    await assert.rejects(
+      getCreditCardDetail({ ...owner, cardId: preservedCard.cardId }),
+    );
+    await updateCreditCard({
+      ...owner,
+      clientCommandId: randomUUID(),
+      cardId: card.cardId,
+      expectedVersion: 1,
+      name: "Archived verification card",
+      issuerName: "Test issuer",
+      archived: true,
+    });
+    assert.equal((await listCreditCards(owner)).items.length, 0);
+    assert.equal(
+      (await listCreditCards({ ...owner, includeArchived: true })).items.length,
+      1,
+    );
+    assert.deepEqual(
+      (await getFinancialReport({ ...owner, query: reportQuery })).metrics,
+      cardReportBefore.metrics,
+    );
+    console.log(
+      "V2-A1 card identity, exact metadata, replay/conflict, archive, ownership and unchanged V1 financial totals passed.",
+    );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
     await getAuthPool().query(
@@ -1933,6 +2005,20 @@ async function main() {
           ])
         ).rowCount,
         1,
+      );
+      assert.equal(
+        (await getCreditCardDetail({ ...other, cardId: preservedCard.cardId }))
+          .card.name,
+        "Preserved other card",
+      );
+      assert.equal(
+        (
+          await fixtureAdministrator.query(
+            "SELECT id FROM finance.credit_card WHERE id=$1",
+            [card.cardId],
+          )
+        ).rowCount,
+        0,
       );
     } finally {
       await operator.end();
