@@ -6,6 +6,10 @@ import { FinancialActionReviewForm } from "@/components/money/financial-action-r
 import { Panel } from "@/components/ui/panel";
 import { getFinancialActionDetail } from "@/modules/finance/services/correct-financial-action";
 import { listFinancialAccounts } from "@/modules/finance/services/list-financial-accounts";
+import {
+  getCreditCardDetail,
+  listCreditCards,
+} from "@/modules/finance/services/read-credit-cards";
 import { listCategories } from "@/modules/core/services/list-categories";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { debtWorkspace } from "../../debts/_workspace";
@@ -17,9 +21,9 @@ export default async function FinancialActionPage({
   const { user, workspace } = await debtWorkspace(),
     id = z.uuid().safeParse((await params).actionId);
   if (!id.success) notFound();
-  let detail, accounts, categories;
+  let detail, accounts, categories, cards;
   try {
-    [detail, accounts, categories] = await Promise.all([
+    [detail, accounts, categories, cards] = await Promise.all([
       getFinancialActionDetail({
         userId: user.id,
         workspaceId: workspace.id,
@@ -35,7 +39,27 @@ export default async function FinancialActionPage({
         workspaceId: workspace.id,
         includeArchived: true,
       }),
+      listCreditCards({
+        userId: user.id,
+        workspaceId: workspace.id,
+        includeArchived: true,
+        pageSize: 100,
+      }),
     ]);
+    // Preserve access to the bound historical card beyond the bounded picker.
+    const boundCardId = detail.current.evidence.cardId;
+    if (
+      detail.current.actionKind === "card_purchase" &&
+      typeof boundCardId === "string" &&
+      !cards.items.some((card) => card.cardId === boundCardId)
+    ) {
+      const bound = await getCreditCardDetail({
+        userId: user.id,
+        workspaceId: workspace.id,
+        cardId: boundCardId,
+      });
+      cards.items.push(bound.card);
+    }
   } catch (error) {
     if (error instanceof FinancialActionUnavailableError) notFound();
     return (
@@ -83,6 +107,7 @@ export default async function FinancialActionPage({
           detail={detail}
           accounts={accounts.items}
           categories={categories.items}
+          cards={cards.items}
           today={new Intl.DateTimeFormat("en-CA", {
             timeZone: workspace.timezone,
             year: "numeric",

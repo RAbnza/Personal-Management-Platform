@@ -117,8 +117,20 @@ test("financial periods, exact source drilldown and CSV download work on mobile"
     period_end_inclusive: today,
     date_basis: "financial_effective_date",
     row_count: "3",
-    schema_version: "1",
+    schema_version: "2",
+    definition_version: "v2-a2-reports-signed-card-purchases-1",
   });
+  expect(
+    rows
+      .filter((r) => r.record_type === "posting")
+      .every(
+        (r) =>
+          r.card_id === "" &&
+          r.card_name === "" &&
+          r.posting_date === "" &&
+          r.provider_reference === "",
+      ),
+  ).toBe(true);
   expect(
     rows
       .filter((r) => r.record_type === "posting")

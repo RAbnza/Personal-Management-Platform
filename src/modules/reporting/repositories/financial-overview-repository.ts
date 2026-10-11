@@ -60,6 +60,9 @@ export type FinancialContribution = {
   incomeClass: string;
   cashFlowKind: string;
   cashFlowDirection: string;
+  cardId: string | null;
+  cardName: string | null;
+  postingDate: string | null;
   liabilityComponent: string | null;
 };
 export async function readFinancialContributions(
@@ -69,6 +72,7 @@ export async function readFinancialContributions(
   input: {
     metric: FinancialMetric;
     categoryId?: string;
+    cardId?: string;
     ledgerId?: string;
     flowKind?: string;
     liabilityComponent?: string;
@@ -80,6 +84,7 @@ export async function readFinancialContributions(
   const base = sql`${postingFacts(workspaceId)}, contributions AS (SELECT *,${expression} AS contribution FROM facts
     WHERE ${metricDatePredicate(input.metric, period.startDate, period.endDateExclusive)} ${input.categoryId === "uncategorized" ? sql`AND category_id IS NULL` : input.categoryId ? sql`AND category_id=${input.categoryId}::uuid` : sql``}
       ${input.ledgerId ? sql`AND ledger_account_id=${input.ledgerId}::uuid` : sql``}
+      ${input.cardId ? sql`AND card_id=${input.cardId}::uuid` : sql``}
       ${input.flowKind ? sql`AND cash_flow_kind=${input.flowKind}` : sql``}
       ${input.liabilityComponent ? sql`AND liability_component=${input.liabilityComponent}` : sql``})`;
   const total = await t.db.execute<{ amountMinor: string; count: string }>(
@@ -94,7 +99,7 @@ export async function readFinancialContributions(
   const r = await t.db.execute<FinancialContribution>(sql`${base}
     SELECT id AS "postingId",action_id AS "actionId",action_revision_id AS "actionRevisionId",journal_id AS "journalId",effective_date::text AS "effectiveDate",contribution::text AS "amountMinor",
       ledger_name AS "ledgerName",ledger_kind AS "ledgerKind",description,category,category_id AS "categoryId",journal_role AS "journalRole",revision_no AS "revisionNo",action_kind AS "actionKind",
-      expense_class AS "expenseClass",income_class AS "incomeClass",cash_flow_kind AS "cashFlowKind",cash_flow_direction AS "cashFlowDirection",liability_component AS "liabilityComponent"
+      expense_class AS "expenseClass",income_class AS "incomeClass",cash_flow_kind AS "cashFlowKind",cash_flow_direction AS "cashFlowDirection",liability_component AS "liabilityComponent",card_id AS "cardId",card_name AS "cardName",posting_date::text AS "postingDate"
     FROM contributions WHERE contribution IS NOT NULL
       ${input.after ? sql`AND (effective_date,id)<(SELECT effective_date,id FROM contributions WHERE id=${input.after}::uuid)` : sql``}
     ORDER BY effective_date DESC,id DESC LIMIT ${(input.limit ?? 100) + 1}`);
@@ -193,5 +198,23 @@ export async function readLiabilityBreakdowns(
       (-sum(amount))::text AS closing FROM facts WHERE ledger_kind='debt_liability' AND effective_date<${period.endDateExclusive}::date GROUP BY ledger_account_id)
     SELECT d.id AS "debtId",d.liability_ledger_account_id AS "ledgerId",d.name,COALESCE(b.opening,'0') AS "openingMinor",COALESCE(b.closing,'0') AS "closingMinor"
     FROM finance.debt d LEFT JOIN balances b ON b.ledger_account_id=d.liability_ledger_account_id WHERE d.workspace_id=${workspaceId}::uuid ORDER BY d.name,d.id`);
-  return { liabilityComponents: components.rows, liabilityRecords: debts.rows };
+  const cards = await t.db.execute<{
+    cardId: string;
+    ledgerId: string;
+    name: string;
+    openingMinor: string;
+    closingMinor: string;
+    spendingMinor: string;
+  }>(sql`${postingFacts(workspaceId)}, card_totals AS (
+    SELECT card_id,(-COALESCE(sum(amount) FILTER(WHERE ledger_kind='card_liability' AND effective_date<${period.startDate}::date),0))::text AS opening,
+      (-COALESCE(sum(amount) FILTER(WHERE ledger_kind='card_liability'),0))::text AS closing,
+      COALESCE(sum(amount) FILTER(WHERE expense_class<>'none' AND effective_date>=${period.startDate}::date),0)::text AS spending
+    FROM facts WHERE card_id IS NOT NULL AND effective_date<${period.endDateExclusive}::date GROUP BY card_id)
+    SELECT c.id AS "cardId",c.liability_ledger_account_id AS "ledgerId",c.name,COALESCE(b.opening,'0') AS "openingMinor",COALESCE(b.closing,'0') AS "closingMinor",COALESCE(b.spending,'0') AS "spendingMinor"
+    FROM finance.credit_card c LEFT JOIN card_totals b ON b.card_id=c.id WHERE c.workspace_id=${workspaceId}::uuid ORDER BY c.name,c.id`);
+  return {
+    liabilityComponents: components.rows,
+    liabilityRecords: debts.rows,
+    cardRecords: cards.rows,
+  };
 }

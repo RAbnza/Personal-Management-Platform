@@ -431,21 +431,21 @@ describe("V2-A1 credit card foundation", () => {
       });
     }));
 
-  it.each(RESERVED_CARD_ACTION_KINDS)(
-    "blocks reserved %s even in building state",
-    async (kind) =>
-      fixture(async (owner) => {
-        await scoped(owner, async (c) => {
-          await rejectedSql(
-            c,
-            "INSERT INTO finance.action_revision(workspace_id,action_id,revision_no,command_receipt_id,change_kind,action_kind,primary_effective_date,currency,actor_kind,recorded_by_user_id) VALUES($1,$2,1,$3,'create',$4,'2026-10-11','PHP','user',$5)",
-            [owner.workspaceId, randomUUID(), randomUUID(), kind, owner.userId],
-          );
-        });
-      }),
+  it.each(
+    RESERVED_CARD_ACTION_KINDS.filter((kind) => kind !== "card_purchase"),
+  )("blocks reserved %s even in building state", async (kind) =>
+    fixture(async (owner) => {
+      await scoped(owner, async (c) => {
+        await rejectedSql(
+          c,
+          "INSERT INTO finance.action_revision(workspace_id,action_id,revision_no,command_receipt_id,change_kind,action_kind,primary_effective_date,currency,actor_kind,recorded_by_user_id) VALUES($1,$2,1,$3,'create',$4,'2026-10-11','PHP','user',$5)",
+          [owner.workspaceId, randomUUID(), randomUUID(), kind, owner.userId],
+        );
+      });
+    }),
   );
 
-  it("denies activity writes, arbitrary card postings, grants and tenant-bypass settings", async () =>
+  it("denies activity without a building parent, arbitrary card postings, grants and tenant-bypass settings", async () =>
     fixture(async (owner) => {
       const created = await createCreditCard(command(owner));
       await scoped(owner, async (c, t) => {
@@ -453,7 +453,7 @@ describe("V2-A1 credit card foundation", () => {
           c,
           "INSERT INTO finance.card_activity(workspace_id,card_id,action_id,action_revision_id,activity_kind,transaction_date,posting_date,signed_liability_minor) VALUES($1,$2,$3,$4,'purchase','2026-10-11','2026-10-11',-100)",
           [owner.workspaceId, created.cardId, randomUUID(), randomUUID()],
-          "42501",
+          "23503",
         );
         await rejectedSql(c, "TRUNCATE finance.credit_card", [], "42501");
         await c.query("SELECT set_config('app.skip_immutability','true',true)");

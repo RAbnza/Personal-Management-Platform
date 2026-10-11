@@ -107,7 +107,7 @@ export function DashboardView({
                 : money(f.trackedNetMinor)
             }
             href="#financial-coverage"
-            note="Liquid funds plus recognized debt credits less recognized liabilities; limited coverage."
+            note="Liquid funds plus recorded debt/card credits less recognized liabilities; limited coverage."
           />
           <Metric
             title="Upcoming contractual payments"
@@ -218,6 +218,21 @@ export function DashboardView({
               ))}
             </ul>
           )}
+        </details>
+        <details className="mt-4">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Supporting credit card liabilities
+          </summary>
+          <ul className="divide-y divide-border">
+            {f.cards.map((c) => (
+              <li key={c.cardId} className="py-3">
+                <Link href={`/money/cards/${c.cardId}`} className={linkClass}>
+                  {c.name}: {money(c.liabilityMinor)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {!f.cards.length && <p>No tracked cards.</p>}
         </details>
       </Panel>
       <Panel

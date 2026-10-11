@@ -23,7 +23,7 @@ test("V1 critical routes reflow at 320px, expose labels/noncolor states and meet
     "/help",
   ]) {
     await page.goto(path);
-    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("main")).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -57,7 +57,7 @@ test("saved dark theme preserves contrast and error cues at 320px", async ({
   ]) {
     await page.goto(path);
     await expect(page.locator("html")).toHaveClass(/dark/);
-    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("main")).toBeVisible();
     if (path === "/money/debts/import") {
       await page
         .getByRole("button", { name: "Review import", exact: true })

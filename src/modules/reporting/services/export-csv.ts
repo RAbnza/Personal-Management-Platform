@@ -35,7 +35,7 @@ export const exportKindSchema = z.enum([
   "applications",
   "report",
 ]);
-export const CSV_SCHEMA_VERSION = 1;
+export const CSV_SCHEMA_VERSION = 2;
 export const EXPORT_BYTE_LIMIT = 10 * 1024 * 1024;
 export async function prepareCsvSnapshotInTransaction(
   t: ScopedTransaction,

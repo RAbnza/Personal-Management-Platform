@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   context: vi.fn(),
   accounts: vi.fn(),
   debts: vi.fn(),
+  cards: vi.fn(),
   spending: vi.fn(),
   reconciliation: vi.fn(),
   career: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock("@/modules/time/services/list-agenda-items", () => ({
 }));
 vi.mock("@/modules/dashboard/repositories/dashboard-repository", () => ({
   readDashboardDebts: mocks.debts,
+  readDashboardCards: mocks.cards,
   readReconciliationAttention: mocks.reconciliation,
   readCareerSnapshot: mocks.career,
   readRecentActivity: mocks.activity,
@@ -51,6 +53,7 @@ beforeEach(() => {
   });
   mocks.accounts.mockResolvedValue([]);
   mocks.debts.mockResolvedValue([]);
+  mocks.cards.mockResolvedValue([]);
   mocks.spending.mockResolvedValue(d.finance.spending);
   mocks.reconciliation.mockResolvedValue([]);
   mocks.career.mockResolvedValue({ applications: [], events: [] });
@@ -58,6 +61,28 @@ beforeEach(() => {
   mocks.activity.mockResolvedValue([]);
 });
 describe("Dashboard service contract", () => {
+  it("includes exact card liability and card credits in net position without adding liquid funds", async () => {
+    mocks.cards.mockResolvedValue([
+      {
+        cardId: paymentIds.debt,
+        name: "Visa",
+        liabilityMinor: "9007199254740993",
+      },
+      {
+        cardId: paymentIds.revision,
+        name: "Credit card credit",
+        liabilityMinor: "-200",
+      },
+    ]);
+    const r = await getDashboard(actor);
+    expect(r.finance).toMatchObject({
+      liquidMinor: "0",
+      liabilitiesMinor: "9007199254740993",
+      liabilityCreditMinor: "200",
+      trackedNetMinor: "-9007199254740793",
+    });
+    expect(r.coverage.noDebts).toBe(false);
+  });
   it("uses one read-only snapshot and includes archived accounts regardless of navigation preferences", async () => {
     const result = await getDashboard({ ...actor, query: { period: "week" } });
     expect(mocks.transaction).toHaveBeenCalledWith(
@@ -73,6 +98,7 @@ describe("Dashboard service contract", () => {
       mocks.context,
       mocks.accounts,
       mocks.debts,
+      mocks.cards,
       mocks.spending,
       mocks.reconciliation,
       mocks.career,

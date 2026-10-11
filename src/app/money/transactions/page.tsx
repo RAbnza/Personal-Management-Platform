@@ -16,6 +16,7 @@ import {
   listFinancialAccounts,
   type ListFinancialAccountsResult,
 } from "@/modules/finance/services/list-financial-accounts";
+import { listCreditCards } from "@/modules/finance/services/read-credit-cards";
 
 export default async function MoneyTransactionsPage() {
   const bootstrap = await resolvePrivateAppBootstrap(await headers());
@@ -84,6 +85,7 @@ export default async function MoneyTransactionsPage() {
   let accounts: ListFinancialAccountsResult | null = null;
 
   let categories: ListCategoriesResult | null = null;
+  let cards: Awaited<ReturnType<typeof listCreditCards>> | null = null;
 
   try {
     accounts = await listFinancialAccounts({
@@ -97,6 +99,11 @@ export default async function MoneyTransactionsPage() {
       workspaceId: workspace.id,
       includeArchived: false,
     });
+    cards = await listCreditCards({
+      userId: user.id,
+      workspaceId: workspace.id,
+      pageSize: 100,
+    });
   } catch {
     console.error("Transaction setup data could not be loaded.");
   }
@@ -107,10 +114,11 @@ export default async function MoneyTransactionsPage() {
    * results for every subsequent render branch.
    */
   const transactionSetup =
-    accounts !== null && categories !== null
+    accounts !== null && categories !== null && cards !== null
       ? {
           accounts,
           categories,
+          cards,
         }
       : null;
 
@@ -145,9 +153,8 @@ export default async function MoneyTransactionsPage() {
           </h1>
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
-            Record actual income or spending against one of your financial
-            accounts. Saving changes the account through the ledger rather than
-            editing its balance directly.
+            Record actual income or a purchase paid from an account or credit
+            card.
           </p>
         </header>
 
@@ -173,7 +180,8 @@ export default async function MoneyTransactionsPage() {
               Retry transaction setup
             </Link>
           </Panel>
-        ) : transactionSetup.accounts.items.length === 0 ? (
+        ) : transactionSetup.accounts.items.length === 0 &&
+          transactionSetup.cards.items.length === 0 ? (
           <Panel
             title="Add an account first"
             description="Actual income and expenses must identify the financial account where money was received or spent."
@@ -189,12 +197,19 @@ export default async function MoneyTransactionsPage() {
             >
               Add financial account
             </Link>
+            <Link
+              href="/money/cards"
+              className="ml-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline"
+            >
+              Add credit card
+            </Link>
           </Panel>
         ) : (
           <TransactionCreateForm
             currency={workspace.currency}
             accounts={transactionSetup.accounts.items}
             categories={transactionSetup.categories.items}
+            cards={transactionSetup.cards.items}
           />
         )}
       </div>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordCardPurchaseInputSchema } from "./card-purchase";
 export class FinancialActionUnavailableError extends Error {
   constructor() {
     super("Financial action is unavailable in this workspace.");
@@ -194,6 +195,9 @@ const correctedPaymentIntentSchema = z
         context.addIssue({ ...issue, path: issue.path });
   });
 export const replacementIntentSchema = z.discriminatedUnion("actionKind", [
+  recordCardPurchaseInputSchema
+    .omit(omitActor)
+    .extend({ actionKind: z.literal("card_purchase") }),
   recordIncomeInputSchema
     .omit(omitActor)
     .extend({ actionKind: z.literal("income") }),

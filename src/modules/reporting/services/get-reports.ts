@@ -66,7 +66,9 @@ export async function readReportCoverage(
         d.breakdownStatus !== "known" || d.unclassifiedLiabilityMinor !== "0",
     ),
     noAccounts: !coverage.cutoffs.some((c) => c.kind === "account"),
-    noDebts: !coverage.cutoffs.some((c) => c.kind === "debt"),
+    noDebts: !coverage.cutoffs.some(
+      (c) => c.kind === "debt" || c.kind === "card",
+    ),
     note: "Liquid funds and recognized liability use period-end postings. Current schedules use today's finalized version and allocations, not historical schedule reconstruction. Available credit and uncertain clearing are excluded from net position.",
   };
 }
@@ -119,6 +121,7 @@ export async function getFinancialDetailInTransaction(
       metric,
       categoryId,
       ledgerId,
+      cardId,
       flowKind,
       liabilityComponent,
       after,
@@ -157,11 +160,32 @@ export async function getFinancialDetailInTransaction(
     );
     if (!r.rows.length) throw new RangeError("Unavailable ledger.");
   }
+  if (cardId) {
+    if (
+      ![
+        "gross",
+        "net",
+        "offsets",
+        "opening_liability",
+        "closing_liability",
+        "liability_increases",
+        "liability_reductions",
+      ].includes(metric)
+    )
+      throw new RangeError(
+        "Card filters support spending and liability contributions.",
+      );
+    const card = await t.db.execute(
+      sql`SELECT 1 FROM finance.credit_card WHERE workspace_id=${input.workspaceId}::uuid AND id=${cardId}::uuid`,
+    );
+    if (!card.rows.length) throw new RangeError("Unavailable card.");
+  }
   return {
     ...context,
     metric,
     categoryId: categoryId ?? null,
     selection: {
+      ...(cardId ? { cardId } : {}),
       ...(ledgerId ? { ledgerId } : {}),
       ...(flowKind ? { flowKind } : {}),
       ...(liabilityComponent ? { liabilityComponent } : {}),
@@ -169,6 +193,7 @@ export async function getFinancialDetailInTransaction(
     coverage: await readFinancialCoverage(t, input.workspaceId, context.period),
     ...(await readFinancialContributions(t, input.workspaceId, context.period, {
       metric,
+      ...(cardId ? { cardId } : {}),
       ...(categoryId ? { categoryId } : {}),
       ...(ledgerId ? { ledgerId } : {}),
       ...(flowKind ? { flowKind } : {}),

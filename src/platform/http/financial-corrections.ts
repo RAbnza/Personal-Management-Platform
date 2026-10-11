@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CreditCardUnavailableError } from "@/modules/finance/domain/credit-card";
 import {
   correctFinancialActionBodySchema,
   reverseFinancialActionBodySchema,
@@ -42,7 +43,8 @@ export function financialCorrectionProblem(error: unknown, requestId: string) {
   if (
     error instanceof FinancialAccountReferenceUnavailableError ||
     error instanceof FinancialCategoryReferenceUnavailableError ||
-    error instanceof FinancialActionUnavailableError
+    error instanceof FinancialActionUnavailableError ||
+    error instanceof CreditCardUnavailableError
   )
     return createApiProblemResponse({
       status: 404,

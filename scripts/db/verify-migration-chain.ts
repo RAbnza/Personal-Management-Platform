@@ -1,4 +1,7 @@
-import { recordExpense } from "../../src/modules/finance/services/record-expense";
+import {
+  recordExpense,
+  recordCardPurchase,
+} from "../../src/modules/finance/services/record-expense";
 import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
 import { mutatePersonalEvent } from "../../src/modules/time/services/mutate-personal-event";
 import {
@@ -170,9 +173,14 @@ async function main() {
 
     if (
       process.argv.includes("--upgrade") ||
-      process.argv.includes("--upgrade-v1")
+      process.argv.includes("--upgrade-v1") ||
+      process.argv.includes("--upgrade-a1")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-v1") ? 76 : 67;
+      const baselineCount = process.argv.includes("--upgrade-a1")
+        ? 78
+        : process.argv.includes("--upgrade-v1")
+          ? 76
+          : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -233,7 +241,29 @@ async function main() {
           incomeClass: "gift",
           description: "Preserved C4 financial evidence",
         });
+        const baselineCard =
+          baselineCount === 78
+            ? await createCreditCard({
+                userId,
+                workspaceId,
+                clientCommandId: randomUUID(),
+                name: "Preserved A1 card",
+                issuerName: "Issuer",
+                creditLimitMinor: "9007199254740993",
+              })
+            : null;
         await migrate(db, config);
+        if (baselineCard)
+          assert.equal(
+            (
+              await getCreditCardDetail({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+              })
+            ).card.creditLimitMinor,
+            "9007199254740993",
+          );
         const history = await getAccountHistory({
           userId,
           workspaceId,
@@ -1918,6 +1948,61 @@ async function main() {
     );
     console.log(
       "V2-A1 card identity, exact metadata, replay/conflict, archive, ownership and unchanged V1 financial totals passed.",
+    );
+    await updateCreditCard({
+      ...owner,
+      clientCommandId: randomUUID(),
+      cardId: card.cardId,
+      expectedVersion: 2,
+      name: "Verification card",
+      issuerName: "Test issuer",
+      archived: false,
+    });
+    const cardPurchase = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      cardId: card.cardId,
+      effectiveDate: "2026-10-10",
+      postingDate: "2026-11-02",
+      providerReference: "Verified provider line",
+      purchaseMinor: "300000",
+      splits: [{ amountMinor: "300000", categoryId: null }],
+      description: "A2 migration-chain purchase",
+    };
+    const recordedCardPurchase = await recordCardPurchase(cardPurchase);
+    assert.deepEqual(
+      await recordCardPurchase(cardPurchase),
+      recordedCardPurchase,
+    );
+    const cardReportAfter = await getFinancialReport({
+      ...owner,
+      query: reportQuery,
+    });
+    assert.equal(
+      cardReportAfter.metrics.closing_cash,
+      cardReportBefore.metrics.closing_cash,
+    );
+    assert.equal(
+      cardReportAfter.metrics.gross,
+      (BigInt(cardReportBefore.metrics.gross) + 300000n).toString(),
+    );
+    assert.equal(
+      cardReportAfter.metrics.closing_liability,
+      (BigInt(cardReportBefore.metrics.closing_liability) + 300000n).toString(),
+    );
+    assert.equal(
+      (await getCreditCardDetail({ ...owner, cardId: card.cardId })).card
+        .postedOutstandingMinor,
+      "300000",
+    );
+    await recordCardPurchase({
+      ...cardPurchase,
+      ...other,
+      cardId: preservedCard.cardId,
+      clientCommandId: randomUUID(),
+    });
+    console.log(
+      "V2-A2 posted card purchase, replay, spending/liability once, unchanged cash and provider evidence passed.",
     );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();

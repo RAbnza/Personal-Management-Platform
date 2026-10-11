@@ -10,7 +10,8 @@ export const reportQuerySchema = dashboardQuerySchema
   })
   .strict();
 export type ReportQuery = z.input<typeof reportQuerySchema>;
-export const REPORT_DEFINITION_VERSION = "v1-reports-signed-cohort-1";
+export const REPORT_DEFINITION_VERSION =
+  "v2-a2-reports-signed-card-purchases-1";
 export const CAREER_COVERAGE_NOTE =
   "Submitted-date cohort, including archived attempts. Response means an explicitly dated, noncancelled response event; stage changes do not invent responses. Outcomes use corrected effective history through the as-of date. Event counts cover the selected event-date period, including other cohorts. Snapshot knowledge is current; as-of is an effective observation cutoff, not historical database knowledge.";
 export const financialMetrics = {
@@ -51,6 +52,7 @@ export const financialDetailQuerySchema = reportQuerySchema
     ),
     categoryId: z.union([z.uuid(), z.literal("uncategorized")]).optional(),
     ledgerId: z.uuid().optional(),
+    cardId: z.uuid().optional(),
     flowKind: z
       .enum([
         "income",

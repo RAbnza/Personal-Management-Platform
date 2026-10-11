@@ -900,6 +900,9 @@ export const purchaseDetail = financeSchema.table(
       mode: "bigint",
     }).notNull(),
     merchantName: text("merchant_name"),
+    // Immutable provider evidence also covers corrections with zero net liability.
+    cardPostingDate: date("card_posting_date", { mode: "string" }),
+    cardProviderReference: text("card_provider_reference"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })

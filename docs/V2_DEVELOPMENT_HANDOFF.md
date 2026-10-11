@@ -420,11 +420,11 @@ No production requirement is waived by this sequence.
 
 ## 15. Immediate next step
 
-V2-A1 is implemented and locally accepted. Its scope and evidence are recorded below.
+V2-A2 is implemented and locally accepted. Its scope and actual verification evidence are recorded in section 17; section 16 preserves the A1 milestone record.
 
-After accepted V2-A1, the next assignment is:
+After accepted V2-A2, the next assignment is:
 
-> **V2-A2 — Card Purchases and Unified Expense Entry**
+> **V2-A3 — Statements and Reconciliation**
 
 Start it only when explicitly assigned. No later milestone is authorized by this handoff.
 
@@ -479,3 +479,49 @@ Remaining boundary and next prerequisites:
 - No V2-A2 purchases, unified expense-entry changes, statement/reconciliation, payments/fees/interest/refunds, installments, shared expenses, other V2 domains, V3 or broad redesign.
 - A2 must implement and prove the purchase recipe, exact activity-to-revision liability movement, category/funding validation, immutable parent guards, posted dates, correction behavior and reporting semantics before selectively replacing any A1 gate or granting activity INSERT. It must preserve the gates for unreleased card commands. SQL balance projections beyond zero require acceptance fixtures posted through those complete recipes; A1 tests the sign/credit arithmetic in the domain and zero-only database position.
 - Full card browser/accessibility workflows belong to later assigned UI milestones. A1 introduces no UI surface; existing V1 browser/accessibility regression remains applicable. Production hosting/sender/PITR/retention/monitoring acceptance remains deferred, not waived.
+
+---
+
+## 17. V2-A2 — Card Purchases and Unified Expense Entry
+
+**Implementation date:** October 11, 2026 (Asia/Manila).
+
+**Baseline:** clean `main`, `fe91c6f94f9b702a23eb38dec662029bebcd3df7`; committed and remotely confirmed V2-A1 foundation.
+
+**Acceptance:** completed and locally accepted; no A2 acceptance blocker remains. Production release is still deferred. A3 has not been started.
+
+**Commit lookup:** `feat(finance): add v2-a2 card purchases and expense funding` on `main`; resolve the milestone SHA with `git log -1 --format=%H -- src/modules/finance/domain/card-purchase.ts`. The completion report records the actual SHA and verified remote push. Hosted CI for this commit is not claimed by the local results below.
+
+Implemented scope and decisions:
+
+- Ordinary Add Expense offers active cash accounts and credit cards together, including card-only workspaces. Income retains cash funding. A posted card purchase requires an explicit provider-confirmed posting date; transaction date determines spending periods. Provider reference is optional. Pending authorizations are unsupported and cannot post money. Card creation exposes the completed A1 metadata command through a private API and a minimal name/issuer form; it creates no opening financial entry.
+- The shared expense service retains the existing cash command/hash/receipt behavior and strictly separates the new `card_purchase` input. One posted transaction-date journal debits gross category expense and credits exactly the selected dedicated card liability. It changes neither cash nor income. Exact minor-unit strings, category splits, same currency, active references, profile/workspace locks, permanent receipts, attributed audit evidence, financial revision advancement and commit-time constraints remain mandatory. Identical retries return the original result before checking subsequently archived references; changed intent conflicts.
+- Immutable purchase detail retains posting date/reference independently of liability movement. `card_activity` records exactly one nonzero signed net movement per revision/card, including reversals and replacements. Provider-only or category-only corrections can have zero net liability and therefore create no zero-valued activity row; the new purchase evidence still preserves that revision in card history. Card-to-card corrections reverse the original card and charge the replacement without recognizing an extra expense. A correction may retain its original archived card/category; newly selected references must be active. Correction/reversal remains within the existing immutable review, reason, version and retry workflow.
+- Private card pages expose exact recorded outstanding/card-credit positions and bounded activity history, with separate transaction/provider dates and preserved correction reasons. Financial activity supports card, category, cash/card and transaction/posting-date filters without multiplying logical actions. The correction picker retains its bound historical card even beyond its first bounded page.
+- Reports, spending/category contributions, dashboard liability/net position and transaction CSVs include the same signed posting facts. Card metadata joins retain one posting per row, including source classification/provider evidence on reversals. Card limits/credits never increase liquid cash. Unknown provider history, statements and scheduled dues are not invented. Updating existing dashboard totals is required for A2 accounting consistency; later integrated card surfaces remain deferred.
+- Financial calculation definitions advance to `v2-a2-posted-signed-cards-1` and `v2-a2-reports-signed-card-purchases-1`; CSV schema advances to **2**, adding card identity/name, provider posting date and reference. The export contract documents the change; existing export provenance retains its original versions.
+
+Database and prerequisite resolution:
+
+- Forward-only structural migration `0078_damp_stranger.sql` adds two nullable provider-evidence columns to purchase detail. Custom migration `0079_v2_a2_card_purchase_integrity.sql` selectively releases the purchase recipe/card postings and grants activity INSERT only to `app_domain`. All other reserved card commands remain gated. Existing V1 recipe validators, journal balancing, posting classification and reversal contracts remain installed; the classifier adds one card-liability branch. A universal deferred revision validator rejects missing/mismatched purchase, posting, activity and attributed audit evidence, unrelated recipes and cash movement, even for balanced raw runtime SQL.
+- Forced RLS, scoped FKs, financial-root locks, building-parent guards, append-only protections and the separate approved lifecycle purge policy remain enforced. Runtime activity UPDATE/DELETE and privilege/bypass attempts fail. Actual operator purge removes the complete card graph while preserving another owner.
+- Structured snapshot comparison confirms only `finance.purchase_detail` changes, with `card_posting_date` and `card_provider_reference`; the custom snapshot matches the structural schema. The chain contains **80 migrations / 60 declarative tables**. No dependency changes were needed.
+- A1's hosted workflow completed with one browser failure despite its recorded local success: a strict `locator("main")` matched the visible route plus Next.js's hidden retained route. Accessibility regression now uses the visible accessible main role, preserving the existing axe/reflow assertions. This is an A2 acceptance prerequisite fix, not a product authorization change.
+
+Actual verification:
+
+- `pnpm test --maxWorkers=1`: **731 unit/component tests / 105 files passed**. New coverage includes strict posted-purchase inputs, API trusted attribution/origin handling, missing/foreign cards, card-only expense entry, mandatory posting date, unchanged income funding and identical uncertain retries. Dashboard tests cover exact card liabilities/credits beyond Number precision. An earlier concurrent run exposed stale dashboard mocks/fixtures, which were corrected; a Windows threads-pool attempt was interrupted without claiming a pass.
+- `pnpm test:integration`: **439 integration/database tests / 59 files passed**. Two existing heavy tests timed out when running alongside other suites; the complete isolated rerun passed without changing their timeouts or assertions.
+- Focused A2/A1 database suites: **39 passed**. Final `pnpm test:integration tests/integration/card-purchases.test.ts`: **21 passed**, including additional actual dashboard/CSV agreement assertions. Coverage includes exact splits, unchanged cash, transaction-date reporting, independent-connection concurrent retries/distinct commands, rollback of receipts/audit/financial evidence, archived-reference replay, zero-money/provider corrections, amount/date/card replacements, reversal, missing/foreign/spoofed ownership, pending deletion, actual operator purge, runtime permissions and twelve independently built malformed balanced recipes.
+- `pnpm db:verify:chain`, `--upgrade`, `--upgrade-v1`, and `--upgrade-a1`: all passed fresh/no-op **80-migration** chains, **67/76/78 → 80** committed upgrades, preserved V1 account/history/report totals and A1 exact card metadata, plus complete D6b–C4 and A1/A2 accounting/lifecycle smokes. The acceptance workflow retains its existing checks and adds the A1 upgrade proof.
+- `pnpm db:generate`: no schema drift. `pnpm db:migrate:test`, `pnpm db:migrate`, and `pnpm db:check:runtime`: passed; development/test schemas now include A2 and restricted runtime scope installs/clears correctly.
+- `pnpm check`: lint, generated route types/TypeScript and full formatting passed. `pnpm build`: production build passed on Windows.
+- `$env:PMP_BROWSER_CHANNEL='chrome'; pnpm test:browser`: final full run **29 production-browser tests passed**, including both A2 workflows, all existing V1 financial/correction/debt/report/CSV workflows, dynamically inventoried private APIs, cross-owner isolation, account switching, reminders, deletion/recovery, keyboard focus, 320px reflow and axe/dark contrast. The focused A2 rerun also passed **2/2**. New entry/history/dark-card screenshots were visually inspected.
+- Browser failures found and resolved: the installed Next.js docs specify HTTP 200 for streamed not-found responses, so the isolation test verifies rendered not-found UI and absent private details while API rejection still requires HTTP 404. The first full run passed 28/29 and exposed an obsolete CSV-version-1 assertion; the updated test requires version 2/the A2 definition and blank card evidence on cash rows. The final complete 29-test rerun passed, including A1's previously failing hosted dark-theme locator.
+- `docker build --target web --tag pmp-v2-a2-web .`: passed on Linux. A separate standalone-artifact check passed: nonroot UID 1000, server/static assets and `pg` present, no environment files or development test tooling. This was artifact verification, not a public deployment.
+- `pnpm audit --prod --audit-level high`: passed; no known vulnerabilities found. Final `pnpm check` passed again after the added dashboard/CSV assertions and browser contract correction. Documentation-only final updates are formatted and checked before commit.
+
+Remaining boundary:
+
+- No statements/reconciliation, card payments/fees/interest/refunds/adjustments, installments, shared expenses, other V2 domains, V3 or broad redesign. Unreleased card commands retain database gates. Production hosting/sender/PITR/retention/monitoring acceptance remains deferred, not waived.
+- After A2 acceptance, the next milestone is **V2-A3 — Statements and Reconciliation**, only when explicitly assigned. It must build on preserved transaction/provider evidence and immutable card corrections; it may not repeat purchase spending or derive unknown provider statement facts. Do not start A3 automatically.

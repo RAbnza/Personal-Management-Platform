@@ -207,6 +207,7 @@ export async function createExpenseActionRevision(
     currency: string;
     recordedByUserId: string;
     requestId: string | null;
+    actionKind?: "expense" | "card_purchase";
   },
 ): Promise<void> {
   await transaction.db.execute(sql`
@@ -231,7 +232,7 @@ export async function createExpenseActionRevision(
       1,
       ${input.commandReceiptId}::uuid,
       'create',
-      'expense',
+      ${input.actionKind ?? "expense"},
       ${input.effectiveDate}::date,
       ${input.currency},
       ${input.recordedByUserId}::uuid,
@@ -250,6 +251,8 @@ export async function createPurchaseDetail(
     fundingLedgerAccountId: string;
     purchaseMinor: bigint;
     merchantName: string | null;
+    cardPostingDate?: string | null;
+    cardProviderReference?: string | null;
   },
 ): Promise<void> {
   await transaction.db.execute(sql`
@@ -259,7 +262,7 @@ export async function createPurchaseDetail(
       "action_revision_id",
       "funding_ledger_account_id",
       "purchase_minor",
-      "merchant_name"
+      "merchant_name", "card_posting_date", "card_provider_reference"
     )
     VALUES (
       ${input.workspaceId}::uuid,
@@ -267,7 +270,7 @@ export async function createPurchaseDetail(
       ${input.actionRevisionId}::uuid,
       ${input.fundingLedgerAccountId}::uuid,
       ${input.purchaseMinor},
-      ${input.merchantName}
+      ${input.merchantName}, ${input.cardPostingDate ?? null}::date, ${input.cardProviderReference ?? null}
     )
   `);
 }

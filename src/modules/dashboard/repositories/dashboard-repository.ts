@@ -2,6 +2,24 @@ import { sql } from "drizzle-orm";
 import type { ScopedTransaction } from "@/platform/db";
 import { reconciliationStatus } from "@/modules/finance/domain/reconciliation";
 
+export async function readDashboardCards(
+  t: ScopedTransaction,
+  workspaceId: string,
+) {
+  const r = await t.db.execute<{
+    cardId: string;
+    name: string;
+    liabilityMinor: string;
+  }>(sql`
+    WITH balances AS (SELECT p.ledger_account_id,sum(p.amount_minor::numeric) AS amount
+      FROM finance.posting p JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.state='posted'
+      JOIN finance.action_revision r ON r.workspace_id=p.workspace_id AND r.id=p.action_revision_id AND r.state='posted'
+      WHERE p.workspace_id=${workspaceId}::uuid GROUP BY p.ledger_account_id)
+    SELECT c.id AS "cardId",c.name,(-COALESCE(b.amount,0))::text AS "liabilityMinor"
+    FROM finance.credit_card c LEFT JOIN balances b ON b.ledger_account_id=c.liability_ledger_account_id WHERE c.workspace_id=${workspaceId}::uuid ORDER BY c.name,c.id`);
+  return r.rows;
+}
+
 export async function readDashboardDebts(
   t: ScopedTransaction,
   workspaceId: string,

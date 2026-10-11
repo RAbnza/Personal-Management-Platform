@@ -16,7 +16,12 @@ import {
 } from "@/modules/finance/domain/financial-reference";
 import { FinancialWriteWorkspaceUnavailableError } from "@/modules/finance/repositories/financial-write-repository";
 import { recordBorrowing } from "@/modules/finance/services/record-borrowing";
-import { recordExpense } from "@/modules/finance/services/record-expense";
+import {
+  recordExpense,
+  recordCardPurchase,
+} from "@/modules/finance/services/record-expense";
+import { recordCardPurchaseBodySchema } from "@/modules/finance/domain/card-purchase";
+import { CreditCardUnavailableError } from "@/modules/finance/domain/credit-card";
 import { recordIncome } from "@/modules/finance/services/record-income";
 import { recordTransfer } from "@/modules/finance/services/record-transfer";
 import {
@@ -202,6 +207,7 @@ const financialActionKindEnvelopeSchema = z
     actionKind: z.enum([
       "income",
       "expense",
+      "card_purchase",
       "transfer",
       "borrowing",
       "refund",
@@ -247,6 +253,21 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const actionKind =
       financialActionKindEnvelopeSchema.parse(rawBody).actionKind;
+
+    if (actionKind === "card_purchase") {
+      const { actionKind: _kind, ...candidate } = z
+        .object({ actionKind: z.literal("card_purchase") })
+        .passthrough()
+        .parse(rawBody);
+      void _kind;
+      const result = await recordCardPurchase({
+        ...recordCardPurchaseBodySchema.parse(candidate),
+        userId: actorResolution.actor.userId,
+        workspaceId: actorResolution.actor.workspaceId,
+        requestId: actorResolution.actor.requestId,
+      });
+      return createApiJsonResponse({ actionKind, ...result }, 201, requestId);
+    }
 
     if (actionKind === "refund") {
       const envelope = z
@@ -483,6 +504,15 @@ export async function POST(request: Request): Promise<NextResponse> {
         retryable: false,
       });
     }
+
+    if (error instanceof CreditCardUnavailableError)
+      return createApiProblemResponse({
+        status: 404,
+        code: "CREDIT_CARD_UNAVAILABLE",
+        message: "The selected credit card is unavailable.",
+        requestId,
+        retryable: false,
+      });
 
     if (error instanceof FinancialCategoryReferenceUnavailableError) {
       return createApiProblemResponse({

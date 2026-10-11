@@ -39,6 +39,15 @@ import {
 
 import type { FinancialCorrectionContext } from "@/modules/finance/repositories/financial-correction-repository";
 import { reviewCashChanges } from "@/modules/finance/repositories/negative-balance-repository";
+import {
+  recordCardPurchaseInputSchema,
+  type RecordCardPurchaseInput,
+} from "../domain/card-purchase";
+import {
+  resolvePurchaseCard,
+  createCardPurchasePosting,
+  createCardRevisionActivity,
+} from "../repositories/card-purchase-repository";
 
 const RECORD_EXPENSE_COMMAND_TYPE = "finance.record_expense";
 
@@ -68,6 +77,9 @@ type NormalizedRecordExpenseInput = {
   acknowledgeNegativeBalance: boolean;
 
   fundingAccountId: string;
+  cardId?: string;
+  postingDate?: string;
+  providerReference?: string | null;
   effectiveDate: CalendarDate;
   purchaseMinor: bigint;
   splits: NormalizedExpenseSplit[];
@@ -79,9 +91,12 @@ type NormalizedRecordExpenseInput = {
 };
 
 function normalizeRecordExpenseInput(
-  input: RecordExpenseInput,
+  input: RecordExpenseInput | RecordCardPurchaseInput,
 ): NormalizedRecordExpenseInput {
-  const parsed = recordExpenseInputSchema.parse(input);
+  const parsed =
+    "cardId" in input
+      ? recordCardPurchaseInputSchema.parse(input)
+      : recordExpenseInputSchema.parse(input);
 
   const effectiveDate = parseCalendarDate(parsed.effectiveDate);
 
@@ -115,7 +130,15 @@ function normalizeRecordExpenseInput(
     requestId: parsed.requestId ?? null,
     acknowledgeNegativeBalance: parsed.acknowledgeNegativeBalance,
 
-    fundingAccountId: parsed.fundingAccountId,
+    fundingAccountId:
+      "cardId" in parsed ? parsed.cardId : parsed.fundingAccountId,
+    ...("cardId" in parsed
+      ? {
+          cardId: parsed.cardId,
+          postingDate: parsed.postingDate,
+          providerReference: parsed.providerReference,
+        }
+      : {}),
     effectiveDate,
     purchaseMinor,
     splits,
@@ -141,7 +164,13 @@ async function executeRecordExpense(
     ...(input.acknowledgeNegativeBalance
       ? { acknowledgeNegativeBalance: true }
       : {}),
-    fundingAccountId: input.fundingAccountId,
+    ...(input.cardId
+      ? {
+          cardId: input.cardId,
+          postingDate: input.postingDate!,
+          providerReference: input.providerReference ?? null,
+        }
+      : { fundingAccountId: input.fundingAccountId }),
     effectiveDate: input.effectiveDate,
     purchaseMinor: input.purchaseMinor.toString(),
     splits: input.splits.map((split) => ({
@@ -160,7 +189,9 @@ async function executeRecordExpense(
     : await claimFinancialCommandReceipt(transaction, {
         workspaceId: input.workspaceId,
         clientCommandId: input.clientCommandId,
-        commandType: RECORD_EXPENSE_COMMAND_TYPE,
+        commandType: input.cardId
+          ? "finance.record_card_purchase"
+          : RECORD_EXPENSE_COMMAND_TYPE,
         payloadHash,
       });
 
@@ -173,16 +204,30 @@ async function executeRecordExpense(
     return recordExpenseResultSchema.parse(receipt.result);
   }
 
-  const fundingAccount = await resolveFundingFinancialAccount(transaction, {
-    workspaceId: input.workspaceId,
-    accountId: input.fundingAccountId,
-  });
+  const fundingAccount: {
+    ledgerAccountId: string;
+    currency: string;
+    archived: boolean;
+    openingCutoffDate?: string;
+  } = input.cardId
+    ? await resolvePurchaseCard(transaction, input.workspaceId, input.cardId)
+    : await resolveFundingFinancialAccount(transaction, {
+        workspaceId: input.workspaceId,
+        accountId: input.fundingAccountId,
+      });
 
   if (fundingAccount.archived && !correction) {
-    throw new RangeError(
-      "New expenses require an active funding financial account.",
-    );
+    throw new RangeError("New expenses require an active funding source.");
   }
+  if (
+    input.cardId &&
+    fundingAccount.archived &&
+    correction &&
+    correction.before.cardId !== input.cardId
+  )
+    throw new RangeError(
+      "A correction may retain its archived card, but selecting another card requires an active card.",
+    );
 
   if (fundingAccount.currency !== workspace.currency) {
     throw new Error(
@@ -190,9 +235,13 @@ async function executeRecordExpense(
     );
   }
 
-  const openingCutoffDate = parseCalendarDate(fundingAccount.openingCutoffDate);
-
-  if (compareCalendarDates(input.effectiveDate, openingCutoffDate) <= 0) {
+  if (
+    fundingAccount.openingCutoffDate &&
+    compareCalendarDates(
+      input.effectiveDate,
+      parseCalendarDate(fundingAccount.openingCutoffDate),
+    ) <= 0
+  ) {
     throw new RangeError(
       "Expense effective date must be after the funding account opening cutoff.",
     );
@@ -222,18 +271,20 @@ async function executeRecordExpense(
     },
   );
 
-  const negativeBalanceWarnings = await reviewCashChanges(transaction, {
-    workspaceId: input.workspaceId,
-    acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
-    changes: [
-      {
-        accountId: input.fundingAccountId,
-        effectiveDate: input.effectiveDate,
-        signedMinor: -input.purchaseMinor,
-      },
-    ],
-    excludeRevisionId: correction?.previousRevisionId,
-  });
+  const negativeBalanceWarnings = input.cardId
+    ? []
+    : await reviewCashChanges(transaction, {
+        workspaceId: input.workspaceId,
+        acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
+        changes: [
+          {
+            accountId: input.fundingAccountId,
+            effectiveDate: input.effectiveDate,
+            signedMinor: -input.purchaseMinor,
+          },
+        ],
+        excludeRevisionId: correction?.previousRevisionId,
+      });
 
   const actionId = correction?.actionId ?? randomUUID();
   const actionRevisionId = correction?.actionRevisionId ?? randomUUID();
@@ -261,6 +312,7 @@ async function executeRecordExpense(
       currency: workspace.currency,
       recordedByUserId: input.userId,
       requestId: input.requestId,
+      actionKind: input.cardId ? "card_purchase" : "expense",
     });
   }
 
@@ -271,6 +323,8 @@ async function executeRecordExpense(
     fundingLedgerAccountId: fundingAccount.ledgerAccountId,
     purchaseMinor: input.purchaseMinor,
     merchantName: input.merchantName,
+    cardPostingDate: input.postingDate ?? null,
+    cardProviderReference: input.providerReference ?? null,
   });
 
   await createExpenseJournal(transaction, {
@@ -282,16 +336,19 @@ async function executeRecordExpense(
     currency: workspace.currency,
   });
 
-  await createExpenseCashPosting(transaction, {
-    id: randomUUID(),
-    workspaceId: input.workspaceId,
-    actionId,
-    actionRevisionId,
-    journalId,
-    fundingLedgerAccountId: fundingAccount.ledgerAccountId,
-    currency: workspace.currency,
-    purchaseMinor: input.purchaseMinor,
-  });
+  await (input.cardId ? createCardPurchasePosting : createExpenseCashPosting)(
+    transaction,
+    {
+      id: randomUUID(),
+      workspaceId: input.workspaceId,
+      actionId,
+      actionRevisionId,
+      journalId,
+      fundingLedgerAccountId: fundingAccount.ledgerAccountId,
+      currency: workspace.currency,
+      purchaseMinor: input.purchaseMinor,
+    },
+  );
 
   for (const [index, split] of input.splits.entries()) {
     await createGrossExpensePosting(transaction, {
@@ -309,6 +366,13 @@ async function executeRecordExpense(
     });
   }
 
+  if (input.cardId)
+    await createCardRevisionActivity(transaction, {
+      workspaceId: input.workspaceId,
+      actionId,
+      actionRevisionId,
+    });
+
   await createPrivateFinancialRevision(transaction, {
     id: randomUUID(),
     workspaceId: input.workspaceId,
@@ -323,8 +387,14 @@ async function executeRecordExpense(
       acknowledgeNegativeBalance: input.acknowledgeNegativeBalance,
       negativeBalanceWarnings,
       actionRevisionId,
-      actionKind: "expense",
-      fundingAccountId: input.fundingAccountId,
+      actionKind: input.cardId ? "card_purchase" : "expense",
+      ...(input.cardId
+        ? {
+            cardId: input.cardId,
+            postingDate: input.postingDate,
+            providerReference: input.providerReference ?? null,
+          }
+        : { fundingAccountId: input.fundingAccountId }),
       effectiveDate: input.effectiveDate,
       currency: workspace.currency,
       purchaseMinor: input.purchaseMinor.toString(),
@@ -381,7 +451,7 @@ export async function recordExpenseInTransaction(
 ): Promise<RecordExpenseResult> {
   return executeRecordExpense(
     transaction,
-    normalizeRecordExpenseInput(input),
+    normalizeRecordExpenseInput(recordExpenseInputSchema.parse(input)),
     correction,
   );
 }
@@ -389,7 +459,9 @@ export async function recordExpenseInTransaction(
 export async function recordExpense(
   input: RecordExpenseInput,
 ): Promise<RecordExpenseResult> {
-  const normalizedInput = normalizeRecordExpenseInput(input);
+  const normalizedInput = normalizeRecordExpenseInput(
+    recordExpenseInputSchema.parse(input),
+  );
 
   return withDomainTransaction(
     {
@@ -397,5 +469,27 @@ export async function recordExpense(
       workspaceId: normalizedInput.workspaceId,
     },
     (transaction) => executeRecordExpense(transaction, normalizedInput),
+  );
+}
+
+export async function recordCardPurchaseInTransaction(
+  transaction: ScopedTransaction,
+  input: RecordCardPurchaseInput,
+  correction?: FinancialCorrectionContext,
+) {
+  return executeRecordExpense(
+    transaction,
+    normalizeRecordExpenseInput(recordCardPurchaseInputSchema.parse(input)),
+    correction,
+  );
+}
+
+export async function recordCardPurchase(input: RecordCardPurchaseInput) {
+  const normalized = normalizeRecordExpenseInput(
+    recordCardPurchaseInputSchema.parse(input),
+  );
+  return withDomainTransaction(
+    { userId: normalized.userId, workspaceId: normalized.workspaceId },
+    (t) => executeRecordExpense(t, normalized),
   );
 }

@@ -260,6 +260,9 @@ export async function ReportPage({
                           {p.liabilityComponent
                             ? ` / ${p.liabilityComponent}`
                             : ""}
+                          {p.cardName
+                            ? ` · Card ${p.cardName} · Provider posted ${p.postingDate}`
+                            : ""}
                         </td>
                         <td className="p-3">
                           Revision {p.revisionNo} · {p.journalRole}

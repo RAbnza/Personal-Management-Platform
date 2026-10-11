@@ -23,7 +23,7 @@ export async function readExportRows(
       effective_date::text,amount::text AS amount_minor,ledger_kind,ledger_name,description,category_id::text,category,
       journal_role,revision_no,action_kind,expense_class,income_class,cash_flow_kind,cash_flow_direction,liability_component,
       classification_posting_id::text,classification_revision_id::text,source_amount::text AS source_amount_minor,
-      charge_kind,payment_disposition,debt_linked,waiver,transfer_source
+      charge_kind,payment_disposition,debt_linked,waiver,transfer_source,card_id::text,card_name,posting_date::text,provider_reference
     FROM facts WHERE effective_date>=${period.startDate}::date AND effective_date<${period.endDateExclusive}::date ORDER BY effective_date,id LIMIT 10001`)
     ).rows;
   if (kind === "debt-schedules")

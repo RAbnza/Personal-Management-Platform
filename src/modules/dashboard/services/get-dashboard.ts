@@ -14,6 +14,7 @@ import { readSpendingSummary } from "@/modules/reporting/repositories/financial-
 import {
   readCareerSnapshot,
   readDashboardDebts,
+  readDashboardCards,
   readRecentActivity,
   readReconciliationAttention,
 } from "../repositories/dashboard-repository";
@@ -41,6 +42,7 @@ export async function getDashboardInTransaction(
     })
   ).filter((row) => row.account_id !== null);
   const debts = await readDashboardDebts(t, input.workspaceId, horizon);
+  const cards = await readDashboardCards(t, input.workspaceId);
   const spending = await readSpendingSummary(t, input.workspaceId, period);
   const reconciliations = await readReconciliationAttention(
     t,
@@ -74,13 +76,13 @@ export async function getDashboardInTransaction(
     values.reduce((total, v) => total + BigInt(v), 0n).toString();
   const liquidMinor = sum(accounts.map((a) => a.current_balance_minor));
   const liabilitiesMinor = sum(
-    debts
+    [...debts, ...cards]
       .filter((d) => BigInt(d.liabilityMinor) > 0n)
       .map((d) => d.liabilityMinor),
   );
   const liabilityCreditMinor = (-BigInt(
     sum(
-      debts
+      [...debts, ...cards]
         .filter((d) => BigInt(d.liabilityMinor) < 0n)
         .map((d) => d.liabilityMinor),
     ),
@@ -184,12 +186,13 @@ export async function getDashboardInTransaction(
       spending,
       accounts,
       debts,
+      cards,
     },
     coverage: {
       scope:
-        "Tracked cash accounts and recognized debt liabilities only. Other assets, receivables, available credit and uncertain clearing are excluded; unrecorded finances remain unknown.",
+        "Tracked cash accounts and recognized debt/card liabilities only. Other assets, receivables, available credit and uncertain clearing are excluded; unrecorded finances remain unknown.",
       noAccounts: accounts.length === 0,
-      noDebts: debts.length === 0,
+      noDebts: debts.length === 0 && cards.length === 0,
       unknownSchedules: debts.filter(
         (d) => d.scheduledMinor === null && d.lifecycle === "active",
       ).length,

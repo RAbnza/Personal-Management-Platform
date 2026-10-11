@@ -547,6 +547,20 @@
       "when": 1791717444725,
       "tag": "0077_v2_a1_card_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1791719412817,
+      "tag": "0078_damp_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1791719422386,
+      "tag": "0079_v2_a2_card_purchase_integrity",
+      "breakpoints": true
     }
   ]
 }

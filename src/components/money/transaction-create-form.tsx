@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { CategoryListItem } from "@/modules/core/services/list-categories";
 import type { FinancialAccountListItem } from "@/modules/finance/services/list-financial-accounts";
+import type { CreditCardReadModel } from "@/modules/finance/services/read-credit-cards";
 import { isCalendarDate } from "@/shared/calendar-date";
 import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -98,6 +99,8 @@ const transactionFormSchema = z
     reference: z.string(),
 
     notes: z.string().max(20_000, "Notes must be 20,000 characters or fewer."),
+    postingDate: z.string(),
+    providerReference: z.string().max(2000),
   })
   .superRefine((values, context) => {
     if (values.actionKind !== "expense") {
@@ -184,7 +187,17 @@ type ExpensePayload = {
   notes: string | null;
 };
 
-type FinancialActionPayload = IncomePayload | ExpensePayload;
+type CardPurchasePayload = Omit<
+  ExpensePayload,
+  "actionKind" | "fundingAccountId"
+> & {
+  actionKind: "card_purchase";
+  cardId: string;
+  postingDate: string;
+  providerReference: string | null;
+};
+type FinancialActionPayload =
+  IncomePayload | ExpensePayload | CardPurchasePayload;
 
 type PendingFinancialCommand = {
   clientCommandId: string;
@@ -253,6 +266,7 @@ async function postFinancialAction(
 
 export interface TransactionCreateFormProps {
   currency: string;
+  cards?: readonly CreditCardReadModel[];
 
   accounts: readonly FinancialAccountListItem[];
 
@@ -263,6 +277,7 @@ export function TransactionCreateForm({
   currency,
   accounts,
   categories,
+  cards = [],
 }: TransactionCreateFormProps) {
   const router = useRouter();
 
@@ -290,7 +305,7 @@ export function TransactionCreateForm({
     defaultValues: {
       actionKind: "expense",
 
-      accountId: accounts[0]?.accountId ?? "",
+      accountId: accounts[0]?.accountId ?? cards[0]?.cardId ?? "",
 
       effectiveDate: "",
 
@@ -314,6 +329,8 @@ export function TransactionCreateForm({
       reference: "",
 
       notes: "",
+      postingDate: "",
+      providerReference: "",
     },
   });
 
@@ -335,6 +352,17 @@ export function TransactionCreateForm({
     control,
     name: "accountId",
   });
+  const selectedCard =
+    actionKind === "expense"
+      ? cards.find((c) => c.cardId === selectedAccountId)
+      : undefined;
+  useEffect(() => {
+    if (
+      actionKind === "income" &&
+      cards.some((c) => c.cardId === selectedAccountId)
+    )
+      setValue("accountId", accounts[0]?.accountId ?? "");
+  }, [actionKind, selectedAccountId, accounts, cards, setValue]);
 
   const enteredAmount = useWatch({
     control,
@@ -475,7 +503,11 @@ export function TransactionCreateForm({
         setPendingCommand(null);
         setSaveState("saved");
 
-        router.push("/money/accounts");
+        router.push(
+          command.payload.actionKind === "card_purchase"
+            ? "/money/actions"
+            : "/money/accounts",
+        );
 
         return;
       }
@@ -512,8 +544,12 @@ export function TransactionCreateForm({
     const account = accounts.find(
       (item) => item.accountId === values.accountId,
     );
+    const card =
+      values.actionKind === "expense"
+        ? cards.find((c) => c.cardId === values.accountId)
+        : undefined;
 
-    if (!account) {
+    if (!account && !card) {
       setError("accountId", {
         type: "validate",
         message:
@@ -523,12 +559,24 @@ export function TransactionCreateForm({
       return;
     }
 
-    if (values.effectiveDate <= account.openingCutoffDate) {
+    if (account && values.effectiveDate <= account.openingCutoffDate) {
       setError("effectiveDate", {
         type: "validate",
         message: `Transaction date must be after this account's opening balance date (${account.openingCutoffDate}).`,
       });
 
+      return;
+    }
+    if (card && !isCalendarDate(values.postingDate)) {
+      setError(
+        "postingDate",
+        {
+          type: "validate",
+          message:
+            "Enter the provider-confirmed posting date. Pending authorizations cannot be recorded here.",
+        },
+        { shouldFocus: true },
+      );
       return;
     }
 
@@ -572,7 +620,7 @@ export function TransactionCreateForm({
       notes: notes.length > 0 ? notes : null,
     };
 
-    const payload: FinancialActionPayload =
+    let payload: FinancialActionPayload =
       values.actionKind === "income"
         ? {
             actionKind: "income",
@@ -612,6 +660,23 @@ export function TransactionCreateForm({
 
             ...common,
           };
+    if (card && payload.actionKind === "expense") {
+      const {
+        fundingAccountId: _account,
+        actionKind: _kind,
+        ...purchase
+      } = payload;
+      void _account;
+      void _kind;
+      payload = {
+        ...purchase,
+        actionKind: "card_purchase",
+        cardId: card.cardId,
+        postingDate: values.postingDate,
+        providerReference: values.providerReference.trim() || null,
+        acknowledgeNegativeBalance: false,
+      };
+    }
 
     const command: PendingFinancialCommand = {
       clientCommandId: crypto.randomUUID(),
@@ -692,7 +757,7 @@ export function TransactionCreateForm({
                 </span>
 
                 <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                  Money actually spent from one account.
+                  A purchase paid from an account or credit card.
                 </span>
               </span>
             </label>
@@ -717,12 +782,16 @@ export function TransactionCreateForm({
           <FormField
             htmlFor="transaction-account"
             label={
-              actionKind === "income" ? "Receiving account" : "Funding account"
+              actionKind === "income"
+                ? "Receiving account"
+                : cards.length
+                  ? "Paid with"
+                  : "Funding account"
             }
             description={
               actionKind === "income"
                 ? "Choose where the money was actually received."
-                : "Choose the account that actually paid for the expense."
+                : "Choose the account or credit card that paid for the expense."
             }
             descriptionId="transaction-account-description"
             error={errors.accountId?.message}
@@ -757,6 +826,12 @@ export function TransactionCreateForm({
                   )}
                 </option>
               ))}
+              {actionKind === "expense" &&
+                cards.map((card) => (
+                  <option key={card.cardId} value={card.cardId}>
+                    {card.name} — Credit card
+                  </option>
+                ))}
             </select>
           </FormField>
 
@@ -897,6 +972,59 @@ export function TransactionCreateForm({
             />
           </FormField>
         </div>
+
+        {selectedCard && (
+          <section
+            aria-label="Card purchase details"
+            className="space-y-4 rounded-control border border-border p-4"
+          >
+            <p className="text-sm leading-6 text-muted-foreground">
+              Record a posted purchase confirmed by {selectedCard.issuerName}.
+              Spending and card outstanding increase; cash stays unchanged.
+              Pending authorizations cannot be recorded here.
+            </p>
+            <FormField
+              htmlFor="card-posting-date"
+              label="Provider posting date"
+              error={errors.postingDate?.message}
+              errorId="card-posting-date-error"
+            >
+              <Input
+                {...register("postingDate")}
+                id="card-posting-date"
+                type="date"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.postingDate)}
+                aria-describedby={
+                  errors.postingDate ? "card-posting-date-error" : undefined
+                }
+              />
+            </FormField>
+            <details>
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">
+                Optional card details
+              </summary>
+              <FormField
+                htmlFor="card-provider-reference"
+                label="Provider reference"
+                error={errors.providerReference?.message}
+                errorId="card-provider-reference-error"
+              >
+                <Input
+                  {...register("providerReference")}
+                  id="card-provider-reference"
+                  disabled={fieldsDisabled}
+                  aria-invalid={Boolean(errors.providerReference)}
+                  aria-describedby={
+                    errors.providerReference
+                      ? "card-provider-reference-error"
+                      : undefined
+                  }
+                />
+              </FormField>
+            </details>
+          </section>
+        )}
 
         {actionKind === "expense" ? (
           <fieldset
@@ -1248,26 +1376,29 @@ export function TransactionCreateForm({
               className="size-4"
               strokeWidth={1.9}
             />
-            Transaction saved. Returning to your account balances…
+            Transaction saved. Opening your financial history…
           </div>
         ) : null}
 
-        <label className="flex items-start gap-3 rounded-md border border-warning p-3 text-sm">
-          <input
-            type="checkbox"
-            data-negative-ack="true"
-            checked={acknowledgeNegativeBalance}
-            disabled={fieldsDisabled}
-            onChange={(event) =>
-              setAcknowledgeNegativeBalance(event.target.checked)
-            }
-          />
-          <span>
-            I explicitly acknowledge that this genuine transaction may make my
-            tracked account balance negative. Account history may be incomplete.
-            This acknowledgement will be recorded with the command.
-          </span>
-        </label>
+        {!selectedCard && (
+          <label className="flex items-start gap-3 rounded-md border border-warning p-3 text-sm">
+            <input
+              type="checkbox"
+              data-negative-ack="true"
+              checked={acknowledgeNegativeBalance}
+              disabled={fieldsDisabled}
+              onChange={(event) =>
+                setAcknowledgeNegativeBalance(event.target.checked)
+              }
+            />
+            <span>
+              I explicitly acknowledge that this genuine transaction may make my
+              tracked account balance negative. Account history may be
+              incomplete. This acknowledgement will be recorded with the
+              command.
+            </span>
+          </label>
+        )}
         <div className="flex flex-wrap justify-end gap-3">
           {saveState === "unconfirmed" ? (
             <Button

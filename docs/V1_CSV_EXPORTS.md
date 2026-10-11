@@ -1,6 +1,6 @@
 # V1 CSV export contract
 
-Schema version **1**, calculation definition **`v1-reports-signed-cohort-1`**. These are owner-scoped record/report snapshots, **not a complete workspace backup or a restoration format**. No attachments, passwords, sessions, full audit archive, or future modules are exported. CSV import is not released.
+Current schema version **2**, calculation definition **`v2-a2-reports-signed-card-purchases-1`**. V2-A2 adds posted card purchase evidence to the existing export contract. Existing schema-version-1 exports retain their recorded definition. These are owner-scoped record/report snapshots, **not a complete workspace backup or a restoration format**. No attachments, passwords, sessions, full audit archive, or future modules are exported. CSV import is not released.
 
 ## Requests and periods
 
@@ -32,6 +32,8 @@ Completed preparation creates immutable owner-scoped `ops.export_run` provenance
 ## Contents and query grains
 
 ### Transactions / postings
+
+Schema version 2 additionally includes `card_id`, `card_name`, `posting_date`, and `provider_reference`. These identify the source card purchase, including on reversal rows. Spending and balances use journal transaction/effective dates; provider posting dates retain separate evidence. Card purchases recognize gross spending and card liability without cash movement. Card limits and credits do not increase liquid funds.
 
 `record_type=posting`, **one immutable posted posting per row**, selected by journal effective date. Columns: `posting_id`, `action_id`, `action_revision_id`, `journal_id`, `ledger_account_id`, `effective_date`, `amount_minor`, `ledger_kind`, `ledger_name`, `description`, `category_id`, `category`, `journal_role`, `revision_no`, `action_kind`, `expense_class`, `income_class`, `cash_flow_kind`, `cash_flow_direction`, `liability_component`, `classification_posting_id`, `classification_revision_id`, `source_amount_minor`, `charge_kind`, `payment_disposition`, `debt_linked`, `waiver`, `transfer_source`. Classification/source columns identify original economic meaning on reversal rows; `charge_kind` identifies fee/interest/penalty costs, and separate payment/waiver flags preserve the principal and liability lenses.
 

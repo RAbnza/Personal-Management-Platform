@@ -14,6 +14,7 @@ import {
 } from "@/modules/finance/domain/financial-correction";
 import type { getFinancialActionDetailInTransaction } from "@/modules/finance/services/correct-financial-action";
 import type { FinancialAccountListItem } from "@/modules/finance/services/list-financial-accounts";
+import type { CreditCardReadModel } from "@/modules/finance/services/read-credit-cards";
 import { parsePhpAmountToMinorUnits } from "@/shared/money";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 type Detail = Awaited<ReturnType<typeof getFinancialActionDetailInTransaction>>;
@@ -21,6 +22,9 @@ type Category = { categoryId: string; name: string; kind: string };
 type Draft = Record<string, unknown>;
 const labels: Record<string, string> = {
   effectiveDate: "Effective date",
+  postingDate: "Provider posting date",
+  providerReference: "Card provider reference",
+  cardId: "Credit card",
   paymentDate: "Payment date",
   fundingAccountId: "Paying account",
   receivingAccountId: "Receiving account",
@@ -170,6 +174,7 @@ export function correctionCashEffects(
       },
     ];
   if (
+    p.actionKind === "card_purchase" ||
     p.actionKind === "debt_charge" ||
     p.actionKind === "opening_debt" ||
     p.actionKind === "payment_reclassification"
@@ -206,9 +211,11 @@ export function FinancialActionReviewForm({
   accounts: providedAccounts,
   categories: providedCategories,
   today,
+  cards = [],
 }: {
   detail: Detail;
   accounts: FinancialAccountListItem[];
+  cards?: CreditCardReadModel[];
   categories: Category[];
   today: string;
 }) {
@@ -410,38 +417,44 @@ export function FinancialActionReviewForm({
           source = key === "originalPurchasePostingId",
           clearing = key === "sourceComponentId",
           due = key === "installmentId";
-        const choices = account
-          ? accounts.map((a) => ({
-              id: a.accountId,
-              name: `${a.name}${a.archived ? " (archived)" : ""}`,
-            }))
-          : category
-            ? categories
-                .filter(
-                  (c) =>
-                    c.kind ===
-                    (draft.actionKind === "income" ? "income" : "expense"),
-                )
-                .map((c) => ({ id: c.categoryId, name: c.name }))
-            : source
-              ? detail.refundSources.map((s) => ({
-                  id: s.postingId,
-                  name: `${s.allocationKind}: ${s.categoryName ?? "Uncategorized"} — eligible ${formatMoneyMinorUnits(detail.current.currency, s.remainingMinor)}`,
+        const choices =
+          key === "cardId"
+            ? cards.map((c) => ({
+                id: c.cardId,
+                name: `${c.name}${c.archived ? " (archived)" : ""}`,
+              }))
+            : account
+              ? accounts.map((a) => ({
+                  id: a.accountId,
+                  name: `${a.name}${a.archived ? " (archived)" : ""}`,
                 }))
-              : clearing
-                ? detail.clearingSources.map((c) => ({
-                    id: c.sourceComponentId,
-                    name: `Payment ${c.paymentDate}: remaining clearing ${formatMoneyMinorUnits(detail.current.currency, c.remainingMinor)}`,
-                  }))
-                : due
-                  ? detail.installments.map((i) => ({
-                      id: i.installmentId,
-                      name: i.label,
+              : category
+                ? categories
+                    .filter(
+                      (c) =>
+                        c.kind ===
+                        (draft.actionKind === "income" ? "income" : "expense"),
+                    )
+                    .map((c) => ({ id: c.categoryId, name: c.name }))
+                : source
+                  ? detail.refundSources.map((s) => ({
+                      id: s.postingId,
+                      name: `${s.allocationKind}: ${s.categoryName ?? "Uncategorized"} — eligible ${formatMoneyMinorUnits(detail.current.currency, s.remainingMinor)}`,
                     }))
-                  : enumOptions?.map((o) => ({
-                      id: o,
-                      name: o.replaceAll("_", " "),
-                    }));
+                  : clearing
+                    ? detail.clearingSources.map((c) => ({
+                        id: c.sourceComponentId,
+                        name: `Payment ${c.paymentDate}: remaining clearing ${formatMoneyMinorUnits(detail.current.currency, c.remainingMinor)}`,
+                      }))
+                    : due
+                      ? detail.installments.map((i) => ({
+                          id: i.installmentId,
+                          name: i.label,
+                        }))
+                      : enumOptions?.map((o) => ({
+                          id: o,
+                          name: o.replaceAll("_", " "),
+                        }));
         return (
           <label key={key} htmlFor={id} className="block space-y-1 text-sm">
             <span>{name}</span>
@@ -782,6 +795,29 @@ export function FinancialActionReviewForm({
                 `New effective date: ${String(draft.paymentDate ?? draft.effectiveDate)}.`}
             </p>
             <p>Reason: {reason || "Genuine later refund"}</p>
+            {detail.current.actionKind === "card_purchase" && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <p>
+                  Cash movement:{" "}
+                  {formatMoneyMinorUnits(detail.current.currency, "0")}. Card
+                  liability and category spending change together.
+                </p>
+                <p>
+                  Original purchase:{" "}
+                  {formatMoneyMinorUnits(
+                    detail.current.currency,
+                    String(detail.current.evidence.purchaseMinor),
+                  )}{" "}
+                  · Provider posted{" "}
+                  {String(detail.current.evidence.postingDate)}.
+                </p>
+                <p>
+                  {mode === "reverse"
+                    ? "Reverse the original purchase amount in full."
+                    : `Replacement purchase: ${String(draft.purchaseMinor)} ${detail.current.currency} · Provider posted ${String(draft.postingDate)} · Card ${cards.find((c) => c.cardId === draft.cardId)?.name ?? "Unavailable"}.`}
+                </p>
+              </div>
+            )}
             <p>
               Backdated changes affect historical balances, category spending
               and reconciliation comparisons. Previously verified affected

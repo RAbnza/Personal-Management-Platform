@@ -17,6 +17,8 @@ export async function readFinancialCoverage(
     SELECT 'account'::text AS kind,id AS "recordId",name,opening_cutoff_date::text AS "cutoffDate" FROM finance.financial_account WHERE workspace_id=${workspaceId}::uuid
     UNION ALL
     SELECT 'debt'::text,id,name,opening_cutoff_date::text FROM finance.debt WHERE workspace_id=${workspaceId}::uuid
+    UNION ALL
+    SELECT 'card'::text,id,name,NULL::text FROM finance.credit_card WHERE workspace_id=${workspaceId}::uuid
     ORDER BY kind,name,"recordId"
   `);
   return {

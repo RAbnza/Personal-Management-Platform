@@ -33,6 +33,7 @@ export function dashboardFixture(): DashboardResult {
       },
       accounts: [],
       debts: [],
+      cards: [],
     },
     coverage: {
       scope:

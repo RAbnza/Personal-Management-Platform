@@ -35,7 +35,11 @@ import {
 import { reviewCashChanges } from "../repositories/negative-balance-repository";
 import { readRefundSources } from "../repositories/refund-repository";
 import { recordIncomeInTransaction } from "./record-income";
-import { recordExpenseInTransaction } from "./record-expense";
+import {
+  recordExpenseInTransaction,
+  recordCardPurchaseInTransaction,
+} from "./record-expense";
+import { createCardRevisionActivity } from "../repositories/card-purchase-repository";
 import { recordTransferInTransaction } from "./record-transfer";
 import { recordDebtPaymentInTransaction } from "./record-debt-payment";
 import { recordBorrowingInTransaction } from "./record-borrowing";
@@ -405,6 +409,12 @@ async function executeCorrection(
   );
   const attribution = { userId, workspaceId, requestId, clientCommandId };
   switch (p.actionKind) {
+    case "card_purchase":
+      return recordCardPurchaseInTransaction(
+        t,
+        { ...attribution, ...withoutKind(p) },
+        c,
+      );
     case "payment_reclassification":
       return resolvePaymentClearingInTransaction(
         t,
@@ -875,6 +885,12 @@ export async function reverseFinancialActionInTransaction(
     await t.db.execute(
       sql`UPDATE finance.financial_account SET opening_action_id=NULL,version=version+1,updated_at=clock_timestamp() WHERE workspace_id=${workspaceId}::uuid AND opening_action_id=${actionId}::uuid`,
     );
+  if (current.actionKind === "card_purchase")
+    await createCardRevisionActivity(t, {
+      workspaceId,
+      actionId,
+      actionRevisionId: c.actionRevisionId,
+    });
   const result = await finish(
     t,
     a,

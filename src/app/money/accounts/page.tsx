@@ -161,6 +161,12 @@ export default async function MoneyAccountsPage() {
           >
             View debts and manual schedules
           </Link>
+          <Link
+            href="/money/cards"
+            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+          >
+            Credit cards
+          </Link>
         </header>
 
         {accounts ? (

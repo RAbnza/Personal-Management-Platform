@@ -38,6 +38,12 @@ export default async function DebtLayout({
           </Link>
           <Link
             className="inline-flex min-h-11 items-center"
+            href="/money/cards"
+          >
+            Credit cards
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center"
             href="/money/actions"
           >
             Financial activity

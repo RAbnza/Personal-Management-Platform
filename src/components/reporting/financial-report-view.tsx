@@ -450,8 +450,8 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         {!data.cash.length && <p>No supplied cash movements in this period.</p>}
       </Panel>
       <Panel
-        title="Liability component roll-forward"
-        description="Recognized posting components only. Unclassified is retained; no principal/interest proportions are estimated."
+        title="Debt liability component roll-forward"
+        description="Debt posting components only. Card purchase balances are shown separately below. Unclassified debt remains explicit."
       >
         <div
           className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -564,6 +564,41 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
             </tbody>
           </table>
         </div>
+      </Panel>
+      <Panel
+        title="Card spending and recorded liability"
+        description="Card purchases count once in category spending. They create no cash movement. Spending periods follow transaction dates; provider posting dates remain separate evidence."
+      >
+        <ul className="divide-y divide-border">
+          {data.cardRecords.map((c) => (
+            <li key={c.cardId} className="space-y-2 py-3">
+              <Link
+                href={`/money/cards/${c.cardId}`}
+                className="text-link underline"
+              >
+                {c.name}
+              </Link>
+              <p>
+                <Link
+                  href={`${href("net")}&cardId=${c.cardId}`}
+                  className="inline-flex min-h-11 items-center text-link underline"
+                >
+                  Net spending {money(c.spendingMinor)}
+                </Link>
+              </p>
+              <p>
+                Opening recorded liability {money(c.openingMinor)} ·{" "}
+                <Link
+                  href={`${href("closing_liability")}&ledgerId=${c.ledgerId}`}
+                  className="inline-flex min-h-11 items-center text-link underline"
+                >
+                  Closing recorded liability {money(c.closingMinor)}
+                </Link>
+              </p>
+            </li>
+          ))}
+        </ul>
+        {!data.cardRecords.length && <p>No tracked cards.</p>}
       </Panel>
     </div>
   );
