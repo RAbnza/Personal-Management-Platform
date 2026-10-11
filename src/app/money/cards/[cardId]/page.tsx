@@ -62,6 +62,12 @@ export default async function CardPage({
       >
         Expense history for this card
       </Link>
+      <Link
+        href={`/money/cards/${id.data}/statements`}
+        className="block min-h-11 text-link underline"
+      >
+        Provider statements and reconciliation
+      </Link>
       <Panel
         title="Card purchase history"
         description="Every preserved purchase revision. Transaction dates determine spending periods; posting dates preserve provider evidence. Liability changes include reversals and replacements."

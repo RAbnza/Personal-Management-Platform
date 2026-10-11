@@ -2,6 +2,8 @@ import {
   recordExpense,
   recordCardPurchase,
 } from "../../src/modules/finance/services/record-expense";
+import { recordCardStatement } from "../../src/modules/finance/services/card-statements";
+import { getCardStatement } from "../../src/modules/finance/services/read-card-statements";
 import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
 import { mutatePersonalEvent } from "../../src/modules/time/services/mutate-personal-event";
 import {
@@ -174,13 +176,16 @@ async function main() {
     if (
       process.argv.includes("--upgrade") ||
       process.argv.includes("--upgrade-v1") ||
-      process.argv.includes("--upgrade-a1")
+      process.argv.includes("--upgrade-a1") ||
+      process.argv.includes("--upgrade-a2")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a1")
-        ? 78
-        : process.argv.includes("--upgrade-v1")
-          ? 76
-          : 67;
+      const baselineCount = process.argv.includes("--upgrade-a2")
+        ? 80
+        : process.argv.includes("--upgrade-a1")
+          ? 78
+          : process.argv.includes("--upgrade-v1")
+            ? 76
+            : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -242,7 +247,7 @@ async function main() {
           description: "Preserved C4 financial evidence",
         });
         const baselineCard =
-          baselineCount === 78
+          baselineCount >= 78
             ? await createCreditCard({
                 userId,
                 workspaceId,
@@ -250,6 +255,21 @@ async function main() {
                 name: "Preserved A1 card",
                 issuerName: "Issuer",
                 creditLimitMinor: "9007199254740993",
+              })
+            : null;
+        const baselinePurchase =
+          baselineCount >= 80 && baselineCard
+            ? await recordCardPurchase({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                clientCommandId: randomUUID(),
+                effectiveDate: "2026-10-02",
+                postingDate: "2026-10-03",
+                purchaseMinor: "777",
+                splits: [{ amountMinor: "777", categoryId: null }],
+                description: "Preserved A2 purchase",
+                providerReference: "A2 provider reference",
               })
             : null;
         await migrate(db, config);
@@ -282,6 +302,29 @@ async function main() {
         });
         assert.equal(report.metrics.income, "100");
         assert.equal(report.metrics.closing_cash, "200100");
+        if (baselinePurchase && baselineCard) {
+          assert.equal(report.metrics.gross, "777");
+          assert.equal(report.metrics.closing_liability, "777");
+          const preserved = await getFinancialActionDetail({
+            userId,
+            workspaceId,
+            actionId: baselinePurchase.actionId,
+          });
+          assert.equal(
+            preserved.current.actionRevisionId,
+            baselinePurchase.actionRevisionId,
+          );
+          assert.equal(
+            (
+              await getCreditCardDetail({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+              })
+            ).card.postedOutstandingMinor,
+            "777",
+          );
+        }
         console.log(
           `${baselineCount}-migration upgrade preserves committed account/history and exact report totals.`,
         );
@@ -1995,7 +2038,7 @@ async function main() {
         .postedOutstandingMinor,
       "300000",
     );
-    await recordCardPurchase({
+    const preservedCardPurchase = await recordCardPurchase({
       ...cardPurchase,
       ...other,
       cardId: preservedCard.cardId,
@@ -2003,6 +2046,76 @@ async function main() {
     });
     console.log(
       "V2-A2 posted card purchase, replay, spending/liability once, unchanged cash and provider evidence passed.",
+    );
+    const statementCommand = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      cardId: card.cardId,
+      cycleStart: "2026-11-01",
+      cycleEnd: "2026-11-30",
+      statementDate: "2026-12-01",
+      dueDate: "2026-12-20",
+      balanceMinor: "300000",
+      minimumDueMinor: "10000",
+      openingBalanceMinor: "0",
+      verifiedDate: "2026-12-02",
+      verificationSource: "Provider statement checked",
+      entries: [
+        {
+          description: "Verified provider purchase",
+          amountMinor: "300000",
+          postingDate: "2026-11-02",
+          actionRevisionId: recordedCardPurchase.actionRevisionId,
+        },
+      ],
+    };
+    const statement = await recordCardStatement(statementCommand);
+    assert.deepEqual(await recordCardStatement(statementCommand), statement);
+    const statementCorrection = await recordCardStatement({
+      ...statementCommand,
+      clientCommandId: randomUUID(),
+      statementId: statement.statementId,
+      expectedVersion: 1,
+      reason: "Provider corrected reference",
+      providerReference: "Corrected provider reference",
+    });
+    assert.equal(statementCorrection.version, 2);
+    const originalStatement = await getCardStatement({
+      ...owner,
+      cardId: card.cardId,
+      statementId: statement.statementId,
+      revisionId: statement.revisionId,
+    });
+    assert.equal(originalStatement.snapshot.providerReference, null);
+    assert.equal(originalStatement.isCurrent, false);
+    assert.equal(
+      originalStatement.reconciliation.recordedRemainingDueMinor,
+      "300000",
+    );
+    assert.equal(
+      originalStatement.reconciliation.unexplainedDifferenceMinor,
+      "0",
+    );
+    assert.deepEqual(
+      (await getFinancialReport({ ...owner, query: reportQuery })).metrics,
+      cardReportAfter.metrics,
+    );
+    const preservedStatement = await recordCardStatement({
+      ...statementCommand,
+      ...other,
+      cardId: preservedCard.cardId,
+      clientCommandId: randomUUID(),
+      entries: [
+        {
+          description: "Other provider purchase",
+          amountMinor: "300000",
+          postingDate: "2026-11-02",
+          actionRevisionId: preservedCardPurchase.actionRevisionId,
+        },
+      ],
+    });
+    console.log(
+      "V2-A3 verified statements, explicit membership, exact due, immutable correction history, replay and unchanged ledger totals passed.",
     );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
@@ -2095,6 +2208,16 @@ async function main() {
         (await getCreditCardDetail({ ...other, cardId: preservedCard.cardId }))
           .card.name,
         "Preserved other card",
+      );
+      assert.equal(
+        (
+          await getCardStatement({
+            ...other,
+            cardId: preservedCard.cardId,
+            statementId: preservedStatement.statementId,
+          })
+        ).snapshot.balanceMinor,
+        "300000",
       );
       assert.equal(
         (

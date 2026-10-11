@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
@@ -237,6 +237,7 @@ export function WorkspacePreferencesForm({
   settingsMode = false,
 }: WorkspacePreferencesFormProps) {
   const router = useRouter();
+  const idPrefix = useId();
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -327,20 +328,20 @@ export function WorkspacePreferencesForm({
   }
 
   const currencyErrorId = errors.currency
-    ? "workspace-currency-error"
+    ? `${idPrefix}-workspace-currency-error`
     : undefined;
 
   const timezoneErrorId = errors.timezone
-    ? "workspace-timezone-error"
+    ? `${idPrefix}-workspace-timezone-error`
     : undefined;
 
   const weekStartErrorId = errors.weekStart
-    ? "workspace-week-start-error"
+    ? `${idPrefix}-workspace-week-start-error`
     : undefined;
 
   return (
     <section
-      aria-labelledby="workspace-preferences-title"
+      aria-labelledby={`${idPrefix}-workspace-preferences-title`}
       className="rounded-card border border-border bg-card p-5 text-card-foreground sm:p-6"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -350,7 +351,7 @@ export function WorkspacePreferencesForm({
           </p>
 
           <h2
-            id="workspace-preferences-title"
+            id={`${idPrefix}-workspace-preferences-title`}
             className="mt-1 text-lg font-semibold text-foreground"
           >
             {settingsMode
@@ -383,20 +384,20 @@ export function WorkspacePreferencesForm({
       >
         <div className="grid gap-5 md:grid-cols-2">
           <FormField
-            htmlFor="workspace-currency"
+            htmlFor={`${idPrefix}-workspace-currency`}
             label="Currency"
             description={
               workspace.currencyChangeAllowed
                 ? "Use the three-letter currency code for this workspace. V1 keeps one currency per workspace."
                 : "Currency is locked because financial account structure already exists."
             }
-            descriptionId="workspace-currency-description"
+            descriptionId={`${idPrefix}-workspace-currency-description`}
             error={errors.currency?.message}
-            errorId="workspace-currency-error"
+            errorId={`${idPrefix}-workspace-currency-error`}
           >
             <Input
               {...register("currency")}
-              id="workspace-currency"
+              id={`${idPrefix}-workspace-currency`}
               type="text"
               inputMode="text"
               maxLength={3}
@@ -405,7 +406,7 @@ export function WorkspacePreferencesForm({
               spellCheck={false}
               aria-invalid={Boolean(errors.currency)}
               aria-describedby={[
-                "workspace-currency-description",
+                `${idPrefix}-workspace-currency-description`,
                 currencyErrorId,
               ]
                 .filter(Boolean)
@@ -419,31 +420,31 @@ export function WorkspacePreferencesForm({
           </FormField>
 
           <FormField
-            htmlFor="workspace-timezone"
+            htmlFor={`${idPrefix}-workspace-timezone`}
             label="Timezone"
             description="Use an IANA timezone such as Asia/Manila."
-            descriptionId="workspace-timezone-description"
+            descriptionId={`${idPrefix}-workspace-timezone-description`}
             error={errors.timezone?.message}
-            errorId="workspace-timezone-error"
+            errorId={`${idPrefix}-workspace-timezone-error`}
           >
             <>
               <Input
                 {...register("timezone")}
-                id="workspace-timezone"
+                id={`${idPrefix}-workspace-timezone`}
                 type="text"
-                list="workspace-timezone-options"
+                list={`${idPrefix}-workspace-timezone-options`}
                 autoComplete="off"
                 spellCheck={false}
                 aria-invalid={Boolean(errors.timezone)}
                 aria-describedby={[
-                  "workspace-timezone-description",
+                  `${idPrefix}-workspace-timezone-description`,
                   timezoneErrorId,
                 ]
                   .filter(Boolean)
                   .join(" ")}
               />
 
-              <datalist id="workspace-timezone-options">
+              <datalist id={`${idPrefix}-workspace-timezone-options`}>
                 <option value="Asia/Manila" />
                 <option value="Asia/Singapore" />
                 <option value="Asia/Tokyo" />
@@ -455,21 +456,21 @@ export function WorkspacePreferencesForm({
           </FormField>
 
           <FormField
-            htmlFor="workspace-week-start"
+            htmlFor={`${idPrefix}-workspace-week-start`}
             label="Week starts on"
             description="Weekly reports and calendar grouping use this preference."
-            descriptionId="workspace-week-start-description"
+            descriptionId={`${idPrefix}-workspace-week-start-description`}
             error={errors.weekStart?.message}
-            errorId="workspace-week-start-error"
+            errorId={`${idPrefix}-workspace-week-start-error`}
           >
             <select
               {...register("weekStart", {
                 valueAsNumber: true,
               })}
-              id="workspace-week-start"
+              id={`${idPrefix}-workspace-week-start`}
               aria-invalid={Boolean(errors.weekStart)}
               aria-describedby={[
-                "workspace-week-start-description",
+                `${idPrefix}-workspace-week-start-description`,
                 weekStartErrorId,
               ]
                 .filter(Boolean)

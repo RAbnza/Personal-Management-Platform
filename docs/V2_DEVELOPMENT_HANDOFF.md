@@ -420,11 +420,11 @@ No production requirement is waived by this sequence.
 
 ## 15. Immediate next step
 
-V2-A2 is implemented and locally accepted. Its scope and actual verification evidence are recorded in section 17; section 16 preserves the A1 milestone record.
+V2-A3 is implemented and locally accepted. Its scope and actual verification evidence are recorded in section 18; sections 16 and 17 preserve the A1 and A2 milestone records.
 
-After accepted V2-A2, the next assignment is:
+After accepted V2-A3, the next assignment is:
 
-> **V2-A3 — Statements and Reconciliation**
+> **V2-A4 — Payments, Fees, Interest and Refunds**
 
 Start it only when explicitly assigned. No later milestone is authorized by this handoff.
 
@@ -525,3 +525,57 @@ Remaining boundary:
 
 - No statements/reconciliation, card payments/fees/interest/refunds/adjustments, installments, shared expenses, other V2 domains, V3 or broad redesign. Unreleased card commands retain database gates. Production hosting/sender/PITR/retention/monitoring acceptance remains deferred, not waived.
 - After A2 acceptance, the next milestone is **V2-A3 — Statements and Reconciliation**, only when explicitly assigned. It must build on preserved transaction/provider evidence and immutable card corrections; it may not repeat purchase spending or derive unknown provider statement facts. Do not start A3 automatically.
+
+---
+
+## 18. V2-A3 — Statements and Reconciliation
+
+**Implementation date:** October 12, 2026 (Asia/Manila).
+
+**Baseline:** clean `main`, `a21a7a8c32c1a0c126aac54a8bc11117258ec458`, fetched and confirmed equal to `origin/main`. A1 and A2 remain committed foundations.
+
+**Acceptance:** completed and locally accepted. No A3 acceptance blocker remains. Production deployment remains deferred; no A4 command has been enabled.
+
+### Implemented scope and decisions
+
+- Added `finance.card_statement`, `card_statement_revision` and `card_statement_entry`. Each statement retains an immutable card identity, sequential current revision, billing cycle, statement/due dates, signed historical provider balance, minimum due, optional provider opening balance/reference, explicit verification source/date, server attribution/time and correction reason. Building evidence must finalize atomically; historical snapshots and entries cannot be extended or edited.
+- Corrections create new snapshots with exact before/after private audit evidence and permanent completed command receipts. Workspace/profile locks serialize commands with financial corrections and lifecycle changes. Identical retries replay before mutable reference validation; changed intent and stale correction versions conflict.
+- Entry associations bind the exact posted purchase revision and its same-card recognized purchase amount/provider posting date. They deliberately reference `purchase_detail` and `action_revision`, rather than treating a correction's net `card_activity` delta as a second provider purchase. Zero-money posting-date corrections remain linkable. A new association requires current recognized evidence; a correction may explicitly retain its previous preserved association.
+- Membership requires explicit provider confirmation. Out-of-cycle provider membership is accepted and preserved. One logical purchase can belong to at most one current statement in the workspace, including after a card correction; historical revisions retain earlier associations. Exact duplicate provider cycles require correction of the existing statement. Other cycle membership is not inferred from dates.
+- Unknown provider lines retain nullable amounts/dates and remain visibly unresolved. Known provider amounts are signed historical evidence, including provider payments/credits that have no supported application action yet. They do not create postings or allocations. Provider balance comparison is exact only when the opening balance and every line amount are supplied; otherwise the difference remains unknown. Linked purchases corrected after association are separately flagged without rewriting statement history.
+- Recorded remaining due is `max(verified statement balance, 0)` less **zero effective recorded allocations in A3**. A4 allocation/payment recipes remain blocked. The UI explicitly describes this as recorded evidence and does not infer provider payments, allocation order, current cash or current card liability from statement balances. Positive due and negative provider credit evidence remain exact beyond JavaScript's safe integer range.
+- Added private collection/detail/revision APIs under `/api/v1/credit-cards/[cardId]/statements`, strict trusted ownership boundaries, mutation-origin checks, safe missing/foreign errors and `no-store` responses. A local 3 MiB statement-body limit accommodates 100 bounded provider lines and correction evidence; other commands retain the existing 64 KiB limit. Added statement list, entry/review, reconciliation, historical revision and correction pages under the existing card surface. Forms preserve an uncertain command for identical retry and guard navigation while its outcome is unresolved; review headings and errors receive meaningful focus.
+- Statement commands make no financial actions, journals, postings, purchase recognition or liability movement. The database also rejects financial revisions using a statement command receipt. V1/A1/A2 recipes and unreleased A4 gates remain installed.
+
+### Database and lifecycle evidence
+
+- Migrations `0080_milky_viper.sql` and `0081_v2_a3_statement_integrity.sql` add three scoped tables and reviewed integrity guards: same-root current/previous revision foreign keys, exact audit/receipt proofs, sequential versions and provider line ordering, provider link validation, cycle/membership uniqueness, immutable snapshots/entries and immutable card binding.
+- All three tables use enabled/forced owner RLS with active-workspace/profile checks. Application deletion is denied; lifecycle operator access is limited to the existing approved purge scope. No runtime role bypass, unrelated grant broadening or dependency change was introduced.
+- The catalog-driven deletion graph includes statements and their historical associations. The focused operator test purges a two-revision statement linked to posted card activity and preserves another owner's statement. Deletion-pending reads/writes and spoofed owner/workspace settings are rejected.
+- Updated migration-chain verification and hosted acceptance to include an **80-migration A2-to-A3 upgrade** with preexisting card purchases preserved, alongside fresh/no-op, older V1, final V1 and A1 upgrades. The common smoke proof now records/revises/replays statements, checks exact due/membership and unchanged ledger totals, purges the resulting graph and confirms another owner's statement survives.
+
+### Prerequisite resolved
+
+- The pushed A2 hosted run `38141084507` finished with 28/29 browser checks passing; the dark Settings check failed because Next.js retained route forms with duplicate static control/title IDs. Workspace preference controls now use React `useId` for labels, descriptions, errors and datalist/title references. A focused two-form regression proves unique IDs and accessible labels. This fixes the observed A2 prerequisite without changing financial behavior.
+
+### Actual verification
+
+- `pnpm check`: passed lint, Next route generation, TypeScript and whole-repository formatting.
+- `pnpm test --maxWorkers=1`: **769 tests / 108 files passed**, including **37** new statement domain/API/component checks, the workspace-preference label regression and statement request-size boundaries. The final focus/retry component checks also passed.
+- `pnpm test:integration`: **464 tests / 60 files passed**, including all V1/A1/A2 regressions and A3.
+- `pnpm test:integration tests/integration/card-statements.test.ts`: **25 passed**, including direct invalid/valid application-role SQL, immutable history, ownership/RLS, independent connection retries/races, unknown evidence, exact bigint credit balances, archived cards, out-of-cycle membership, corrected-card associations, rollback, deletion blocking and actual approved purge.
+- `pnpm db:verify:chain` and `--upgrade`, `--upgrade-v1`, `--upgrade-a1`, `--upgrade-a2`: all passed **82 migrations**, no-op repeats and the complete existing financial/lifecycle smoke proof plus A3.
+- `pnpm db:generate`: no schema drift. Test/development migrations and restricted runtime connection/scope checks passed. Production dependency audit reports no known vulnerabilities.
+- `pnpm verify:restore`: isolated encrypted restore passed exact counts/balances, reporting, RLS, revoked credentials, independently approved scoped deletion and other-owner preservation.
+- `pnpm build`: passed on Windows, including TypeScript and all new private routes. Existing Windows standalone symlink `EPERM` warnings remain; the Linux artifact proof below verifies the production output.
+- `PMP_BROWSER_CHANNEL=chrome pnpm test:browser`: final production suite **31 passed**, including the A2 dark Settings regression, statement verification/reconciliation/correction history, a genuinely committed first response lost in transit, identical retry, missing/foreign owner rejection, dark/light 320px reflow and automated accessibility. Statement form, reconciliation and dark screenshots were visually inspected. The first full browser run passed 30/31; the new retry test's generic alert locator also matched Next.js's route announcer. The final assertion targets the form's save error specifically.
+- `docker build --target web --tag pmp-v2-a3-web .`: Linux production build passed. Container assertions confirm nonroot UID 1000, compiled statement collection/revision routes, static assets and PostgreSQL driver, with private environment files and test/migration tooling absent.
+- Generated-snapshot comparison proves exactly three new statement tables, all prior 60 declarative tables unchanged and the custom integrity snapshot matching the structural snapshot. Staged diff checks passed; no dependency, lockfile, secret/environment, generated runtime artifact or unrelated change is included.
+- Git procedure: Conventional Commit `feat(finance): add v2-a3 statements and reconciliation` on the established `main` branch, then automatic non-force push to `origin/main` and exact remote-head verification. Resolve the resulting SHA through `git log -- src/modules/finance/domain/card-statement.ts`; hosted acceptance runs on the pushed commit and is reported separately from these completed local checks.
+
+### A4 prerequisites and milestone boundary
+
+- A4 must introduce supported card payment/fee/interest/refund financial recipes and effective allocation evidence before changing remaining due. Allocations must bind verified statement/card/workspace evidence, preserve original statement balance and correction history, account for effective financial reversals/replacements, reject excess or foreign allocations and leave uncertain/unallocated provider amounts visible. Do not substitute provider line amounts for recognized financial actions or allocations.
+- Entry guards currently accept the released card purchase recipe only. Extend associations to new A4 activity kinds together with their validated source amount/date evidence and correction rules. Preserve unresolved A3 provider lines until explicitly linked to those supported records.
+- A4 must replace A3's zero-allocation due derivation with exact effective supported allocation totals, preserve separate cash/spending/liability classifications and continue safe retry, version, lifecycle and database integrity checks. Reconciliation must continue exposing unsupported or corrected evidence.
+- Agenda/reminder integration, installment plans and the complete Dashboard/Reports card surface remain their later approved milestones. No deployment or A4 implementation is performed as part of A3.

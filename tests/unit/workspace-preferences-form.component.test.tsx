@@ -64,6 +64,27 @@ afterEach(() => {
 });
 
 describe("WorkspacePreferencesForm", () => {
+  it("keeps labels unique across retained route forms", () => {
+    const { container } = render(
+      <>
+        <WorkspacePreferencesForm
+          workspace={workspace}
+          modules={modules}
+          stepState="pending"
+        />
+        <WorkspacePreferencesForm
+          workspace={workspace}
+          modules={modules}
+          stepState="pending"
+          settingsMode
+        />
+      </>,
+    );
+    const ids = Array.from(container.querySelectorAll("[id]")).map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(screen.getAllByLabelText("Currency")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Timezone")).toHaveLength(2);
+  });
   it("confirms unchanged preferences without creating unnecessary settings mutations", async () => {
     const user = userEvent.setup();
 
