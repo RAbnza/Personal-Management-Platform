@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useId, type ReactNode } from "react";
 import { LockKeyhole } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -34,9 +36,9 @@ export function AppShell({
   workspacePreferenceVersion,
   gettingStartedDismissed,
 }: AppShellProps) {
-  // Retained routes can keep another shell hidden in the same document. Each
-  // skip link must resolve to its own route's visible, focusable main landmark.
-  const mainContentId = `main-content-${activePath}`;
+  // Retained pages can share a navigation path. Each shell needs its own
+  // hydration-stable target, including when another instance remains hidden.
+  const mainContentId = `main-content-${useId()}`;
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <SessionNoticeListener />

@@ -36,9 +36,9 @@ describe("AppShell", () => {
       screen.getByRole("link", {
         name: "Skip to main content",
       }),
-    ).toHaveAttribute("href", "#main-content-/");
+    ).toHaveAttribute("href", `#${screen.getByRole("main").id}`);
 
-    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content-/");
+    expect(screen.getByRole("main").id).toMatch(/^main-content-/);
 
     expect(screen.getByText("Jane Example")).toBeInTheDocument();
 
@@ -58,12 +58,12 @@ describe("AppShell", () => {
     const retained = render(
       <>
         <div style={{ display: "none" }}>
-          <AppShell {...shellProps} activePath="/onboarding">
-            Retained onboarding
+          <AppShell {...shellProps} activePath="/money/debts">
+            Retained debt page
           </AppShell>
         </div>
-        <AppShell {...shellProps} activePath="/settings">
-          Current Settings
+        <AppShell {...shellProps} activePath="/money/debts">
+          Current debt page
         </AppShell>
       </>,
     );
