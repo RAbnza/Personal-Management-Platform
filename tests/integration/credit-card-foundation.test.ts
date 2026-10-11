@@ -432,7 +432,9 @@ describe("V2-A1 credit card foundation", () => {
     }));
 
   it.each(
-    RESERVED_CARD_ACTION_KINDS.filter((kind) => kind !== "card_purchase"),
+    RESERVED_CARD_ACTION_KINDS.filter(
+      (kind) => kind === "opening_card" || kind === "card_adjustment",
+    ),
   )("blocks reserved %s even in building state", async (kind) =>
     fixture(async (owner) => {
       await scoped(owner, async (c) => {

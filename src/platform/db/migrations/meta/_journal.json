@@ -575,6 +575,34 @@
       "when": 1791735257798,
       "tag": "0081_v2_a3_statement_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1791752169423,
+      "tag": "0082_glamorous_gamma_corps",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1791752289076,
+      "tag": "0083_v2_a4_card_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1791752861283,
+      "tag": "0084_v2_a4_confirmation_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1791753485669,
+      "tag": "0085_v2_a4_allocation_audit",
+      "breakpoints": true
     }
   ]
 }

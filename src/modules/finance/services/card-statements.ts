@@ -112,13 +112,13 @@ async function execute(
       valid: boolean;
       occupied: boolean;
     }>(sql`
-      SELECT r.action_id AS "actionId",(d.purchase_minor::text=${e.amountMinor} AND d.card_posting_date=${e.postingDate}::date
+      SELECT r.action_id AS "actionId",(d.signed_liability_minor::text=${e.amountMinor} AND d.posting_date=${e.postingDate}::date
         AND (f.current_revision_id=r.id OR EXISTS(SELECT 1 FROM finance.card_statement_entry old WHERE old.workspace_id=r.workspace_id AND old.statement_revision_id=${previousId}::uuid AND old.action_revision_id=r.id))) AS valid,
         EXISTS(SELECT 1 FROM finance.card_statement s JOIN finance.card_statement_entry entry ON entry.workspace_id=s.workspace_id AND entry.statement_revision_id=s.current_revision_id
           JOIN finance.action_revision linked ON linked.workspace_id=entry.workspace_id AND linked.id=entry.action_revision_id
           WHERE s.workspace_id=r.workspace_id AND s.id<>${statementId}::uuid AND linked.action_id=r.action_id) AS occupied
-      FROM finance.credit_card c JOIN finance.purchase_detail d ON d.workspace_id=c.workspace_id AND d.funding_ledger_account_id=c.liability_ledger_account_id
-      JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id AND r.state='posted' AND r.action_kind='card_purchase'
+      FROM finance.credit_card c JOIN finance.card_recognized_evidence_v d ON d.workspace_id=c.workspace_id AND d.card_id=c.id
+      JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id
       JOIN finance.financial_action f ON f.workspace_id=r.workspace_id AND f.id=r.action_id
       WHERE c.workspace_id=${actor.workspaceId}::uuid AND c.id=${body.cardId}::uuid AND r.id=${e.actionRevisionId}::uuid`);
     if (!source.rows[0]) throw new StatementUnavailableError();

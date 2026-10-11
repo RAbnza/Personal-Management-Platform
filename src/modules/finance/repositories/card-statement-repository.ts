@@ -44,16 +44,16 @@ export async function readStatementCandidates(
 ) {
   const r = await t.db.execute<RecognizedStatementPurchase>(sql`
     SELECT f.id AS "actionId",r.id AS "actionRevisionId",f.description,
-      d.card_posting_date::text AS "postingDate",r.primary_effective_date::text AS "transactionDate",d.purchase_minor::text AS "amountMinor",d.card_provider_reference AS "providerReference",
+      d.posting_date::text AS "postingDate",r.primary_effective_date::text AS "transactionDate",d.signed_liability_minor::text AS "amountMinor",d.provider_reference AS "providerReference",
       (SELECT s.id FROM finance.card_statement s JOIN finance.card_statement_entry e ON e.workspace_id=s.workspace_id AND e.statement_revision_id=s.current_revision_id
        JOIN finance.action_revision source ON source.workspace_id=e.workspace_id AND source.id=e.action_revision_id
        WHERE s.workspace_id=f.workspace_id AND source.action_id=f.id LIMIT 1) AS "statementId"
-    FROM finance.credit_card c JOIN finance.purchase_detail d ON d.workspace_id=c.workspace_id AND d.funding_ledger_account_id=c.liability_ledger_account_id
-    JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id AND r.state='posted' AND r.action_kind='card_purchase'
+    FROM finance.credit_card c JOIN finance.card_recognized_evidence_v d ON d.workspace_id=c.workspace_id AND d.card_id=c.id
+    JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id
     JOIN finance.financial_action f ON f.workspace_id=r.workspace_id AND f.id=r.action_id AND f.current_revision_id=r.id
     WHERE c.workspace_id=${workspaceId}::uuid AND c.id=${cardId}::uuid
-      AND (${cycle?.start ?? null}::date IS NULL OR d.card_posting_date BETWEEN ${cycle?.start ?? null}::date AND ${cycle?.end ?? null}::date)
-    ORDER BY d.card_posting_date DESC,r.id LIMIT 101 OFFSET ${offset}`);
+      AND (${cycle?.start ?? null}::date IS NULL OR d.posting_date BETWEEN ${cycle?.start ?? null}::date AND ${cycle?.end ?? null}::date)
+    ORDER BY d.posting_date DESC,r.id LIMIT 101 OFFSET ${offset}`);
   return { items: r.rows.slice(0, 100), hasMore: r.rows.length > 100 };
 }
 export async function countUnlinkedStatementPurchases(
@@ -66,10 +66,10 @@ export async function countUnlinkedStatementPurchases(
   const r = await t.db.execute<{
     count: string;
   }>(sql`SELECT count(*)::text AS count
-    FROM finance.credit_card c JOIN finance.purchase_detail d ON d.workspace_id=c.workspace_id AND d.funding_ledger_account_id=c.liability_ledger_account_id
-    JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id AND r.state='posted' AND r.action_kind='card_purchase'
+    FROM finance.credit_card c JOIN finance.card_recognized_evidence_v d ON d.workspace_id=c.workspace_id AND d.card_id=c.id
+    JOIN finance.action_revision r ON r.workspace_id=d.workspace_id AND r.id=d.action_revision_id
     JOIN finance.financial_action f ON f.workspace_id=r.workspace_id AND f.id=r.action_id AND f.current_revision_id=r.id
-    WHERE c.workspace_id=${workspaceId}::uuid AND c.id=${cardId}::uuid AND d.card_posting_date BETWEEN ${start}::date AND ${end}::date
+    WHERE c.workspace_id=${workspaceId}::uuid AND c.id=${cardId}::uuid AND d.posting_date BETWEEN ${start}::date AND ${end}::date
       AND NOT EXISTS(SELECT 1 FROM finance.card_statement s JOIN finance.card_statement_entry e ON e.workspace_id=s.workspace_id AND e.statement_revision_id=s.current_revision_id
         JOIN finance.action_revision source ON source.workspace_id=e.workspace_id AND source.id=e.action_revision_id
         WHERE s.workspace_id=f.workspace_id AND source.action_id=f.id)`);

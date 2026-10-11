@@ -108,10 +108,20 @@ export default async function StatementPage({
         <p>Recorded remaining due: {money(r.recordedRemainingDueMinor)}</p>
         <p>
           Effective recorded allocations: {money(r.effectiveAllocatedMinor)}.
-          Payment allocation commands are not yet available. This is a
-          recorded-evidence amount; unrecorded provider payments or credits are
-          not assumed.
+          Unrecorded provider payments or credits are not assumed.
         </p>
+        <p>
+          Superseded unresolved allocations:{" "}
+          {money(r.unresolvedAllocationMinor)}. Provider credit evidence:{" "}
+          {money(r.providerCreditMinor)}. Excess allocated credit:{" "}
+          {money(r.excessCreditMinor)}.
+        </p>
+        <Link
+          href={`${base}/${s.statementId}/allocations${data.isCurrent ? "" : `?revisionId=${s.revisionId}`}`}
+          className="inline-flex min-h-11 text-link underline"
+        >
+          Confirm allocations and review reversal history
+        </Link>
         <p>Known provider lines: {money(r.knownProviderLinesMinor)}</p>
         <p>
           Unexplained provider difference:{" "}
@@ -120,13 +130,13 @@ export default async function StatementPage({
             : money(r.unexplainedDifferenceMinor)}
         </p>
         <p>
-          Linked purchases: {r.linkedCount} · Unlinked provider lines:{" "}
+          Linked card activity: {r.linkedCount} · Unlinked provider lines:{" "}
           {r.unlinkedProviderCount} · Incomplete provider lines:{" "}
-          {r.incompleteProviderCount} · Linked purchases corrected since
+          {r.incompleteProviderCount} · Linked activity corrected since
           association: {r.changedLinkedCount}
         </p>
         <p>
-          Unlinked recognized purchases within the recorded cycle:{" "}
+          Unlinked recognized card activity within the recorded cycle:{" "}
           {data.unlinkedRecognizedCount}
           {data.candidatesHaveMore
             ? " (showing matches from the first 100 cycle choices)"
@@ -150,7 +160,7 @@ export default async function StatementPage({
       </Panel>
       <Panel
         title="Preserved provider lines"
-        description="Links retain the exact recognized purchase revision and provider posting date."
+        description="Links retain the exact recognized card activity revision and provider posting date."
       >
         <ol className="divide-y divide-border">
           {s.entries.map((e, i) => {
@@ -171,7 +181,7 @@ export default async function StatementPage({
                       href={`/money/actions/${link.actionId}`}
                       className="text-link underline"
                     >
-                      Linked purchase
+                      Linked card activity
                     </Link>
                     <p>Preserved revision: {link.actionRevisionId}</p>
                     {link.changed && (

@@ -47,6 +47,7 @@ const labels: Record<string, string> = {
   components: "Accounting components",
   dueAllocations: "Contractual due allocations",
   allocations: "Refund portions",
+  refundParts: "Original card purchase portions",
   categoryId: "Category",
   externalFeeCategoryId: "External fee category",
   bearingAccountId: "Fee paying account",
@@ -130,6 +131,20 @@ function transform(value: unknown, toMinor: boolean): unknown {
 export function correctionCashEffects(
   p: ReplacementIntent,
 ): Array<{ accountId: string; effectiveDate: string; signedMinor: string }> {
+  if (p.actionKind === "card_payment")
+    return [
+      {
+        accountId: p.payingAccountId!,
+        effectiveDate: p.effectiveDate,
+        signedMinor: (-BigInt(p.amountMinor)).toString(),
+      },
+    ];
+  if (
+    p.actionKind === "card_fee" ||
+    p.actionKind === "card_interest" ||
+    p.actionKind === "card_refund"
+  )
+    return [];
   if (p.actionKind === "income" || p.actionKind === "borrowing")
     return [
       {
@@ -188,6 +203,7 @@ export function correctionCashEffects(
         signedMinor: p.amountMinor,
       },
     ];
+  if (p.actionKind !== "transfer") return [];
   return [
     {
       accountId: p.sourceAccountId,
@@ -403,6 +419,11 @@ export function FinancialActionReviewForm({
                       allocationKind:
                         detail.refundSources[0]?.allocationKind ?? "purchase",
                     },
+                    refundParts: {
+                      originalPurchasePostingId:
+                        detail.refundSources[0]?.postingId ?? "",
+                      amountMinor: "0.00",
+                    },
                   };
                   onChange({ ...value, [key]: [...v, templates[key] ?? {}] });
                 }}
@@ -413,7 +434,11 @@ export function FinancialActionReviewForm({
           );
         const account = key.endsWith("AccountId"),
           category = key.endsWith("CategoryId") || key === "categoryId",
-          enumOptions = options[key],
+          enumOptions =
+            key === "confirmationSource" &&
+            String(draft.actionKind).startsWith("card_")
+              ? undefined
+              : options[key],
           source = key === "originalPurchasePostingId",
           clearing = key === "sourceComponentId",
           due = key === "installmentId";

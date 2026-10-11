@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { readStatementAllocations } from "../repositories/card-allocation-repository";
 import { z } from "zod";
 import { withDomainTransaction } from "@/platform/db";
 import {
@@ -67,6 +68,7 @@ const detailInput = input.omit({ offset: true }).extend({
   statementId: statementIdentifierSchema,
   revisionId: statementIdentifierSchema.optional(),
   historyOffset: z.number().int().min(0).max(10000).default(0),
+  allocationOffset: z.number().int().min(0).max(10000).default(0),
 });
 export function getCardStatement(i: z.input<typeof detailInput>) {
   const p = detailInput.parse(i);
@@ -94,6 +96,12 @@ export function getCardStatement(i: z.input<typeof detailInput>) {
         p.revisionId ?? null,
       );
       if (!snapshot) throw new StatementUnavailableError();
+      const allocations = await readStatementAllocations(
+        t,
+        p.workspaceId,
+        snapshot.revisionId,
+        p.allocationOffset,
+      );
       const associations = await readStatementAssociations(
         t,
         p.workspaceId,
@@ -122,10 +130,15 @@ export function getCardStatement(i: z.input<typeof detailInput>) {
         currentVersion: root.rows[0].version,
         isCurrent: snapshot.revisionId === root.rows[0].currentRevisionId,
         reconciliation: {
-          ...deriveStatementReconciliation(snapshot),
+          ...deriveStatementReconciliation(
+            snapshot,
+            allocations.effectiveMinor,
+          ),
+          unresolvedAllocationMinor: allocations.unresolvedMinor,
           changedLinkedCount: associations.filter((a) => a.changed).length,
         },
         associations,
+        allocations,
         unlinkedRecognized: candidates.items.filter(
           (c) =>
             !c.statementId &&

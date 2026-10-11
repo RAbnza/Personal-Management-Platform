@@ -42,19 +42,20 @@ export function listFinancialActions(input: {
         fundingName: string | null;
       }>(
         sql`SELECT f.id AS "actionId",f.description,r.action_kind AS "actionKind",r.primary_effective_date::text AS "effectiveDate",r.revision_no AS "revisionNo",r.change_kind AS "changeKind",
-        c.id AS "cardId",c.name AS "cardName",d.card_posting_date::text AS "postingDate",COALESCE(c.name,a.name) AS "fundingName"
+        c.id AS "cardId",c.name AS "cardName",COALESCE(d.card_posting_date,cd.posting_date)::text AS "postingDate",COALESCE(c.name,a.name) AS "fundingName"
       FROM finance.financial_action f JOIN finance.action_revision r ON r.workspace_id=f.workspace_id AND r.id=f.current_revision_id AND r.state='posted'
       LEFT JOIN finance.purchase_detail d ON d.workspace_id=r.workspace_id AND d.action_revision_id=CASE WHEN r.change_kind='void' THEN r.previous_revision_id ELSE r.id END
-      LEFT JOIN finance.credit_card c ON c.workspace_id=d.workspace_id AND c.liability_ledger_account_id=d.funding_ledger_account_id
+      LEFT JOIN finance.card_action_detail cd ON cd.workspace_id=r.workspace_id AND cd.action_revision_id=CASE WHEN r.change_kind='void' THEN r.previous_revision_id ELSE r.id END
+      LEFT JOIN finance.credit_card c ON c.workspace_id=r.workspace_id AND (c.liability_ledger_account_id=d.funding_ledger_account_id OR c.id=cd.card_id)
       LEFT JOIN finance.financial_account a ON a.workspace_id=d.workspace_id AND a.ledger_account_id=d.funding_ledger_account_id
       WHERE f.workspace_id=${input.workspaceId}::uuid
       ${filters.cardId ? sql`AND c.id=${filters.cardId}::uuid` : sql``}
-      ${filters.fundingSource ? sql`AND r.action_kind=${filters.fundingSource === "card" ? "card_purchase" : "expense"}` : sql``}
+      ${filters.fundingSource === "card" ? sql`AND r.action_kind IN('card_purchase','card_fee','card_interest','card_refund')` : filters.fundingSource === "cash" ? sql`AND r.action_kind='expense'` : sql``}
       ${filters.categoryId ? sql`AND EXISTS(SELECT 1 FROM finance.posting p WHERE p.workspace_id=r.workspace_id AND p.action_revision_id=CASE WHEN r.change_kind='void' THEN r.previous_revision_id ELSE r.id END AND p.reverses_posting_id IS NULL AND p.category_id=${filters.categoryId}::uuid)` : sql``}
       ${filters.transactionFrom ? sql`AND r.primary_effective_date>=${filters.transactionFrom}::date` : sql``}
       ${filters.transactionTo ? sql`AND r.primary_effective_date<=${filters.transactionTo}::date` : sql``}
-      ${filters.postingFrom ? sql`AND d.card_posting_date>=${filters.postingFrom}::date` : sql``}
-      ${filters.postingTo ? sql`AND d.card_posting_date<=${filters.postingTo}::date` : sql``}
+      ${filters.postingFrom ? sql`AND COALESCE(d.card_posting_date,cd.posting_date)>=${filters.postingFrom}::date` : sql``}
+      ${filters.postingTo ? sql`AND COALESCE(d.card_posting_date,cd.posting_date)<=${filters.postingTo}::date` : sql``}
       ORDER BY r.primary_effective_date DESC,f.id DESC LIMIT 100`,
       );
       return rows.rows;

@@ -49,7 +49,6 @@ export default async function FinancialActionPage({
     // Preserve access to the bound historical card beyond the bounded picker.
     const boundCardId = detail.current.evidence.cardId;
     if (
-      detail.current.actionKind === "card_purchase" &&
       typeof boundCardId === "string" &&
       !cards.items.some((card) => card.cardId === boundCardId)
     ) {

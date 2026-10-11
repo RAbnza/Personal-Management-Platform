@@ -17,3 +17,4 @@ export * from "./email-delivery";
 export * from "./restore";
 export * from "./credit-cards";
 export * from "./card-statements";
+export * from "./card-commands";

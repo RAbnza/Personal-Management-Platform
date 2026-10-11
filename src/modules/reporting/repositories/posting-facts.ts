@@ -30,6 +30,7 @@ export function postingFacts(workspaceId: string) {
         (SELECT v.after_json->'components'->(sp.line_no-2)->>'disposition' FROM audit.private_revision v
           WHERE v.workspace_id=p.workspace_id AND v.subject_kind='financial_action' AND v.subject_id=p.action_id AND v.command_receipt_id=sr.command_receipt_id ORDER BY v.created_at DESC,v.id DESC LIMIT 1) END) AS payment_disposition,
       CASE WHEN fee.id IS NOT NULL THEN 'fee'
+        WHEN sr.action_kind='card_fee' THEN 'fee' WHEN sr.action_kind='card_interest' THEN 'interest'
         WHEN pc.disposition='new_interest' THEN 'interest' WHEN pc.disposition='new_penalty' THEN 'penalty'
         WHEN sr.action_kind='payment_reclassification' THEN
           replace((SELECT v.after_json->'components'->(sp.line_no-2)->>'disposition' FROM audit.private_revision v
@@ -40,7 +41,7 @@ export function postingFacts(workspaceId: string) {
       EXISTS(SELECT 1 FROM finance.debt_action_link dl WHERE dl.workspace_id=p.workspace_id AND dl.action_revision_id=sp.action_revision_id) AS debt_linked,
       (tf.source_account_id IS NOT NULL AND ta.ledger_account_id=p.ledger_account_id) AS transfer_source,
       sp.amount_minor::numeric AS source_amount,sp.id AS classification_posting_id,sp.action_revision_id AS classification_revision_id
-      ,card.id AS card_id,card.name AS card_name,purchase.card_posting_date AS posting_date,purchase.card_provider_reference AS provider_reference
+      ,card.id AS card_id,card.name AS card_name,COALESCE(purchase.card_posting_date,card_detail.posting_date) AS posting_date,COALESCE(purchase.card_provider_reference,card_detail.provider_reference) AS provider_reference
     FROM finance.posting p
     JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.action_revision_id=p.action_revision_id AND j.state='posted'
     JOIN finance.action_revision r ON r.workspace_id=p.workspace_id AND r.id=p.action_revision_id AND r.state='posted'
@@ -49,7 +50,8 @@ export function postingFacts(workspaceId: string) {
     JOIN finance.posting sp ON sp.workspace_id=p.workspace_id AND sp.id=COALESCE(p.reverses_posting_id,p.id)
     JOIN finance.action_revision sr ON sr.workspace_id=sp.workspace_id AND sr.id=sp.action_revision_id
     LEFT JOIN finance.purchase_detail purchase ON purchase.workspace_id=sp.workspace_id AND purchase.action_revision_id=sp.action_revision_id
-    LEFT JOIN finance.credit_card card ON card.workspace_id=purchase.workspace_id AND card.liability_ledger_account_id=purchase.funding_ledger_account_id
+    LEFT JOIN finance.card_action_detail card_detail ON card_detail.workspace_id=sp.workspace_id AND card_detail.action_revision_id=sp.action_revision_id
+    LEFT JOIN finance.credit_card card ON card.workspace_id=sp.workspace_id AND (card.liability_ledger_account_id=purchase.funding_ledger_account_id OR card.id=card_detail.card_id)
     LEFT JOIN core.category c ON c.workspace_id=p.workspace_id AND c.id=p.category_id
     LEFT JOIN finance.fee_component fee ON fee.workspace_id=p.workspace_id AND fee.expense_posting_id=sp.id
     LEFT JOIN LATERAL (SELECT max(cp.disposition) AS disposition FROM finance.payment_component cp

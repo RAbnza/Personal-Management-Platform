@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { CreditCardUnavailableError } from "@/modules/finance/domain/credit-card";
 import {
+  CardEvidenceUnavailableError,
+  CardEvidenceConflictError,
+} from "@/modules/finance/domain/card-command";
+import {
   correctFinancialActionBodySchema,
   reverseFinancialActionBodySchema,
   resolveClearingBodySchema,
@@ -44,7 +48,8 @@ export function financialCorrectionProblem(error: unknown, requestId: string) {
     error instanceof FinancialAccountReferenceUnavailableError ||
     error instanceof FinancialCategoryReferenceUnavailableError ||
     error instanceof FinancialActionUnavailableError ||
-    error instanceof CreditCardUnavailableError
+    error instanceof CreditCardUnavailableError ||
+    error instanceof CardEvidenceUnavailableError
   )
     return createApiProblemResponse({
       status: 404,
@@ -55,14 +60,17 @@ export function financialCorrectionProblem(error: unknown, requestId: string) {
     });
   if (
     error instanceof FinancialCorrectionStaleError ||
-    error instanceof FinancialCommandConflictError
+    error instanceof FinancialCommandConflictError ||
+    error instanceof CardEvidenceConflictError
   )
     return createApiProblemResponse({
       status: 409,
       code:
         error instanceof FinancialCorrectionStaleError
           ? "FINANCIAL_PREVIEW_STALE"
-          : "IDEMPOTENCY_CONFLICT",
+          : error instanceof CardEvidenceConflictError
+            ? "CARD_EVIDENCE_CONFLICT"
+            : "IDEMPOTENCY_CONFLICT",
       message: error.message,
       retryable: false,
       requestId,

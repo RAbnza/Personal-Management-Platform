@@ -120,7 +120,10 @@ export class StatementConflictError extends Error {
     this.name = "StatementConflictError";
   }
 }
-export function deriveStatementReconciliation(evidence: StatementEvidence) {
+export function deriveStatementReconciliation(
+  evidence: StatementEvidence,
+  effectiveAllocatedMinor = "0",
+) {
   const known = evidence.entries.reduce(
     (sum, e) => sum + (e.amountMinor === null ? 0n : BigInt(e.amountMinor)),
     0n,
@@ -129,9 +132,15 @@ export function deriveStatementReconciliation(evidence: StatementEvidence) {
     (e) => e.amountMinor === null || e.postingDate === null,
   ).length;
   const balance = BigInt(evidence.balanceMinor);
+  const allocated = BigInt(effectiveAllocatedMinor),
+    due = (balance > 0n ? balance : 0n) - allocated;
+  if (allocated < 0n)
+    throw new RangeError("Effective allocations cannot be negative.");
   return {
-    recordedRemainingDueMinor: (balance > 0n ? balance : 0n).toString(),
-    effectiveAllocatedMinor: "0",
+    recordedRemainingDueMinor: (due > 0n ? due : 0n).toString(),
+    effectiveAllocatedMinor: allocated.toString(),
+    excessCreditMinor: (due < 0n ? -due : 0n).toString(),
+    providerCreditMinor: (balance < 0n ? -balance : 0n).toString(),
     knownProviderLinesMinor: known.toString(),
     unexplainedDifferenceMinor:
       evidence.openingBalanceMinor === null ||

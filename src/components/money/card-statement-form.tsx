@@ -346,7 +346,7 @@ export function CardStatementForm({
             ))}
             <FormField
               htmlFor={`${prefix}-${i}-link`}
-              label="Recognized purchase link"
+              label="Recognized card activity link"
             >
               <select
                 id={`${prefix}-${i}-link`}

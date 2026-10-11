@@ -144,7 +144,7 @@ test("verified statement entry, lost-response replay, reconciliation and immutab
     .getByRole("button", { name: "Add provider line", exact: true })
     .click();
   await page
-    .getByLabel("Recognized purchase link", { exact: true })
+    .getByLabel("Recognized card activity link", { exact: true })
     .selectOption(purchase.actionRevisionId);
   await page
     .getByRole("button", { name: "Add provider line", exact: true })

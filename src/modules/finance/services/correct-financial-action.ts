@@ -3,6 +3,12 @@ import {
   readClearingSources,
 } from "./resolve-payment-clearing";
 import { randomUUID } from "node:crypto";
+import { recordCardCommandInTransaction } from "./record-card-command";
+import {
+  createCardCommandActivity,
+  assertCardPurchaseRefundCapacity,
+  readCardRefundSources,
+} from "../repositories/card-command-repository";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -311,6 +317,8 @@ async function executeCorrection(
     return financialMutationResultSchema.parse(receipt.result);
   const { current, debt } = await validateSource(t, a, b),
     p = b.replacement;
+  if (p.actionKind === "card_purchase")
+    await assertCardPurchaseRefundCapacity(t, workspaceId, actionId, p);
   let rebuildPaymentSchedule = false;
   if (
     p.actionKind === "debt_payment" &&
@@ -380,8 +388,8 @@ async function executeCorrection(
                 f.bearingAccountId ? [f.bearingAccountId] : [],
               ),
             ]
-          : p.actionKind === "debt_payment"
-            ? [p.payingAccountId]
+          : p.actionKind === "debt_payment" || p.actionKind === "card_payment"
+            ? [p.payingAccountId!]
             : p.actionKind === "balance_adjustment" ||
                 p.actionKind === "opening_cash"
               ? [p.financialAccountId]
@@ -409,6 +417,11 @@ async function executeCorrection(
   );
   const attribution = { userId, workspaceId, requestId, clientCommandId };
   switch (p.actionKind) {
+    case "card_payment":
+    case "card_fee":
+    case "card_interest":
+    case "card_refund":
+      return recordCardCommandInTransaction(t, { ...attribution, ...p }, c);
     case "card_purchase":
       return recordCardPurchaseInTransaction(
         t,
@@ -845,6 +858,8 @@ export async function reverseFinancialActionInTransaction(
   if (receipt.kind === "replay")
     return financialMutationResultSchema.parse(receipt.result);
   const { current, debt } = await validateSource(t, a, b);
+  if (current.actionKind === "card_purchase")
+    await assertCardPurchaseRefundCapacity(t, workspaceId, actionId);
   const rebuildPaymentSchedule =
     current.actionKind === "debt_payment" &&
     debt &&
@@ -885,6 +900,16 @@ export async function reverseFinancialActionInTransaction(
     await t.db.execute(
       sql`UPDATE finance.financial_account SET opening_action_id=NULL,version=version+1,updated_at=clock_timestamp() WHERE workspace_id=${workspaceId}::uuid AND opening_action_id=${actionId}::uuid`,
     );
+  if (
+    ["card_payment", "card_fee", "card_interest", "card_refund"].includes(
+      current.actionKind,
+    )
+  )
+    await createCardCommandActivity(t, {
+      workspaceId,
+      actionId,
+      actionRevisionId: c.actionRevisionId,
+    });
   if (current.actionKind === "card_purchase")
     await createCardRevisionActivity(t, {
       workspaceId,
@@ -936,15 +961,33 @@ export async function getFinancialActionDetailInTransaction(
       input.workspaceId,
       input.actionId,
     ),
-    refundSources = await readRefundSources(
-      t,
-      input.workspaceId,
-      current.actionKind === "refund" &&
-        typeof current.evidence.purchaseActionId === "string"
-        ? current.evidence.purchaseActionId
-        : input.actionId,
-      current.actionKind === "refund" ? current.actionRevisionId : undefined,
-    ),
+    refundSources =
+      current.actionKind === "card_refund" &&
+      typeof current.evidence.purchaseActionId === "string"
+        ? (
+            await readCardRefundSources(
+              t,
+              input.workspaceId,
+              current.evidence.purchaseActionId,
+              current.actionRevisionId,
+            )
+          ).map((s) => ({
+            ...s,
+            amountMinor: s.remainingMinor,
+            allocationKind: "purchase" as const,
+            label: s.categoryName,
+          }))
+        : await readRefundSources(
+            t,
+            input.workspaceId,
+            current.actionKind === "refund" &&
+              typeof current.evidence.purchaseActionId === "string"
+              ? current.evidence.purchaseActionId
+              : input.actionId,
+            current.actionKind === "refund"
+              ? current.actionRevisionId
+              : undefined,
+          ),
     clearingSources = await readClearingSources(
       t,
       input.workspaceId,

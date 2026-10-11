@@ -60,7 +60,7 @@ export default async function CardPage({
         href={`/money/actions?cardId=${id.data}`}
         className="ml-4 inline-flex min-h-11 items-center text-link underline"
       >
-        Expense history for this card
+        Financial history for this card
       </Link>
       <Link
         href={`/money/cards/${id.data}/statements`}
@@ -69,8 +69,19 @@ export default async function CardPage({
         Provider statements and reconciliation
       </Link>
       <Panel
-        title="Card purchase history"
-        description="Every preserved purchase revision. Transaction dates determine spending periods; posting dates preserve provider evidence. Liability changes include reversals and replacements."
+        title="Payments and credits"
+        description="Actual cash transfers, provider charges and refunds preserve distinct accounting effects."
+      >
+        <Link
+          href={`/money/cards/${id.data}/commands/new`}
+          className="inline-flex min-h-11 text-link underline"
+        >
+          Record payment, fee, interest or refund
+        </Link>
+      </Panel>
+      <Panel
+        title="Card activity history"
+        description="Every preserved purchase, payment, fee, interest and refund revision. Transaction dates determine reporting periods; provider posting dates retain evidence. Liability changes include reversals and replacements."
       >
         <ol className="divide-y divide-border">
           {data.items.map((i) => (
@@ -87,6 +98,10 @@ export default async function CardPage({
                 {i.changeKind === "void" ? " · Reversed" : ""}
               </p>
               <p>
+                {i.actionKind.replace("card_", "")}{" "}
+                {i.amountMinor !== null ? money(i.amountMinor) : ""}
+              </p>
+              <p>
                 {i.purchaseMinor !== null
                   ? `Purchase ${money(i.purchaseMinor)} · `
                   : ""}
@@ -99,7 +114,7 @@ export default async function CardPage({
             </li>
           ))}
         </ol>
-        {!data.items.length && <p>No posted card purchases yet.</p>}
+        {!data.items.length && <p>No posted card activity yet.</p>}
         {data.hasMore && (
           <Link
             href={`?offset=${page.data + 100}`}

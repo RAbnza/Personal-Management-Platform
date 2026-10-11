@@ -3,6 +3,11 @@ import {
   recordCardPurchase,
 } from "../../src/modules/finance/services/record-expense";
 import { recordCardStatement } from "../../src/modules/finance/services/card-statements";
+import { recordCardCommand } from "../../src/modules/finance/services/record-card-command";
+import {
+  recordCardAllocation,
+  reverseCardAllocation,
+} from "../../src/modules/finance/services/card-allocations";
 import { getCardStatement } from "../../src/modules/finance/services/read-card-statements";
 import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
 import { mutatePersonalEvent } from "../../src/modules/time/services/mutate-personal-event";
@@ -177,15 +182,18 @@ async function main() {
       process.argv.includes("--upgrade") ||
       process.argv.includes("--upgrade-v1") ||
       process.argv.includes("--upgrade-a1") ||
-      process.argv.includes("--upgrade-a2")
+      process.argv.includes("--upgrade-a2") ||
+      process.argv.includes("--upgrade-a3")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a2")
-        ? 80
-        : process.argv.includes("--upgrade-a1")
-          ? 78
-          : process.argv.includes("--upgrade-v1")
-            ? 76
-            : 67;
+      const baselineCount = process.argv.includes("--upgrade-a3")
+        ? 82
+        : process.argv.includes("--upgrade-a2")
+          ? 80
+          : process.argv.includes("--upgrade-a1")
+            ? 78
+            : process.argv.includes("--upgrade-v1")
+              ? 76
+              : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -272,7 +280,39 @@ async function main() {
                 providerReference: "A2 provider reference",
               })
             : null;
+        const baselineStatement =
+          baselineCount >= 82 && baselineCard
+            ? await recordCardStatement({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                clientCommandId: randomUUID(),
+                cycleStart: "2026-10-01",
+                cycleEnd: "2026-10-31",
+                statementDate: "2026-11-01",
+                dueDate: "2026-11-20",
+                balanceMinor: "777",
+                minimumDueMinor: "0",
+                verificationSource: "Preserved A3 provider statement",
+                verifiedDate: "2026-11-02",
+                entries: [],
+              })
+            : null;
         await migrate(db, config);
+        if (baselineStatement && baselineCard) {
+          const s = await getCardStatement({
+            userId,
+            workspaceId,
+            cardId: baselineCard.cardId,
+            statementId: baselineStatement.statementId,
+          });
+          assert.equal(
+            s.snapshot.verificationSource,
+            "Preserved A3 provider statement",
+          );
+          assert.equal(s.reconciliation.recordedRemainingDueMinor, "777");
+          assert.equal(s.reconciliation.effectiveAllocatedMinor, "0");
+        }
         if (baselineCard)
           assert.equal(
             (
@@ -2116,6 +2156,88 @@ async function main() {
     });
     console.log(
       "V2-A3 verified statements, explicit membership, exact due, immutable correction history, replay and unchanged ledger totals passed.",
+    );
+    // Earlier V1 fixtures intentionally exercise acknowledged negative cash.
+    // Give this A4 transfer its own funded account and prove its exact cash effect.
+    const cardPayingAccount = await openFinancialAccount({
+      ...owner,
+      clientCommandId: randomUUID(),
+      name: "A4 actual paying account",
+      accountType: "checking",
+      openingCutoffDate: "2026-10-01",
+      openingBalanceMinor: "10000",
+    });
+    const cardPayment = {
+      ...owner,
+      clientCommandId: randomUUID(),
+      cardId: card.cardId,
+      actionKind: "card_payment" as const,
+      effectiveDate: "2026-12-03",
+      postingDate: "2026-12-04",
+      amountMinor: "8000",
+      payingAccountId: cardPayingAccount.accountId,
+      description: "Actual card cash payment",
+      providerConfirmed: true as const,
+      confirmationSource: "Provider payment receipt",
+    };
+    const paid = await recordCardCommand(cardPayment);
+    assert.deepEqual(await recordCardCommand(cardPayment), paid);
+    assert.equal(
+      (
+        await getAccountHistory({
+          ...owner,
+          accountId: cardPayingAccount.accountId,
+        })
+      ).account.currentBalanceMinor,
+      "2000",
+    );
+    const confirmedAllocation = {
+      ...owner,
+      cardId: card.cardId,
+      clientCommandId: randomUUID(),
+      statementRevisionId: statementCorrection.revisionId,
+      sourceActionRevisionId: paid.actionRevisionId,
+      amountMinor: "5000",
+      confirmationKind: "provider" as const,
+      confirmationSource: "Provider confirmed October application",
+      confirmedDate: "2026-12-04",
+    };
+    const applied = await recordCardAllocation(confirmedAllocation);
+    assert.deepEqual(await recordCardAllocation(confirmedAllocation), applied);
+    const allocatedStatement = await getCardStatement({
+      ...owner,
+      cardId: card.cardId,
+      statementId: statement.statementId,
+    });
+    assert.equal(allocatedStatement.snapshot.balanceMinor, "300000");
+    assert.equal(
+      allocatedStatement.reconciliation.recordedRemainingDueMinor,
+      "295000",
+    );
+    await reverseCardAllocation({
+      ...owner,
+      cardId: card.cardId,
+      clientCommandId: randomUUID(),
+      allocationId: applied.allocationId,
+      reason: "Correct confirmed application",
+    });
+    assert.equal(
+      (
+        await getCardStatement({
+          ...owner,
+          cardId: card.cardId,
+          statementId: statement.statementId,
+        })
+      ).reconciliation.recordedRemainingDueMinor,
+      "300000",
+    );
+    assert.equal(
+      (await getCreditCardDetail({ ...owner, cardId: card.cardId })).card
+        .postedOutstandingMinor,
+      "292000",
+    );
+    console.log(
+      "V2-A4 actual payment/replay, explicit partial allocation/reversal, unchanged provider snapshot and exact due passed; purge includes immutable allocation history.",
     );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
