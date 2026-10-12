@@ -153,7 +153,9 @@ test("ordinary Add Expense records a posted card purchase once after a lost resp
     "/reports/financial?period=custom&startDate=2026-10-01&endDate=2026-10-31",
   );
   await expect(
-    page.getByRole("heading", { name: "Card spending and recorded liability" }),
+    page.getByRole("heading", {
+      name: "Period card activity and recorded liability",
+    }),
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Net spending PHP 3,000.01", exact: true })

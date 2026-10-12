@@ -46,6 +46,7 @@ jobs:
       - run: pnpm db:verify:chain --upgrade-a1
       - run: pnpm db:verify:chain --upgrade-a2
       - run: pnpm db:verify:chain --upgrade-a3
+      - run: pnpm db:verify:chain --upgrade-a5
       - run: pnpm db:verify:chain --upgrade-a4
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium

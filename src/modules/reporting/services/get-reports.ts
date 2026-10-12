@@ -1,3 +1,4 @@
+import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
 import { sql } from "drizzle-orm";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import {
@@ -92,6 +93,11 @@ export async function getFinancialReportInTransaction(
     ...breakdowns,
     ...(await readLiabilityBreakdowns(t, input.workspaceId, period)),
     schedule,
+    cardSurface: await readCardSurface(t, input.workspaceId, {
+      today: context.today,
+      startDate: period.startDate,
+      endDate: period.endDate,
+    }),
     scheduledMinor,
     coverage,
     identities: {
@@ -170,6 +176,9 @@ export async function getFinancialDetailInTransaction(
         "closing_liability",
         "liability_increases",
         "liability_reductions",
+        "card_payments",
+        "fees",
+        "interest",
       ].includes(metric)
     )
       throw new RangeError(

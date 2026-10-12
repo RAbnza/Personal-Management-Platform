@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   accounts: vi.fn(),
   debts: vi.fn(),
   cards: vi.fn(),
+  cardSurface: vi.fn(),
   spending: vi.fn(),
   reconciliation: vi.fn(),
   career: vi.fn(),
@@ -17,6 +18,9 @@ vi.mock("@/modules/reporting/repositories/report-context-repository", () => ({
 }));
 vi.mock("@/modules/reporting/repositories/financial-report-repository", () => ({
   readSpendingSummary: mocks.spending,
+}));
+vi.mock("@/modules/finance/repositories/card-surface-repository", () => ({
+  readCardSurface: mocks.cardSurface,
 }));
 vi.mock(
   "@/modules/finance/repositories/financial-account-read-repository",
@@ -54,6 +58,7 @@ beforeEach(() => {
   mocks.accounts.mockResolvedValue([]);
   mocks.debts.mockResolvedValue([]);
   mocks.cards.mockResolvedValue([]);
+  mocks.cardSurface.mockResolvedValue(d.finance.cardSurface);
   mocks.spending.mockResolvedValue(d.finance.spending);
   mocks.reconciliation.mockResolvedValue([]);
   mocks.career.mockResolvedValue({ applications: [], events: [] });

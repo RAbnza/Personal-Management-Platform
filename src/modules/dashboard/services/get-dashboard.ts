@@ -1,3 +1,4 @@
+import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
 import { z } from "zod";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import { readFinancialAccountList } from "@/modules/finance/repositories/financial-account-read-repository";
@@ -43,6 +44,11 @@ export async function getDashboardInTransaction(
   ).filter((row) => row.account_id !== null);
   const debts = await readDashboardDebts(t, input.workspaceId, horizon);
   const cards = await readDashboardCards(t, input.workspaceId);
+  const cardSurface = await readCardSurface(t, input.workspaceId, {
+    today: context.today,
+    startDate: context.today,
+    endDate: horizon,
+  });
   const spending = await readSpendingSummary(t, input.workspaceId, period);
   const reconciliations = await readReconciliationAttention(
     t,
@@ -136,6 +142,40 @@ export async function getDashboardInTransaction(
         href,
       });
   }
+  for (const c of cardSurface.cards) {
+    const d = c.latestStatement;
+    if (d && d.dueDate <= horizon && BigInt(d.remainingDueMinor) > 0n)
+      attention.push({
+        key: "card-due:" + c.cardId,
+        title:
+          (d.dueDate < context.today
+            ? "Overdue statement: "
+            : "Statement due: ") + c.name,
+        detail:
+          "Verified due " +
+          d.dueDate +
+          ". Review confirmed allocations; minimum due satisfaction is not inferred.",
+        href: "/money/cards/" + c.cardId + "/statements/" + d.statementId,
+      });
+    if (
+      d &&
+      (d.unresolvedAllocationMinor !== "0" || d.unresolvedEntryCount !== "0")
+    )
+      attention.push({
+        key: "card-reconciliation:" + c.cardId,
+        title: "Review card statement: " + c.name,
+        detail: "Provider lines or allocation evidence remain unresolved.",
+        href: "/money/cards/" + c.cardId + "/statements/" + d.statementId,
+      });
+  }
+  if (cardSurface.totals.reconciliationPlanCount > 0)
+    attention.push({
+      key: "card-plan-reconciliation",
+      title: "Review installment source corrections",
+      detail:
+        "Active plans with changed purchases or refund evidence are excluded from projections.",
+      href: "/money/cards",
+    });
   for (const a of accounts)
     if (BigInt(a.current_balance_minor) < 0n)
       attention.push({
@@ -187,6 +227,7 @@ export async function getDashboardInTransaction(
       accounts,
       debts,
       cards,
+      cardSurface,
     },
     coverage: {
       scope:

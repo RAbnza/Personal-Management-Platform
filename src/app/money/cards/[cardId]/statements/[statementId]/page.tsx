@@ -46,6 +46,12 @@ export default async function StatementPage({
       <Link href={base} className="text-link underline">
         Statements for {data.card.name}
       </Link>
+      <Link
+        href={`/calendar/reminders/card_statement/${scope.statementId}`}
+        className="inline-flex min-h-11 items-center text-link underline"
+      >
+        Current statement reminder controls
+      </Link>
       <h1 className="text-2xl font-semibold">Statement {s.statementDate}</h1>
       <p>
         Revision {s.version} ·{" "}

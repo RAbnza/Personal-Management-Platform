@@ -35,7 +35,7 @@ export const exportKindSchema = z.enum([
   "applications",
   "report",
 ]);
-export const CSV_SCHEMA_VERSION = 2;
+export const CSV_SCHEMA_VERSION = 3;
 export const EXPORT_BYTE_LIMIT = 10 * 1024 * 1024;
 export async function prepareCsvSnapshotInTransaction(
   t: ScopedTransaction,
@@ -72,6 +72,77 @@ export async function prepareCsvSnapshotInTransaction(
       label:
         "Current schedule allocations for selected due dates; not historical schedule reconstruction",
     });
+    const surface = financial.cardSurface;
+    rows.push({
+      record_type: "card_projection_coverage",
+      basis_date: surface.basisDate,
+      projection_start: surface.projectionStart,
+      projection_end: surface.projectionEnd,
+      unknown_date_count: String(surface.totals.unknownInstallmentDateCount),
+      unknown_total_count: String(surface.totals.unknownProjectedTotalCount),
+      reconciliation_plan_count: String(surface.totals.reconciliationPlanCount),
+      label:
+        "Unknown dates are excluded from date-range projections; source reconciliation blocks projection. Statement and installment totals may overlap.",
+    });
+    for (const c of surface.cards)
+      rows.push({
+        record_type: "current_card_position",
+        card_id: c.cardId,
+        card_name: c.name,
+        basis_date: surface.basisDate,
+        posted_outstanding_minor: c.postedOutstandingMinor,
+        card_credit_minor: c.cardCreditMinor,
+        verified_limit_minor:
+          c.availableCreditEstimateMinor === null ? null : c.creditLimitMinor,
+        recorded_limit_minor: c.creditLimitMinor,
+        limit_verified_date: c.limitVerifiedDate,
+        available_credit_estimate_minor: c.availableCreditEstimateMinor,
+        utilization_percent: c.utilizationPercent,
+        limit_status: c.limitStatus,
+        label:
+          "Current posted position and verified limit estimate, not period-end provider knowledge",
+      });
+    for (const d of surface.statements)
+      rows.push({
+        record_type: "verified_card_statement",
+        basis_date: surface.basisDate,
+        date_basis: "current_verified_statement_dates",
+        card_id: d.cardId,
+        statement_id: d.statementId,
+        revision_id: d.revisionId,
+        source_version: d.version,
+        statement_date: d.statementDate,
+        due_date: d.dueDate,
+        provider_balance_minor: d.balanceMinor,
+        recorded_minimum_due_minor: d.minimumDueMinor,
+        allocated_minor: d.allocatedMinor,
+        remaining_due_minor: d.remainingDueMinor,
+        statement_credit_minor: d.statementCreditMinor,
+        unresolved_allocation_minor: d.unresolvedAllocationMinor,
+        unresolved_entry_count: d.unresolvedEntryCount,
+        unexplained_difference_minor: d.unexplainedDifferenceMinor,
+        unlinked_recognized_count: d.unlinkedRecognizedCount,
+        label:
+          "Current verified snapshot; do not sum carried balances or installment projections",
+      });
+    for (const i of surface.installments)
+      rows.push({
+        record_type: "card_installment_projection",
+        basis_date: surface.basisDate,
+        date_basis: "selected_due_dates_current_provider_version",
+        card_id: i.cardId,
+        plan_id: i.planId,
+        revision_id: i.revisionId,
+        installment_id: i.installmentId,
+        source_version: i.version,
+        due_date: i.dueDate,
+        expected_remaining_principal_minor: i.remainingPrincipalMinor,
+        expected_remaining_interest_minor: i.remainingInterestMinor,
+        expected_remaining_fee_minor: i.remainingFeeMinor,
+        expected_remaining_total_minor: i.remainingTotalMinor,
+        label:
+          "Current eligible provider projection in selected due-date range; blank components are unknown, not financial postings",
+      });
     for (const [metric, value] of Object.entries(career.summary))
       if (typeof value === "number")
         rows.push({
@@ -232,7 +303,7 @@ export async function prepareCsvExport(input: {
         : snapshot.kind === "applications"
           ? "submitted_date_cohort_stage_effective_date_and_current_known_event_versions"
           : snapshot.kind === "report"
-            ? "financial_effective_date; career_aggregates_use_submitted_date_cohort_and_event_date"
+            ? "financial_effective_date; current_card_provider_snapshots_and_selected_due_date_projections; career_submitted_date_cohort_and_event_date"
             : "financial_effective_date",
     currency: c.currency,
     timezone: c.timezone,

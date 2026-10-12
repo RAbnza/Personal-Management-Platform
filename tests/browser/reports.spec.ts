@@ -117,8 +117,8 @@ test("financial periods, exact source drilldown and CSV download work on mobile"
     period_end_inclusive: today,
     date_basis: "financial_effective_date",
     row_count: "3",
-    schema_version: "2",
-    definition_version: "v2-a4-reports-signed-card-commands-1",
+    schema_version: "3",
+    definition_version: "v2-a6-integrated-cards-1",
   });
   expect(
     rows

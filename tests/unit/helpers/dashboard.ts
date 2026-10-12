@@ -1,5 +1,6 @@
 import type { DashboardResult } from "@/modules/dashboard/services/get-dashboard";
 import { parseCalendarDate } from "@/shared/calendar-date";
+import { emptyCardSurface } from "./card-surface";
 export function dashboardFixture(): DashboardResult {
   return {
     timezone: "Asia/Manila",
@@ -34,6 +35,7 @@ export function dashboardFixture(): DashboardResult {
       accounts: [],
       debts: [],
       cards: [],
+      cardSurface: emptyCardSurface(),
     },
     coverage: {
       scope:

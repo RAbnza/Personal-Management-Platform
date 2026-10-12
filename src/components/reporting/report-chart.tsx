@@ -21,6 +21,7 @@ export function CategoryChart({
   const data = rows.map((r) => ({ ...r, value: Number(r.netMinor) / 100 }));
   return (
     <div
+      role="group"
       className="min-w-0"
       style={{ height: Math.max(180, rows.length * 40) }}
       aria-label={`Net recognized spending by category in ${currency}`}
@@ -83,6 +84,7 @@ export default function ReportChart({
   }));
   return (
     <div
+      role="group"
       className="h-72 w-full min-w-0"
       aria-label={`Daily recognized income, net spending and external cash outflows in ${currency}`}
     >

@@ -40,7 +40,7 @@ export function postingFacts(workspaceId: string) {
       sc.waiver,
       EXISTS(SELECT 1 FROM finance.debt_action_link dl WHERE dl.workspace_id=p.workspace_id AND dl.action_revision_id=sp.action_revision_id) AS debt_linked,
       (tf.source_account_id IS NOT NULL AND ta.ledger_account_id=p.ledger_account_id) AS transfer_source,
-      sp.amount_minor::numeric AS source_amount,sp.id AS classification_posting_id,sp.action_revision_id AS classification_revision_id
+      sp.amount_minor::numeric AS source_amount,sp.id AS classification_posting_id,sp.action_revision_id AS classification_revision_id,sr.action_kind AS source_action_kind
       ,card.id AS card_id,card.name AS card_name,COALESCE(purchase.card_posting_date,card_detail.posting_date) AS posting_date,COALESCE(purchase.card_provider_reference,card_detail.provider_reference) AS provider_reference
     FROM finance.posting p
     JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id AND j.action_revision_id=p.action_revision_id AND j.state='posted'
@@ -81,6 +81,7 @@ export function metricExpression(metric: FinancialMetric) {
     borrowing: sql`CASE WHEN cash_flow_kind='borrowing' AND cash_flow_direction='in' THEN amount END`,
     cash_refunds: sql`CASE WHEN cash_flow_kind='refund' AND cash_flow_direction='in' THEN amount END`,
     debt_payments: sql`CASE WHEN ledger_kind='cash_asset' AND cash_flow_direction='out' AND action_kind IN ('debt_payment','debt_settlement') THEN -amount END`,
+    card_payments: sql`CASE WHEN card_id IS NOT NULL AND ledger_kind='cash_asset' AND source_action_kind='card_payment' AND cash_flow_direction='out' THEN -amount END`,
     principal: sql`CASE WHEN ledger_kind='debt_liability' AND liability_component='principal' AND payment_disposition='liability_reduction' THEN amount END`,
     debt_charges: sql`CASE WHEN expense_class='gross' AND debt_linked THEN amount END`,
     waivers: sql`CASE WHEN ledger_kind='debt_liability' AND waiver THEN amount END`,

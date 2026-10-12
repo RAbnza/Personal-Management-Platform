@@ -10,11 +10,14 @@ import {
   timestamp,
   unique,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { workspace } from "./core";
 import { personalEvent } from "./time";
 import { applicationEvent } from "./career";
 import { debtObligation } from "./finance";
+import { cardStatement } from "./card-statements";
+import { cardInstallment } from "./card-installments";
 import { timeSchema } from "./namespaces";
 
 const scope = () => ({
@@ -28,6 +31,8 @@ const scope = () => ({
   personalEventId: uuid("personal_event_id"),
   applicationEventId: uuid("application_event_id"),
   debtObligationId: uuid("debt_obligation_id"),
+  cardStatementId: uuid("card_statement_id"),
+  cardInstallmentId: uuid("card_installment_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -36,6 +41,32 @@ const scope = () => ({
     .notNull(),
   version: integer("version").default(1).notNull(),
 });
+
+const cardSourceConstraints = (
+  t: {
+    workspaceId: AnyPgColumn;
+    cardStatementId: AnyPgColumn;
+    cardInstallmentId: AnyPgColumn;
+  },
+  name: string,
+) => [
+  foreignKey({
+    name: `fk_${name}_card_statement`,
+    columns: [t.workspaceId, t.cardStatementId],
+    foreignColumns: [cardStatement.workspaceId, cardStatement.id],
+  })
+    .onDelete("restrict")
+    .onUpdate("restrict"),
+  foreignKey({
+    name: `fk_${name}_card_installment`,
+    columns: [t.workspaceId, t.cardInstallmentId],
+    foreignColumns: [cardInstallment.workspaceId, cardInstallment.id],
+  })
+    .onDelete("restrict")
+    .onUpdate("restrict"),
+  index(`ix_${name}_card_statement`).on(t.workspaceId, t.cardStatementId),
+  index(`ix_${name}_card_installment`).on(t.workspaceId, t.cardInstallmentId),
+];
 
 // Concrete, workspace-qualified source references are intentionally shared by
 // all three tables. Generated Agenda items are never stored as appointments.
@@ -51,6 +82,7 @@ export const reminderRule = timeSchema.table(
     generation: integer("generation").default(1).notNull(),
   },
   (t) => [
+    ...cardSourceConstraints(t, "reminder_rule"),
     unique("uq_reminder_rule_scope_id").on(t.workspaceId, t.id),
     unique("uq_reminder_rule_logical")
       .on(
@@ -58,6 +90,8 @@ export const reminderRule = timeSchema.table(
         t.personalEventId,
         t.applicationEventId,
         t.debtObligationId,
+        t.cardStatementId,
+        t.cardInstallmentId,
         t.moduleKey,
         t.channel,
         t.offsetDays,
@@ -90,7 +124,7 @@ export const reminderRule = timeSchema.table(
     index("ix_reminder_rule_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_rule_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.moduleKey})=1 AND (${t.moduleKey} IS NULL OR ${t.moduleKey} IN ('money','career','time'))`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.moduleKey})=1 AND (${t.moduleKey} IS NULL OR ${t.moduleKey} IN ('money','career','time'))`,
     ),
     check(
       "ck_reminder_rule_shape",
@@ -112,6 +146,7 @@ export const sourceReminderSetting = timeSchema.table(
       .notNull(),
   },
   (t) => [
+    ...cardSourceConstraints(t, "reminder_setting"),
     unique("uq_reminder_setting_scope_id").on(t.workspaceId, t.id),
     unique("uq_reminder_setting_source")
       .on(
@@ -119,6 +154,8 @@ export const sourceReminderSetting = timeSchema.table(
         t.personalEventId,
         t.applicationEventId,
         t.debtObligationId,
+        t.cardStatementId,
+        t.cardInstallmentId,
       )
       .nullsNotDistinct(),
     foreignKey({
@@ -147,7 +184,7 @@ export const sourceReminderSetting = timeSchema.table(
     index("ix_reminder_setting_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_setting_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId})=1`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1`,
     ),
     check(
       "ck_reminder_setting_mode",
@@ -155,7 +192,7 @@ export const sourceReminderSetting = timeSchema.table(
     ),
     check(
       "ck_reminder_setting_generation",
-      sql`${t.notificationGeneration}>0 AND (${t.debtObligationId} IS NOT NULL OR ${t.notificationGeneration}=1)`,
+      sql`${t.notificationGeneration}>0 AND (num_nonnulls(${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1 OR ${t.notificationGeneration}=1)`,
     ),
   ],
 );
@@ -175,6 +212,7 @@ export const reminderOccurrence = timeSchema.table(
     cancellationReason: text("cancellation_reason"),
   },
   (t) => [
+    ...cardSourceConstraints(t, "reminder_occurrence"),
     unique("uq_reminder_occurrence_scope_id").on(t.workspaceId, t.id),
     unique("uq_reminder_occurrence_logical")
       .on(
@@ -183,6 +221,8 @@ export const reminderOccurrence = timeSchema.table(
         t.personalEventId,
         t.applicationEventId,
         t.debtObligationId,
+        t.cardStatementId,
+        t.cardInstallmentId,
         t.occurrenceKey,
         t.sourceGeneration,
         t.ruleGeneration,
@@ -233,7 +273,7 @@ export const reminderOccurrence = timeSchema.table(
     index("ix_reminder_occurrence_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_occurrence_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId})=1`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1`,
     ),
     check(
       "ck_reminder_occurrence_identity",

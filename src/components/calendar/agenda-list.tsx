@@ -133,7 +133,11 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                       ? "Open application"
                       : item.sourceKind === "debt_installment"
                         ? "Open debt"
-                        : "Open personal event";
+                        : item.sourceKind === "card_statement"
+                          ? "Open statement"
+                          : item.sourceKind === "card_installment"
+                            ? "Open installment plan"
+                            : "Open personal event";
 
                   return (
                     <li
@@ -214,13 +218,24 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                               </p>
                               {item.reminder.remainingMinor !== null ? (
                                 <p className="text-muted-foreground">
-                                  Contractual amount remaining:{" "}
+                                  {item.sourceKind === "card_statement"
+                                    ? "Verified statement remaining due:"
+                                    : item.sourceKind === "card_installment"
+                                      ? "Projected remaining obligation:"
+                                      : "Contractual amount remaining:"}{" "}
                                   {formatMoneyMinorUnits(
                                     "PHP",
                                     item.reminder.remainingMinor,
                                   )}
                                 </p>
                               ) : null}
+                              {item.sourceKind === "card_installment" &&
+                                item.reminder.remainingMinor === null && (
+                                  <p>
+                                    Projected total unknown; provider components
+                                    remain incomplete.
+                                  </p>
+                                )}
                               <Link
                                 href={item.reminder.href}
                                 className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"

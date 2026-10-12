@@ -2,7 +2,10 @@ import { z } from "zod";
 import { AGENDA_DISPLAY_MODULES, AGENDA_SOURCE_KINDS } from "./agenda";
 
 export const reminderSourceSchema = z
-  .object({ sourceKind: z.enum(AGENDA_SOURCE_KINDS), sourceId: z.uuid() })
+  .object({
+    sourceKind: z.enum(AGENDA_SOURCE_KINDS),
+    sourceId: z.uuid().transform((value) => value.toLowerCase()),
+  })
   .strict();
 export type ReminderSource = z.infer<typeof reminderSourceSchema>;
 export const reminderTargetSchema = z.union([

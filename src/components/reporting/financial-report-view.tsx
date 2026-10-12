@@ -1,3 +1,4 @@
+import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -42,6 +43,7 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         "borrowing",
         "cash_refunds",
         "debt_payments",
+        "card_payments",
         "principal",
       ],
     },
@@ -60,6 +62,7 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
   ];
   return (
     <div className="space-y-6">
+      <CardSurfacePanel data={data.cardSurface} currency={data.currency} />
       <Panel title="Coverage and definitions">
         <p>{data.coverage.note}</p>
         <p className="mt-2">{data.coverage.scope}</p>
@@ -566,8 +569,8 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
         </div>
       </Panel>
       <Panel
-        title="Card spending and recorded liability"
-        description="Card purchases count once in category spending. They create no cash movement. Spending periods follow transaction dates; provider posting dates remain separate evidence."
+        title="Period card activity and recorded liability"
+        description="Card purchases count once in category spending. Purchases create no cash movement; card payments are separate cash transfers. Periods follow transaction dates; provider posting dates remain separate evidence."
       >
         <ul className="divide-y divide-border">
           {data.cardRecords.map((c) => (
@@ -595,6 +598,16 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
                   Closing recorded liability {money(c.closingMinor)}
                 </Link>
               </p>
+            </li>
+          ))}
+        </ul>
+        <ul className="mt-4 space-y-3">
+          {data.cardRecords.map((c) => (
+            <li key={c.cardId}>
+              {c.name}: recognized fees {money(c.feesMinor)} · interest{" "}
+              {money(c.interestMinor)} · refunds {money(c.refundsMinor)} · cash
+              payments {money(c.paymentsMinor)}. Fees and interest are already
+              included in spending; refunds offset it.
             </li>
           ))}
         </ul>

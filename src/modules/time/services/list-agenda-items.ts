@@ -366,6 +366,8 @@ function expectedDisplayModule(
     case "personal_event":
       return "time";
     case "debt_installment":
+    case "card_statement":
+    case "card_installment":
       return "money";
   }
 }
@@ -534,6 +536,26 @@ async function executeListAgendaItems(
 
   for (const row of visibleRows) {
     if (row.source_id === null) {
+      continue;
+    }
+
+    if (
+      row.source_kind === "card_statement" ||
+      row.source_kind === "card_installment"
+    ) {
+      // Both routes are resolved from owned source joins, never browser data.
+      const statement = row.source_kind === "card_statement";
+      const cardId = row.card_id;
+      const planId = row.card_plan_id;
+      if (!cardId) throw new Error("Card obligation route unavailable.");
+      if (!statement && !planId)
+        throw new Error("Card installment route unavailable.");
+      if (statement)
+        sourceRoutes[`card_statement:${row.source_id}`] =
+          `/money/cards/${cardId}/statements/${row.source_id}`;
+      else
+        sourceRoutes[`card_installment:${row.source_id}`] =
+          `/money/cards/${cardId}/installments/${planId}`;
       continue;
     }
 

@@ -50,11 +50,13 @@ export function sourceColumns(s: ReminderSource) {
     personal: s.sourceKind === "personal_event" ? s.sourceId : null,
     career: s.sourceKind === "application_event" ? s.sourceId : null,
     debt: s.sourceKind === "debt_installment" ? s.sourceId : null,
+    statement: s.sourceKind === "card_statement" ? s.sourceId : null,
+    installment: s.sourceKind === "card_installment" ? s.sourceId : null,
   };
 }
 export function sourcePredicate(s: ReminderSource) {
   const c = sourceColumns(s);
-  return sql`personal_event_id IS NOT DISTINCT FROM ${c.personal}::uuid AND application_event_id IS NOT DISTINCT FROM ${c.career}::uuid AND debt_obligation_id IS NOT DISTINCT FROM ${c.debt}::uuid`;
+  return sql`personal_event_id IS NOT DISTINCT FROM ${c.personal}::uuid AND application_event_id IS NOT DISTINCT FROM ${c.career}::uuid AND debt_obligation_id IS NOT DISTINCT FROM ${c.debt}::uuid AND card_statement_id IS NOT DISTINCT FROM ${c.statement}::uuid AND card_installment_id IS NOT DISTINCT FROM ${c.installment}::uuid`;
 }
 
 export async function lockReminderTarget(
@@ -90,7 +92,15 @@ export async function lockReminderTarget(
     await tx.db.execute(
       sql`SELECT a.id FROM career.job_application a JOIN career.application_event e ON e.workspace_id=a.workspace_id AND e.application_id=a.id WHERE e.workspace_id=${workspaceId}::uuid AND e.id=${target.sourceId}::uuid FOR SHARE OF a,e`,
     );
-  } else
+  } else if (target.sourceKind === "card_statement")
+    await tx.db.execute(
+      sql`SELECT id FROM finance.card_statement WHERE workspace_id=${workspaceId}::uuid AND id=${target.sourceId}::uuid FOR SHARE`,
+    );
+  else if (target.sourceKind === "card_installment")
+    await tx.db.execute(
+      sql`SELECT p.id FROM finance.card_installment_plan p JOIN finance.card_installment_revision r ON r.workspace_id=p.workspace_id AND r.plan_id=p.id JOIN finance.card_installment i ON i.workspace_id=r.workspace_id AND i.plan_revision_id=r.id WHERE i.workspace_id=${workspaceId}::uuid AND i.id=${target.sourceId}::uuid FOR SHARE OF p`,
+    );
+  else
     await tx.db.execute(
       sql`SELECT d.id FROM finance.debt d JOIN finance.debt_obligation o ON o.workspace_id=d.workspace_id AND o.debt_id=d.id WHERE o.workspace_id=${workspaceId}::uuid AND o.id=${target.sourceId}::uuid FOR SHARE OF d`,
     );
@@ -117,11 +127,15 @@ export async function readReminderSources(
       FROM career.application_event e WHERE e.workspace_id=${workspaceId}::uuid AND e.id=ANY(${ids})
     UNION ALL SELECT 'debt_installment',o.id,'money',d.name,d.version,'/money/debts/'||d.id::text,o.workspace_id
       FROM finance.debt_obligation o JOIN finance.debt d ON d.workspace_id=o.workspace_id AND d.id=o.debt_id WHERE o.workspace_id=${workspaceId}::uuid AND o.id=ANY(${ids})
+    UNION ALL SELECT 'card_statement',s.id,'money',c.name||' - verified statement due',s.version,'/money/cards/'||s.card_id::text||'/statements/'||s.id::text,s.workspace_id
+      FROM finance.card_statement s JOIN finance.credit_card c ON c.workspace_id=s.workspace_id AND c.id=s.card_id WHERE s.workspace_id=${workspaceId}::uuid AND s.id=ANY(${ids})
+    UNION ALL SELECT 'card_installment',i.id,'money',c.name||' - projected installment '||i.sequence_no::text,r.revision_no,'/money/cards/'||p.card_id::text||'/installments/'||p.id::text,i.workspace_id
+      FROM finance.card_installment i JOIN finance.card_installment_revision r ON r.workspace_id=i.workspace_id AND r.id=i.plan_revision_id JOIN finance.card_installment_plan p ON p.workspace_id=r.workspace_id AND p.id=r.plan_id JOIN finance.credit_card c ON c.workspace_id=p.workspace_id AND c.id=p.card_id WHERE i.workspace_id=${workspaceId}::uuid AND i.id=ANY(${ids})
   )
   SELECT s.*,a.occurrence_key,a.notification_generation source_generation,
     COALESCE(a.event_date,(a.starts_at AT TIME ZONE COALESCE(a.timezone,w.timezone))::date)::text due_date,
     COALESCE(a.timezone,w.timezone) timezone,transaction_timestamp()::text now,a.source_id IS NOT NULL eligible,
-    due.remaining_minor::text remaining_minor,
+    COALESCE(due.remaining_minor::text,statement_due.remaining_due_minor::text,card_due.remaining_total_minor::text) remaining_minor,
     COALESCE(p.enabled,true) module_enabled,COALESCE(p.agenda_visible,true) agenda_visible,
     COALESCE(p.reminders_enabled,true) reminders_enabled,COALESCE(p.version,0) preference_version,
     COALESCE(setting.mode,'inherit') mode,COALESCE(setting.version,0) setting_version,
@@ -131,19 +145,21 @@ export async function readReminderSources(
   LEFT JOIN time.agenda_v a ON a.source_kind=s.source_kind AND a.source_id=s.source_id
   LEFT JOIN core.module_preference p ON p.workspace_id=s.workspace_id AND p.module_key=s.module_key
   LEFT JOIN finance.current_installment_due_v due ON s.source_kind='debt_installment' AND due.workspace_id=s.workspace_id AND due.obligation_id=s.source_id
+  LEFT JOIN finance.card_statement_due_v statement_due ON s.source_kind='card_statement' AND statement_due.workspace_id=s.workspace_id AND statement_due.statement_id=s.source_id
+  LEFT JOIN finance.card_installment_due_v card_due ON s.source_kind='card_installment' AND card_due.workspace_id=s.workspace_id AND card_due.installment_id=s.source_id
   LEFT JOIN time.source_reminder_setting setting ON setting.workspace_id=s.workspace_id AND
-    CASE s.source_kind WHEN 'personal_event' THEN setting.personal_event_id WHEN 'application_event' THEN setting.application_event_id ELSE setting.debt_obligation_id END=s.source_id
+    CASE s.source_kind WHEN 'personal_event' THEN setting.personal_event_id WHEN 'application_event' THEN setting.application_event_id WHEN 'debt_installment' THEN setting.debt_obligation_id WHEN 'card_statement' THEN setting.card_statement_id ELSE setting.card_installment_id END=s.source_id
   LEFT JOIN LATERAL (
     SELECT jsonb_agg(jsonb_build_object('id',r.id,'offsetDays',r.offset_days,'localTime',substring(r.local_time::text,1,5),'enabled',r.enabled,'generation',r.generation,'version',r.version,'moduleKey',r.module_key) ORDER BY r.offset_days,r.local_time,r.id) items
-    FROM time.reminder_rule r WHERE r.workspace_id=s.workspace_id AND (r.module_key=s.module_key OR CASE s.source_kind WHEN 'personal_event' THEN r.personal_event_id WHEN 'application_event' THEN r.application_event_id ELSE r.debt_obligation_id END=s.source_id)
+    FROM time.reminder_rule r WHERE r.workspace_id=s.workspace_id AND (r.module_key=s.module_key OR CASE s.source_kind WHEN 'personal_event' THEN r.personal_event_id WHEN 'application_event' THEN r.application_event_id WHEN 'debt_installment' THEN r.debt_obligation_id WHEN 'card_statement' THEN r.card_statement_id ELSE r.card_installment_id END=s.source_id)
   ) rules ON true
   LEFT JOIN LATERAL (
     SELECT jsonb_agg(jsonb_build_object('id',o.id,'ruleId',o.rule_id,'state',o.state,'scheduledFor',o.scheduled_for,'snoozedUntil',o.snoozed_until,'dismissedAt',o.dismissed_at,'cancellationReason',o.cancellation_reason,'occurrenceKey',o.occurrence_key,'sourceGeneration',o.source_generation,'ruleGeneration',o.rule_generation,'version',o.version,'updatedAt',o.updated_at) ORDER BY o.updated_at DESC,o.id) items
-    FROM (SELECT * FROM time.reminder_occurrence o WHERE o.workspace_id=s.workspace_id AND CASE s.source_kind WHEN 'personal_event' THEN o.personal_event_id WHEN 'application_event' THEN o.application_event_id ELSE o.debt_obligation_id END=s.source_id ORDER BY (occurrence_key=a.occurrence_key AND source_generation=a.notification_generation) DESC,updated_at DESC,id LIMIT 58) o
+    FROM (SELECT * FROM time.reminder_occurrence o WHERE o.workspace_id=s.workspace_id AND CASE s.source_kind WHEN 'personal_event' THEN o.personal_event_id WHEN 'application_event' THEN o.application_event_id WHEN 'debt_installment' THEN o.debt_obligation_id WHEN 'card_statement' THEN o.card_statement_id ELSE o.card_installment_id END=s.source_id ORDER BY (occurrence_key=a.occurrence_key AND source_generation=a.notification_generation) DESC,updated_at DESC,id LIMIT 58) o
   ) occ ON true
   LEFT JOIN LATERAL (
     SELECT jsonb_agg(jsonb_build_object('id',r.id,'scheduledFor',((COALESCE(a.event_date,(a.starts_at AT TIME ZONE COALESCE(a.timezone,w.timezone))::date)-r.offset_days)+r.local_time) AT TIME ZONE COALESCE(a.timezone,w.timezone))) items
-    FROM (SELECT id::text id,offset_days,local_time FROM time.reminder_rule WHERE workspace_id=s.workspace_id AND (module_key=s.module_key OR CASE s.source_kind WHEN 'personal_event' THEN personal_event_id WHEN 'application_event' THEN application_event_id ELSE debt_obligation_id END=s.source_id)
+    FROM (SELECT id::text id,offset_days,local_time FROM time.reminder_rule WHERE workspace_id=s.workspace_id AND (module_key=s.module_key OR CASE s.source_kind WHEN 'personal_event' THEN personal_event_id WHEN 'application_event' THEN application_event_id WHEN 'debt_installment' THEN debt_obligation_id WHEN 'card_statement' THEN card_statement_id ELSE card_installment_id END=s.source_id)
       UNION ALL SELECT 'virtual',0,'09:00'::time) r
   ) schedules ON true
   LEFT JOIN LATERAL (
@@ -203,16 +219,16 @@ export async function readReminderAttention(
       FROM sources s
       LEFT JOIN core.module_preference p ON p.workspace_id=s.workspace_id AND p.module_key=s.module_key
       LEFT JOIN time.source_reminder_setting setting ON setting.workspace_id=s.workspace_id AND
-        CASE s.source_kind WHEN 'personal_event' THEN setting.personal_event_id WHEN 'application_event' THEN setting.application_event_id ELSE setting.debt_obligation_id END=s.source_id
+        CASE s.source_kind WHEN 'personal_event' THEN setting.personal_event_id WHEN 'application_event' THEN setting.application_event_id WHEN 'debt_installment' THEN setting.debt_obligation_id WHEN 'card_statement' THEN setting.card_statement_id ELSE setting.card_installment_id END=s.source_id
       CROSS JOIN LATERAL (
         SELECT r.id,r.offset_days,r.local_time,r.generation FROM time.reminder_rule r WHERE r.workspace_id=s.workspace_id AND r.enabled
           AND ((COALESCE(setting.mode,'inherit')='inherit' AND r.module_key=s.module_key)
-            OR (setting.mode='override' AND CASE s.source_kind WHEN 'personal_event' THEN r.personal_event_id WHEN 'application_event' THEN r.application_event_id ELSE r.debt_obligation_id END=s.source_id))
+            OR (setting.mode='override' AND CASE s.source_kind WHEN 'personal_event' THEN r.personal_event_id WHEN 'application_event' THEN r.application_event_id WHEN 'debt_installment' THEN r.debt_obligation_id WHEN 'card_statement' THEN r.card_statement_id ELSE r.card_installment_id END=s.source_id))
         UNION ALL SELECT NULL::uuid,0,'09:00'::time,1 WHERE COALESCE(setting.mode,'inherit')='inherit'
           AND NOT EXISTS(SELECT 1 FROM time.reminder_rule r WHERE r.workspace_id=s.workspace_id AND r.module_key=s.module_key)
       ) r
       LEFT JOIN time.reminder_occurrence o ON o.workspace_id=s.workspace_id AND o.rule_id=r.id
-        AND CASE s.source_kind WHEN 'personal_event' THEN o.personal_event_id WHEN 'application_event' THEN o.application_event_id ELSE o.debt_obligation_id END=s.source_id
+        AND CASE s.source_kind WHEN 'personal_event' THEN o.personal_event_id WHEN 'application_event' THEN o.application_event_id WHEN 'debt_installment' THEN o.debt_obligation_id WHEN 'card_statement' THEN o.card_statement_id ELSE o.card_installment_id END=s.source_id
         AND o.occurrence_key=s.occurrence_key AND o.source_generation=s.notification_generation AND o.rule_generation=r.generation
       WHERE COALESCE(p.reminders_enabled,true) AND COALESCE(setting.mode,'inherit')<>'off'
         AND COALESCE(o.state,'active') IN ('active','snoozed')

@@ -10,7 +10,7 @@ export const reportQuerySchema = dashboardQuerySchema
   })
   .strict();
 export type ReportQuery = z.input<typeof reportQuerySchema>;
-export const REPORT_DEFINITION_VERSION = "v2-a4-reports-signed-card-commands-1";
+export const REPORT_DEFINITION_VERSION = "v2-a6-integrated-cards-1";
 export const CAREER_COVERAGE_NOTE =
   "Submitted-date cohort, including archived attempts. Response means an explicitly dated, noncancelled response event; stage changes do not invent responses. Outcomes use corrected effective history through the as-of date. Event counts cover the selected event-date period, including other cohorts. Snapshot knowledge is current; as-of is an effective observation cutoff, not historical database knowledge.";
 export const financialMetrics = {
@@ -28,6 +28,7 @@ export const financialMetrics = {
   borrowing: "Cash borrowing proceeds (not income)",
   cash_refunds: "Actual cash refunds",
   debt_payments: "Actual debt payments including external fees",
+  card_payments: "Actual card payments (not spending)",
   principal: "Principal repaid (not spending)",
   debt_charges: "Recognized debt charges (included in spending)",
   waivers: "Recognized liability waivers",

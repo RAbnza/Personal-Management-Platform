@@ -1,3 +1,4 @@
+import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { AgendaList } from "@/components/calendar/agenda-list";
@@ -235,6 +236,10 @@ export function DashboardView({
           {!f.cards.length && <p>No tracked cards.</p>}
         </details>
       </Panel>
+      <CardSurfacePanel
+        data={data.finance.cardSurface}
+        currency={data.currency}
+      />
       <Panel
         title="Career snapshot"
         description={`Open, unarchived attempts and scheduled events from ${data.today} through ${data.horizon}. Event counts are separate from application counts.`}

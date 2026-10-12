@@ -1,3 +1,6 @@
+import { readCardSurface } from "../repositories/card-surface-repository";
+import { readReportContext } from "@/modules/reporting/repositories/report-context-repository";
+import { addCalendarDays } from "@/modules/reporting/domain/period";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withDomainTransaction } from "@/platform/db";
@@ -54,8 +57,16 @@ export async function getCardActivity(input: z.input<typeof inputSchema>) {
         r.purchase_minor::text AS "purchaseMinor",COALESCE(r.signed_liability_minor,0)::text AS "signedLiabilityMinor",r.reason
       FROM revisions r JOIN finance.financial_action f ON f.workspace_id=r.workspace_id AND f.id=r.action_id
       ORDER BY COALESCE(r.posting_date,r.card_posting_date) DESC,r.created_at DESC,r.id DESC LIMIT 101 OFFSET ${i.offset}`);
+      const context = await readReportContext(t, i.workspaceId);
+      const cardSurface = await readCardSurface(t, i.workspaceId, {
+        cardId: i.cardId,
+        today: context.today,
+        startDate: context.today,
+        endDate: addCalendarDays(context.today, 30),
+      });
       return {
         ...detail,
+        cardSurface,
         items: r.rows.slice(0, 100),
         hasMore: r.rows.length > 100,
       };

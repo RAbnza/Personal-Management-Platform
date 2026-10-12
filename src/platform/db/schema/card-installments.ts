@@ -150,6 +150,7 @@ export const cardInstallment = financeSchema.table(
     notes: text("notes"),
   },
   (t) => [
+    unique("uq_card_installment_scope").on(t.workspaceId, t.id),
     unique("uq_card_installment_line").on(
       t.workspaceId,
       t.planRevisionId,

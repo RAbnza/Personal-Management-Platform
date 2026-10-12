@@ -158,7 +158,7 @@ describe("card command review and retry", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Confirm and record" }));
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveFocus();
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(screen.getByLabelText("Amount (PHP)")).toBeEnabled();
   });
   it("creates unique label targets for retained forms and blocks archived card commands", () => {

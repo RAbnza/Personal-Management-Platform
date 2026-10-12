@@ -18,7 +18,7 @@ export type ReportPeriod = {
   endDate: string;
   endDateExclusive: string;
 };
-export const FINANCIAL_DEFINITION_VERSION = "v2-a4-posted-signed-cards-1";
+export const FINANCIAL_DEFINITION_VERSION = "v2-a6-posted-signed-cards-1";
 
 export function addCalendarDays(value: string, days: number): string {
   parseCalendarDate(value);

@@ -104,6 +104,9 @@ function mapSource(row: ReminderReadRow): ReminderView {
     target,
     snapshot: digest({
       sourceVersion: row.source_version,
+      remaining: row.remaining_minor,
+      eligible: row.eligible,
+      dueDate: row.due_date,
       key: row.occurrence_key,
       generation: row.source_generation,
       timezone: row.timezone,
@@ -252,7 +255,13 @@ async function saveRules(
   const c =
     "sourceId" in target
       ? sourceColumns(target)
-      : { personal: null, career: null, debt: null };
+      : {
+          personal: null,
+          career: null,
+          debt: null,
+          statement: null,
+          installment: null,
+        };
   const pred =
     "moduleKey" in target
       ? sql`module_key=${target.moduleKey}`
@@ -319,7 +328,7 @@ async function saveRules(
     )
       continue;
     const result = await tx.db.execute<{ id: string; version: number }>(
-      sql`INSERT INTO time.reminder_rule(workspace_id,personal_event_id,application_event_id,debt_obligation_id,module_key,offset_days,local_time) VALUES(${actor.workspaceId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${"moduleKey" in target ? target.moduleKey : null},${r.offsetDays},${r.localTime}::time) RETURNING id,version`,
+      sql`INSERT INTO time.reminder_rule(workspace_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,module_key,offset_days,local_time) VALUES(${actor.workspaceId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${"moduleKey" in target ? target.moduleKey : null},${r.offsetDays},${r.localTime}::time) RETURNING id,version`,
     );
     const saved = result.rows[0]!;
     await audit(
@@ -373,7 +382,7 @@ export async function mutateReminderInTransaction(
         sql`SELECT * FROM time.source_reminder_setting WHERE workspace_id=${actor.workspaceId}::uuid AND ${sourcePredicate(command.target)}`,
       );
       const saved = await tx.db.execute<{ id: string; version: number }>(
-        sql`INSERT INTO time.source_reminder_setting(workspace_id,personal_event_id,application_event_id,debt_obligation_id,mode) VALUES(${actor.workspaceId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${action.mode}) ON CONFLICT ON CONSTRAINT uq_reminder_setting_source DO UPDATE SET mode=excluded.mode RETURNING id,version`,
+        sql`INSERT INTO time.source_reminder_setting(workspace_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,mode) VALUES(${actor.workspaceId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${action.mode}) ON CONFLICT ON CONSTRAINT uq_reminder_setting_source DO UPDATE SET mode=excluded.mode RETURNING id,version`,
       );
       await audit(
         tx,
@@ -460,8 +469,8 @@ export async function mutateReminderInTransaction(
     const saved = await tx.db.execute<{
       id: string;
       version: number;
-    }>(sql`INSERT INTO time.reminder_occurrence(workspace_id,rule_id,personal_event_id,application_event_id,debt_obligation_id,occurrence_key,source_generation,rule_generation,scheduled_for,state,snoozed_until,dismissed_at)
-      VALUES(${actor.workspaceId}::uuid,${ruleId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${before.occurrenceKey},${before.sourceGeneration},${rule.generation},${rule.scheduledFor}::timestamptz,${state},${snoozedUntil}::timestamptz,CASE WHEN ${state}='dismissed' THEN clock_timestamp() ELSE NULL END)
+    }>(sql`INSERT INTO time.reminder_occurrence(workspace_id,rule_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,occurrence_key,source_generation,rule_generation,scheduled_for,state,snoozed_until,dismissed_at)
+      VALUES(${actor.workspaceId}::uuid,${ruleId}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${before.occurrenceKey},${before.sourceGeneration},${rule.generation},${rule.scheduledFor}::timestamptz,${state},${snoozedUntil}::timestamptz,CASE WHEN ${state}='dismissed' THEN clock_timestamp() ELSE NULL END)
       ON CONFLICT ON CONSTRAINT uq_reminder_occurrence_logical DO UPDATE SET state=excluded.state,snoozed_until=excluded.snoozed_until,dismissed_at=excluded.dismissed_at RETURNING id,version`);
     await audit(
       tx,

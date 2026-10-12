@@ -1,3 +1,5 @@
+import { CardSurfacePanel } from "@/components/money/card-surface-panel";
+import { CardCreateForm } from "@/components/money/card-create-form";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -68,6 +70,7 @@ export default async function CardPage({
       >
         Provider statements and reconciliation
       </Link>
+      <CardSurfacePanel data={data.cardSurface} currency={data.card.currency} />
       <Panel
         title="Installment details"
         description="Optional provider schedules for already recognized purchases."
@@ -94,6 +97,17 @@ export default async function CardPage({
         >
           Record payment, fee, interest or refund
         </Link>
+      </Panel>
+      <Panel
+        title="Card management"
+        description="Provider limit evidence, notes and reversible archiving preserve financial history."
+      >
+        <details>
+          <summary className="min-h-11 cursor-pointer">
+            Edit card metadata
+          </summary>
+          <CardCreateForm key={data.card.version} card={data.card} />
+        </details>
       </Panel>
       <Panel
         title="Card activity history"

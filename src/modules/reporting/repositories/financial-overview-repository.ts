@@ -205,12 +205,20 @@ export async function readLiabilityBreakdowns(
     openingMinor: string;
     closingMinor: string;
     spendingMinor: string;
+    feesMinor: string;
+    interestMinor: string;
+    refundsMinor: string;
+    paymentsMinor: string;
   }>(sql`${postingFacts(workspaceId)}, card_totals AS (
     SELECT card_id,(-COALESCE(sum(amount) FILTER(WHERE ledger_kind='card_liability' AND effective_date<${period.startDate}::date),0))::text AS opening,
       (-COALESCE(sum(amount) FILTER(WHERE ledger_kind='card_liability'),0))::text AS closing,
-      COALESCE(sum(amount) FILTER(WHERE expense_class<>'none' AND effective_date>=${period.startDate}::date),0)::text AS spending
+      COALESCE(sum(amount) FILTER(WHERE expense_class<>'none' AND effective_date>=${period.startDate}::date),0)::text AS spending,
+      COALESCE(sum(amount) FILTER(WHERE expense_class='gross' AND charge_kind='fee' AND effective_date>=${period.startDate}::date),0)::text AS fees,
+      COALESCE(sum(amount) FILTER(WHERE expense_class='gross' AND charge_kind='interest' AND effective_date>=${period.startDate}::date),0)::text AS interest,
+      (-COALESCE(sum(amount) FILTER(WHERE expense_class='refund_offset' AND effective_date>=${period.startDate}::date),0))::text AS refunds,
+      (-COALESCE(sum(amount) FILTER(WHERE ledger_kind='cash_asset' AND source_action_kind='card_payment' AND cash_flow_direction='out' AND effective_date>=${period.startDate}::date),0))::text AS payments
     FROM facts WHERE card_id IS NOT NULL AND effective_date<${period.endDateExclusive}::date GROUP BY card_id)
-    SELECT c.id AS "cardId",c.liability_ledger_account_id AS "ledgerId",c.name,COALESCE(b.opening,'0') AS "openingMinor",COALESCE(b.closing,'0') AS "closingMinor",COALESCE(b.spending,'0') AS "spendingMinor"
+    SELECT c.id AS "cardId",c.liability_ledger_account_id AS "ledgerId",c.name,COALESCE(b.opening,'0') AS "openingMinor",COALESCE(b.closing,'0') AS "closingMinor",COALESCE(b.spending,'0') AS "spendingMinor",COALESCE(b.fees,'0') AS "feesMinor",COALESCE(b.interest,'0') AS "interestMinor",COALESCE(b.refunds,'0') AS "refundsMinor",COALESCE(b.payments,'0') AS "paymentsMinor"
     FROM finance.credit_card c LEFT JOIN card_totals b ON b.card_id=c.id WHERE c.workspace_id=${workspaceId}::uuid ORDER BY c.name,c.id`);
   return {
     liabilityComponents: components.rows,

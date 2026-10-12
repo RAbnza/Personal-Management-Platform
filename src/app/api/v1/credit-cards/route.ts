@@ -1,11 +1,16 @@
 import { z } from "zod";
 import {
   createCreditCardInputSchema,
+  updateCreditCardInputSchema,
+  CreditCardVersionConflictError,
   CreditCardUnavailableError,
 } from "@/modules/finance/domain/credit-card";
 import { FinancialCommandConflictError } from "@/modules/finance/domain/financial-command";
 import { FinancialWriteWorkspaceUnavailableError } from "@/modules/finance/repositories/financial-write-repository";
-import { createCreditCard } from "@/modules/finance/services/credit-cards";
+import {
+  createCreditCard,
+  updateCreditCard,
+} from "@/modules/finance/services/credit-cards";
 import {
   createApiJsonResponse,
   createApiProblemResponse,
@@ -25,20 +30,27 @@ const bodySchema = createCreditCardInputSchema.omit({
   workspaceId: true,
   requestId: true,
 });
-export async function POST(request: Request) {
+async function mutate(request: Request, update: boolean) {
   const requestId = createApiRequestId();
   try {
     const origin = createMutationOriginProblemResponse(request, requestId);
     if (origin) return origin;
     const actor = await resolveApiActorForRequest(request, requestId);
     if (actor.kind === "response") return actor.response;
-    const body = bodySchema.parse(await readApiJsonBody(request));
-    const result = await createCreditCard({
-      ...body,
+    const raw = await readApiJsonBody(request);
+    const scope = {
       userId: actor.actor.userId,
       workspaceId: actor.actor.workspaceId,
       requestId: actor.actor.requestId,
-    });
+    };
+    const result = update
+      ? await updateCreditCard({
+          ...updateCreditCardInputSchema
+            .omit({ userId: true, workspaceId: true, requestId: true })
+            .parse(raw),
+          ...scope,
+        })
+      : await createCreditCard({ ...bodySchema.parse(raw), ...scope });
     // Ledger identity is internal; the UI needs only the card and revisions.
     return createApiJsonResponse(
       {
@@ -46,7 +58,7 @@ export async function POST(request: Request) {
         version: result.version,
         financialRevision: result.financialRevision,
       },
-      201,
+      update ? 200 : 201,
       requestId,
     );
   } catch (error) {
@@ -54,6 +66,14 @@ export async function POST(request: Request) {
       return createJsonBodyProblemResponse(error, requestId);
     if (error instanceof z.ZodError)
       return createSchemaValidationProblemResponse(error, requestId);
+    if (error instanceof CreditCardVersionConflictError)
+      return createApiProblemResponse({
+        status: 409,
+        code: "CREDIT_CARD_VERSION_CONFLICT",
+        message: error.message,
+        requestId,
+        retryable: false,
+      });
     if (error instanceof FinancialCommandConflictError)
       return createApiProblemResponse({
         status: 409,
@@ -73,7 +93,7 @@ export async function POST(request: Request) {
         requestId,
         retryable: false,
       });
-    console.error(`Card creation failed. requestId=${requestId}`);
+    console.error(`Card metadata mutation failed. requestId=${requestId}`);
     return createApiProblemResponse({
       status: 500,
       code: "INTERNAL_ERROR",
@@ -83,3 +103,6 @@ export async function POST(request: Request) {
     });
   }
 }
+
+export const POST = (request: Request) => mutate(request, false);
+export const PATCH = (request: Request) => mutate(request, true);

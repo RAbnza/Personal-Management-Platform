@@ -29,6 +29,8 @@ export type AgendaListQueryRow = {
 
   application_id: string | null;
   debt_id: string | null;
+  card_id: string | null;
+  card_plan_id: string | null;
 
   title: string | null;
 
@@ -165,6 +167,8 @@ export async function readAgendaPage(
 
           career_event."application_id",
           debt_obligation."debt_id",
+          COALESCE(card_statement.card_id,card_plan.card_id) AS card_id,
+          card_plan.id AS card_plan_id,
 
           agenda."title",
 
@@ -175,7 +179,7 @@ export async function readAgendaPage(
             WHEN agenda."source_kind" =
               'personal_event'
             THEN 'time'
-            WHEN agenda."source_kind" = 'debt_installment' THEN 'money'
+            WHEN agenda."source_kind" IN ('debt_installment','card_statement','card_installment') THEN 'money'
             ELSE NULL
           END AS "display_module",
 
@@ -240,6 +244,11 @@ export async function readAgendaPage(
           ON agenda."source_kind"='debt_installment'
           AND debt_obligation."workspace_id"=context."workspace_id"
           AND debt_obligation."id"=agenda."source_id"
+
+        LEFT JOIN finance.card_statement card_statement ON agenda.source_kind='card_statement' AND card_statement.workspace_id=context.workspace_id AND card_statement.id=agenda.source_id
+        LEFT JOIN finance.card_installment card_installment ON agenda.source_kind='card_installment' AND card_installment.workspace_id=context.workspace_id AND card_installment.id=agenda.source_id
+        LEFT JOIN finance.card_installment_revision card_revision ON card_revision.workspace_id=card_installment.workspace_id AND card_revision.id=card_installment.plan_revision_id
+        LEFT JOIN finance.card_installment_plan card_plan ON card_plan.workspace_id=card_revision.workspace_id AND card_plan.id=card_revision.plan_id
 
         WHERE
           (
@@ -334,6 +343,8 @@ export async function readAgendaPage(
 
         source."application_id",
         source."debt_id",
+        source."card_id",
+        source."card_plan_id",
 
         source."title",
 

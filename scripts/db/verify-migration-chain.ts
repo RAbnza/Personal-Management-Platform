@@ -190,19 +190,22 @@ async function main() {
       process.argv.includes("--upgrade-a1") ||
       process.argv.includes("--upgrade-a2") ||
       process.argv.includes("--upgrade-a3") ||
-      process.argv.includes("--upgrade-a4")
+      process.argv.includes("--upgrade-a4") ||
+      process.argv.includes("--upgrade-a5")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a4")
-        ? 86
-        : process.argv.includes("--upgrade-a3")
-          ? 82
-          : process.argv.includes("--upgrade-a2")
-            ? 80
-            : process.argv.includes("--upgrade-a1")
-              ? 78
-              : process.argv.includes("--upgrade-v1")
-                ? 76
-                : 67;
+      const baselineCount = process.argv.includes("--upgrade-a5")
+        ? 89
+        : process.argv.includes("--upgrade-a4")
+          ? 86
+          : process.argv.includes("--upgrade-a3")
+            ? 82
+            : process.argv.includes("--upgrade-a2")
+              ? 80
+              : process.argv.includes("--upgrade-a1")
+                ? 78
+                : process.argv.includes("--upgrade-v1")
+                  ? 76
+                  : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -339,7 +342,44 @@ async function main() {
                 confirmedDate: "2026-11-05",
               })
             : null;
+        const baselinePlan =
+          baselineCount >= 89 && baselineCard && baselinePurchase
+            ? await recordCardInstallmentPlan({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                clientCommandId: randomUUID(),
+                purchaseActionId: baselinePurchase.actionId,
+                purchaseActionRevisionId: baselinePurchase.actionRevisionId,
+                principalMinor: "777",
+                installmentCount: 1,
+                providerConfirmed: true,
+                verificationSource: "Preserved A5 complete schedule",
+                verifiedDate: "2026-11-02",
+                installments: [
+                  {
+                    dueDate: "2026-11-20",
+                    principalMinor: "777",
+                    interestMinor: "0",
+                    feeMinor: "0",
+                    totalMinor: "777",
+                  },
+                ],
+              })
+            : null;
         await migrate(db, config);
+        if (baselinePlan && baselineCard)
+          assert.equal(
+            (
+              await getCardInstallmentPlan({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                planId: baselinePlan.planId,
+              })
+            ).snapshot.verificationSource,
+            "Preserved A5 complete schedule",
+          );
         if (baselineStatement && baselineCard) {
           const s = await getCardStatement({
             userId,
@@ -2338,6 +2378,43 @@ async function main() {
         })
       ).totals.remainingPrincipalMinor,
       null,
+    );
+    const { getCardSurface } =
+      await import("../../src/modules/finance/services/read-card-surface");
+    const integrated = await getCardSurface(owner);
+    assert.equal(
+      integrated.statements.find((s) => s.statementId === statement.statementId)
+        ?.remainingDueMinor,
+      (
+        await getCardStatement({
+          ...owner,
+          cardId: card.cardId,
+          statementId: statement.statementId,
+        })
+      ).reconciliation.recordedRemainingDueMinor,
+    );
+    const cardSource = {
+      sourceKind: "card_statement" as const,
+      sourceId: statement.statementId,
+    };
+    const cardReminder = await getReminder(owner, cardSource);
+    if (cardReminder.eligible) {
+      const cmd = {
+        target: cardSource,
+        clientCommandId: randomUUID(),
+        expectedSnapshot: cardReminder.snapshot,
+        action: { kind: "dismiss" as const, ruleKey: "0:09:00" },
+      };
+      await mutateReminder(owner, cmd);
+      await mutateReminder(owner, cmd);
+      assert.equal(
+        (await getReminder(owner, cardSource)).rules[0]?.state,
+        "dismissed",
+      );
+    }
+    assert.ok(integrated.warning.includes("overlap"));
+    console.log(
+      "V2-A6 current posted cards, exact verified statement due, provider projections and replay-safe scoped reminders passed.",
     );
     const preservedPlan = await recordCardInstallmentPlan({
       ...providerPlan,

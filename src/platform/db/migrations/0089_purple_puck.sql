@@ -1,0 +1,33 @@
+ALTER TABLE "finance"."card_installment" ADD CONSTRAINT "uq_card_installment_scope" UNIQUE("workspace_id","id");--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" DROP CONSTRAINT "uq_reminder_occurrence_logical";--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" DROP CONSTRAINT "uq_reminder_rule_logical";--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" DROP CONSTRAINT "uq_reminder_setting_source";--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" DROP CONSTRAINT "ck_reminder_occurrence_source";--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" DROP CONSTRAINT "ck_reminder_rule_source";--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" DROP CONSTRAINT "ck_reminder_setting_source";--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" DROP CONSTRAINT "ck_reminder_setting_generation";--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD COLUMN "card_statement_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD COLUMN "card_installment_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD COLUMN "card_statement_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD COLUMN "card_installment_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD COLUMN "card_statement_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD COLUMN "card_installment_id" uuid;--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD CONSTRAINT "fk_reminder_occurrence_card_statement" FOREIGN KEY ("workspace_id","card_statement_id") REFERENCES "finance"."card_statement"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD CONSTRAINT "fk_reminder_occurrence_card_installment" FOREIGN KEY ("workspace_id","card_installment_id") REFERENCES "finance"."card_installment"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD CONSTRAINT "fk_reminder_rule_card_statement" FOREIGN KEY ("workspace_id","card_statement_id") REFERENCES "finance"."card_statement"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD CONSTRAINT "fk_reminder_rule_card_installment" FOREIGN KEY ("workspace_id","card_installment_id") REFERENCES "finance"."card_installment"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "fk_reminder_setting_card_statement" FOREIGN KEY ("workspace_id","card_statement_id") REFERENCES "finance"."card_statement"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "fk_reminder_setting_card_installment" FOREIGN KEY ("workspace_id","card_installment_id") REFERENCES "finance"."card_installment"("workspace_id","id") ON DELETE restrict ON UPDATE restrict;--> statement-breakpoint
+CREATE INDEX "ix_reminder_occurrence_card_statement" ON "time"."reminder_occurrence" USING btree ("workspace_id","card_statement_id");--> statement-breakpoint
+CREATE INDEX "ix_reminder_occurrence_card_installment" ON "time"."reminder_occurrence" USING btree ("workspace_id","card_installment_id");--> statement-breakpoint
+CREATE INDEX "ix_reminder_rule_card_statement" ON "time"."reminder_rule" USING btree ("workspace_id","card_statement_id");--> statement-breakpoint
+CREATE INDEX "ix_reminder_rule_card_installment" ON "time"."reminder_rule" USING btree ("workspace_id","card_installment_id");--> statement-breakpoint
+CREATE INDEX "ix_reminder_setting_card_statement" ON "time"."source_reminder_setting" USING btree ("workspace_id","card_statement_id");--> statement-breakpoint
+CREATE INDEX "ix_reminder_setting_card_installment" ON "time"."source_reminder_setting" USING btree ("workspace_id","card_installment_id");--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD CONSTRAINT "uq_reminder_occurrence_logical" UNIQUE NULLS NOT DISTINCT("workspace_id","rule_id","personal_event_id","application_event_id","debt_obligation_id","card_statement_id","card_installment_id","occurrence_key","source_generation","rule_generation");--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD CONSTRAINT "uq_reminder_rule_logical" UNIQUE NULLS NOT DISTINCT("workspace_id","personal_event_id","application_event_id","debt_obligation_id","card_statement_id","card_installment_id","module_key","channel","offset_days","local_time");--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "uq_reminder_setting_source" UNIQUE NULLS NOT DISTINCT("workspace_id","personal_event_id","application_event_id","debt_obligation_id","card_statement_id","card_installment_id");--> statement-breakpoint
+ALTER TABLE "time"."reminder_occurrence" ADD CONSTRAINT "ck_reminder_occurrence_source" CHECK (num_nonnulls("time"."reminder_occurrence"."personal_event_id","time"."reminder_occurrence"."application_event_id","time"."reminder_occurrence"."debt_obligation_id","time"."reminder_occurrence"."card_statement_id","time"."reminder_occurrence"."card_installment_id")=1);--> statement-breakpoint
+ALTER TABLE "time"."reminder_rule" ADD CONSTRAINT "ck_reminder_rule_source" CHECK (num_nonnulls("time"."reminder_rule"."personal_event_id","time"."reminder_rule"."application_event_id","time"."reminder_rule"."debt_obligation_id","time"."reminder_rule"."card_statement_id","time"."reminder_rule"."card_installment_id","time"."reminder_rule"."module_key")=1 AND ("time"."reminder_rule"."module_key" IS NULL OR "time"."reminder_rule"."module_key" IN ('money','career','time')));--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "ck_reminder_setting_source" CHECK (num_nonnulls("time"."source_reminder_setting"."personal_event_id","time"."source_reminder_setting"."application_event_id","time"."source_reminder_setting"."debt_obligation_id","time"."source_reminder_setting"."card_statement_id","time"."source_reminder_setting"."card_installment_id")=1);--> statement-breakpoint
+ALTER TABLE "time"."source_reminder_setting" ADD CONSTRAINT "ck_reminder_setting_generation" CHECK ("time"."source_reminder_setting"."notification_generation">0 AND (num_nonnulls("time"."source_reminder_setting"."debt_obligation_id","time"."source_reminder_setting"."card_statement_id","time"."source_reminder_setting"."card_installment_id")=1 OR "time"."source_reminder_setting"."notification_generation"=1));
