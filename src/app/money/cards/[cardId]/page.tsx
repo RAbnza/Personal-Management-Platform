@@ -69,6 +69,22 @@ export default async function CardPage({
         Provider statements and reconciliation
       </Link>
       <Panel
+        title="Installment details"
+        description="Optional provider schedules for already recognized purchases."
+      >
+        <details>
+          <summary className="min-h-11 cursor-pointer">
+            Provider installment plans
+          </summary>
+          <Link
+            href={`/money/cards/${id.data}/installments`}
+            className="inline-flex min-h-11 text-link underline"
+          >
+            Manage provider schedules and confirmed applications
+          </Link>
+        </details>
+      </Panel>
+      <Panel
         title="Payments and credits"
         description="Actual cash transfers, provider charges and refunds preserve distinct accounting effects."
       >

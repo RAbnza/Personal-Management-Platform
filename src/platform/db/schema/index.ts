@@ -18,3 +18,4 @@ export * from "./restore";
 export * from "./credit-cards";
 export * from "./card-statements";
 export * from "./card-commands";
+export * from "./card-installments";

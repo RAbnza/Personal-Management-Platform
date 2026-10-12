@@ -5,6 +5,12 @@ import {
 import { recordCardStatement } from "../../src/modules/finance/services/card-statements";
 import { recordCardCommand } from "../../src/modules/finance/services/record-card-command";
 import {
+  recordCardInstallmentPlan,
+  recordInstallmentApplication,
+  reverseInstallmentApplication,
+} from "../../src/modules/finance/services/card-installments";
+import { getCardInstallmentPlan } from "../../src/modules/finance/services/read-card-installments";
+import {
   recordCardAllocation,
   reverseCardAllocation,
 } from "../../src/modules/finance/services/card-allocations";
@@ -183,17 +189,20 @@ async function main() {
       process.argv.includes("--upgrade-v1") ||
       process.argv.includes("--upgrade-a1") ||
       process.argv.includes("--upgrade-a2") ||
-      process.argv.includes("--upgrade-a3")
+      process.argv.includes("--upgrade-a3") ||
+      process.argv.includes("--upgrade-a4")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a3")
-        ? 82
-        : process.argv.includes("--upgrade-a2")
-          ? 80
-          : process.argv.includes("--upgrade-a1")
-            ? 78
-            : process.argv.includes("--upgrade-v1")
-              ? 76
-              : 67;
+      const baselineCount = process.argv.includes("--upgrade-a4")
+        ? 86
+        : process.argv.includes("--upgrade-a3")
+          ? 82
+          : process.argv.includes("--upgrade-a2")
+            ? 80
+            : process.argv.includes("--upgrade-a1")
+              ? 78
+              : process.argv.includes("--upgrade-v1")
+                ? 76
+                : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -298,6 +307,38 @@ async function main() {
                 entries: [],
               })
             : null;
+        const baselinePayment =
+          baselineCount >= 86 && baselineCard
+            ? await recordCardCommand({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                clientCommandId: randomUUID(),
+                actionKind: "card_payment",
+                payingAccountId: account.accountId,
+                amountMinor: "100",
+                effectiveDate: "2026-11-03",
+                postingDate: "2026-11-04",
+                description: "Preserved A4 payment",
+                providerConfirmed: true,
+                confirmationSource: "Actual provider receipt",
+              })
+            : null;
+        const baselineAllocation =
+          baselinePayment && baselineCard && baselineStatement
+            ? await recordCardAllocation({
+                userId,
+                workspaceId,
+                cardId: baselineCard.cardId,
+                clientCommandId: randomUUID(),
+                statementRevisionId: baselineStatement.revisionId,
+                sourceActionRevisionId: baselinePayment.actionRevisionId,
+                amountMinor: "50",
+                confirmationKind: "provider",
+                confirmationSource: "Preserved A4 confirmation",
+                confirmedDate: "2026-11-05",
+              })
+            : null;
         await migrate(db, config);
         if (baselineStatement && baselineCard) {
           const s = await getCardStatement({
@@ -310,8 +351,14 @@ async function main() {
             s.snapshot.verificationSource,
             "Preserved A3 provider statement",
           );
-          assert.equal(s.reconciliation.recordedRemainingDueMinor, "777");
-          assert.equal(s.reconciliation.effectiveAllocatedMinor, "0");
+          assert.equal(
+            s.reconciliation.recordedRemainingDueMinor,
+            baselineAllocation ? "727" : "777",
+          );
+          assert.equal(
+            s.reconciliation.effectiveAllocatedMinor,
+            baselineAllocation ? "50" : "0",
+          );
         }
         if (baselineCard)
           assert.equal(
@@ -362,7 +409,7 @@ async function main() {
                 cardId: baselineCard.cardId,
               })
             ).card.postedOutstandingMinor,
-            "777",
+            baselinePayment ? "677" : "777",
           );
         }
         console.log(
@@ -2214,6 +2261,95 @@ async function main() {
       allocatedStatement.reconciliation.recordedRemainingDueMinor,
       "295000",
     );
+    const providerPlan = {
+      ...owner,
+      cardId: card.cardId,
+      clientCommandId: randomUUID(),
+      purchaseActionId: recordedCardPurchase.actionId,
+      purchaseActionRevisionId: recordedCardPurchase.actionRevisionId,
+      principalMinor: "300000",
+      installmentCount: 3,
+      providerConfirmed: true as const,
+      verificationSource: "Full provider schedule",
+      verifiedDate: "2026-12-04",
+      installments: ["2026-12-10", "2027-01-10", "2027-02-10"].map(
+        (dueDate) => ({
+          dueDate,
+          principalMinor: "100000",
+          interestMinor: "0",
+          feeMinor: "0",
+          totalMinor: "100000",
+        }),
+      ),
+    };
+    const plan = await recordCardInstallmentPlan(providerPlan);
+    assert.deepEqual(await recordCardInstallmentPlan(providerPlan), plan);
+    const appliedInstallment = {
+      ...owner,
+      cardId: card.cardId,
+      planId: plan.planId,
+      clientCommandId: randomUUID(),
+      planRevisionId: plan.revisionId,
+      installmentNo: 1,
+      allocationId: applied.allocationId,
+      principalMinor: "5000",
+      confirmationKind: "provider" as const,
+      confirmationSource: "Explicit confirmed installment portion",
+      confirmedDate: "2026-12-04",
+    };
+    const application = await recordInstallmentApplication(appliedInstallment);
+    assert.deepEqual(
+      await recordInstallmentApplication(appliedInstallment),
+      application,
+    );
+    assert.equal(
+      (
+        await getCardInstallmentPlan({
+          ...owner,
+          cardId: card.cardId,
+          planId: plan.planId,
+        })
+      ).totals.remainingPrincipalMinor,
+      "295000",
+    );
+    await reverseInstallmentApplication({
+      ...owner,
+      cardId: card.cardId,
+      planId: plan.planId,
+      clientCommandId: randomUUID(),
+      applicationId: application.applicationId,
+      reason: "Correct provider confirmation",
+    });
+    const cancelled = await recordCardInstallmentPlan({
+      ...providerPlan,
+      clientCommandId: randomUUID(),
+      planId: plan.planId,
+      expectedVersion: 1,
+      reason: "Provider cancelled",
+      lifecycle: "cancelled",
+    });
+    assert.equal(cancelled.version, 2);
+    assert.equal(
+      (
+        await getCardInstallmentPlan({
+          ...owner,
+          cardId: card.cardId,
+          planId: plan.planId,
+        })
+      ).totals.remainingPrincipalMinor,
+      null,
+    );
+    const preservedPlan = await recordCardInstallmentPlan({
+      ...providerPlan,
+      ...other,
+      cardId: preservedCard.cardId,
+      clientCommandId: randomUUID(),
+      purchaseActionId: preservedCardPurchase.actionId,
+      purchaseActionRevisionId: preservedCardPurchase.actionRevisionId,
+    });
+    console.log(
+      "V2-A5 complete provider schedules, replay, explicit A4 applications/reversals and immutable cancellation passed without additional financial recognition.",
+    );
     await reverseCardAllocation({
       ...owner,
       cardId: card.cardId,
@@ -2349,6 +2485,31 @@ async function main() {
           )
         ).rowCount,
         0,
+      );
+      for (const table of [
+        "card_installment_plan",
+        "card_installment_revision",
+        "card_installment",
+        "card_installment_application",
+      ])
+        assert.equal(
+          (
+            await fixtureAdministrator.query(
+              `SELECT workspace_id FROM finance.${table} WHERE workspace_id=$1`,
+              [owner.workspaceId],
+            )
+          ).rowCount,
+          0,
+        );
+      assert.equal(
+        (
+          await getCardInstallmentPlan({
+            ...other,
+            cardId: preservedCard.cardId,
+            planId: preservedPlan.planId,
+          })
+        ).snapshot.principalMinor,
+        "300000",
       );
     } finally {
       await operator.end();

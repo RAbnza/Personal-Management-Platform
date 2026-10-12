@@ -603,6 +603,27 @@
       "when": 1791753485669,
       "tag": "0085_v2_a4_allocation_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1791793556188,
+      "tag": "0086_happy_ultimo",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1791793828674,
+      "tag": "0087_v2_a5_installment_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1791796964863,
+      "tag": "0088_v2_a5_refund_history",
+      "breakpoints": true
     }
   ]
 }

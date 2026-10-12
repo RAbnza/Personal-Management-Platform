@@ -101,6 +101,34 @@ export default async function FinancialActionPage({
           ))}
         </ul>
       </Panel>
+      {detail.current.actionKind === "card_purchase" &&
+        detail.current.changeKind !== "void" &&
+        typeof detail.current.evidence.cardId === "string" && (
+          <details className="space-y-3 rounded-md border border-border p-4">
+            <summary className="min-h-11 cursor-pointer font-semibold">
+              Installment details
+            </summary>
+            <p>
+              Provider installment scheduling is optional. This purchase already
+              recognizes spending; a plan creates no additional expense,
+              liability or cash movement.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                className="inline-flex min-h-11 text-link underline"
+                href={`/money/cards/${detail.current.evidence.cardId}/installments/new?purchaseActionId=${id.data}`}
+              >
+                Record provider installment schedule
+              </Link>
+              <Link
+                className="inline-flex min-h-11 text-link underline"
+                href={`/money/cards/${detail.current.evidence.cardId}/installments`}
+              >
+                View provider installment plans
+              </Link>
+            </div>
+          </details>
+        )}
       {detail.current.changeKind !== "void" && (
         <FinancialActionReviewForm
           detail={detail}
