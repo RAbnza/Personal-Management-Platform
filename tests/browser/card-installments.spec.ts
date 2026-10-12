@@ -304,7 +304,7 @@ test("provider schedule entry, lost response retry, explicit installment applica
   });
   await page.goto(`${base}/new?purchaseActionId=${purchase.actionId}`);
   await page
-    .getByLabel("Provider verification source", { exact: true })
+    .getByRole("textbox", { name: "Provider verification source", exact: true })
     .fill("Draft for original purchase");
   await page
     .getByRole("link", { name: "Provider installment plans", exact: true })
@@ -320,13 +320,22 @@ test("provider schedule entry, lost response retry, explicit installment applica
     new RegExp(`purchaseActionId=${another.actionId}$`),
   );
   await expect(
-    page.getByLabel("Financed principal (PHP)", { exact: true }),
+    page.getByRole("textbox", {
+      name: "Financed principal (PHP)",
+      exact: true,
+    }),
   ).toHaveValue("");
   await expect(
-    page.getByLabel("Provider verification source", { exact: true }),
+    page.getByRole("textbox", {
+      name: "Provider verification source",
+      exact: true,
+    }),
   ).toHaveValue("");
   await expect(
-    page.getByLabel("Provider installment count", { exact: true }),
+    page.getByRole("spinbutton", {
+      name: "Provider installment count",
+      exact: true,
+    }),
   ).toHaveValue("1");
 });
 test("foreign installment evidence stays private and a reversed purchase suspends projections without an inferred cancellation", async ({
