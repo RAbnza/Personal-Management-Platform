@@ -46,6 +46,9 @@ function definition(date: string, name = "Browser recurring bill") {
   };
 }
 async function audit(page: Page, cpu: CDPSession) {
+  // The persistent app shell can be visible while Next streams route content.
+  // Audit the rendered page rather than its temporary loading boundary.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await cpu.send("Emulation.setCPUThrottlingRate", { rate: 1 });
   if (
     !(await page.evaluate(
