@@ -30,7 +30,7 @@ Verify exact/zero/large limits, leap/day/end boundaries, adjacency/overlaps, lif
 
 ## Accepted implementation
 
-C1–C3 are implemented and locally accepted. Seven forward migrations add one protected audited table, bringing the chain to 111 migrations / 75 tables with all prior definitions preserved. No dependencies or financial recipes changed.
+C1–C3 are implemented and accepted locally and in hosted CI. Seven forward migrations add one protected audited table, bringing the chain to 111 migrations / 75 tables with all prior definitions preserved. No dependencies or financial recipes changed.
 
 Consolidated verification covers 901 passing unit/component/API tests, all 549 integration scenarios across the full run and affected reruns, all 44 browser scenarios across the full run and affected rerun, ten fresh/upgrade migration proofs, schema/runtime checks, production builds, dependency audit, isolated encrypted restore and restricted runtime artifacts. Guarded capacity with 100 budgets / 1,000 actual classified postings passed existing timing thresholds and financial nonduplication assertions. Exact commands, initial failures/resolutions, measured results and V2-D prerequisites are recorded in [handoff section 23](../V2_DEVELOPMENT_HANDOFF.md#23-v2-c--budgets).
 
