@@ -136,6 +136,14 @@ test("period selection drills into exact spending and owned account history", as
   await page
     .getByRole("link", { name: "Back to Dashboard", exact: true })
     .click();
+  await expect(page).toHaveURL(
+    new RegExp(
+      `^http://localhost:3100/\\?period=custom&startDate=${today}&endDate=${today}$`,
+    ),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Dashboard", level: 1, exact: true }),
+  ).toBeVisible();
   const hideMoney = await page.request.patch(
     "/api/v1/module-preferences/money",
     {
@@ -150,6 +158,11 @@ test("period selection drills into exact spending and owned account history", as
     },
   );
   expect(hideMoney.status()).toBe(200);
+  expect(await hideMoney.json()).toMatchObject({
+    moduleKey: "money",
+    enabled: false,
+    version: 1,
+  });
   await page.reload();
   await expect(page.getByText(/Money is hidden in navigation/)).toBeVisible();
   await page.getByText("Supporting cash accounts", { exact: true }).click();
