@@ -1,4 +1,5 @@
 import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
+import { readBudgetComparisons } from "@/modules/planning/repositories/budget-repository";
 import { sql } from "drizzle-orm";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import {
@@ -90,6 +91,11 @@ export async function getFinancialReportInTransaction(
   return {
     ...context,
     metrics,
+    budgets: await readBudgetComparisons(t, input.workspaceId, {
+      startDate: period.startDate,
+      endDateExclusive: period.endDateExclusive,
+      pageSize: 10,
+    }),
     ...breakdowns,
     ...(await readLiabilityBreakdowns(t, input.workspaceId, period)),
     schedule,

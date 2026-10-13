@@ -932,7 +932,7 @@ describe("V2-B recurring planning", () => {
           "SELECT c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='planning' AND c.relkind='r'",
         ),
       );
-      expect(flags.rows).toHaveLength(4);
+      expect(flags.rows).toHaveLength(5);
       expect(
         flags.rows.every((x) => x.relrowsecurity && x.relforcerowsecurity),
       ).toBe(true);

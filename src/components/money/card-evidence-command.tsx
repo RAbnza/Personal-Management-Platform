@@ -15,6 +15,7 @@ export function useCardEvidenceCommand(
     | "allocationId"
     | "planId"
     | "applicationId"
+    | "budgetId"
     | "obligationId" = "actionId",
 ) {
   const router = useRouter(),

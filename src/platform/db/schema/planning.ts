@@ -33,6 +33,63 @@ const evidence = () => ({
     .defaultNow()
     .notNull(),
 });
+export const budget = planningSchema.table(
+  "budget",
+  {
+    ...identity(),
+    categoryId: uuid("category_id").notNull(),
+    startDate: date("start_date").notNull(),
+    endDateExclusive: date("end_date_exclusive").notNull(),
+    limitMinor: bigint("limit_minor", { mode: "bigint" }).notNull(),
+    writeRevision: bigint("write_revision", { mode: "bigint" })
+      .default(sql`0`)
+      .notNull(),
+    basis: text("basis").default("net").notNull(),
+    notes: text("notes"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    version: integer("version").default(1).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    ...evidence(),
+  },
+  (t) => [
+    unique("uq_budget_scope").on(t.workspaceId, t.id),
+    unique("uq_budget_category_period").on(
+      t.workspaceId,
+      t.categoryId,
+      t.startDate,
+      t.endDateExclusive,
+    ),
+    foreignKey({
+      columns: [t.workspaceId, t.categoryId],
+      foreignColumns: [category.workspaceId, category.id],
+    }),
+    foreignKey({
+      columns: [t.workspaceId, t.commandReceiptId],
+      foreignColumns: [commandReceipt.workspaceId, commandReceipt.id],
+    }),
+    index("ix_budget_category_period").on(
+      t.workspaceId,
+      t.categoryId,
+      t.startDate,
+      t.endDateExclusive,
+    ),
+    index("ix_budget_active_period").on(
+      t.workspaceId,
+      t.archivedAt,
+      t.startDate,
+      t.endDateExclusive,
+      t.id,
+    ),
+    index("ix_budget_command").on(t.workspaceId, t.commandReceiptId),
+    index("ix_budget_actor").on(t.recordedByUserId),
+    check(
+      "ck_budget_bounds",
+      sql`${t.startDate} BETWEEN '1900-01-01'::date AND '2199-12-31'::date AND ${t.endDateExclusive}>${t.startDate} AND ${t.endDateExclusive}<='2200-01-01'::date AND ${t.endDateExclusive}-${t.startDate}<=366 AND ${t.limitMinor}>=0 AND ${t.writeRevision}>=0 AND ${t.basis} IN ('net','gross') AND ${t.version}>0 AND (${t.notes} IS NULL OR char_length(${t.notes})<=2000)`,
+    ),
+  ],
+);
 export const recurringObligation = planningSchema.table(
   "recurring_obligation",
   {

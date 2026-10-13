@@ -1,4 +1,5 @@
 import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
+import { readBudgetComparisons } from "@/modules/planning/repositories/budget-repository";
 import { z } from "zod";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import { readFinancialAccountList } from "@/modules/finance/repositories/financial-account-read-repository";
@@ -228,6 +229,11 @@ export async function getDashboardInTransaction(
       debts,
       cards,
       cardSurface,
+      budgets: await readBudgetComparisons(t, input.workspaceId, {
+        startDate: period.startDate,
+        endDateExclusive: period.endDateExclusive,
+        pageSize: 10,
+      }),
     },
     coverage: {
       scope:

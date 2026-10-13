@@ -49,6 +49,12 @@ export default async function CardsLayout({
             Recurring obligations
           </Link>
           <Link
+            href="/money/budgets"
+            className="inline-flex min-h-11 items-center text-link underline"
+          >
+            Budgets
+          </Link>
+          <Link
             className="inline-flex min-h-11 items-center"
             href="/money/actions"
           >

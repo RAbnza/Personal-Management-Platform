@@ -16,6 +16,10 @@ import { provisionPersonalWorkspace } from "../../src/modules/core/services/prov
 import { openFinancialAccount } from "../../src/modules/finance/services/open-financial-account";
 import { recordIncome } from "../../src/modules/finance/services/record-income";
 import { recordRecurringCommand } from "../../src/modules/planning/services/recurring";
+import { recordBudgetCommand } from "../../src/modules/planning/services/budgets";
+import { readBudgetComparisons } from "../../src/modules/planning/repositories/budget-repository";
+import { listCategories } from "../../src/modules/core/services/list-categories";
+import { recordExpense } from "../../src/modules/finance/services/record-expense";
 import { getFinancialReportInTransaction } from "../../src/modules/reporting/services/get-reports";
 import { applyRestoreDeletion } from "../../src/platform/lifecycle/restore-deletion";
 import {
@@ -265,6 +269,55 @@ async function main() {
       ...other,
       clientCommandId: randomUUID(),
     });
+    const budgetCategory = (
+        await listCategories({ ...target, kind: "expense" })
+      ).items[0]!,
+      otherBudgetCategory = (
+        await listCategories({ ...other, kind: "expense" })
+      ).items[0]!;
+    await recordExpense({
+      ...target,
+      clientCommandId: randomUUID(),
+      fundingAccountId: account.accountId,
+      effectiveDate: "2026-10-03",
+      purchaseMinor: "10000",
+      splits: [{ amountMinor: "10000", categoryId: budgetCategory.categoryId }],
+      description: "Restore actual budget-category expense",
+    });
+    const budgetBody = {
+      ...target,
+      operation: "save" as const,
+      clientCommandId: randomUUID(),
+      budgetId: null,
+      expectedVersion: null,
+      reason: null,
+      fields: {
+        categoryId: budgetCategory.categoryId,
+        startDate: "2026-10-01",
+        endDateExclusive: "2026-11-01",
+        limitMinor: "20000",
+        basis: "net" as const,
+        notes: "Restored budget definition",
+      },
+    };
+    const restoredBudget = await recordBudgetCommand(budgetBody);
+    await recordBudgetCommand({
+      ...budgetBody,
+      budgetId: restoredBudget.budgetId,
+      expectedVersion: 1,
+      clientCommandId: randomUUID(),
+      reason: "Confirmed limit correction",
+      fields: { ...budgetBody.fields, limitMinor: "25000" },
+    });
+    const otherBudget = await recordBudgetCommand({
+      ...budgetBody,
+      ...other,
+      clientCommandId: randomUUID(),
+      fields: {
+        ...budgetBody.fields,
+        categoryId: otherBudgetCategory.categoryId,
+      },
+    });
     await getAuthPool().query(
       "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 day')",
       [randomUUID(), target.userId, randomUUID()],
@@ -369,7 +422,32 @@ async function main() {
           },
         );
         assert.match(JSON.stringify(report), /1000000/);
-        assert.match(JSON.stringify(report), /1200000/);
+        assert.match(JSON.stringify(report), /1190000/);
+        const budgetView = await readBudgetComparisons(
+          { db: drizzle(domain) } as ScopedTransaction,
+          target.workspaceId,
+          { budgetId: restoredBudget.budgetId },
+        );
+        assert.equal(budgetView.items[0]!.version, 2);
+        assert.equal(budgetView.items[0]!.netMinor, "10000");
+        assert.equal(budgetView.items[0]!.remainingMinor, "15000");
+        assert.equal(
+          (
+            await domain.query("SELECT id FROM planning.budget WHERE id=$1", [
+              otherBudget.budgetId,
+            ])
+          ).rowCount,
+          0,
+        );
+        assert.equal(
+          (
+            await domain.query(
+              "SELECT id FROM audit.private_revision WHERE workspace_id=$1 AND subject_kind='budget'",
+              [target.workspaceId],
+            )
+          ).rowCount,
+          2,
+        );
         const recurringDue = await domain.query(
           "SELECT state,linked_minor::text AS linked,remaining_minor::text AS remaining FROM planning.occurrence_due_v WHERE workspace_id=$1 AND id=$2",
           [target.workspaceId, restoredPlan.occurrenceIds![0]],
@@ -466,6 +544,7 @@ async function main() {
           "recurrence_version",
           "expected_occurrence",
           "occurrence_actual_link",
+          "budget",
         ])
           assert.equal(
             (
@@ -476,6 +555,14 @@ async function main() {
             ).rowCount,
             0,
           );
+        assert.equal(
+          (
+            await restored.query("SELECT id FROM planning.budget WHERE id=$1", [
+              otherBudget.budgetId,
+            ])
+          ).rowCount,
+          1,
+        );
         assert.equal(
           (
             await restored.query(

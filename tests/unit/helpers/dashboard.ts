@@ -36,6 +36,12 @@ export function dashboardFixture(): DashboardResult {
       debts: [],
       cards: [],
       cardSurface: emptyCardSurface(),
+      budgets: {
+        items: [],
+        nextCursor: null,
+        definitionVersion: "v2-c-category-period-signed-1",
+        financialDefinitionVersion: "v2-a6-posted-signed-cards-1",
+      },
     },
     coverage: {
       scope:

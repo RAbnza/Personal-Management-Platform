@@ -54,7 +54,12 @@ export async function readSpendingSummary(
 
 export async function readSpendingContributions(
   t: ScopedTransaction,
-  input: { workspaceId: string; period: ReportPeriod; after?: string },
+  input: {
+    workspaceId: string;
+    period: ReportPeriod;
+    after?: string;
+    categoryId?: string;
+  },
 ) {
   const result = await t.db.execute<{
     postingId: string;
@@ -74,8 +79,9 @@ export async function readSpendingContributions(
     JOIN finance.financial_action f ON f.workspace_id=p.workspace_id AND f.id=p.action_id
     LEFT JOIN core.category c ON c.workspace_id=p.workspace_id AND c.id=p.category_id
     WHERE p.workspace_id=${input.workspaceId}::uuid AND p.expense_class<>'none'
+      ${input.categoryId ? sql`AND p.category_id=${input.categoryId}::uuid` : sql``}
       AND j.effective_date>=${input.period.startDate}::date AND j.effective_date<${input.period.endDateExclusive}::date
-      ${input.after ? sql`AND (j.effective_date,p.id)<(SELECT cj.effective_date,cp.id FROM finance.posting cp JOIN finance.journal cj ON cj.workspace_id=cp.workspace_id AND cj.id=cp.journal_id WHERE cp.workspace_id=${input.workspaceId}::uuid AND cp.id=${input.after}::uuid AND cp.expense_class<>'none' AND cj.effective_date>=${input.period.startDate}::date AND cj.effective_date<${input.period.endDateExclusive}::date)` : sql``}
+      ${input.after ? sql`AND (j.effective_date,p.id)<(SELECT cj.effective_date,cp.id FROM finance.posting cp JOIN finance.journal cj ON cj.workspace_id=cp.workspace_id AND cj.id=cp.journal_id WHERE cp.workspace_id=${input.workspaceId}::uuid AND cp.id=${input.after}::uuid AND cp.expense_class<>'none' ${input.categoryId ? sql`AND cp.category_id=${input.categoryId}::uuid` : sql``} AND cj.effective_date>=${input.period.startDate}::date AND cj.effective_date<${input.period.endDateExclusive}::date)` : sql``}
     ORDER BY j.effective_date DESC,p.id DESC LIMIT 101
   `);
   return {

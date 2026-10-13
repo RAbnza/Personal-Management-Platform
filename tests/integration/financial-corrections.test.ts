@@ -402,7 +402,7 @@ describe("D12 explicit corrections and refunds", () => {
         `UPDATE core.category SET archived_at=now() WHERE workspace_id=$1 AND id=$2`,
         [f.workspaceId, categoryId],
       );
-      const corrected = await correctFinancialActionInTransaction(tx(c), {
+      const correction = {
         userId: f.userId,
         workspaceId: f.workspaceId,
         actionId: original.actionId,
@@ -411,7 +411,7 @@ describe("D12 explicit corrections and refunds", () => {
         expectedFinancialRevision: original.financialRevision,
         reason: "Fix historical amount",
         replacement: {
-          actionKind: "expense",
+          actionKind: "expense" as const,
           fundingAccountId: f.accountId,
           effectiveDate: "2026-10-02",
           purchaseMinor: "80",
@@ -419,6 +419,19 @@ describe("D12 explicit corrections and refunds", () => {
           description: "Historical purchase",
           acknowledgeNegativeBalance: true,
         },
+      };
+      await c.query("SAVEPOINT archived_preview");
+      await expect(
+        correctFinancialActionInTransaction(tx(c), correction),
+      ).rejects.toThrow("changed");
+      await c.query("ROLLBACK TO SAVEPOINT archived_preview");
+      const fresh = await getFinancialActionDetailInTransaction(tx(c), {
+        workspaceId: f.workspaceId,
+        actionId: original.actionId,
+      });
+      const corrected = await correctFinancialActionInTransaction(tx(c), {
+        ...correction,
+        expectedFinancialRevision: fresh.current.financialRevision,
       });
       expect(corrected.actionId).toBe(original.actionId);
       await c.query("SAVEPOINT archived_new");

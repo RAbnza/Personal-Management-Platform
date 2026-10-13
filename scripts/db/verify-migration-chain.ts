@@ -102,6 +102,9 @@ import {
 } from "../../src/modules/finance/services/read-debts";
 import { listAgendaItems } from "../../src/modules/time/services/list-agenda-items";
 import { recordRecurringCommand } from "../../src/modules/planning/services/recurring";
+import { recordBudgetCommand } from "../../src/modules/planning/services/budgets";
+import { getBudget } from "../../src/modules/planning/services/read-budgets";
+import { listCategories } from "../../src/modules/core/services/list-categories";
 import {
   getRecurringObligation,
   getRecurringOccurrence,
@@ -197,23 +200,26 @@ async function main() {
       process.argv.includes("--upgrade-a3") ||
       process.argv.includes("--upgrade-a4") ||
       process.argv.includes("--upgrade-a5") ||
-      process.argv.includes("--upgrade-a6")
+      process.argv.includes("--upgrade-a6") ||
+      process.argv.includes("--upgrade-b")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a6")
-        ? 94
-        : process.argv.includes("--upgrade-a5")
-          ? 89
-          : process.argv.includes("--upgrade-a4")
-            ? 86
-            : process.argv.includes("--upgrade-a3")
-              ? 82
-              : process.argv.includes("--upgrade-a2")
-                ? 80
-                : process.argv.includes("--upgrade-a1")
-                  ? 78
-                  : process.argv.includes("--upgrade-v1")
-                    ? 76
-                    : 67;
+      const baselineCount = process.argv.includes("--upgrade-b")
+        ? 104
+        : process.argv.includes("--upgrade-a6")
+          ? 94
+          : process.argv.includes("--upgrade-a5")
+            ? 89
+            : process.argv.includes("--upgrade-a4")
+              ? 86
+              : process.argv.includes("--upgrade-a3")
+                ? 82
+                : process.argv.includes("--upgrade-a2")
+                  ? 80
+                  : process.argv.includes("--upgrade-a1")
+                    ? 78
+                    : process.argv.includes("--upgrade-v1")
+                      ? 76
+                      : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -375,7 +381,47 @@ async function main() {
                 ],
               })
             : null;
+        const baselineRecurring =
+          baselineCount >= 104
+            ? await recordRecurringCommand({
+                userId,
+                workspaceId,
+                operation: "definition",
+                clientCommandId: randomUUID(),
+                obligationId: null,
+                expectedVersion: null,
+                reason: null,
+                name: "Preserved B recurring evidence",
+                kind: "bill",
+                rule: {
+                  effectiveFrom: "2026-10-01",
+                  frequency: "monthly",
+                  intervalCount: 1,
+                  weekdays: null,
+                  dayOfMonth: 10,
+                  shortMonthPolicy: "last_valid_day",
+                  endsOn: null,
+                  occurrenceLimit: 2,
+                  expectedMinor: "777",
+                  currency: "PHP",
+                  categoryId: null,
+                  defaultAccountId: null,
+                  timezone: "Asia/Manila",
+                },
+                window: { from: "2026-10-01", through: "2026-11-30" },
+              })
+            : null;
         await migrate(db, config);
+        if (baselineRecurring) {
+          const p = await getRecurringObligation({
+            userId,
+            workspaceId,
+            obligationId: baselineRecurring.obligationId,
+          });
+          assert.equal(p.root.name, "Preserved B recurring evidence");
+          assert.equal(p.occurrences.items.length, 2);
+          assert.equal(p.occurrences.items[0]!.expectedMinor, "777");
+        }
         if (baselinePlan && baselineCard)
           assert.equal(
             (
@@ -2542,6 +2588,55 @@ async function main() {
     console.log(
       "V2-B bounded recurring evidence/replay, explicit actual linkage/reversal and unchanged card liability passed; complete planning history is included in purge.",
     );
+    const budgetCategory = (await listCategories({ ...owner, kind: "expense" }))
+        .items[0]!,
+      otherBudgetCategory = (
+        await listCategories({ ...other, kind: "expense" })
+      ).items[0]!;
+    const budgetBody = {
+      ...owner,
+      operation: "save" as const,
+      clientCommandId: randomUUID(),
+      budgetId: null,
+      expectedVersion: null,
+      reason: null,
+      fields: {
+        categoryId: budgetCategory.categoryId,
+        startDate: "2026-10-01",
+        endDateExclusive: "2026-11-01",
+        limitMinor: "0",
+        basis: "net" as const,
+        notes: "Migration budget evidence",
+      },
+    };
+    const budgetSmoke = await recordBudgetCommand(budgetBody);
+    assert.deepEqual(await recordBudgetCommand(budgetBody), budgetSmoke);
+    await recordBudgetCommand({
+      ...budgetBody,
+      clientCommandId: randomUUID(),
+      budgetId: budgetSmoke.budgetId,
+      expectedVersion: 1,
+      reason: "Reviewed exact limit",
+      fields: { ...budgetBody.fields, limitMinor: "9007199254740993" },
+    });
+    const budgetView = await getBudget({
+      ...owner,
+      budgetId: budgetSmoke.budgetId,
+    });
+    assert.equal(budgetView.budget.limit_minor, "9007199254740993");
+    assert.equal(budgetView.history.items.length, 2);
+    const preservedBudget = await recordBudgetCommand({
+      ...budgetBody,
+      ...other,
+      clientCommandId: randomUUID(),
+      fields: {
+        ...budgetBody.fields,
+        categoryId: otherBudgetCategory.categoryId,
+      },
+    });
+    console.log(
+      "V2-C exact category-period budgets, immutable audit/replay and nonfinancial lifecycle evidence passed.",
+    );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
     await getAuthPool().query(
@@ -2673,6 +2768,7 @@ async function main() {
         "recurrence_version",
         "expected_occurrence",
         "occurrence_actual_link",
+        "budget",
       ])
         assert.equal(
           (
@@ -2683,6 +2779,11 @@ async function main() {
           ).rowCount,
           0,
         );
+      assert.equal(
+        (await getBudget({ ...other, budgetId: preservedBudget.budgetId }))
+          .budget.version,
+        1,
+      );
       assert.equal(
         (
           await getRecurringObligation({

@@ -1,4 +1,5 @@
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
+import { BudgetSurfacePanel } from "@/components/money/budget-comparison";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { AgendaList } from "@/components/calendar/agenda-list";
@@ -240,6 +241,7 @@ export function DashboardView({
         data={data.finance.cardSurface}
         currency={data.currency}
       />
+      <BudgetSurfacePanel data={data.finance.budgets} period={data.period} />
       <Panel
         title="Career snapshot"
         description={`Open, unarchived attempts and scheduled events from ${data.today} through ${data.horizon}. Event counts are separate from application counts.`}

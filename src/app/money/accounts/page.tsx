@@ -173,6 +173,12 @@ export default async function MoneyAccountsPage() {
           >
             Recurring obligations
           </Link>
+          <Link
+            href="/money/budgets"
+            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+          >
+            Budgets
+          </Link>
         </header>
 
         {accounts ? (
