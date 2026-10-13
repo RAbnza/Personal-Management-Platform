@@ -101,6 +101,11 @@ import {
   listDebts,
 } from "../../src/modules/finance/services/read-debts";
 import { listAgendaItems } from "../../src/modules/time/services/list-agenda-items";
+import { recordRecurringCommand } from "../../src/modules/planning/services/recurring";
+import {
+  getRecurringObligation,
+  getRecurringOccurrence,
+} from "../../src/modules/planning/services/read-recurring";
 import { withDomainTransaction } from "../../src/platform/db";
 import {
   getAccountReconciliationSetup,
@@ -191,21 +196,24 @@ async function main() {
       process.argv.includes("--upgrade-a2") ||
       process.argv.includes("--upgrade-a3") ||
       process.argv.includes("--upgrade-a4") ||
-      process.argv.includes("--upgrade-a5")
+      process.argv.includes("--upgrade-a5") ||
+      process.argv.includes("--upgrade-a6")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-a5")
-        ? 89
-        : process.argv.includes("--upgrade-a4")
-          ? 86
-          : process.argv.includes("--upgrade-a3")
-            ? 82
-            : process.argv.includes("--upgrade-a2")
-              ? 80
-              : process.argv.includes("--upgrade-a1")
-                ? 78
-                : process.argv.includes("--upgrade-v1")
-                  ? 76
-                  : 67;
+      const baselineCount = process.argv.includes("--upgrade-a6")
+        ? 94
+        : process.argv.includes("--upgrade-a5")
+          ? 89
+          : process.argv.includes("--upgrade-a4")
+            ? 86
+            : process.argv.includes("--upgrade-a3")
+              ? 82
+              : process.argv.includes("--upgrade-a2")
+                ? 80
+                : process.argv.includes("--upgrade-a1")
+                  ? 78
+                  : process.argv.includes("--upgrade-v1")
+                    ? 76
+                    : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -2452,6 +2460,88 @@ async function main() {
     console.log(
       "V2-A4 actual payment/replay, explicit partial allocation/reversal, unchanged provider snapshot and exact due passed; purge includes immutable allocation history.",
     );
+    const recurringBody = {
+      ...owner,
+      operation: "definition" as const,
+      clientCommandId: randomUUID(),
+      obligationId: null,
+      expectedVersion: null,
+      name: "Committed recurring migration smoke",
+      kind: "bill" as const,
+      reason: null,
+      rule: {
+        effectiveFrom: "2026-10-01",
+        frequency: "monthly" as const,
+        intervalCount: 1,
+        weekdays: null,
+        dayOfMonth: 10,
+        shortMonthPolicy: "last_valid_day" as const,
+        endsOn: null,
+        occurrenceLimit: 3,
+        expectedMinor: "1000",
+        currency: "PHP" as const,
+        categoryId: null,
+        defaultAccountId: null,
+        timezone: "Asia/Manila",
+      },
+      window: { from: "2026-10-01", through: "2026-12-31" },
+    };
+    const beforeRecurring = await getCreditCardDetail({
+      ...owner,
+      cardId: card.cardId,
+    });
+    const recurring = await recordRecurringCommand(recurringBody);
+    assert.deepEqual(await recordRecurringCommand(recurringBody), recurring);
+    assert.equal(recurring.occurrenceIds!.length, 3);
+    const link = await recordRecurringCommand({
+      ...owner,
+      operation: "link",
+      clientCommandId: randomUUID(),
+      occurrenceId: recurring.occurrenceIds![0]!,
+      expectedVersion: 1,
+      actionId: recordedCardPurchase.actionId,
+      actionRevisionId: recordedCardPurchase.actionRevisionId,
+      linkedMinor: "1000",
+    });
+    assert.equal(
+      (
+        await getRecurringOccurrence({
+          ...owner,
+          occurrenceId: recurring.occurrenceIds![0]!,
+        })
+      ).occurrence.state,
+      "completed",
+    );
+    await recordRecurringCommand({
+      ...owner,
+      operation: "unlink",
+      clientCommandId: randomUUID(),
+      linkId: link.linkId!,
+      expectedOccurrenceVersion: 2,
+      reason: "Migration reversal smoke",
+    });
+    assert.equal(
+      (
+        await getRecurringOccurrence({
+          ...owner,
+          occurrenceId: recurring.occurrenceIds![0]!,
+        })
+      ).remainingMinor,
+      "1000",
+    );
+    assert.equal(
+      (await getCreditCardDetail({ ...owner, cardId: card.cardId })).card
+        .postedOutstandingMinor,
+      beforeRecurring.card.postedOutstandingMinor,
+    );
+    const preservedRecurring = await recordRecurringCommand({
+      ...recurringBody,
+      ...other,
+      clientCommandId: randomUUID(),
+    });
+    console.log(
+      "V2-B bounded recurring evidence/replay, explicit actual linkage/reversal and unchanged card liability passed; complete planning history is included in purge.",
+    );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
     await getAuthPool().query(
@@ -2578,6 +2668,30 @@ async function main() {
           ).rowCount,
           0,
         );
+      for (const table of [
+        "recurring_obligation",
+        "recurrence_version",
+        "expected_occurrence",
+        "occurrence_actual_link",
+      ])
+        assert.equal(
+          (
+            await fixtureAdministrator.query(
+              `SELECT workspace_id FROM planning.${table} WHERE workspace_id=$1`,
+              [owner.workspaceId],
+            )
+          ).rowCount,
+          0,
+        );
+      assert.equal(
+        (
+          await getRecurringObligation({
+            ...other,
+            obligationId: preservedRecurring.obligationId,
+          })
+        ).occurrences.items.length,
+        3,
+      );
       assert.equal(
         (
           await getCardInstallmentPlan({

@@ -113,6 +113,18 @@ async function validateSource(
     throw new RangeError(
       "This action is already reversed. Record a new genuine action if needed.",
     );
+  const planningAvailable = await t.db.execute<{ available: boolean }>(
+    sql`SELECT to_regclass('planning.effective_occurrence_link_v') IS NOT NULL AS available`,
+  );
+  if (planningAvailable.rows[0]?.available) {
+    const recurringLinks = await t.db.execute(
+      sql`SELECT id FROM planning.effective_occurrence_link_v WHERE workspace_id=${a.workspaceId}::uuid AND action_id=${a.actionId}::uuid LIMIT 1`,
+    );
+    if (recurringLinks.rows.length)
+      throw new FinancialCorrectionStaleError(
+        "Reverse the recurring occurrence links before correcting or reversing this actual transaction. Then review and explicitly link the corrected evidence.",
+      );
+  }
   const links = await t.db.execute<{
     debtId: string;
     liabilityLedgerId: string;
@@ -1074,10 +1086,37 @@ export async function getFinancialActionDetailInTransaction(
   );
   const closedDebt =
     linkedDebt.rows[0] && linkedDebt.rows[0].lifecycle !== "active";
-  const dependentClosure =
+  let dependentClosure =
     closedDebt || current.actionKind === "debt_settlement"
       ? "This action has dependent settlement and closing-schedule evidence. Corrections and reversals require an explicit resolution of that closure, which this workflow does not provide."
       : null;
+  let recurringLinks: Array<{
+    occurrenceId: string;
+    name: string;
+    dueDate: string;
+    linkedMinor: string;
+    state: string;
+  }> = [];
+  let recurringLinksHaveMore = false;
+  const planningAvailable = await t.db.execute<{ available: boolean }>(
+    sql`SELECT to_regclass('planning.effective_occurrence_link_v') IS NOT NULL AS available`,
+  );
+  if (planningAvailable.rows[0]?.available) {
+    const links = await t.db.execute<{
+      occurrenceId: string;
+      name: string;
+      dueDate: string;
+      linkedMinor: string;
+      state: string;
+    }>(
+      sql`SELECT o.id AS "occurrenceId",p.name,o.due_date::text AS "dueDate",l.linked_minor::text AS "linkedMinor",o.state FROM planning.effective_occurrence_link_v l JOIN planning.expected_occurrence o ON o.workspace_id=l.workspace_id AND o.id=l.occurrence_id JOIN planning.recurring_obligation p ON p.workspace_id=o.workspace_id AND p.id=o.obligation_id WHERE l.workspace_id=${input.workspaceId}::uuid AND l.action_id=${input.actionId}::uuid ORDER BY o.due_date,o.id LIMIT 101`,
+    );
+    recurringLinks = links.rows.slice(0, 100);
+    recurringLinksHaveMore = links.rows.length > 100;
+    if (links.rows.length)
+      dependentClosure =
+        "Reverse this transaction's recurring occurrence links first. Then correct or reverse the actual evidence and explicitly relink its supported current revision.";
+  }
   return {
     current,
     history,
@@ -1086,6 +1125,9 @@ export async function getFinancialActionDetailInTransaction(
     cashEffects: rows.rows.map((r) => r.item),
     replacement,
     installments: installments.rows,
+    ...(recurringLinks.length
+      ? { recurringLinks, recurringLinksHaveMore }
+      : {}),
     ...(dependentClosure
       ? {
           correctionUnavailableReason: dependentClosure,

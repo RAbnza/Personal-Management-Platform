@@ -133,11 +133,13 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                       ? "Open application"
                       : item.sourceKind === "debt_installment"
                         ? "Open debt"
-                        : item.sourceKind === "card_statement"
-                          ? "Open statement"
-                          : item.sourceKind === "card_installment"
-                            ? "Open installment plan"
-                            : "Open personal event";
+                        : item.sourceKind === "expected_occurrence"
+                          ? "Planned recurring obligation"
+                          : item.sourceKind === "card_statement"
+                            ? "Open statement"
+                            : item.sourceKind === "card_installment"
+                              ? "Open installment plan"
+                              : "Open personal event";
 
                   return (
                     <li
@@ -161,9 +163,16 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                               />
                             )}
 
-                            <p className="text-sm font-semibold text-foreground">
+                            <p className="min-w-0 max-w-full break-words text-sm font-semibold text-foreground">
                               {item.title}
                             </p>
+                            {item.sourceKind === "expected_occurrence" &&
+                              item.temporal.kind === "date" &&
+                              item.temporal.timezone && (
+                                <span className="text-xs text-muted-foreground">
+                                  Definition timezone: {item.temporal.timezone}
+                                </span>
+                              )}
 
                             <span className="text-xs font-medium text-muted-foreground">
                               {moduleLabels[item.displayModule]}
@@ -218,11 +227,13 @@ export function AgendaList({ agenda, moduleEnabled }: AgendaListProps) {
                               </p>
                               {item.reminder.remainingMinor !== null ? (
                                 <p className="text-muted-foreground">
-                                  {item.sourceKind === "card_statement"
-                                    ? "Verified statement remaining due:"
-                                    : item.sourceKind === "card_installment"
-                                      ? "Projected remaining obligation:"
-                                      : "Contractual amount remaining:"}{" "}
+                                  {item.sourceKind === "expected_occurrence"
+                                    ? "Planned amount remaining"
+                                    : item.sourceKind === "card_statement"
+                                      ? "Verified statement remaining due:"
+                                      : item.sourceKind === "card_installment"
+                                        ? "Projected remaining obligation:"
+                                        : "Contractual amount remaining:"}{" "}
                                   {formatMoneyMinorUnits(
                                     "PHP",
                                     item.reminder.remainingMinor,

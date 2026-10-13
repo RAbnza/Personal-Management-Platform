@@ -17,6 +17,7 @@ import type { CreditCardReadModel } from "@/modules/finance/services/read-credit
 import { isCalendarDate } from "@/shared/calendar-date";
 import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
+import { exactDecimal } from "@/modules/reporting/domain/reports";
 
 const decimalAmountPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 
@@ -230,7 +231,7 @@ const incomeClassOptions = [
 
 async function postFinancialAction(
   command: PendingFinancialCommand,
-): Promise<Response> {
+): Promise<{ response: Response; actionId: string | null }> {
   const abort = new AbortController(),
     timeout = setTimeout(() => abort.abort(), 20000);
   try {
@@ -247,6 +248,7 @@ async function postFinancialAction(
       cache: "no-store",
       signal: abort.signal,
     });
+    let actionId: string | null = null;
     if (response.ok) {
       const result = z
         .object({
@@ -257,8 +259,9 @@ async function postFinancialAction(
         })
         .safeParse(await response.json());
       if (!result.success) throw new Error("Save outcome unconfirmed");
+      actionId = result.data.actionId;
     }
-    return response;
+    return { response, actionId };
   } finally {
     clearTimeout(timeout);
   }
@@ -271,6 +274,15 @@ export interface TransactionCreateFormProps {
   accounts: readonly FinancialAccountListItem[];
 
   categories: readonly CategoryListItem[];
+  planningSuggestion?: {
+    occurrenceId: string;
+    occurrenceVersion: number;
+    kind: "income" | "bill" | "subscription";
+    remainingMinor: string;
+    name: string;
+    accountId: string | null;
+    categoryId: string | null;
+  };
 }
 
 export function TransactionCreateForm({
@@ -278,6 +290,7 @@ export function TransactionCreateForm({
   accounts,
   categories,
   cards = [],
+  planningSuggestion,
 }: TransactionCreateFormProps) {
   const router = useRouter();
 
@@ -303,20 +316,32 @@ export function TransactionCreateForm({
     resolver: zodResolver(transactionFormSchema),
 
     defaultValues: {
-      actionKind: "expense",
+      actionKind: planningSuggestion?.kind === "income" ? "income" : "expense",
 
-      accountId: accounts[0]?.accountId ?? cards[0]?.cardId ?? "",
+      accountId: planningSuggestion
+        ? (accounts.find((a) => a.accountId === planningSuggestion.accountId)
+            ?.accountId ?? "")
+        : (accounts[0]?.accountId ?? cards[0]?.cardId ?? ""),
 
       effectiveDate: "",
 
-      amount: "",
+      amount: planningSuggestion
+        ? exactDecimal(planningSuggestion.remainingMinor)
+        : "",
 
-      categoryId: "",
+      categoryId:
+        categories.find((c) => c.categoryId === planningSuggestion?.categoryId)
+          ?.categoryId ?? "",
 
       expenseSplits: [
         {
-          amount: "",
-          categoryId: "",
+          amount: planningSuggestion
+            ? exactDecimal(planningSuggestion.remainingMinor)
+            : "",
+          categoryId:
+            categories.find(
+              (c) => c.categoryId === planningSuggestion?.categoryId,
+            )?.categoryId ?? "",
         },
       ],
 
@@ -324,7 +349,7 @@ export function TransactionCreateForm({
 
       counterpartyName: "",
 
-      description: "",
+      description: planningSuggestion?.name ?? "",
 
       reference: "",
 
@@ -497,16 +522,18 @@ export function TransactionCreateForm({
     setSaveError(null);
 
     try {
-      const response = await postFinancialAction(command);
+      const { response, actionId } = await postFinancialAction(command);
 
       if (response.ok) {
         setPendingCommand(null);
         setSaveState("saved");
 
         router.push(
-          command.payload.actionKind === "card_purchase"
-            ? "/money/actions"
-            : "/money/accounts",
+          planningSuggestion
+            ? `/money/recurring/occurrences/${planningSuggestion.occurrenceId}?preferredActionId=${actionId}`
+            : command.payload.actionKind === "card_purchase"
+              ? "/money/actions"
+              : "/money/accounts",
         );
 
         return;

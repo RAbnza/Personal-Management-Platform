@@ -15,6 +15,7 @@ import type { ScopedTransaction } from "../../src/platform/db/scoped-transaction
 import { provisionPersonalWorkspace } from "../../src/modules/core/services/provision-personal-workspace";
 import { openFinancialAccount } from "../../src/modules/finance/services/open-financial-account";
 import { recordIncome } from "../../src/modules/finance/services/record-income";
+import { recordRecurringCommand } from "../../src/modules/planning/services/recurring";
 import { getFinancialReportInTransaction } from "../../src/modules/reporting/services/get-reports";
 import { applyRestoreDeletion } from "../../src/platform/lifecycle/restore-deletion";
 import {
@@ -69,6 +70,7 @@ async function snapshot(client: Client) {
           "time",
           "audit",
           "ops",
+          "planning",
           "drizzle",
           "pgboss",
         ],
@@ -210,7 +212,7 @@ async function main() {
       openingCutoffDate: "2026-09-30",
       openingBalanceMinor: "200000",
     });
-    await recordIncome({
+    const actualIncome = await recordIncome({
       ...target,
       clientCommandId: randomUUID(),
       receivingAccountId: account.accountId,
@@ -218,6 +220,50 @@ async function main() {
       amountMinor: "1000000",
       incomeClass: "earned",
       description: "Restore fixture salary",
+    });
+    const recurringBody = {
+      operation: "definition" as const,
+      clientCommandId: randomUUID(),
+      obligationId: null,
+      expectedVersion: null,
+      name: "Restore recurring salary",
+      kind: "income" as const,
+      reason: null,
+      rule: {
+        effectiveFrom: "2026-10-01",
+        frequency: "monthly" as const,
+        intervalCount: 1,
+        weekdays: null,
+        dayOfMonth: 2,
+        shortMonthPolicy: "last_valid_day" as const,
+        endsOn: null,
+        occurrenceLimit: 3,
+        expectedMinor: "1000000",
+        currency: "PHP" as const,
+        categoryId: null,
+        defaultAccountId: null,
+        timezone: "Asia/Manila",
+      },
+      window: { from: "2026-10-01", through: "2026-12-31" },
+    };
+    const restoredPlan = await recordRecurringCommand({
+      ...recurringBody,
+      ...target,
+    });
+    await recordRecurringCommand({
+      ...target,
+      operation: "link",
+      clientCommandId: randomUUID(),
+      occurrenceId: restoredPlan.occurrenceIds![0]!,
+      expectedVersion: 1,
+      actionId: actualIncome.actionId,
+      actionRevisionId: actualIncome.actionRevisionId,
+      linkedMinor: "200000",
+    });
+    const otherPlan = await recordRecurringCommand({
+      ...recurringBody,
+      ...other,
+      clientCommandId: randomUUID(),
     });
     await getAuthPool().query(
       "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 day')",
@@ -324,6 +370,24 @@ async function main() {
         );
         assert.match(JSON.stringify(report), /1000000/);
         assert.match(JSON.stringify(report), /1200000/);
+        const recurringDue = await domain.query(
+          "SELECT state,linked_minor::text AS linked,remaining_minor::text AS remaining FROM planning.occurrence_due_v WHERE workspace_id=$1 AND id=$2",
+          [target.workspaceId, restoredPlan.occurrenceIds![0]],
+        );
+        assert.deepEqual(recurringDue.rows[0], {
+          state: "linked",
+          linked: "200000",
+          remaining: "800000",
+        });
+        assert.equal(
+          (
+            await domain.query(
+              "SELECT id FROM planning.recurring_obligation WHERE id=$1",
+              [otherPlan.obligationId],
+            )
+          ).rowCount,
+          0,
+        );
         await domain.query("COMMIT");
       } finally {
         await domain.end();
@@ -397,6 +461,30 @@ async function main() {
         for (let n = 0; n < 8 && outcome.state !== "completed"; n++)
           outcome = await purgeDeletionStep(operator, saved.requestId);
         assert.equal(outcome.state, "completed");
+        for (const table of [
+          "recurring_obligation",
+          "recurrence_version",
+          "expected_occurrence",
+          "occurrence_actual_link",
+        ])
+          assert.equal(
+            (
+              await restored.query(
+                `SELECT id FROM planning.${table} WHERE workspace_id=$1`,
+                [target.workspaceId],
+              )
+            ).rowCount,
+            0,
+          );
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM planning.recurring_obligation WHERE id=$1",
+              [otherPlan.obligationId],
+            )
+          ).rowCount,
+          1,
+        );
         await applyRestoreDeletion(operator, saved);
         assert.equal(
           (
@@ -491,7 +579,7 @@ async function main() {
         const tables = (
           await admin.query(
             "SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema=ANY($1)",
-            [["core", "finance", "career", "time", "audit", "ops"]],
+            [["core", "finance", "career", "time", "audit", "ops", "planning"]],
           )
         ).rows;
         for (const t of tables)

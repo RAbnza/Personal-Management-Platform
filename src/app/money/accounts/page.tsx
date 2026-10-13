@@ -167,6 +167,12 @@ export default async function MoneyAccountsPage() {
           >
             Credit cards
           </Link>
+          <Link
+            href="/money/recurring"
+            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+          >
+            Recurring obligations
+          </Link>
         </header>
 
         {accounts ? (

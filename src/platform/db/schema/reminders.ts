@@ -18,6 +18,7 @@ import { applicationEvent } from "./career";
 import { debtObligation } from "./finance";
 import { cardStatement } from "./card-statements";
 import { cardInstallment } from "./card-installments";
+import { expectedOccurrence } from "./planning";
 import { timeSchema } from "./namespaces";
 
 const scope = () => ({
@@ -33,6 +34,7 @@ const scope = () => ({
   debtObligationId: uuid("debt_obligation_id"),
   cardStatementId: uuid("card_statement_id"),
   cardInstallmentId: uuid("card_installment_id"),
+  expectedOccurrenceId: uuid("expected_occurrence_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -47,9 +49,21 @@ const cardSourceConstraints = (
     workspaceId: AnyPgColumn;
     cardStatementId: AnyPgColumn;
     cardInstallmentId: AnyPgColumn;
+    expectedOccurrenceId: AnyPgColumn;
   },
   name: string,
 ) => [
+  foreignKey({
+    name: `fk_${name}_expected_occurrence`,
+    columns: [t.workspaceId, t.expectedOccurrenceId],
+    foreignColumns: [expectedOccurrence.workspaceId, expectedOccurrence.id],
+  })
+    .onDelete("restrict")
+    .onUpdate("restrict"),
+  index(`ix_${name}_expected_occurrence`).on(
+    t.workspaceId,
+    t.expectedOccurrenceId,
+  ),
   foreignKey({
     name: `fk_${name}_card_statement`,
     columns: [t.workspaceId, t.cardStatementId],
@@ -92,6 +106,7 @@ export const reminderRule = timeSchema.table(
         t.debtObligationId,
         t.cardStatementId,
         t.cardInstallmentId,
+        t.expectedOccurrenceId,
         t.moduleKey,
         t.channel,
         t.offsetDays,
@@ -124,7 +139,7 @@ export const reminderRule = timeSchema.table(
     index("ix_reminder_rule_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_rule_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.moduleKey})=1 AND (${t.moduleKey} IS NULL OR ${t.moduleKey} IN ('money','career','time'))`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.expectedOccurrenceId},${t.moduleKey})=1 AND (${t.moduleKey} IS NULL OR ${t.moduleKey} IN ('money','career','time'))`,
     ),
     check(
       "ck_reminder_rule_shape",
@@ -156,6 +171,7 @@ export const sourceReminderSetting = timeSchema.table(
         t.debtObligationId,
         t.cardStatementId,
         t.cardInstallmentId,
+        t.expectedOccurrenceId,
       )
       .nullsNotDistinct(),
     foreignKey({
@@ -184,7 +200,7 @@ export const sourceReminderSetting = timeSchema.table(
     index("ix_reminder_setting_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_setting_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.expectedOccurrenceId})=1`,
     ),
     check(
       "ck_reminder_setting_mode",
@@ -192,7 +208,7 @@ export const sourceReminderSetting = timeSchema.table(
     ),
     check(
       "ck_reminder_setting_generation",
-      sql`${t.notificationGeneration}>0 AND (num_nonnulls(${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1 OR ${t.notificationGeneration}=1)`,
+      sql`${t.notificationGeneration}>0 AND (num_nonnulls(${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.expectedOccurrenceId})=1 OR ${t.notificationGeneration}=1)`,
     ),
   ],
 );
@@ -223,6 +239,7 @@ export const reminderOccurrence = timeSchema.table(
         t.debtObligationId,
         t.cardStatementId,
         t.cardInstallmentId,
+        t.expectedOccurrenceId,
         t.occurrenceKey,
         t.sourceGeneration,
         t.ruleGeneration,
@@ -273,7 +290,7 @@ export const reminderOccurrence = timeSchema.table(
     index("ix_reminder_occurrence_debt").on(t.workspaceId, t.debtObligationId),
     check(
       "ck_reminder_occurrence_source",
-      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId})=1`,
+      sql`num_nonnulls(${t.personalEventId},${t.applicationEventId},${t.debtObligationId},${t.cardStatementId},${t.cardInstallmentId},${t.expectedOccurrenceId})=1`,
     ),
     check(
       "ck_reminder_occurrence_identity",

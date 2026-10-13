@@ -113,6 +113,7 @@ export type ListAgendaItemsInput = z.input<typeof listAgendaItemsInputSchema>;
 
 export type AgendaDateTemporalValue = {
   kind: "date";
+  timezone?: string;
 
   eventDate: CalendarDate;
   endDateExclusive: CalendarDate | null;
@@ -368,6 +369,7 @@ function expectedDisplayModule(
     case "debt_installment":
     case "card_statement":
     case "card_installment":
+    case "expected_occurrence":
       return "money";
   }
 }
@@ -448,6 +450,9 @@ function mapAgendaItem(row: AgendaListQueryRow): AgendaItem {
 
       eventDate,
       endDateExclusive,
+      ...(sourceKind === "expected_occurrence" && row.definition_timezone
+        ? { timezone: row.definition_timezone }
+        : {}),
     };
   } else if (row.temporal_kind === "timed") {
     if (
@@ -536,6 +541,12 @@ async function executeListAgendaItems(
 
   for (const row of visibleRows) {
     if (row.source_id === null) {
+      continue;
+    }
+
+    if (row.source_kind === "expected_occurrence") {
+      sourceRoutes[`expected_occurrence:${row.source_id}`] =
+        `/money/recurring/occurrences/${row.source_id}`;
       continue;
     }
 

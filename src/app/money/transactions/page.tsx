@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import { z } from "zod";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 
 import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
@@ -17,8 +18,14 @@ import {
   type ListFinancialAccountsResult,
 } from "@/modules/finance/services/list-financial-accounts";
 import { listCreditCards } from "@/modules/finance/services/read-credit-cards";
+import { getRecurringOccurrence } from "@/modules/planning/services/read-recurring";
+import { PlanningUnavailableError } from "@/modules/planning/domain/recurrence";
 
-export default async function MoneyTransactionsPage() {
+export default async function MoneyTransactionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recurringOccurrenceId?: string }>;
+}) {
   const bootstrap = await resolvePrivateAppBootstrap(await headers());
 
   if (bootstrap.kind === "unauthorized") {
@@ -52,6 +59,35 @@ export default async function MoneyTransactionsPage() {
   }
 
   const { user, workspace, preference, modules } = bootstrap;
+  const { recurringOccurrenceId } = await searchParams;
+  let planningSuggestion;
+  if (recurringOccurrenceId) {
+    if (!z.uuid().safeParse(recurringOccurrenceId).success) notFound();
+    try {
+      const occurrence = await getRecurringOccurrence({
+        userId: user.id,
+        workspaceId: workspace.id,
+        occurrenceId: recurringOccurrenceId,
+      });
+      if (
+        !["planned", "linked"].includes(occurrence.occurrence.state) ||
+        BigInt(occurrence.remainingMinor) <= 0n
+      )
+        notFound();
+      planningSuggestion = {
+        occurrenceId: recurringOccurrenceId,
+        occurrenceVersion: occurrence.occurrence.version,
+        kind: occurrence.root.kind,
+        remainingMinor: occurrence.remainingMinor,
+        name: occurrence.root.name,
+        accountId: occurrence.rule.defaultAccountId,
+        categoryId: occurrence.rule.categoryId,
+      };
+    } catch (error) {
+      if (error instanceof PlanningUnavailableError) notFound();
+      throw error;
+    }
+  }
 
   const moneyEnabled =
     modules.find((module) => module.moduleKey === "money")?.enabled === true;
@@ -206,10 +242,16 @@ export default async function MoneyTransactionsPage() {
           </Panel>
         ) : (
           <TransactionCreateForm
+            key={
+              planningSuggestion
+                ? `${planningSuggestion.occurrenceId}:${planningSuggestion.occurrenceVersion}`
+                : "ordinary-transaction"
+            }
             currency={workspace.currency}
             accounts={transactionSetup.accounts.items}
             categories={transactionSetup.categories.items}
             cards={transactionSetup.cards.items}
+            {...(planningSuggestion ? { planningSuggestion } : {})}
           />
         )}
       </div>

@@ -167,7 +167,7 @@ export function ReminderControls({ initial }: { initial: ReminderView }) {
           <p>
             Source date: <strong>{view.dueDate}</strong>
             {view.remainingMinor !== null
-              ? ` · ${"sourceKind" in view.target && view.target.sourceKind === "card_statement" ? "Verified statement remaining due" : "sourceKind" in view.target && view.target.sourceKind === "card_installment" ? "Projected remaining obligation" : "Contractual amount remaining"}: ${formatMoneyMinorUnits("PHP", view.remainingMinor)}`
+              ? ` · ${"sourceKind" in view.target && view.target.sourceKind === "expected_occurrence" ? "Planned amount remaining" : "sourceKind" in view.target && view.target.sourceKind === "card_statement" ? "Verified statement remaining due" : "sourceKind" in view.target && view.target.sourceKind === "card_installment" ? "Projected remaining obligation" : "Contractual amount remaining"}: ${formatMoneyMinorUnits("PHP", view.remainingMinor)}`
               : ""}
           </p>
         ) : null}

@@ -246,10 +246,10 @@ export type CorrectFinancialActionBody = z.input<
   typeof correctFinancialActionBodySchema
 >;
 export class FinancialCorrectionStaleError extends Error {
-  constructor() {
-    super(
-      "Financial evidence changed. Reload the current action and review the correction again.",
-    );
+  constructor(
+    message = "Financial evidence changed. Reload the current action and review the correction again.",
+  ) {
+    super(message);
     this.name = "FinancialCorrectionStaleError";
   }
 }

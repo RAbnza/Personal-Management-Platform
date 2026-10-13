@@ -43,6 +43,12 @@ export default async function DebtLayout({
             Credit cards
           </Link>
           <Link
+            href="/money/recurring"
+            className="inline-flex min-h-11 items-center"
+          >
+            Recurring obligations
+          </Link>
+          <Link
             className="inline-flex min-h-11 items-center"
             href="/money/actions"
           >

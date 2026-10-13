@@ -9,13 +9,19 @@ type Pending = {
   summary: string[];
 };
 export function useCardEvidenceCommand(
-  destination: string,
+  destination: string | ((id: string) => string),
   successField:
-    "actionId" | "allocationId" | "planId" | "applicationId" = "actionId",
+    | "actionId"
+    | "allocationId"
+    | "planId"
+    | "applicationId"
+    | "obligationId" = "actionId",
 ) {
   const router = useRouter(),
     [pending, setPending] = useState<Pending | null>(null),
-    [phase, setPhase] = useState<"review" | "saving" | "uncertain">("review"),
+    [phase, setPhase] = useState<
+      "review" | "saving" | "uncertain" | "confirmed"
+    >("review"),
     [error, setError] = useState<string | null>(null),
     busy = useRef(false),
     uncertain = useRef(false);
@@ -49,6 +55,7 @@ export function useCardEvidenceCommand(
     setError(null);
     const controller = new AbortController(),
       timer = setTimeout(() => controller.abort(), 20000);
+    let confirmed = false;
     try {
       const response = await fetch(pending.path, {
         method: "POST",
@@ -84,11 +91,22 @@ export function useCardEvidenceCommand(
         })
         .passthrough()
         .parse(value);
-      z.uuid().parse(result[successField]);
+      const successId = z.uuid().parse(result[successField]);
+      confirmed = true;
+      setPhase("confirmed");
       setPending(null);
-      router.push(destination);
+      router.push(
+        typeof destination === "string" ? destination : destination(successId),
+      );
       router.refresh();
     } catch {
+      if (confirmed) {
+        setPhase("confirmed");
+        setError(
+          "Recorded. Reload to load updated private history before entering another command.",
+        );
+        return;
+      }
       uncertain.current = true;
       setPhase("uncertain");
       setError(
@@ -100,6 +118,7 @@ export function useCardEvidenceCommand(
     }
   }
   function prepare(p: Pending) {
+    if (busy.current || phase === "confirmed") return;
     uncertain.current = false;
     setError(null);
     setPhase("review");
@@ -119,8 +138,12 @@ export function useCardEvidenceCommand(
 }
 export function CardEvidenceCommandReview({
   command,
+  title = "Review card command",
+  description = "Preserve this confirmed evidence. Corrections retain history and require new allocation confirmation for superseded revisions.",
 }: {
   command: ReturnType<typeof useCardEvidenceCommand>;
+  title?: string;
+  description?: string;
 }) {
   const review = useRef<HTMLHeadingElement>(null),
     errorRef = useRef<HTMLParagraphElement>(null);
@@ -132,6 +155,9 @@ export function CardEvidenceCommandReview({
   }, [command.error]);
   return (
     <>
+      {command.phase === "confirmed" && (
+        <p role="status">Recorded. Loading your updated private history…</p>
+      )}
       {command.error && (
         <p ref={errorRef} tabIndex={-1} role="alert" className="text-danger">
           {command.error}
@@ -140,20 +166,17 @@ export function CardEvidenceCommandReview({
       {command.pending && (
         <section
           className="space-y-3 rounded-md border border-border p-4"
-          aria-label="Review card command"
+          aria-label={title}
         >
           <h2 ref={review} tabIndex={-1} className="text-xl font-semibold">
-            Review card command
+            {title}
           </h2>
           <ul>
             {command.pending.summary.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
           </ul>
-          <p>
-            Preserve this confirmed evidence. Corrections retain history and
-            require new allocation confirmation for superseded revisions.
-          </p>
+          <p>{description}</p>
           <div className="flex flex-wrap gap-3">
             <Button
               type="button"

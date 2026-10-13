@@ -4,6 +4,7 @@ export const AGENDA_SOURCE_KINDS = [
   "debt_installment",
   "card_statement",
   "card_installment",
+  "expected_occurrence",
 ] as const;
 
 export type AgendaSourceKind = (typeof AGENDA_SOURCE_KINDS)[number];

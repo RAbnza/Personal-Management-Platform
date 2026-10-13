@@ -101,6 +101,37 @@ export default async function FinancialActionPage({
           ))}
         </ul>
       </Panel>
+      {detail.recurringLinks?.length ? (
+        <details className="space-y-3 rounded-md border border-border p-4">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Recurring occurrence confirmations
+          </summary>
+          <p>
+            These confirmations do not post money. Reverse each effective
+            planning link before correcting this actual transaction.
+          </p>
+          <ul className="space-y-3">
+            {detail.recurringLinks.map((link) => (
+              <li key={link.occurrenceId}>
+                <Link
+                  href={`/money/recurring/occurrences/${link.occurrenceId}`}
+                  className="inline-block min-h-11 max-w-full break-words text-link underline"
+                >
+                  {link.name} · {link.dueDate} ·{" "}
+                  {formatMoneyMinorUnits(workspace.currency, link.linkedMinor)}{" "}
+                  linked · {link.state}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {detail.recurringLinksHaveMore && (
+            <p>
+              Showing the first 100 confirmations. Remaining confirmations are
+              available through recurring definition management.
+            </p>
+          )}
+        </details>
+      ) : null}
       {detail.current.actionKind === "card_purchase" &&
         detail.current.changeKind !== "void" &&
         typeof detail.current.evidence.cardId === "string" && (

@@ -48,6 +48,7 @@ export type AgendaListQueryRow = {
   starts_at: string | null;
   ends_at: string | null;
   timezone: string | null;
+  definition_timezone?: string | null;
 
   status: string | null;
 
@@ -179,7 +180,7 @@ export async function readAgendaPage(
             WHEN agenda."source_kind" =
               'personal_event'
             THEN 'time'
-            WHEN agenda."source_kind" IN ('debt_installment','card_statement','card_installment') THEN 'money'
+            WHEN agenda."source_kind" IN ('debt_installment','card_statement','card_installment','expected_occurrence') THEN 'money'
             ELSE NULL
           END AS "display_module",
 
@@ -223,7 +224,8 @@ export async function readAgendaPage(
 
           agenda."source_version",
 
-          context."workspace_today"
+          CASE WHEN agenda.source_kind='expected_occurrence' THEN (transaction_timestamp() AT TIME ZONE agenda.definition_timezone)::date ELSE context."workspace_today" END AS source_today,
+          agenda.definition_timezone
 
         FROM "workspace_context" AS context
 
@@ -376,6 +378,7 @@ export async function readAgendaPage(
         ) AS "ends_at",
 
         source."timezone",
+        source.definition_timezone,
 
         source."status",
 
@@ -386,11 +389,11 @@ export async function readAgendaPage(
           THEN NULL
 
           WHEN source."agenda_date" <
-            context."workspace_today"
+            source.source_today
           THEN 'overdue'
 
           WHEN source."agenda_date" =
-            context."workspace_today"
+            source.source_today
           THEN 'today'
 
           ELSE 'upcoming'

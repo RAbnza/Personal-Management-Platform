@@ -49,7 +49,7 @@ export default async function ReminderPage({
       workspacePreferenceVersion={preference.version}
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 break-words">
         <Link
           href="/calendar"
           className="inline-flex min-h-11 items-center font-semibold text-link underline"
