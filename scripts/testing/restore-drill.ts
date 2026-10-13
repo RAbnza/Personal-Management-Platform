@@ -1,3 +1,6 @@
+import { recordSavingsGoalCommand } from "../../src/modules/planning/services/savings-goals";
+import { getSavingsGoal } from "../../src/modules/planning/services/read-savings-goals";
+import { readSavingsGoals } from "../../src/modules/planning/repositories/savings-goal-repository";
 import "../../tests/setup/integration";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
@@ -318,6 +321,43 @@ async function main() {
         categoryId: otherBudgetCategory.categoryId,
       },
     });
+    const goalBody = {
+      ...target,
+      operation: "save" as const,
+      clientCommandId: randomUUID(),
+      goalId: null,
+      expectedVersion: null,
+      reason: null,
+      fields: {
+        name: "Restored savings target",
+        targetMinor: "30000",
+        targetDate: null,
+        notes: "Preserved conceptual reservation",
+      },
+    };
+    const restoredGoal = await recordSavingsGoalCommand(goalBody),
+      goalView = await getSavingsGoal({
+        ...target,
+        goalId: restoredGoal.goalId,
+      });
+    await recordSavingsGoalCommand({
+      ...target,
+      operation: "reserve",
+      clientCommandId: randomUUID(),
+      goalId: restoredGoal.goalId,
+      expectedVersion: goalView.goal.version,
+      expectedFinancialRevision: goalView.financialRevision,
+      financialAccountId: account.accountId,
+      reservedMinor: "20000",
+      reason: "Explicit restore reservation evidence",
+    });
+    const otherGoal = await recordSavingsGoalCommand({
+      ...goalBody,
+      ...other,
+      clientCommandId: randomUUID(),
+      fields: { ...goalBody.fields, name: "Other preserved savings goal" },
+    });
+
     await getAuthPool().query(
       "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 day')",
       [randomUUID(), target.userId, randomUUID()],
@@ -422,7 +462,33 @@ async function main() {
           },
         );
         assert.match(JSON.stringify(report), /1000000/);
-        assert.match(JSON.stringify(report), /1190000/);
+        assert.equal(report.metrics.closing_cash, "1190000");
+        const savingsView = await readSavingsGoals(
+          { db: drizzle(domain) } as ScopedTransaction,
+          target.workspaceId,
+          { goalId: restoredGoal.goalId, includeArchived: true },
+        );
+        assert.equal(savingsView.items[0]!.version, 2);
+        assert.equal(savingsView.items[0]!.reservedMinor, "20000");
+        assert.equal(savingsView.items[0]!.minimumMinor, "20000");
+        assert.equal(
+          (
+            await domain.query(
+              "SELECT id FROM audit.private_revision WHERE workspace_id=$1 AND (subject_kind='savings_goal' OR subject_kind='goal_reservation')",
+              [target.workspaceId],
+            )
+          ).rowCount,
+          3,
+        );
+        assert.equal(
+          (
+            await domain.query(
+              "SELECT id FROM planning.savings_goal WHERE id=$1",
+              [otherGoal.goalId],
+            )
+          ).rowCount,
+          0,
+        );
         const budgetView = await readBudgetComparisons(
           { db: drizzle(domain) } as ScopedTransaction,
           target.workspaceId,
@@ -545,6 +611,8 @@ async function main() {
           "expected_occurrence",
           "occurrence_actual_link",
           "budget",
+          "savings_goal",
+          "goal_reservation",
         ])
           assert.equal(
             (
@@ -568,6 +636,15 @@ async function main() {
             await restored.query(
               "SELECT id FROM planning.recurring_obligation WHERE id=$1",
               [otherPlan.obligationId],
+            )
+          ).rowCount,
+          1,
+        );
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM planning.savings_goal WHERE id=$1",
+              [otherGoal.goalId],
             )
           ).rowCount,
           1,

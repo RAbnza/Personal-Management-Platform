@@ -1,3 +1,4 @@
+import { SavingsGoalsSurface } from "@/components/money/savings-goal-comparison";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { BudgetSurfacePanel } from "@/components/money/budget-comparison";
 import Link from "next/link";
@@ -64,6 +65,7 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
   return (
     <div className="space-y-6">
       <CardSurfacePanel data={data.cardSurface} currency={data.currency} />
+      <SavingsGoalsSurface data={data.savingsGoals} today={data.today} />
       <BudgetSurfacePanel data={data.budgets} period={data.period} />
       <Panel title="Coverage and definitions">
         <p>{data.coverage.note}</p>

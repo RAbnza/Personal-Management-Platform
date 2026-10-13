@@ -28,6 +28,7 @@ export default async function BudgetLayout({
             ["Credit cards", "/money/cards"],
             ["Recurring obligations", "/money/recurring"],
             ["Budgets", "/money/budgets"],
+            ["Savings goals", "/money/goals"],
             ["Reports", "/reports/financial"],
           ].map(([name, href]) => (
             <Link

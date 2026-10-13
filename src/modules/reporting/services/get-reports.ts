@@ -1,3 +1,4 @@
+import { readSavingsGoals } from "@/modules/planning/repositories/savings-goal-repository";
 import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
 import { readBudgetComparisons } from "@/modules/planning/repositories/budget-repository";
 import { sql } from "drizzle-orm";
@@ -91,6 +92,9 @@ export async function getFinancialReportInTransaction(
   return {
     ...context,
     metrics,
+    savingsGoals: await readSavingsGoals(t, input.workspaceId, {
+      pageSize: 10,
+    }),
     budgets: await readBudgetComparisons(t, input.workspaceId, {
       startDate: period.startDate,
       endDateExclusive: period.endDateExclusive,

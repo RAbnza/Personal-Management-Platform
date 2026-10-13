@@ -179,6 +179,12 @@ export default async function MoneyAccountsPage() {
           >
             Budgets
           </Link>
+          <Link
+            href="/money/goals"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline"
+          >
+            Savings goals
+          </Link>
         </header>
 
         {accounts ? (

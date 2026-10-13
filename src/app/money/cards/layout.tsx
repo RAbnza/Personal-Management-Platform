@@ -55,6 +55,12 @@ export default async function CardsLayout({
             Budgets
           </Link>
           <Link
+            href="/money/goals"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline"
+          >
+            Savings goals
+          </Link>
+          <Link
             className="inline-flex min-h-11 items-center"
             href="/money/actions"
           >

@@ -1,3 +1,4 @@
+import { readSavingsGoals } from "@/modules/planning/repositories/savings-goal-repository";
 import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
 import { readBudgetComparisons } from "@/modules/planning/repositories/budget-repository";
 import { z } from "zod";
@@ -229,6 +230,9 @@ export async function getDashboardInTransaction(
       debts,
       cards,
       cardSurface,
+      savingsGoals: await readSavingsGoals(t, input.workspaceId, {
+        pageSize: 10,
+      }),
       budgets: await readBudgetComparisons(t, input.workspaceId, {
         startDate: period.startDate,
         endDateExclusive: period.endDateExclusive,

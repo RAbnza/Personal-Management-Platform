@@ -11,6 +11,7 @@ const labels = [
   "V2-A6 integrated fixture",
   "V2-B recurring fixture",
   "V2-C budget fixture",
+  "V2-D savings fixture",
 ] as const;
 /** Committed, large synthetic fixture teardown only. Never called by product
  * services. Mirrors established administrator fixture cleanup, with database,

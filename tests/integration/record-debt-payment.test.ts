@@ -155,33 +155,40 @@ async function totals(client: PoolClient, f: DebtFixture) {
 }
 
 describe("D8b transactional debt payments", () => {
-  it("paginates retained payment evidence without using a revision cursor to filter the debt header", async () =>
-    withFixture(async (client, f) => {
-      for (let index = 0; index < 55; index++)
-        await payment(client, f, { contractual: "1", due: "1" });
-      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
-      const t = transaction(client);
-      const first = await listDebtPaymentsInTransaction(t, {
-        ...scope(f),
-        debtId: f.debtId,
-      });
-      expect(first.items).toHaveLength(50);
-      expect(first.nextCursor).not.toBeNull();
-      const second = await listDebtPaymentsInTransaction(t, {
-        ...scope(f),
-        debtId: f.debtId,
-        after: first.nextCursor!,
-      });
-      expect(second.items).toHaveLength(5);
-      expect(second.nextCursor).toBeNull();
-      expect(
-        new Set(
-          [...first.items, ...second.items].map(
-            (item) => item.actionRevisionId,
-          ),
-        ).size,
-      ).toBe(55);
-    }));
+  // This case seeds 55 complete protected payment graphs before checking reads.
+  // Give bulk evidence setup an explicit budget; query latency is measured by
+  // the dedicated capacity checks rather than Vitest's generic five seconds.
+  it(
+    "paginates retained payment evidence without using a revision cursor to filter the debt header",
+    async () =>
+      withFixture(async (client, f) => {
+        for (let index = 0; index < 55; index++)
+          await payment(client, f, { contractual: "1", due: "1" });
+        await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+        const t = transaction(client);
+        const first = await listDebtPaymentsInTransaction(t, {
+          ...scope(f),
+          debtId: f.debtId,
+        });
+        expect(first.items).toHaveLength(50);
+        expect(first.nextCursor).not.toBeNull();
+        const second = await listDebtPaymentsInTransaction(t, {
+          ...scope(f),
+          debtId: f.debtId,
+          after: first.nextCursor!,
+        });
+        expect(second.items).toHaveLength(5);
+        expect(second.nextCursor).toBeNull();
+        expect(
+          new Set(
+            [...first.items, ...second.items].map(
+              (item) => item.actionRevisionId,
+            ),
+          ).size,
+        ).toBe(55);
+      }),
+    10000,
+  );
   it("rejects real foreign debt, account and due references, and keeps the due view isolated", async () =>
     withFixture(async (client, f) => {
       const { t, body } = await prepare(client, f);

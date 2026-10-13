@@ -90,6 +90,91 @@ export const budget = planningSchema.table(
     ),
   ],
 );
+export const savingsGoal = planningSchema.table(
+  "savings_goal",
+  {
+    ...identity(),
+    name: text("name").notNull(),
+    targetMinor: bigint("target_minor", { mode: "bigint" }).notNull(),
+    targetDate: date("target_date"),
+    status: text("status").default("active").notNull(),
+    notes: text("notes"),
+    version: integer("version").default(1).notNull(),
+    writeRevision: bigint("write_revision", { mode: "bigint" })
+      .default(sql`0`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    ...evidence(),
+  },
+  (t) => [
+    unique("uq_savings_goal_scope").on(t.workspaceId, t.id),
+    foreignKey({
+      columns: [t.workspaceId, t.commandReceiptId],
+      foreignColumns: [commandReceipt.workspaceId, commandReceipt.id],
+    }),
+    index("ix_savings_goal_status_date").on(
+      t.workspaceId,
+      t.status,
+      t.targetDate,
+      t.id,
+    ),
+    index("ix_savings_goal_command").on(t.workspaceId, t.commandReceiptId),
+    index("ix_savings_goal_actor").on(t.recordedByUserId),
+    check(
+      "ck_savings_goal_fields",
+      sql`char_length(btrim(${t.name})) BETWEEN 1 AND 200 AND ${t.targetMinor}>0 AND (${t.targetDate} IS NULL OR ${t.targetDate} BETWEEN '1900-01-01'::date AND '2199-12-31'::date) AND ${t.status} IN ('active','completed','archived') AND (${t.notes} IS NULL OR char_length(${t.notes})<=2000) AND ${t.version}>0 AND ${t.writeRevision}>=0`,
+    ),
+  ],
+);
+export const goalReservation = planningSchema.table(
+  "goal_reservation",
+  {
+    ...identity(),
+    goalId: uuid("goal_id").notNull(),
+    financialAccountId: uuid("financial_account_id").notNull(),
+    reservedMinor: bigint("reserved_minor", { mode: "bigint" }).notNull(),
+    version: integer("version").default(1).notNull(),
+    writeRevision: bigint("write_revision", { mode: "bigint" })
+      .default(sql`0`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    ...evidence(),
+  },
+  (t) => [
+    unique("uq_goal_reservation_scope").on(t.workspaceId, t.id),
+    unique("uq_goal_reservation_account").on(
+      t.workspaceId,
+      t.goalId,
+      t.financialAccountId,
+    ),
+    foreignKey({
+      columns: [t.workspaceId, t.goalId],
+      foreignColumns: [savingsGoal.workspaceId, savingsGoal.id],
+    }),
+    foreignKey({
+      columns: [t.workspaceId, t.financialAccountId],
+      foreignColumns: [financialAccount.workspaceId, financialAccount.id],
+    }),
+    foreignKey({
+      columns: [t.workspaceId, t.commandReceiptId],
+      foreignColumns: [commandReceipt.workspaceId, commandReceipt.id],
+    }),
+    index("ix_goal_reservation_account").on(
+      t.workspaceId,
+      t.financialAccountId,
+    ),
+    index("ix_goal_reservation_command").on(t.workspaceId, t.commandReceiptId),
+    index("ix_goal_reservation_actor").on(t.recordedByUserId),
+    check(
+      "ck_goal_reservation_fields",
+      sql`${t.reservedMinor}>=0 AND ${t.version}>0 AND ${t.writeRevision}>=0`,
+    ),
+  ],
+);
 export const recurringObligation = planningSchema.table(
   "recurring_obligation",
   {

@@ -36,6 +36,18 @@ export function dashboardFixture(): DashboardResult {
       debts: [],
       cards: [],
       cardSurface: emptyCardSurface(),
+      savingsGoals: {
+        items: [],
+        nextCursor: null,
+        summary: {
+          capacityMinor: "0",
+          reservedMinor: "0",
+          availableMinor: "0",
+          shortfallMinor: "0",
+          negativeCashMinor: "0",
+        },
+        definitionVersion: "v2-d-owned-cash-supported-bounds-1",
+      },
       budgets: {
         items: [],
         nextCursor: null,

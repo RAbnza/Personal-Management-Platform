@@ -1,3 +1,4 @@
+import { SavingsGoalsSurface } from "@/components/money/savings-goal-comparison";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { BudgetSurfacePanel } from "@/components/money/budget-comparison";
 import Link from "next/link";
@@ -174,7 +175,7 @@ export function DashboardView({
               {f.accounts.map((a) => (
                 <li key={a.account_id} className="py-2">
                   <Link
-                    className={linkClass}
+                    className="block min-h-11 max-w-full break-words text-sm font-semibold text-link underline-offset-4 hover:underline"
                     href={`/money/accounts/${a.account_id}/history`}
                   >
                     {a.name}: {money(a.current_balance_minor)}
@@ -240,6 +241,10 @@ export function DashboardView({
       <CardSurfacePanel
         data={data.finance.cardSurface}
         currency={data.currency}
+      />
+      <SavingsGoalsSurface
+        data={data.finance.savingsGoals}
+        today={data.today}
       />
       <BudgetSurfacePanel data={data.finance.budgets} period={data.period} />
       <Panel
@@ -340,7 +345,10 @@ export function DashboardView({
           <ol className="divide-y divide-border">
             {data.activity.map((a) => (
               <li key={a.key} className="py-2">
-                <Link className={linkClass} href={a.href}>
+                <Link
+                  className="block min-h-11 max-w-full break-words text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  href={a.href}
+                >
                   {a.title}
                 </Link>
                 <p className="text-sm text-muted-foreground">

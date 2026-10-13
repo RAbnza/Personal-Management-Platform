@@ -1,3 +1,5 @@
+import { recordSavingsGoalCommand } from "../../src/modules/planning/services/savings-goals";
+import { getSavingsGoal } from "../../src/modules/planning/services/read-savings-goals";
 import {
   recordExpense,
   recordCardPurchase,
@@ -201,25 +203,28 @@ async function main() {
       process.argv.includes("--upgrade-a4") ||
       process.argv.includes("--upgrade-a5") ||
       process.argv.includes("--upgrade-a6") ||
-      process.argv.includes("--upgrade-b")
+      process.argv.includes("--upgrade-b") ||
+      process.argv.includes("--upgrade-c")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-b")
-        ? 104
-        : process.argv.includes("--upgrade-a6")
-          ? 94
-          : process.argv.includes("--upgrade-a5")
-            ? 89
-            : process.argv.includes("--upgrade-a4")
-              ? 86
-              : process.argv.includes("--upgrade-a3")
-                ? 82
-                : process.argv.includes("--upgrade-a2")
-                  ? 80
-                  : process.argv.includes("--upgrade-a1")
-                    ? 78
-                    : process.argv.includes("--upgrade-v1")
-                      ? 76
-                      : 67;
+      const baselineCount = process.argv.includes("--upgrade-c")
+        ? 111
+        : process.argv.includes("--upgrade-b")
+          ? 104
+          : process.argv.includes("--upgrade-a6")
+            ? 94
+            : process.argv.includes("--upgrade-a5")
+              ? 89
+              : process.argv.includes("--upgrade-a4")
+                ? 86
+                : process.argv.includes("--upgrade-a3")
+                  ? 82
+                  : process.argv.includes("--upgrade-a2")
+                    ? 80
+                    : process.argv.includes("--upgrade-a1")
+                      ? 78
+                      : process.argv.includes("--upgrade-v1")
+                        ? 76
+                        : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -411,7 +416,42 @@ async function main() {
                 window: { from: "2026-10-01", through: "2026-11-30" },
               })
             : null;
+        const baselineBudget =
+          baselineCount >= 111
+            ? await recordBudgetCommand({
+                userId,
+                workspaceId,
+                operation: "save",
+                clientCommandId: randomUUID(),
+                budgetId: null,
+                expectedVersion: null,
+                reason: null,
+                fields: {
+                  categoryId: (
+                    await listCategories({
+                      userId,
+                      workspaceId,
+                      kind: "expense",
+                    })
+                  ).items[0]!.categoryId,
+                  startDate: "2026-10-01",
+                  endDateExclusive: "2026-11-01",
+                  limitMinor: "777",
+                  basis: "net",
+                  notes: "Preserved C budget evidence",
+                },
+              })
+            : null;
         await migrate(db, config);
+        if (baselineBudget) {
+          const preserved = await getBudget({
+            userId,
+            workspaceId,
+            budgetId: baselineBudget.budgetId,
+          });
+          assert.equal(preserved.budget.limit_minor, "777");
+          assert.equal(preserved.history.items.length, 1);
+        }
         if (baselineRecurring) {
           const p = await getRecurringObligation({
             userId,
@@ -2637,6 +2677,91 @@ async function main() {
     console.log(
       "V2-C exact category-period budgets, immutable audit/replay and nonfinancial lifecycle evidence passed.",
     );
+    const goalCash = await openFinancialAccount({
+      ...owner,
+      clientCommandId: randomUUID(),
+      name: "Savings migration cash",
+      accountType: "checking",
+      openingCutoffDate: "2026-09-30",
+      openingBalanceMinor: "20000",
+    });
+    const goalBody = {
+      ...owner,
+      operation: "save" as const,
+      clientCommandId: randomUUID(),
+      goalId: null,
+      expectedVersion: null,
+      reason: null,
+      fields: {
+        name: "Migration savings goal",
+        targetMinor: "30000",
+        targetDate: null,
+        notes: "Exact management evidence",
+      },
+    };
+    const goalSmoke = await recordSavingsGoalCommand(goalBody);
+    assert.deepEqual(await recordSavingsGoalCommand(goalBody), goalSmoke);
+    let goalView = await getSavingsGoal({ ...owner, goalId: goalSmoke.goalId });
+    const reservationBody = {
+      ...owner,
+      operation: "reserve" as const,
+      clientCommandId: randomUUID(),
+      goalId: goalSmoke.goalId,
+      expectedVersion: goalView.goal.version,
+      expectedFinancialRevision: goalView.financialRevision,
+      financialAccountId: goalCash.accountId,
+      reservedMinor: "12000",
+      reason: "Explicit cash reservation",
+    };
+    const reservation = await recordSavingsGoalCommand(reservationBody);
+    assert.deepEqual(
+      await recordSavingsGoalCommand(reservationBody),
+      reservation,
+    );
+    goalView = await getSavingsGoal({ ...owner, goalId: goalSmoke.goalId });
+    assert.equal(goalView.goal.reservedMinor, "12000");
+    assert.equal(goalView.goal.minimumMinor, "12000");
+    assert.equal(goalView.history.items.length, 3);
+    await recordSavingsGoalCommand({
+      ...owner,
+      operation: "complete",
+      clientCommandId: randomUUID(),
+      goalId: goalSmoke.goalId,
+      expectedVersion: goalView.goal.version,
+      reason: "Management completion",
+    });
+    goalView = await getSavingsGoal({ ...owner, goalId: goalSmoke.goalId });
+    assert.equal(goalView.goal.reservedMinor, "12000");
+    await recordSavingsGoalCommand({
+      ...reservationBody,
+      clientCommandId: randomUUID(),
+      expectedVersion: goalView.goal.version,
+      expectedFinancialRevision: goalView.financialRevision,
+      reservedMinor: "0",
+    });
+    goalView = await getSavingsGoal({ ...owner, goalId: goalSmoke.goalId });
+    await recordSavingsGoalCommand({
+      ...owner,
+      operation: "archive",
+      clientCommandId: randomUUID(),
+      goalId: goalSmoke.goalId,
+      expectedVersion: goalView.goal.version,
+      reason: "Explicit archive after release",
+    });
+    const preservedGoal = await recordSavingsGoalCommand({
+      ...goalBody,
+      ...other,
+      clientCommandId: randomUUID(),
+      fields: { ...goalBody.fields, name: "Other owner's preserved goal" },
+    });
+    assert.equal(
+      (await getAccountHistory({ ...owner, accountId: goalCash.accountId }))
+        .account.currentBalanceMinor,
+      "20000",
+    );
+    console.log(
+      "V2-D exact savings/replay, supported reservations, completion/release/archive and complete scoped lifecycle evidence passed without new financial effects.",
+    );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();
     await getAuthPool().query(
@@ -2769,6 +2894,8 @@ async function main() {
         "expected_occurrence",
         "occurrence_actual_link",
         "budget",
+        "savings_goal",
+        "goal_reservation",
       ])
         assert.equal(
           (
@@ -2779,6 +2906,11 @@ async function main() {
           ).rowCount,
           0,
         );
+      assert.equal(
+        (await getSavingsGoal({ ...other, goalId: preservedGoal.goalId })).goal
+          .version,
+        1,
+      );
       assert.equal(
         (await getBudget({ ...other, budgetId: preservedBudget.budgetId }))
           .budget.version,
