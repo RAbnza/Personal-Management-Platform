@@ -46,8 +46,9 @@ async function allowance(page: Page, amount: string) {
     page
       .getByRole("main")
       .getByText("Remaining allowance", { exact: true })
-      .locator(".."),
-  ).toContainText(amount);
+      .locator("..")
+      .locator("dd"),
+  ).toHaveText(amount);
 }
 async function audit(page: Page, cpu: CDPSession) {
   await ready(page);
@@ -152,7 +153,10 @@ test("reviewed budget creation and committed response-loss replay preserve spend
   await ready(page, `${c.name} budget`);
   await allowance(page, "-PHP 1.00");
   await expect(page.getByText("Over budget", { exact: true })).toBeVisible();
-  await page.getByText("Change budget definition", { exact: true }).click();
+  await page
+    .getByRole("main")
+    .getByText("Change budget definition", { exact: true })
+    .click();
   await page
     .getByRole("textbox", { name: "Spending limit (PHP)", exact: true })
     .fill("6.00");
@@ -341,7 +345,10 @@ test("maximum exact amounts, long categories and notes support keyboard review, 
     await ready(page, `${name} budget`);
     await page.screenshot({ path: `test-results/budget-${theme}.png` });
   }
-  await page.getByText("Change budget definition", { exact: true }).click();
+  await page
+    .getByRole("main")
+    .getByText("Change budget definition", { exact: true })
+    .click();
   await page
     .getByRole("textbox", { name: "Spending limit (PHP)", exact: true })
     .fill("0");
@@ -363,7 +370,9 @@ test("maximum exact amounts, long categories and notes support keyboard review, 
     .getByRole("button", { name: "Confirm and record", exact: true })
     .click();
   await expect(
-    page.getByText("Zero limit: percentage not applicable.", { exact: true }),
+    page
+      .getByRole("main")
+      .getByText("Zero limit: percentage not applicable.", { exact: true }),
   ).toBeVisible();
   await audit(page, cpu);
   await cpu.detach();
