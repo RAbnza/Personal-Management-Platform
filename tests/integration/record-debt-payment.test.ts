@@ -156,8 +156,9 @@ async function totals(client: PoolClient, f: DebtFixture) {
 
 describe("D8b transactional debt payments", () => {
   // This case seeds 55 complete protected payment graphs before checking reads.
-  // Give bulk evidence setup an explicit budget; query latency is measured by
-  // the dedicated capacity checks rather than Vitest's generic five seconds.
+  // Hosted runners can exceed ten seconds building/finalizing all 55 graphs.
+  // Allow the bulk fixture and rollback to finish before pool cleanup; query
+  // latency remains measured independently by the dedicated capacity checks.
   it(
     "paginates retained payment evidence without using a revision cursor to filter the debt header",
     async () =>
@@ -187,7 +188,7 @@ describe("D8b transactional debt payments", () => {
           ).size,
         ).toBe(55);
       }),
-    10000,
+    30000,
   );
   it("rejects real foreign debt, account and due references, and keeps the due view isolated", async () =>
     withFixture(async (client, f) => {
