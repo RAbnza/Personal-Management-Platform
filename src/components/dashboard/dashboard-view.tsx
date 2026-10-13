@@ -380,6 +380,9 @@ export function DashboardView({
               <Link className={linkClass} href="/money/transfers">
                 Transfer money
               </Link>
+              <Link className={linkClass} href="/money/forecasts">
+                Explore cash-flow forecasts
+              </Link>
               <Link className={linkClass} href="/money/debts">
                 Choose debt to record payment
               </Link>

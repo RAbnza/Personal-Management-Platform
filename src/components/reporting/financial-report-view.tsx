@@ -65,6 +65,12 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
   return (
     <div className="space-y-6">
       <CardSurfacePanel data={data.cardSurface} currency={data.currency} />
+      <Link
+        className="inline-flex min-h-11 items-center text-link underline"
+        href="/money/forecasts"
+      >
+        Explore cash-flow forecasts
+      </Link>
       <SavingsGoalsSurface data={data.savingsGoals} today={data.today} />
       <BudgetSurfacePanel data={data.budgets} period={data.period} />
       <Panel title="Coverage and definitions">

@@ -29,6 +29,7 @@ export default async function RecurringLayout({
             ["Recurring obligations", "/money/recurring"],
             ["Budgets", "/money/budgets"],
             ["Savings goals", "/money/goals"],
+            ["Forecasts", "/money/forecasts"],
             ["Financial activity", "/money/actions"],
             ["Agenda", "/calendar"],
           ].map(([label, path]) => (

@@ -28,6 +28,7 @@ export default async function SavingsGoalLayout({
             ["Credit cards", "/money/cards"],
             ["Recurring obligations", "/money/recurring"],
             ["Savings goals", "/money/goals"],
+            ["Forecasts", "/money/forecasts"],
             ["Budgets", "/money/budgets"],
             ["Reports", "/reports/financial"],
           ].map(([name, href]) => (
