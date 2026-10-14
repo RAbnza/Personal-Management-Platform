@@ -1,4 +1,8 @@
 import { recordSavingsGoalCommand } from "../../src/modules/planning/services/savings-goals";
+import { saveNotificationPreferences } from "../../src/modules/time/services/notification-preferences";
+import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
+import { scanNotificationScope } from "../../src/platform/email/notification-delivery";
+import { Pool } from "pg";
 import { getSavingsGoal } from "../../src/modules/planning/services/read-savings-goals";
 import { readSavingsGoals } from "../../src/modules/planning/repositories/savings-goal-repository";
 import "../../tests/setup/integration";
@@ -357,6 +361,42 @@ async function main() {
       clientCommandId: randomUUID(),
       fields: { ...goalBody.fields, name: "Other preserved savings goal" },
     });
+    const reminderPreferences = {
+      enabled: true,
+      timezone: "Asia/Manila",
+      quietStart: "22:00",
+      quietEnd: "07:00",
+      includeDueDate: false,
+    };
+    await saveNotificationPreferences(target, {
+      clientCommandId: randomUUID(),
+      expectedVersion: 0,
+      preferences: reminderPreferences,
+    });
+    await saveNotificationPreferences(other, {
+      clientCommandId: randomUUID(),
+      expectedVersion: 0,
+      preferences: { ...reminderPreferences, enabled: false },
+    });
+    await createPersonalEvent({
+      ...target,
+      clientCommandId: randomUUID(),
+      title: "Restored private notification source",
+      temporalKind: "date",
+      eventDate: "2027-01-10",
+    });
+    const notificationUrl = new URL(process.env.AUTH_DATABASE_URL!);
+    notificationUrl.username = "worker_domain";
+    notificationUrl.password = bootstrap.WORKER_DOMAIN_PASSWORD!;
+    const notificationWorker = new Pool({
+      connectionString: notificationUrl.toString(),
+      max: 1,
+    });
+    try {
+      await scanNotificationScope(notificationWorker, target);
+    } finally {
+      await notificationWorker.end();
+    }
 
     await getAuthPool().query(
       "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 day')",
@@ -533,6 +573,26 @@ async function main() {
           0,
         );
         await domain.query("COMMIT");
+        const notificationPreference = await restored.query(
+          "SELECT enabled,quiet_start,quiet_end,version FROM time.notification_preference WHERE workspace_id=$1",
+          [target.workspaceId],
+        );
+        assert.deepEqual(notificationPreference.rows, [
+          {
+            enabled: true,
+            quiet_start: "22:00",
+            quiet_end: "07:00",
+            version: 1,
+          },
+        ]);
+        assert.ok(
+          (
+            await restored.query(
+              "SELECT id FROM time.notification_delivery WHERE workspace_id=$1",
+              [target.workspaceId],
+            )
+          ).rowCount! > 0,
+        );
       } finally {
         await domain.end();
       }
@@ -540,6 +600,9 @@ async function main() {
       // and cancels possibly accepted jobs before any runtime is reopened.
       await restored.query(
         "DELETE FROM auth.session; DELETE FROM auth.verification; UPDATE ops.email_delivery SET status='cancelled',recipient_ciphertext=decode('','hex'),payload_ciphertext=NULL,updated_at=clock_timestamp() WHERE status IN ('queued','uncertain'); DELETE FROM pgboss.job",
+      );
+      await restored.query(
+        "UPDATE time.notification_delivery SET status='cancelled',last_error_code='restore_review' WHERE status IN('scheduled','failed') AND provider_message_id IS NULL; UPDATE time.notification_delivery SET status='uncertain',last_error_code='restore_review' WHERE status='attempted'",
       );
       const opUrl = new URL(restoreUrl);
       opUrl.username = "lifecycle_operator";

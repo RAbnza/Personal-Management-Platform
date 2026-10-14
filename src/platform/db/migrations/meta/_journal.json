@@ -1,811 +1,895 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1791233962349,
-      "tag": "0000_foundation_namespaces",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1791239599270,
-      "tag": "0001_better_auth_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1791239798872,
-      "tag": "0002_auth_runtime_grants",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1791240171417,
-      "tag": "0003_core_ownership_root",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1791240375228,
-      "tag": "0004_core_ownership_security",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1791241249338,
-      "tag": "0005_core_mutable_bundle",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1791241558869,
-      "tag": "0006_core_mutable_triggers",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1791275988177,
-      "tag": "0007_dark_tony_stark",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1791276178808,
-      "tag": "0008_s1_security_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1791276632993,
-      "tag": "0009_s1_financial_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1791277973149,
-      "tag": "0010_s1_financial_recipes",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1791288588642,
-      "tag": "0011_massive_cerise",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1791288909832,
-      "tag": "0012_s2_security_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1791289463758,
-      "tag": "0013_s2_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1791290535540,
-      "tag": "0014_s2_resume_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1791291231280,
-      "tag": "0015_normal_killer_shrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1791306428460,
-      "tag": "0016_workspace_currency_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1791377605076,
-      "tag": "0017_complex_marauders",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1791378268454,
-      "tag": "0018_d6a_debt_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1791378624348,
-      "tag": "0019_d6a_opening_baseline_identity",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1791382075798,
-      "tag": "0020_d6b_optional_manual_schedule",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1791383013579,
-      "tag": "0021_d6b_debt_agenda",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1791391828461,
-      "tag": "0022_d7_borrowing_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "7",
-      "when": 1791393627973,
-      "tag": "0023_d7_borrowing_action_kind",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "7",
-      "when": 1791401631671,
-      "tag": "0024_d8a_payment_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "7",
-      "when": 1791401676563,
-      "tag": "0025_d8a_payment_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "7",
-      "when": 1791403405633,
-      "tag": "0026_d8a_payment_state_validation",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "7",
-      "when": 1791404453756,
-      "tag": "0027_d8a_payment_context",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1791436638207,
-      "tag": "0028_d8b_current_payment_dues",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "7",
-      "when": 1791439615128,
-      "tag": "0029_d9_schedule_charge_kind",
-      "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "7",
-      "when": 1791439629189,
-      "tag": "0030_d9_schedule_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 31,
-      "version": "7",
-      "when": 1791439915012,
-      "tag": "0031_d9_charge_fee_evidence",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "7",
-      "when": 1791450438122,
-      "tag": "0032_d10_settlement_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "7",
-      "when": 1791450461255,
-      "tag": "0033_d10_settlement_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "7",
-      "when": 1791450937308,
-      "tag": "0034_d10_settlement_final_state",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "7",
-      "when": 1791450981164,
-      "tag": "0035_d10_settlement_component_scope",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "7",
-      "when": 1791451496773,
-      "tag": "0036_d10_rounding_treatment",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "7",
-      "when": 1791451497531,
-      "tag": "0037_d10_settlement_evidence",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "7",
-      "when": 1791451613503,
-      "tag": "0038_d10_settlement_checks",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "7",
-      "when": 1791452602822,
-      "tag": "0039_d10_confirmed_avoided_charges",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "7",
-      "when": 1791454278745,
-      "tag": "0040_d11_reconciliation",
-      "breakpoints": true
-    },
-    {
-      "idx": 41,
-      "version": "7",
-      "when": 1791454308336,
-      "tag": "0041_d11_reconciliation_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 42,
-      "version": "7",
-      "when": 1791457266779,
-      "tag": "0042_d12_refunds",
-      "breakpoints": true
-    },
-    {
-      "idx": 43,
-      "version": "7",
-      "when": 1791457489174,
-      "tag": "0043_d12_correction_refund_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 44,
-      "version": "7",
-      "when": 1791457948710,
-      "tag": "0044_d12_refund_action_kind",
-      "breakpoints": true
-    },
-    {
-      "idx": 45,
-      "version": "7",
-      "when": 1791458498758,
-      "tag": "0045_d12_baseline_corrections",
-      "breakpoints": true
-    },
-    {
-      "idx": 46,
-      "version": "7",
-      "when": 1791458635493,
-      "tag": "0046_d12_historical_negative_review",
-      "breakpoints": true
-    },
-    {
-      "idx": 47,
-      "version": "7",
-      "when": 1791459199460,
-      "tag": "0047_d12_resolution_evidence",
-      "breakpoints": true
-    },
-    {
-      "idx": 48,
-      "version": "7",
-      "when": 1791459213594,
-      "tag": "0048_d12_clearing_fee_and_linked_correction",
-      "breakpoints": true
-    },
-    {
-      "idx": 49,
-      "version": "7",
-      "when": 1791460557654,
-      "tag": "0049_d12_refund_portion_limits",
-      "breakpoints": true
-    },
-    {
-      "idx": 50,
-      "version": "7",
-      "when": 1791461399347,
-      "tag": "0050_d12_refund_evidence_indexes",
-      "breakpoints": true
-    },
-    {
-      "idx": 51,
-      "version": "7",
-      "when": 1791474503496,
-      "tag": "0051_v1_c2_export_provenance",
-      "breakpoints": true
-    },
-    {
-      "idx": 52,
-      "version": "7",
-      "when": 1791474526723,
-      "tag": "0052_v1_c2_export_security",
-      "breakpoints": true
-    },
-    {
-      "idx": 53,
-      "version": "7",
-      "when": 1791479469731,
-      "tag": "0053_exotic_silk_fever",
-      "breakpoints": true
-    },
-    {
-      "idx": 54,
-      "version": "7",
-      "when": 1791479469732,
-      "tag": "0054_v1_c3_reminder_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 55,
-      "version": "7",
-      "when": 1791479469733,
-      "tag": "0055_v1_c3_reminder_suppression",
-      "breakpoints": true
-    },
-    {
-      "idx": 56,
-      "version": "7",
-      "when": 1791482706070,
-      "tag": "0056_legal_cargill",
-      "breakpoints": true
-    },
-    {
-      "idx": 57,
-      "version": "7",
-      "when": 1791482706071,
-      "tag": "0057_v1_c3_debt_reminder_reactivation",
-      "breakpoints": true
-    },
-    {
-      "idx": 58,
-      "version": "7",
-      "when": 1791491155358,
-      "tag": "0058_pale_malcolm_colcord",
-      "breakpoints": true
-    },
-    {
-      "idx": 59,
-      "version": "7",
-      "when": 1791491234810,
-      "tag": "0059_v1_c4_lifecycle_checkpoint",
-      "breakpoints": true
-    },
-    {
-      "idx": 60,
-      "version": "7",
-      "when": 1791491316991,
-      "tag": "0060_funny_vertigo",
-      "breakpoints": true
-    },
-    {
-      "idx": 61,
-      "version": "7",
-      "when": 1791491476559,
-      "tag": "0061_v1_c4_purge_completion",
-      "breakpoints": true
-    },
-    {
-      "idx": 62,
-      "version": "7",
-      "when": 1791492151903,
-      "tag": "0062_v1_c4_purge_graph_pointers",
-      "breakpoints": true
-    },
-    {
-      "idx": 63,
-      "version": "7",
-      "when": 1791492234314,
-      "tag": "0063_v1_c4_revocation_evidence",
-      "breakpoints": true
-    },
-    {
-      "idx": 64,
-      "version": "7",
-      "when": 1791492657908,
-      "tag": "0064_v1_c4_tombstone_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 65,
-      "version": "7",
-      "when": 1791492791216,
-      "tag": "0065_v1_c4_pending_write_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 66,
-      "version": "7",
-      "when": 1791494984812,
-      "tag": "0066_v1_c4_purge_transaction_scope",
-      "breakpoints": true
-    },
-    {
-      "idx": 67,
-      "version": "7",
-      "when": 1791528561416,
-      "tag": "0067_giant_night_nurse",
-      "breakpoints": true
-    },
-    {
-      "idx": 68,
-      "version": "7",
-      "when": 1791529955126,
-      "tag": "0068_icy_zzzax",
-      "breakpoints": true
-    },
-    {
-      "idx": 69,
-      "version": "7",
-      "when": 1791530600747,
-      "tag": "0069_v1_c5_restore_profile_date",
-      "breakpoints": true
-    },
-    {
-      "idx": 70,
-      "version": "7",
-      "when": 1791533740245,
-      "tag": "0070_v1_c5_email_source_lifecycle",
-      "breakpoints": true
-    },
-    {
-      "idx": 71,
-      "version": "7",
-      "when": 1791534028830,
-      "tag": "0071_acoustic_shocker",
-      "breakpoints": true
-    },
-    {
-      "idx": 72,
-      "version": "7",
-      "when": 1791536416309,
-      "tag": "0072_v1_c5_negative_review_finalization",
-      "breakpoints": true
-    },
-    {
-      "idx": 73,
-      "version": "7",
-      "when": 1791541808995,
-      "tag": "0073_v1_c5_allocation_satisfaction_grain",
-      "breakpoints": true
-    },
-    {
-      "idx": 74,
-      "version": "7",
-      "when": 1791541866283,
-      "tag": "0074_v1_c5_payment_satisfaction_grain",
-      "breakpoints": true
-    },
-    {
-      "idx": 75,
-      "version": "7",
-      "when": 1791542688003,
-      "tag": "0075_v1_c5_liability_candidate_grain",
-      "breakpoints": true
-    },
-    {
-      "idx": 76,
-      "version": "7",
-      "when": 1791717433378,
-      "tag": "0076_blue_maddog",
-      "breakpoints": true
-    },
-    {
-      "idx": 77,
-      "version": "7",
-      "when": 1791717444725,
-      "tag": "0077_v2_a1_card_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 78,
-      "version": "7",
-      "when": 1791719412817,
-      "tag": "0078_damp_stranger",
-      "breakpoints": true
-    },
-    {
-      "idx": 79,
-      "version": "7",
-      "when": 1791719422386,
-      "tag": "0079_v2_a2_card_purchase_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 80,
-      "version": "7",
-      "when": 1791735071240,
-      "tag": "0080_milky_viper",
-      "breakpoints": true
-    },
-    {
-      "idx": 81,
-      "version": "7",
-      "when": 1791735257798,
-      "tag": "0081_v2_a3_statement_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 82,
-      "version": "7",
-      "when": 1791752169423,
-      "tag": "0082_glamorous_gamma_corps",
-      "breakpoints": true
-    },
-    {
-      "idx": 83,
-      "version": "7",
-      "when": 1791752289076,
-      "tag": "0083_v2_a4_card_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 84,
-      "version": "7",
-      "when": 1791752861283,
-      "tag": "0084_v2_a4_confirmation_guards",
-      "breakpoints": true
-    },
-    {
-      "idx": 85,
-      "version": "7",
-      "when": 1791753485669,
-      "tag": "0085_v2_a4_allocation_audit",
-      "breakpoints": true
-    },
-    {
-      "idx": 86,
-      "version": "7",
-      "when": 1791793556188,
-      "tag": "0086_happy_ultimo",
-      "breakpoints": true
-    },
-    {
-      "idx": 87,
-      "version": "7",
-      "when": 1791793828674,
-      "tag": "0087_v2_a5_installment_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 88,
-      "version": "7",
-      "when": 1791796964863,
-      "tag": "0088_v2_a5_refund_history",
-      "breakpoints": true
-    },
-    {
-      "idx": 89,
-      "version": "7",
-      "when": 1791810097760,
-      "tag": "0089_purple_puck",
-      "breakpoints": true
-    },
-    {
-      "idx": 90,
-      "version": "7",
-      "when": 1791810098801,
-      "tag": "0090_v2_a6_card_surface",
-      "breakpoints": true
-    },
-    {
-      "idx": 91,
-      "version": "7",
-      "when": 1791810555225,
-      "tag": "0091_v2_a6_card_reconciliation_surface",
-      "breakpoints": true
-    },
-    {
-      "idx": 92,
-      "version": "7",
-      "when": 1791815695085,
-      "tag": "0092_v2_a6_empty_reminder_fast_path",
-      "breakpoints": true
-    },
-    {
-      "idx": 93,
-      "version": "7",
-      "when": 1791816112530,
-      "tag": "0093_v2_a6_reminder_trigger_scope",
-      "breakpoints": true
-    },
-    {
-      "idx": 94,
-      "version": "7",
-      "when": 1791830104794,
-      "tag": "0094_zippy_glorian",
-      "breakpoints": true
-    },
-    {
-      "idx": 95,
-      "version": "7",
-      "when": 1791830115978,
-      "tag": "0095_v2_b_recurring_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 96,
-      "version": "7",
-      "when": 1791830637483,
-      "tag": "0096_v2_b_guard_row_shape",
-      "breakpoints": true
-    },
-    {
-      "idx": 97,
-      "version": "7",
-      "when": 1791830664764,
-      "tag": "0097_v2_b_audit_binding",
-      "breakpoints": true
-    },
-    {
-      "idx": 98,
-      "version": "7",
-      "when": 1791830872742,
-      "tag": "0098_faulty_junta",
-      "breakpoints": true
-    },
-    {
-      "idx": 99,
-      "version": "7",
-      "when": 1791830873889,
-      "tag": "0099_v2_b_agenda_reminders",
-      "breakpoints": true
-    },
-    {
-      "idx": 100,
-      "version": "7",
-      "when": 1791831423585,
-      "tag": "0100_v2_b_historical_overrides",
-      "breakpoints": true
-    },
-    {
-      "idx": 101,
-      "version": "7",
-      "when": 1791832500690,
-      "tag": "0101_orange_ironclad",
-      "breakpoints": true
-    },
-    {
-      "idx": 102,
-      "version": "7",
-      "when": 1791835331415,
-      "tag": "0102_furry_chat",
-      "breakpoints": true
-    },
-    {
-      "idx": 103,
-      "version": "7",
-      "when": 1791837052182,
-      "tag": "0103_v2_b_agenda_source_context",
-      "breakpoints": true
-    },
-    {
-      "idx": 104,
-      "version": "7",
-      "when": 1791881921028,
-      "tag": "0104_good_adam_warlock",
-      "breakpoints": true
-    },
-    {
-      "idx": 105,
-      "version": "7",
-      "when": 1791882014171,
-      "tag": "0105_v2_c_budget_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 106,
-      "version": "7",
-      "when": 1791882936110,
-      "tag": "0106_v2_c_budget_receipt_binding",
-      "breakpoints": true
-    },
-    {
-      "idx": 107,
-      "version": "7",
-      "when": 1791883689636,
-      "tag": "0107_melodic_firelord",
-      "breakpoints": true
-    },
-    {
-      "idx": 108,
-      "version": "7",
-      "when": 1791883691302,
-      "tag": "0108_v2_c_budget_write_revision",
-      "breakpoints": true
-    },
-    {
-      "idx": 109,
-      "version": "7",
-      "when": 1791884112875,
-      "tag": "0109_v2_c_budget_category_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 110,
-      "version": "7",
-      "when": 1791887418531,
-      "tag": "0110_v2_c_budget_result_types",
-      "breakpoints": true
-    },
-    {
-      "idx": 111,
-      "version": "7",
-      "when": 1791897142418,
-      "tag": "0111_clammy_captain_cross",
-      "breakpoints": true
-    },
-    {
-      "idx": 112,
-      "version": "7",
-      "when": 1791897212655,
-      "tag": "0112_v2_d_savings_integrity",
-      "breakpoints": true
-    },
-    {
-      "idx": 113,
-      "version": "7",
-      "when": 1791900421285,
-      "tag": "0113_v2_d_reservation_isolation",
-      "breakpoints": true
-    },
-    {
-      "idx": 114,
-      "version": "7",
-      "when": 1791902021122,
-      "tag": "0114_v2_d_command_graph",
-      "breakpoints": true
-    }
-  ]
+    "version":  "7",
+    "dialect":  "postgresql",
+    "entries":  [
+                    {
+                        "idx":  0,
+                        "version":  "7",
+                        "when":  1791233962349,
+                        "tag":  "0000_foundation_namespaces",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  1,
+                        "version":  "7",
+                        "when":  1791239599270,
+                        "tag":  "0001_better_auth_schema",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  2,
+                        "version":  "7",
+                        "when":  1791239798872,
+                        "tag":  "0002_auth_runtime_grants",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  3,
+                        "version":  "7",
+                        "when":  1791240171417,
+                        "tag":  "0003_core_ownership_root",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  4,
+                        "version":  "7",
+                        "when":  1791240375228,
+                        "tag":  "0004_core_ownership_security",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  5,
+                        "version":  "7",
+                        "when":  1791241249338,
+                        "tag":  "0005_core_mutable_bundle",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  6,
+                        "version":  "7",
+                        "when":  1791241558869,
+                        "tag":  "0006_core_mutable_triggers",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  7,
+                        "version":  "7",
+                        "when":  1791275988177,
+                        "tag":  "0007_dark_tony_stark",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  8,
+                        "version":  "7",
+                        "when":  1791276178808,
+                        "tag":  "0008_s1_security_foundation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  9,
+                        "version":  "7",
+                        "when":  1791276632993,
+                        "tag":  "0009_s1_financial_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  10,
+                        "version":  "7",
+                        "when":  1791277973149,
+                        "tag":  "0010_s1_financial_recipes",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  11,
+                        "version":  "7",
+                        "when":  1791288588642,
+                        "tag":  "0011_massive_cerise",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  12,
+                        "version":  "7",
+                        "when":  1791288909832,
+                        "tag":  "0012_s2_security_foundation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  13,
+                        "version":  "7",
+                        "when":  1791289463758,
+                        "tag":  "0013_s2_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  14,
+                        "version":  "7",
+                        "when":  1791290535540,
+                        "tag":  "0014_s2_resume_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  15,
+                        "version":  "7",
+                        "when":  1791291231280,
+                        "tag":  "0015_normal_killer_shrike",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  16,
+                        "version":  "7",
+                        "when":  1791306428460,
+                        "tag":  "0016_workspace_currency_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  17,
+                        "version":  "7",
+                        "when":  1791377605076,
+                        "tag":  "0017_complex_marauders",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  18,
+                        "version":  "7",
+                        "when":  1791378268454,
+                        "tag":  "0018_d6a_debt_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  19,
+                        "version":  "7",
+                        "when":  1791378624348,
+                        "tag":  "0019_d6a_opening_baseline_identity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  20,
+                        "version":  "7",
+                        "when":  1791382075798,
+                        "tag":  "0020_d6b_optional_manual_schedule",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  21,
+                        "version":  "7",
+                        "when":  1791383013579,
+                        "tag":  "0021_d6b_debt_agenda",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  22,
+                        "version":  "7",
+                        "when":  1791391828461,
+                        "tag":  "0022_d7_borrowing_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  23,
+                        "version":  "7",
+                        "when":  1791393627973,
+                        "tag":  "0023_d7_borrowing_action_kind",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  24,
+                        "version":  "7",
+                        "when":  1791401631671,
+                        "tag":  "0024_d8a_payment_model",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  25,
+                        "version":  "7",
+                        "when":  1791401676563,
+                        "tag":  "0025_d8a_payment_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  26,
+                        "version":  "7",
+                        "when":  1791403405633,
+                        "tag":  "0026_d8a_payment_state_validation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  27,
+                        "version":  "7",
+                        "when":  1791404453756,
+                        "tag":  "0027_d8a_payment_context",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  28,
+                        "version":  "7",
+                        "when":  1791436638207,
+                        "tag":  "0028_d8b_current_payment_dues",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  29,
+                        "version":  "7",
+                        "when":  1791439615128,
+                        "tag":  "0029_d9_schedule_charge_kind",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  30,
+                        "version":  "7",
+                        "when":  1791439629189,
+                        "tag":  "0030_d9_schedule_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  31,
+                        "version":  "7",
+                        "when":  1791439915012,
+                        "tag":  "0031_d9_charge_fee_evidence",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  32,
+                        "version":  "7",
+                        "when":  1791450438122,
+                        "tag":  "0032_d10_settlement_model",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  33,
+                        "version":  "7",
+                        "when":  1791450461255,
+                        "tag":  "0033_d10_settlement_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  34,
+                        "version":  "7",
+                        "when":  1791450937308,
+                        "tag":  "0034_d10_settlement_final_state",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  35,
+                        "version":  "7",
+                        "when":  1791450981164,
+                        "tag":  "0035_d10_settlement_component_scope",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  36,
+                        "version":  "7",
+                        "when":  1791451496773,
+                        "tag":  "0036_d10_rounding_treatment",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  37,
+                        "version":  "7",
+                        "when":  1791451497531,
+                        "tag":  "0037_d10_settlement_evidence",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  38,
+                        "version":  "7",
+                        "when":  1791451613503,
+                        "tag":  "0038_d10_settlement_checks",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  39,
+                        "version":  "7",
+                        "when":  1791452602822,
+                        "tag":  "0039_d10_confirmed_avoided_charges",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  40,
+                        "version":  "7",
+                        "when":  1791454278745,
+                        "tag":  "0040_d11_reconciliation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  41,
+                        "version":  "7",
+                        "when":  1791454308336,
+                        "tag":  "0041_d11_reconciliation_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  42,
+                        "version":  "7",
+                        "when":  1791457266779,
+                        "tag":  "0042_d12_refunds",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  43,
+                        "version":  "7",
+                        "when":  1791457489174,
+                        "tag":  "0043_d12_correction_refund_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  44,
+                        "version":  "7",
+                        "when":  1791457948710,
+                        "tag":  "0044_d12_refund_action_kind",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  45,
+                        "version":  "7",
+                        "when":  1791458498758,
+                        "tag":  "0045_d12_baseline_corrections",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  46,
+                        "version":  "7",
+                        "when":  1791458635493,
+                        "tag":  "0046_d12_historical_negative_review",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  47,
+                        "version":  "7",
+                        "when":  1791459199460,
+                        "tag":  "0047_d12_resolution_evidence",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  48,
+                        "version":  "7",
+                        "when":  1791459213594,
+                        "tag":  "0048_d12_clearing_fee_and_linked_correction",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  49,
+                        "version":  "7",
+                        "when":  1791460557654,
+                        "tag":  "0049_d12_refund_portion_limits",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  50,
+                        "version":  "7",
+                        "when":  1791461399347,
+                        "tag":  "0050_d12_refund_evidence_indexes",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  51,
+                        "version":  "7",
+                        "when":  1791474503496,
+                        "tag":  "0051_v1_c2_export_provenance",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  52,
+                        "version":  "7",
+                        "when":  1791474526723,
+                        "tag":  "0052_v1_c2_export_security",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  53,
+                        "version":  "7",
+                        "when":  1791479469731,
+                        "tag":  "0053_exotic_silk_fever",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  54,
+                        "version":  "7",
+                        "when":  1791479469732,
+                        "tag":  "0054_v1_c3_reminder_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  55,
+                        "version":  "7",
+                        "when":  1791479469733,
+                        "tag":  "0055_v1_c3_reminder_suppression",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  56,
+                        "version":  "7",
+                        "when":  1791482706070,
+                        "tag":  "0056_legal_cargill",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  57,
+                        "version":  "7",
+                        "when":  1791482706071,
+                        "tag":  "0057_v1_c3_debt_reminder_reactivation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  58,
+                        "version":  "7",
+                        "when":  1791491155358,
+                        "tag":  "0058_pale_malcolm_colcord",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  59,
+                        "version":  "7",
+                        "when":  1791491234810,
+                        "tag":  "0059_v1_c4_lifecycle_checkpoint",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  60,
+                        "version":  "7",
+                        "when":  1791491316991,
+                        "tag":  "0060_funny_vertigo",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  61,
+                        "version":  "7",
+                        "when":  1791491476559,
+                        "tag":  "0061_v1_c4_purge_completion",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  62,
+                        "version":  "7",
+                        "when":  1791492151903,
+                        "tag":  "0062_v1_c4_purge_graph_pointers",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  63,
+                        "version":  "7",
+                        "when":  1791492234314,
+                        "tag":  "0063_v1_c4_revocation_evidence",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  64,
+                        "version":  "7",
+                        "when":  1791492657908,
+                        "tag":  "0064_v1_c4_tombstone_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  65,
+                        "version":  "7",
+                        "when":  1791492791216,
+                        "tag":  "0065_v1_c4_pending_write_guard",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  66,
+                        "version":  "7",
+                        "when":  1791494984812,
+                        "tag":  "0066_v1_c4_purge_transaction_scope",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  67,
+                        "version":  "7",
+                        "when":  1791528561416,
+                        "tag":  "0067_giant_night_nurse",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  68,
+                        "version":  "7",
+                        "when":  1791529955126,
+                        "tag":  "0068_icy_zzzax",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  69,
+                        "version":  "7",
+                        "when":  1791530600747,
+                        "tag":  "0069_v1_c5_restore_profile_date",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  70,
+                        "version":  "7",
+                        "when":  1791533740245,
+                        "tag":  "0070_v1_c5_email_source_lifecycle",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  71,
+                        "version":  "7",
+                        "when":  1791534028830,
+                        "tag":  "0071_acoustic_shocker",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  72,
+                        "version":  "7",
+                        "when":  1791536416309,
+                        "tag":  "0072_v1_c5_negative_review_finalization",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  73,
+                        "version":  "7",
+                        "when":  1791541808995,
+                        "tag":  "0073_v1_c5_allocation_satisfaction_grain",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  74,
+                        "version":  "7",
+                        "when":  1791541866283,
+                        "tag":  "0074_v1_c5_payment_satisfaction_grain",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  75,
+                        "version":  "7",
+                        "when":  1791542688003,
+                        "tag":  "0075_v1_c5_liability_candidate_grain",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  76,
+                        "version":  "7",
+                        "when":  1791717433378,
+                        "tag":  "0076_blue_maddog",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  77,
+                        "version":  "7",
+                        "when":  1791717444725,
+                        "tag":  "0077_v2_a1_card_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  78,
+                        "version":  "7",
+                        "when":  1791719412817,
+                        "tag":  "0078_damp_stranger",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  79,
+                        "version":  "7",
+                        "when":  1791719422386,
+                        "tag":  "0079_v2_a2_card_purchase_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  80,
+                        "version":  "7",
+                        "when":  1791735071240,
+                        "tag":  "0080_milky_viper",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  81,
+                        "version":  "7",
+                        "when":  1791735257798,
+                        "tag":  "0081_v2_a3_statement_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  82,
+                        "version":  "7",
+                        "when":  1791752169423,
+                        "tag":  "0082_glamorous_gamma_corps",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  83,
+                        "version":  "7",
+                        "when":  1791752289076,
+                        "tag":  "0083_v2_a4_card_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  84,
+                        "version":  "7",
+                        "when":  1791752861283,
+                        "tag":  "0084_v2_a4_confirmation_guards",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  85,
+                        "version":  "7",
+                        "when":  1791753485669,
+                        "tag":  "0085_v2_a4_allocation_audit",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  86,
+                        "version":  "7",
+                        "when":  1791793556188,
+                        "tag":  "0086_happy_ultimo",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  87,
+                        "version":  "7",
+                        "when":  1791793828674,
+                        "tag":  "0087_v2_a5_installment_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  88,
+                        "version":  "7",
+                        "when":  1791796964863,
+                        "tag":  "0088_v2_a5_refund_history",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  89,
+                        "version":  "7",
+                        "when":  1791810097760,
+                        "tag":  "0089_purple_puck",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  90,
+                        "version":  "7",
+                        "when":  1791810098801,
+                        "tag":  "0090_v2_a6_card_surface",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  91,
+                        "version":  "7",
+                        "when":  1791810555225,
+                        "tag":  "0091_v2_a6_card_reconciliation_surface",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  92,
+                        "version":  "7",
+                        "when":  1791815695085,
+                        "tag":  "0092_v2_a6_empty_reminder_fast_path",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  93,
+                        "version":  "7",
+                        "when":  1791816112530,
+                        "tag":  "0093_v2_a6_reminder_trigger_scope",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  94,
+                        "version":  "7",
+                        "when":  1791830104794,
+                        "tag":  "0094_zippy_glorian",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  95,
+                        "version":  "7",
+                        "when":  1791830115978,
+                        "tag":  "0095_v2_b_recurring_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  96,
+                        "version":  "7",
+                        "when":  1791830637483,
+                        "tag":  "0096_v2_b_guard_row_shape",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  97,
+                        "version":  "7",
+                        "when":  1791830664764,
+                        "tag":  "0097_v2_b_audit_binding",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  98,
+                        "version":  "7",
+                        "when":  1791830872742,
+                        "tag":  "0098_faulty_junta",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  99,
+                        "version":  "7",
+                        "when":  1791830873889,
+                        "tag":  "0099_v2_b_agenda_reminders",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  100,
+                        "version":  "7",
+                        "when":  1791831423585,
+                        "tag":  "0100_v2_b_historical_overrides",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  101,
+                        "version":  "7",
+                        "when":  1791832500690,
+                        "tag":  "0101_orange_ironclad",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  102,
+                        "version":  "7",
+                        "when":  1791835331415,
+                        "tag":  "0102_furry_chat",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  103,
+                        "version":  "7",
+                        "when":  1791837052182,
+                        "tag":  "0103_v2_b_agenda_source_context",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  104,
+                        "version":  "7",
+                        "when":  1791881921028,
+                        "tag":  "0104_good_adam_warlock",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  105,
+                        "version":  "7",
+                        "when":  1791882014171,
+                        "tag":  "0105_v2_c_budget_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  106,
+                        "version":  "7",
+                        "when":  1791882936110,
+                        "tag":  "0106_v2_c_budget_receipt_binding",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  107,
+                        "version":  "7",
+                        "when":  1791883689636,
+                        "tag":  "0107_melodic_firelord",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  108,
+                        "version":  "7",
+                        "when":  1791883691302,
+                        "tag":  "0108_v2_c_budget_write_revision",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  109,
+                        "version":  "7",
+                        "when":  1791884112875,
+                        "tag":  "0109_v2_c_budget_category_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  110,
+                        "version":  "7",
+                        "when":  1791887418531,
+                        "tag":  "0110_v2_c_budget_result_types",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  111,
+                        "version":  "7",
+                        "when":  1791897142418,
+                        "tag":  "0111_clammy_captain_cross",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  112,
+                        "version":  "7",
+                        "when":  1791897212655,
+                        "tag":  "0112_v2_d_savings_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  113,
+                        "version":  "7",
+                        "when":  1791900421285,
+                        "tag":  "0113_v2_d_reservation_isolation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  114,
+                        "version":  "7",
+                        "when":  1791902021122,
+                        "tag":  "0114_v2_d_command_graph",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  115,
+                        "version":  "7",
+                        "when":  1791975284058,
+                        "tag":  "0115_v2_g_notifications",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  116,
+                        "version":  "7",
+                        "when":  1791975284059,
+                        "tag":  "0116_v2_g_notification_security",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  117,
+                        "version":  "7",
+                        "when":  1791975284060,
+                        "tag":  "0117_v2_g_notification_finalization",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  118,
+                        "version":  "7",
+                        "when":  1791975284061,
+                        "tag":  "0118_v2_g_notification_locking",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  119,
+                        "version":  "7",
+                        "when":  1791976319592,
+                        "tag":  "0119_v2_g_quiet_hour_constraints",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  120,
+                        "version":  "7",
+                        "when":  1791976319593,
+                        "tag":  "0120_v2_g_notification_reader",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  121,
+                        "version":  "7",
+                        "when":  1791976319594,
+                        "tag":  "0121_v2_g_notification_source_reader",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  122,
+                        "version":  "7",
+                        "when":  1791976319595,
+                        "tag":  "0122_v2_g_notification_lifecycle_guard",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  123,
+                        "version":  "7",
+                        "when":  1791976319596,
+                        "tag":  "0123_v2_g_reminder_epoch_permissions",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  124,
+                        "version":  "7",
+                        "when":  1791976319597,
+                        "tag":  "0124_v2_g_provider_event_finalization",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  125,
+                        "version":  "7",
+                        "when":  1791976319598,
+                        "tag":  "0125_v2_g_notification_provider_ordering",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  126,
+                        "version":  "7",
+                        "when":  1791976319599,
+                        "tag":  "0126_v2_g_provider_evidence_permissions",
+                        "breakpoints":  true
+                    }
+                ]
 }

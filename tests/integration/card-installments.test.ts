@@ -808,10 +808,13 @@ describe("A5 provider schedules, supersession and supported applications", () =>
           for (const role of ["auth_adapter", "queue_broker", "worker_domain"])
             expect(
               (
-                await q.query(
-                  "SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE') allowed",
-                  [role, `finance.${table}`],
-                )
+                await q.query("SELECT has_table_privilege($1,$2,$3) allowed", [
+                  role,
+                  `finance.${table}`,
+                  role === "worker_domain"
+                    ? "INSERT,UPDATE,DELETE"
+                    : "SELECT,INSERT,UPDATE,DELETE",
+                ])
               ).rows[0].allowed,
             ).toBe(false);
         const views = (

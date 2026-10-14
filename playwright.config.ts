@@ -9,6 +9,9 @@ queueUrl.password = bootstrap.QUEUE_BROKER_PASSWORD!;
 const lifecycleUrl = new URL(process.env.AUTH_DATABASE_URL!);
 lifecycleUrl.username = "lifecycle_operator";
 lifecycleUrl.password = bootstrap.LIFECYCLE_OPERATOR_PASSWORD!;
+const notificationUrl = new URL(process.env.AUTH_DATABASE_URL!);
+notificationUrl.username = "worker_domain";
+notificationUrl.password = bootstrap.WORKER_DOMAIN_PASSWORD!;
 // Refuse development/production databases using the integration environment
 // guard. Never reuse a user's existing application server or authentication.
 const baseURL = "http://localhost:3100";
@@ -27,6 +30,10 @@ const runtimeEnvironment = {
   QUEUE_BROKER_PASSWORD: "",
   WORKER_DOMAIN_PASSWORD: "",
   LIFECYCLE_OPERATOR_PASSWORD: "",
+  NOTIFICATION_DATABASE_URL: "",
+  NOTIFICATIONS_ENABLED: "true",
+  NOTIFICATIONS_EXTERNAL_ENABLED: "false",
+  NOTIFICATION_WEBHOOK_SECRET: "",
 };
 process.env.BETTER_AUTH_URL = baseURL;
 export default defineConfig({
@@ -60,6 +67,8 @@ export default defineConfig({
         ...runtimeEnvironment,
         DATABASE_URL: "",
         QUEUE_DATABASE_URL: queueUrl.toString(),
+        NOTIFICATION_DATABASE_URL: notificationUrl.toString(),
+        BETTER_AUTH_URL: baseURL,
         LIFECYCLE_DATABASE_URL: lifecycleUrl.toString(),
         WORKER_PAUSED: "false",
         WORKER_HEALTH_PORT: "3101",

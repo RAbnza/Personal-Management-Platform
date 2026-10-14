@@ -628,7 +628,7 @@ describe("V2-A1 credit card foundation", () => {
         const c = new Client({ connectionString: url.toString() });
         await c.connect();
         try {
-          if (role === "lifecycle_operator")
+          if (role === "lifecycle_operator" || role === "worker_domain")
             expect(
               (await c.query("SELECT id FROM finance.credit_card")).rowCount,
             ).toBe(0);

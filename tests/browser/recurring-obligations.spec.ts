@@ -59,7 +59,9 @@ async function audit(page: Page, cpu: CDPSession, theme?: string) {
         .getAnimations()
         .filter(
           (animation) =>
-            animation.effect?.getComputedTiming().iterations !== Infinity,
+            Number.isFinite(animation.effect?.getComputedTiming().endTime) &&
+            animation.playState !== "idle" &&
+            animation.playState !== "paused",
         )
         .map((animation) => animation.finished.catch(() => undefined)),
     );

@@ -108,6 +108,13 @@ async function main() {
     const worker = await run("worker", {
       ...common,
       WORKER_PAUSED: "false",
+      NOTIFICATIONS_ENABLED: "true",
+      NOTIFICATIONS_EXTERNAL_ENABLED: "false",
+      BETTER_AUTH_URL: "http://localhost:3000",
+      NOTIFICATION_DATABASE_URL: connection(
+        "worker_domain",
+        bootstrap.WORKER_DOMAIN_PASSWORD!,
+      ),
       WORKER_HEALTH_PORT: "3201",
       LIFECYCLE_AUTOMATION_ENABLED: "false",
       QUEUE_DATABASE_URL: connection(

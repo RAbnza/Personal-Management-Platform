@@ -1,4 +1,8 @@
 import { recordSavingsGoalCommand } from "../../src/modules/planning/services/savings-goals";
+import {
+  saveNotificationPreferences,
+  getNotificationSettings,
+} from "../../src/modules/time/services/notification-preferences";
 import { getSavingsGoal } from "../../src/modules/planning/services/read-savings-goals";
 import {
   recordExpense,
@@ -204,27 +208,30 @@ async function main() {
       process.argv.includes("--upgrade-a5") ||
       process.argv.includes("--upgrade-a6") ||
       process.argv.includes("--upgrade-b") ||
-      process.argv.includes("--upgrade-c")
+      process.argv.includes("--upgrade-c") ||
+      process.argv.includes("--upgrade-f")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-c")
-        ? 111
-        : process.argv.includes("--upgrade-b")
-          ? 104
-          : process.argv.includes("--upgrade-a6")
-            ? 94
-            : process.argv.includes("--upgrade-a5")
-              ? 89
-              : process.argv.includes("--upgrade-a4")
-                ? 86
-                : process.argv.includes("--upgrade-a3")
-                  ? 82
-                  : process.argv.includes("--upgrade-a2")
-                    ? 80
-                    : process.argv.includes("--upgrade-a1")
-                      ? 78
-                      : process.argv.includes("--upgrade-v1")
-                        ? 76
-                        : 67;
+      const baselineCount = process.argv.includes("--upgrade-f")
+        ? 115
+        : process.argv.includes("--upgrade-c")
+          ? 111
+          : process.argv.includes("--upgrade-b")
+            ? 104
+            : process.argv.includes("--upgrade-a6")
+              ? 94
+              : process.argv.includes("--upgrade-a5")
+                ? 89
+                : process.argv.includes("--upgrade-a4")
+                  ? 86
+                  : process.argv.includes("--upgrade-a3")
+                    ? 82
+                    : process.argv.includes("--upgrade-a2")
+                      ? 80
+                      : process.argv.includes("--upgrade-a1")
+                        ? 78
+                        : process.argv.includes("--upgrade-v1")
+                          ? 76
+                          : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };
@@ -442,7 +449,54 @@ async function main() {
                 },
               })
             : null;
+        const baselineGoal =
+          baselineCount >= 115
+            ? await recordSavingsGoalCommand({
+                userId,
+                workspaceId,
+                operation: "save",
+                clientCommandId: randomUUID(),
+                goalId: null,
+                expectedVersion: null,
+                reason: null,
+                fields: {
+                  name: "Preserved D savings evidence",
+                  targetMinor: "777",
+                  targetDate: null,
+                  notes: null,
+                },
+              })
+            : null;
+        if (baselineGoal) {
+          const v = await getSavingsGoal({
+            userId,
+            workspaceId,
+            goalId: baselineGoal.goalId,
+          });
+          await recordSavingsGoalCommand({
+            userId,
+            workspaceId,
+            operation: "reserve",
+            clientCommandId: randomUUID(),
+            goalId: baselineGoal.goalId,
+            expectedVersion: v.goal.version,
+            expectedFinancialRevision: v.financialRevision,
+            financialAccountId: account.accountId,
+            reservedMinor: "50",
+            reason: "Preserved prior reservation",
+          });
+        }
         await migrate(db, config);
+        if (baselineGoal) {
+          const preserved = await getSavingsGoal({
+            userId,
+            workspaceId,
+            goalId: baselineGoal.goalId,
+          });
+          assert.equal(preserved.goal.version, 2);
+          assert.equal(preserved.goal.reservedMinor, "50");
+          assert.equal(preserved.goal.minimumMinor, "50");
+        }
         if (baselineBudget) {
           const preserved = await getBudget({
             userId,
@@ -2761,6 +2815,39 @@ async function main() {
     );
     console.log(
       "V2-D exact savings/replay, supported reservations, completion/release/archive and complete scoped lifecycle evidence passed without new financial effects.",
+    );
+    const notificationBody = {
+      clientCommandId: randomUUID(),
+      expectedVersion: 0,
+      preferences: {
+        enabled: true,
+        timezone: "Asia/Manila",
+        quietStart: "22:00",
+        quietEnd: "07:00",
+        includeDueDate: false,
+      },
+    };
+    assert.equal(
+      (await getNotificationSettings(owner)).preferences.enabled,
+      false,
+    );
+    const notificationResult = await saveNotificationPreferences(
+      owner,
+      notificationBody,
+    );
+    assert.deepEqual(
+      await saveNotificationPreferences(owner, notificationBody),
+      notificationResult,
+    );
+    assert.equal((await getNotificationSettings(owner)).preferences.version, 1);
+    await saveNotificationPreferences(owner, {
+      ...notificationBody,
+      clientCommandId: randomUUID(),
+      expectedVersion: 1,
+      preferences: { ...notificationBody.preferences, enabled: false },
+    });
+    console.log(
+      "V2-G explicit consent/defaults, verified identity, quiet hours, audit/replay and scoped notification lifecycle passed.",
     );
     const deletionPreview = await getDeletionPreview(owner);
     const proofSession = randomUUID();

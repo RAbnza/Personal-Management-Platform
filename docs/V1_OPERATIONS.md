@@ -24,7 +24,7 @@ Generate an independent random 32-byte secret encoded as 64 hex characters. Conf
 
 Authentication callbacks write encrypted `ops.email_delivery` intent and an ID-only, versioned pg-boss job in one authentication-role transaction. Better Auth manages its own preceding user/token write; it does not expose that library transaction to this callback. A failed enqueue fails the callback and can be retried; it does not claim atomicity with a hidden library token transaction. The adapter's rollback proof covers the delivery intent/job transaction.
 
-The worker consults delivery/source state and expiry, rechecks account lifecycle and serializes processing. It persists possible acceptance before network I/O. A fixed logical Resend idempotency key protects retries during the one-hour payload lifetime, within the provider's documented 24-hour deduplication window. Mailpit has no such guarantee: uncertain local acceptance is held rather than blindly resent. The worker records provider acceptance, not inbox delivery. It replaces terminal recipient ciphertext with a non-null zero-byte value and clears payload ciphertext, retains non-secret metadata for seven days, uses bounded exponential retries and a dead-letter queue, and emits fixed codes only. No external reminder delivery is implemented.
+The worker consults delivery/source state and expiry, rechecks account lifecycle and serializes processing. It persists possible acceptance before network I/O. A fixed logical Resend idempotency key protects retries during the one-hour payload lifetime, within the provider's documented 24-hour deduplication window. Mailpit has no such guarantee: uncertain local acceptance is held rather than blindly resent. The worker records provider acceptance, not inbox delivery. It replaces terminal recipient ciphertext with a non-null zero-byte value and clears payload ciphertext, retains non-secret metadata for seven days, uses bounded exponential retries and a dead-letter queue, and emits fixed codes only. V2-G optional reminder email uses separate consent/evidence and independent delivery gates; see Scheduled Notifications below.
 
 Drain or expire queued ciphertext before switching the single active email key. Seamless multi-key rotation is not implemented. Migration 0071 changes the terminal recipient representation; pause older workers during that coordinated migration and deploy the matching worker before resuming. The migration preserves forced RLS and limits its temporary data-fix policy to the migration owner and terminal records.
 
@@ -59,3 +59,49 @@ User-facing retention wording intentionally states that older backups may retain
 The application logger accepts an allowlist of fixed event codes and bounded metadata. Pool and authentication errors discard raw error messages, SQL parameters and library arguments. Private API errors use safe messages and request IDs; no private payloads, tokens, amounts, recipient addresses or provider response bodies should enter operational logs. Audit evidence remains owner-scoped domain data rather than diagnostic output. Keep Sentry PII/replay disabled if an operator configures Sentry; no external Sentry project is currently configured.
 
 For journal imbalance or unexpected duplicate economic evidence, stop financial writes and investigate immutable command/revision history. For unknown saves, use the original command receipt/replay. For stale previews, refresh source/version and review again. For uncertain email, inspect operational status and provider acceptance by message/logical ID without exposing encrypted payloads; do not redrive after provider deduplication has expired. For a purge/restore incident, keep access closed until the independent deletion register and ownership checks are reconciled.
+
+## Scheduled Notifications (V2-G)
+
+See `docs/v2/SCHEDULED_NOTIFICATIONS.md` for the approved delivery contract.
+`NOTIFICATIONS_ENABLED` defaults off independently of required authentication mail.
+Consent is a private owner command, not a deployment switch. Configure the same
+optional-delivery gate for web/status and worker environments. The worker's separate
+`NOTIFICATION_DATABASE_URL` must use `worker_domain`; it can read the forced-RLS
+reminder source graph, materialize reminders and write delivery/attempt evidence.
+It cannot write financial facts, read auth identities, perform DDL or fabricate
+inbound provider events. Webhook recording uses an authenticated, narrow
+`auth_adapter` function; no worker/queue/operator secret belongs in the web app.
+
+`jobs:migrate` installs the two V2 queues with the pinned supported pg-boss API.
+Optional deliveries enqueue only opaque delivery IDs, atomically with their durable
+records. Persistent consenting scopes and sources are scanned once per minute;
+keyset discovery continues on the next pass if its 10,000-scope pass budget is met.
+Each scope fails closed above 10,000 eligible source rows. Startup failures, scan
+errors and dead letters require review; never enable a blind bulk redrive.
+
+Mailpit remains local/test only. Real Resend reminder delivery additionally requires
+`NOTIFICATIONS_EXTERNAL_ENABLED=true`, the reviewed verified sender/domain, quotas,
+privacy/retention configuration, and `NOTIFICATION_WEBHOOK_SECRET` in the worker gate
+and web callback environment. Register `/api/webhooks/notifications` for sent,
+delivered, bounced and failed events. Raw-body verification uses the pinned Resend
+SDK's Svix verifier, enforces its replay-time check and a 64 KiB body limit, and
+stores only validated message/event IDs, kind and timestamps. No real delivery or
+production infrastructure was activated for local acceptance.
+
+Monitor `notification_backlog` count and oldest age (`durationMs`, alert above five
+minutes), `notification_uncertain`, `notification_failed`, `notification_retry` and
+`notification_dead_letters`. Events contain fixed codes and counts only. Attempted
+or uncertain sends must be reconciled through authenticated provider evidence or
+held. Never blindly resend them, even within a supposed deduplication window.
+Accepted does not mean delivered/read. A later authenticated bounce can coexist with
+historical delivery evidence. Proven rejection retries use the same logical key,
+with at most three attempts. Terminal cancellation/suppression cannot replay.
+
+Keep workers paused after restore. Cancel restored pending mail, hold attempted or
+uncertain outcomes, reconcile provider effects outside the recovered cutoff, and
+review/reconfirm optional consent before enabling delivery. Existing compact keys
+must survive operational job cleanup; they prevent historical replay. Delivery,
+attempt and provider evidence stays with the live workspace; scoped lifecycle purge
+removes it child-first. Jobs expire within seven days. Actual diagnostic retention,
+provider retention, sender verification, monitoring and recovery approval remain
+infrastructure acceptance gates.

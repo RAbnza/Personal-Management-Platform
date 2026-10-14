@@ -941,7 +941,7 @@ describe("V2-B recurring planning", () => {
           "SELECT has_table_privilege('auth_adapter','planning.expected_occurrence','SELECT') a,has_table_privilege('queue_broker','planning.expected_occurrence','SELECT') q,has_table_privilege('worker_domain','planning.expected_occurrence','SELECT') w,has_table_privilege('app_domain','planning.recurrence_version','UPDATE') u",
         ),
       );
-      expect(roles.rows[0]).toEqual({ a: false, q: false, w: false, u: false });
+      expect(roles.rows[0]).toEqual({ a: false, q: false, w: true, u: false });
       await expect(
         scoped(other, (c) =>
           c.query(

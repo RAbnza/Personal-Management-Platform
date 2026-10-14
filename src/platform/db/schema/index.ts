@@ -20,3 +20,4 @@ export * from "./card-statements";
 export * from "./card-commands";
 export * from "./card-installments";
 export * from "./planning";
+export * from "./notifications";

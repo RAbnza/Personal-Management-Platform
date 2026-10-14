@@ -98,6 +98,10 @@ export async function purgeDeletionStep(
       let removed = 0;
       // Fixed child-first order; each transaction removes at most rowBudget.
       for (const table of [
+        "time.notification_provider_event",
+        "time.notification_attempt",
+        "time.notification_delivery",
+        "time.notification_preference",
         "time.reminder_occurrence",
         "time.reminder_rule",
         "time.source_reminder_setting",

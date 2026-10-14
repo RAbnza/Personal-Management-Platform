@@ -6,6 +6,7 @@ import { getEmailEnvironment } from "@/platform/env/server";
 const EMAIL_DELIVERY_TIMEOUT_MS = 10_000;
 
 const emailMessageSchema = z.object({
+  notificationId: z.uuid().optional(),
   to: z.email(),
   subject: z
     .string()
@@ -109,6 +110,9 @@ async function sendWithResend(message: EmailMessage, idempotencyKey?: string) {
       to: [message.to],
       subject: message.subject,
       text: message.text,
+      ...(message.notificationId
+        ? { tags: [{ name: "notification_id", value: message.notificationId }] }
+        : {}),
       ...(message.html
         ? {
             html: message.html,

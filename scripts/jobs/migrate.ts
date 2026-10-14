@@ -4,6 +4,8 @@ import { Client } from "pg";
 import {
   SECURITY_EMAIL_QUEUE,
   SECURITY_EMAIL_DEAD_QUEUE,
+  NOTIFICATION_EMAIL_QUEUE,
+  NOTIFICATION_EMAIL_DEAD_QUEUE,
 } from "../../src/platform/jobs/boss";
 
 export async function migrateJobStorage(connectionString: string) {
@@ -36,6 +38,17 @@ export async function migrateJobStorage(connectionString: string) {
       retentionSeconds: 7 * 86400,
       deadLetter: SECURITY_EMAIL_DEAD_QUEUE,
     });
+    await boss.createQueue(NOTIFICATION_EMAIL_DEAD_QUEUE, {
+      retentionSeconds: 7 * 86400,
+    });
+    await boss.createQueue(NOTIFICATION_EMAIL_QUEUE, {
+      retryLimit: 3,
+      retryDelay: 30,
+      retryBackoff: true,
+      expireInSeconds: 120,
+      retentionSeconds: 7 * 86400,
+      deadLetter: NOTIFICATION_EMAIL_DEAD_QUEUE,
+    });
     await client.query(`REVOKE ALL ON SCHEMA pgboss FROM PUBLIC,app_domain,auth_adapter,queue_broker,worker_domain,lifecycle_operator;
       GRANT USAGE ON SCHEMA pgboss TO auth_adapter,queue_broker;
       REVOKE ALL ON ALL TABLES IN SCHEMA pgboss FROM PUBLIC,app_domain,auth_adapter,queue_broker,worker_domain,lifecycle_operator;
@@ -44,6 +57,10 @@ export async function migrateJobStorage(connectionString: string) {
       GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA pgboss TO queue_broker;
       REVOKE ALL ON ALL FUNCTIONS IN SCHEMA pgboss FROM PUBLIC;
       GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pgboss TO auth_adapter,queue_broker;`);
+    await client.query(`GRANT USAGE ON SCHEMA pgboss TO worker_domain;
+      GRANT SELECT ON pgboss.version,pgboss.queue TO worker_domain;
+      GRANT INSERT,SELECT(id) ON pgboss.job,pgboss.job_common TO worker_domain;
+      GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pgboss TO worker_domain;`);
   } finally {
     await boss.stop({ graceful: true });
     await client.end();

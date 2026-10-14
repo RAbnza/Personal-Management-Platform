@@ -61,13 +61,13 @@ export default async function SettingsPage() {
           Review in-app reminder defaults and source controls
         </Link>
         <p className="text-sm text-muted-foreground">
-          This release provides in-app due indicators. Scheduled email and push
-          delivery remain later features.
+          In-app reminders remain available independently of optional email.
         </p>
       </Panel>
       <Panel title="Account and help">
         <div className="flex flex-wrap gap-5">
           {[
+            ["/settings/notifications", "Manage optional reminder email"],
             ["/settings/sessions", "Review sessions and security"],
             ["/settings/lifecycle", "Review account deletion"],
             ["/help", "Task guides and replayable tour"],

@@ -802,10 +802,13 @@ describe("D8a PostgreSQL payment foundation", () => {
         for (const role of ["auth_adapter", "queue_broker", "worker_domain"]) {
           expect(
             (
-              await c.query(
-                `SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS allowed`,
-                [role, "finance." + t],
-              )
+              await c.query(`SELECT has_table_privilege($1,$2,$3) AS allowed`, [
+                role,
+                "finance." + t,
+                role === "worker_domain"
+                  ? "INSERT,UPDATE,DELETE,TRUNCATE"
+                  : "SELECT,INSERT,UPDATE,DELETE,TRUNCATE",
+              ])
             ).rows[0].allowed,
           ).toBe(false);
         }

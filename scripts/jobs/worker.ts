@@ -6,8 +6,15 @@ import { createServer } from "node:http";
 import {
   createRuntimeBoss,
   SECURITY_EMAIL_QUEUE,
+  NOTIFICATION_EMAIL_QUEUE,
+  NOTIFICATION_EMAIL_DEAD_QUEUE,
 } from "../../src/platform/jobs/boss";
 import { processSecurityEmail } from "../../src/platform/email/process-delivery";
+import {
+  notificationsAllowed,
+  processNotificationEmail,
+  scanNotificationScope,
+} from "../../src/platform/email/notification-delivery";
 import { purgeExpiredAuthMetadata } from "../../src/platform/auth/housekeeping";
 import { purgeDeletionStep } from "../../src/platform/lifecycle/purge";
 import { publishDeletionCheckpoint } from "../../src/platform/lifecycle/publish-deletion-checkpoint";
@@ -50,6 +57,31 @@ async function main() {
       throw new Error("Worker role configuration is invalid.");
   }
   getEmailEnvironment();
+  const notificationUrl = process.env.NOTIFICATION_DATABASE_URL;
+  if (
+    process.env.NOTIFICATIONS_ENABLED === "true" &&
+    (!notificationUrl ||
+      new URL(notificationUrl).username !== "worker_domain" ||
+      (["staging", "production"].includes(
+        process.env.PMP_DEPLOYMENT_ENV ?? "local",
+      ) &&
+        new URL(notificationUrl).searchParams.get("sslmode") !== "verify-full"))
+  )
+    throw new Error(
+      "Notification worker requires restricted verified configuration.",
+    );
+  const notifications =
+    process.env.NOTIFICATIONS_ENABLED === "true"
+      ? new Pool({
+          connectionString: notificationUrl,
+          max: 2,
+          connectionTimeoutMillis: 5000,
+          options:
+            "-c statement_timeout=15000 -c lock_timeout=5000 -c idle_in_transaction_session_timeout=30000",
+          application_name: "pmp-worker-notifications",
+        })
+      : null;
+  notifications?.on("error", () => logOperationalEvent("worker_error"));
   const queue = new Pool({
     connectionString: urls.QUEUE_DATABASE_URL,
     max: 3,
@@ -80,6 +112,7 @@ async function main() {
     maintenanceAt = 0;
   let ready = false;
   let heartbeatAt = 0;
+  let notificationCursor = "00000000-0000-0000-0000-000000000000";
   const health = createServer((_request, response) => {
     const healthy = ready && Date.now() - heartbeatAt < 90_000;
     response.writeHead(healthy ? 200 : 503, {
@@ -130,7 +163,78 @@ async function main() {
           client.release();
         }
       }
+      if (notifications && notificationsAllowed()) {
+        const notificationJobs = await boss.fetch(NOTIFICATION_EMAIL_QUEUE, {
+          batchSize: 1,
+        });
+        for (const job of notificationJobs) {
+          try {
+            await processNotificationEmail(
+              notifications,
+              notifications,
+              job.data,
+            );
+            await boss.complete(NOTIFICATION_EMAIL_QUEUE, job.id);
+          } catch {
+            await boss.fail(NOTIFICATION_EMAIL_QUEUE, job.id, {
+              code: "notification_retry",
+            });
+            logOperationalEvent("notification_retry");
+          }
+        }
+      }
       if (Date.now() >= maintenanceAt) {
+        if (notifications && notificationsAllowed()) {
+          let after = notificationCursor;
+          for (let page = 0; page < 100; page++) {
+            const scopes = (
+              await notifications.query(
+                'SELECT user_id AS "userId",workspace_id AS "workspaceId" FROM ops.notification_scopes($1)',
+                [after],
+              )
+            ).rows;
+            for (const scope of scopes) {
+              if (stopping) break;
+              try {
+                const result = await scanNotificationScope(
+                  notifications,
+                  scope,
+                );
+                logOperationalEvent("notification_scan", {
+                  count: result.scheduled,
+                });
+              } catch {
+                logOperationalEvent("notification_retry");
+              }
+              after = scope.workspaceId;
+              heartbeatAt = Date.now();
+            }
+            if (scopes.length < 100 || stopping) {
+              after = "00000000-0000-0000-0000-000000000000";
+              break;
+            }
+          }
+          notificationCursor = after;
+          const backlog = (
+            await notifications.query(
+              "SELECT * FROM ops.notification_backlog()",
+            )
+          ).rows[0];
+          logOperationalEvent("notification_backlog", {
+            count: Number(backlog.due_count),
+            durationMs: Math.max(0, backlog.age_ms),
+          });
+          logOperationalEvent("notification_uncertain", {
+            count: Number(backlog.uncertain_count),
+          });
+          logOperationalEvent("notification_failed", {
+            count: Number(backlog.failed_count),
+          });
+          const dead = await boss.getQueueStats(NOTIFICATION_EMAIL_DEAD_QUEUE);
+          logOperationalEvent("notification_dead_letters", {
+            count: dead[0]?.totalCount ?? 0,
+          });
+        }
         await boss.supervise(); // DML-only: stats partitioning/reindex are disabled.
         await auth.query(
           "UPDATE ops.email_delivery SET status='expired',recipient_ciphertext=decode('','hex'),payload_ciphertext=NULL,updated_at=clock_timestamp() WHERE id IN(SELECT id FROM ops.email_delivery WHERE status IN ('queued','uncertain') AND expires_at<=clock_timestamp() ORDER BY expires_at LIMIT 500)",
@@ -182,7 +286,12 @@ async function main() {
     if (health.listening)
       await new Promise<void>((resolve) => health.close(() => resolve()));
     await boss.stop({ graceful: true });
-    await Promise.all([queue.end(), auth.end(), operator.end()]);
+    await Promise.all([
+      queue.end(),
+      auth.end(),
+      operator.end(),
+      notifications?.end(),
+    ]);
     logOperationalEvent("worker_stopped");
   }
 }

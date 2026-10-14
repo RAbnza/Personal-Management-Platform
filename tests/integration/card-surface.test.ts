@@ -320,7 +320,7 @@ describe("V2-A6 integrated card acceptance", () => {
                   [role, "finance." + view],
                 )
               ).rows[0].allowed,
-            ).toBe(false);
+            ).toBe(role === "worker_domain");
         }
         for (const table of [
           "reminder_occurrence",

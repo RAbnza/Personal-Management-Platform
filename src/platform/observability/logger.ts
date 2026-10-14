@@ -20,6 +20,12 @@ const eventSchema = z.enum([
   "security_email_retry",
   "lifecycle_error",
   "worker_heartbeat",
+  "notification_retry",
+  "notification_scan",
+  "notification_backlog",
+  "notification_uncertain",
+  "notification_failed",
+  "notification_dead_letters",
 ]);
 /** Only fixed codes and bounded operational metadata can reach diagnostics.
  * Error objects, SQL parameters, requests, user records and URLs are excluded. */
