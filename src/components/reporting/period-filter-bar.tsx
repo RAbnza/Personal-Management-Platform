@@ -10,6 +10,7 @@ export function PeriodFilterBar({
   startDate = "",
   endDate = "",
   asOfDate,
+  career,
 }: {
   path: string;
   period?: string;
@@ -17,6 +18,15 @@ export function PeriodFilterBar({
   startDate?: string;
   endDate?: string;
   asOfDate?: string;
+  career?:
+    | {
+        sources: (string | null)[];
+        interval: string;
+        sourceName?: string | undefined;
+        sourceMissing?: "true" | undefined;
+        compare?: "previous" | undefined;
+      }
+    | undefined;
 }) {
   const [kind, setKind] = useState(period),
     [pending, startTransition] = useTransition(),
@@ -26,6 +36,10 @@ export function PeriodFilterBar({
     const params = new URLSearchParams();
     for (const [k, v] of new FormData(e.currentTarget))
       if (typeof v === "string" && v) params.set(k, v);
+    const source = params.get("careerSource");
+    params.delete("careerSource");
+    if (source === "null") params.set("sourceMissing", "true");
+    else if (source) params.set("sourceName", JSON.parse(source));
     startTransition(() => router.push(`${path}?${params}`));
   }
   return (
@@ -93,6 +107,69 @@ export function PeriodFilterBar({
               required
             />
           </label>
+        )}
+        {career && (
+          <>
+            <label className="min-w-40 flex-1 text-sm font-medium">
+              Cohort grouping
+              <select
+                name="cohortInterval"
+                defaultValue={career.interval}
+                className="min-h-11 w-full rounded-control border border-input bg-background px-3"
+              >
+                <option value="week">Weekly cohorts</option>
+                <option value="month">Monthly cohorts</option>
+                <option value="quarter">Quarterly cohorts</option>
+                <option value="year">Yearly cohorts</option>
+              </select>
+            </label>
+            <label className="min-w-40 flex-1 text-sm font-medium">
+              Application source
+              <select
+                name="careerSource"
+                defaultValue={
+                  career.sourceMissing
+                    ? "null"
+                    : career.sourceName !== undefined
+                      ? JSON.stringify(career.sourceName)
+                      : ""
+                }
+                className="min-h-11 w-full max-w-full rounded-control border border-input bg-background px-3"
+              >
+                <option value="">All sources</option>
+                {career.sourceName !== undefined &&
+                  !career.sources.includes(career.sourceName) && (
+                    <option value={JSON.stringify(career.sourceName)}>
+                      Requested source: {career.sourceName} (no matching cohort
+                      evidence)
+                    </option>
+                  )}
+                {career.sourceMissing && !career.sources.includes(null) && (
+                  <option value="null">
+                    Unspecified source (no matching cohort evidence)
+                  </option>
+                )}
+                {career.sources.map((source) => (
+                  <option
+                    key={JSON.stringify(source)}
+                    value={JSON.stringify(source)}
+                  >
+                    {source ?? "Unspecified source"}
+                    {source === "Unspecified source" ? " (recorded label)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-h-11 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="compare"
+                value="previous"
+                defaultChecked={career.compare === "previous"}
+              />
+              Compare preceding equal-length cohort
+            </label>
+          </>
         )}
         <Button type="submit" loading={pending} loadingLabel="Updating report…">
           Apply period

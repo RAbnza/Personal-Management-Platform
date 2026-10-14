@@ -44,6 +44,62 @@ beforeEach(() => {
 const request = (query = "") =>
   new Request(`https://example.test/api/v1/reports/financial?${query}`);
 describe("owner-scoped reports and bounded CSV API", () => {
+  it("supports scoped Career analytics filters without admitting them to Financial APIs", async () => {
+    const query =
+      "period=month&cohortInterval=week&sourceName=Referral&compare=previous&asOfDate=2024-03-10";
+    expect(
+      (
+        await report(request(query), {
+          params: Promise.resolve({ view: "career" }),
+        })
+      ).status,
+    ).toBe(200);
+    expect(mocks.career.mock.calls[0]![0]).toMatchObject({
+      userId: "owner",
+      workspaceId: "trusted",
+      query: {
+        cohortInterval: "week",
+        sourceName: "Referral",
+        compare: "previous",
+        asOfDate: "2024-03-10",
+      },
+    });
+    expect(
+      (
+        await report(request(query), {
+          params: Promise.resolve({ view: "financial" }),
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await csv(request(query), {
+          params: Promise.resolve({ filename: "report.csv" }),
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await csv(request(query), {
+          params: Promise.resolve({ filename: "transactions.csv" }),
+        })
+      ).status,
+    ).toBe(400);
+    for (const invalid of [
+      "sourceName=Referral&sourceMissing=true",
+      "cohortInterval=daily",
+      "sourceName=A&sourceName=B",
+      "workspaceId=foreign",
+    ]) {
+      expect(
+        (
+          await report(request(invalid), {
+            params: Promise.resolve({ view: "career" }),
+          })
+        ).status,
+      ).toBe(400);
+    }
+  });
   it.each(["financial", "career", "contributions"])(
     "resolves %s using only the trusted actor",
     async (view) => {

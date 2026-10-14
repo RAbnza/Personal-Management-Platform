@@ -15,6 +15,8 @@ export async function readExportRows(
   period: ReportPeriod,
   kind: Exclude<ExportKind, "report">,
   asOfDate: string,
+  sourceName?: string,
+  sourceMissing?: "true",
 ) {
   if (kind === "transactions")
     return (
@@ -52,7 +54,8 @@ export async function readExportRows(
     ).rows;
   return (
     await t.db.execute<ExportRow>(sql`
-    WITH cohort AS (SELECT a.* FROM career.job_application a WHERE a.workspace_id=${workspaceId}::uuid AND a.applied_date>=${period.startDate}::date AND a.applied_date<${period.endDateExclusive}::date AND a.applied_date<=${asOfDate}::date), history AS (
+    WITH cohort AS (SELECT a.* FROM career.job_application a WHERE a.workspace_id=${workspaceId}::uuid AND a.applied_date>=${period.startDate}::date AND a.applied_date<${period.endDateExclusive}::date AND a.applied_date<=${asOfDate}::date
+      AND (${sourceName ?? null}::text IS NULL OR a.source_name=${sourceName ?? null}::text) AND (${sourceMissing === "true"}::boolean=false OR a.source_name IS NULL)), history AS (
       SELECT 'stage_observation' AS record_type,h.id AS source_id,a.id AS application_id,a.company_name,a.role_title,a.source_name,a.applied_date::text,h.effective_date::text,h.sequence_no AS source_version,
         h.stage,h.outcome,h.supersedes_history_id::text,
         EXISTS(SELECT 1 FROM career.application_stage_history c WHERE c.workspace_id=h.workspace_id AND c.supersedes_history_id=h.id) AS superseded,h.reason,

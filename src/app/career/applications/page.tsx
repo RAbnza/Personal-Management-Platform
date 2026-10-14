@@ -216,6 +216,12 @@ export default async function CareerApplicationsPage({
             Track each application attempt separately, including saved
             opportunities, current stage, outcome, and upcoming Career activity.
           </p>
+          <Link
+            href="/reports/career"
+            className="inline-flex min-h-11 text-link underline"
+          >
+            Explore Career analytics
+          </Link>
         </header>
 
         <Panel

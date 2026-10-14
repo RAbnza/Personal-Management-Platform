@@ -13,6 +13,7 @@ import {
   ReportLimitError,
 } from "@/modules/reporting/domain/reports";
 import { reportSearchParams } from "@/modules/reporting/domain/search-params";
+import { careerReportQuerySchema } from "@/modules/reporting/domain/career-analytics";
 export const runtime = "nodejs";
 export async function GET(
   request: Request,
@@ -37,9 +38,10 @@ export async function GET(
     const result = await prepareCsvExport({
       ...actor.actor,
       kind: kind.data,
-      query: reportQuerySchema.parse(
-        reportSearchParams(new URL(request.url).searchParams),
-      ),
+      query: (kind.data === "report" || kind.data === "applications"
+        ? careerReportQuerySchema
+        : reportQuerySchema
+      ).parse(reportSearchParams(new URL(request.url).searchParams)),
     });
     let offset = 0;
     const stream = new ReadableStream<Uint8Array>({

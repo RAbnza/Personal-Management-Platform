@@ -1,7 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-export function CsvExportControl({ dates }: { dates: string }) {
+export function CsvExportControl({
+  dates,
+  careerDates,
+}: {
+  dates: string;
+  careerDates?: string | undefined;
+}) {
   const [kind, setKind] = useState("report"),
     [pending, setPending] = useState(false),
     [error, setError] = useState<string | null>(null),
@@ -11,10 +17,13 @@ export function CsvExportControl({ dates }: { dates: string }) {
     setError(null);
     setMessage("");
     try {
-      const response = await fetch(`/api/v1/exports/${kind}.csv?${dates}`, {
-        credentials: "same-origin",
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `/api/v1/exports/${kind}.csv?${careerDates && ["report", "applications"].includes(kind) ? careerDates : dates}`,
+        {
+          credentials: "same-origin",
+          cache: "no-store",
+        },
+      );
       if (!response.ok) {
         const p = await response.json().catch(() => null);
         throw new Error(

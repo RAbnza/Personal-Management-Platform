@@ -21,6 +21,7 @@ import {
   ReportLimitError,
 } from "@/modules/reporting/domain/reports";
 import { reportSearchParams } from "@/modules/reporting/domain/search-params";
+import { careerReportQuerySchema } from "@/modules/reporting/domain/career-analytics";
 import { readExportHistory } from "@/modules/reporting/repositories/export-repository";
 import { PeriodFilterBar } from "./period-filter-bar";
 import { CsvExportControl } from "./csv-export-control";
@@ -67,7 +68,7 @@ export async function ReportPage({
     else if (view === "career")
       career = await getCareerReport({
         ...actor,
-        query: reportQuerySchema.parse(raw),
+        query: careerReportQuerySchema.parse(raw),
       });
     else
       financial = await getFinancialReport({
@@ -84,6 +85,16 @@ export async function ReportPage({
   }
   const data = financial ?? career ?? detail,
     dates = data ? reportDates(data.period, data.asOfDate).toString() : "";
+  const careerDates = new URLSearchParams(dates);
+  if (career) {
+    careerDates.set("cohortInterval", career.cohortInterval);
+    if (career.filters.sourceName !== undefined)
+      careerDates.set("sourceName", career.filters.sourceName);
+    if (career.filters.sourceMissing)
+      careerDates.set("sourceMissing", career.filters.sourceMissing);
+    if (career.filters.compare)
+      careerDates.set("compare", career.filters.compare);
+  }
   const detailSelection = detail
     ? new URLSearchParams(detail.selection).toString()
     : "";
@@ -150,13 +161,26 @@ export async function ReportPage({
         )}
         {view !== "detail" && (
           <PeriodFilterBar
-            key={dates}
+            key={view === "career" ? careerDates.toString() : dates}
             path={`/reports/${view}`}
             period={data?.period.kind ?? "month"}
             anchorDate={data?.filters.anchorDate ?? data?.today ?? ""}
             startDate={data?.period.startDate ?? ""}
             endDate={data?.period.endDate ?? ""}
-            {...(view === "career" ? { asOfDate: data?.asOfDate ?? "" } : {})}
+            {...(view === "career"
+              ? {
+                  asOfDate: data?.asOfDate ?? "",
+                  career: career
+                    ? {
+                        sources: career.availableSources,
+                        interval: career.cohortInterval,
+                        sourceName: career.filters.sourceName,
+                        sourceMissing: career.filters.sourceMissing,
+                        compare: career.filters.compare,
+                      }
+                    : undefined,
+                }
+              : {})}
           />
         )}
         {error && (
@@ -180,7 +204,12 @@ export async function ReportPage({
           </p>
         )}
         {financial && <FinancialReportView data={financial} />}{" "}
-        {career && <CareerReportView data={career} />}
+        {career && (
+          <CareerReportView
+            key={`${career.coverage.sourceRevision}:${careerDates}`}
+            data={career}
+          />
+        )}
         {detail && (
           <Panel
             title={financialMetrics[detail.metric]}
@@ -299,7 +328,10 @@ export async function ReportPage({
             title="CSV export"
             description="A fresh consistent snapshot using this exact date range; later writes can change its source revision."
           >
-            <CsvExportControl dates={dates} />
+            <CsvExportControl
+              dates={dates}
+              careerDates={career ? careerDates.toString() : undefined}
+            />
             <details className="mt-4">
               <summary className="min-h-11 cursor-pointer font-medium">
                 Recent prepared exports (30-day provenance)

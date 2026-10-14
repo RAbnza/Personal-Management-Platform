@@ -16,6 +16,7 @@ import {
   ReportLimitError,
 } from "@/modules/reporting/domain/reports";
 import { reportSearchParams } from "@/modules/reporting/domain/search-params";
+import { careerReportQuerySchema } from "@/modules/reporting/domain/career-analytics";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ view: string }> },
@@ -43,7 +44,7 @@ export async function GET(
         : view === "career"
           ? await getCareerReport({
               ...actor.actor,
-              query: reportQuerySchema.parse(query),
+              query: careerReportQuerySchema.parse(query),
             })
           : await getFinancialReport({
               ...actor.actor,

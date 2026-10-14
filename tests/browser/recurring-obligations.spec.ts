@@ -45,11 +45,25 @@ function definition(date: string, name = "Browser recurring bill") {
     window: { from: date, through: addCalendarDays(date, 30) },
   };
 }
-async function audit(page: Page, cpu: CDPSession) {
+async function audit(page: Page, cpu: CDPSession, theme?: string) {
   // The persistent app shell can be visible while Next streams route content.
   // Audit the rendered page rather than its temporary loading boundary.
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await cpu.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  // New documents can hydrate the saved theme after their heading is visible.
+  // Measure the selected theme after finite color transitions, not a blend.
+  if (theme) await expect(page.locator("html")).toHaveClass(new RegExp(theme));
+  await page.evaluate(async () => {
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
   if (
     !(await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -340,7 +354,7 @@ test("planned sources support keyboard reminders, both themes and long-name 320p
     ]) {
       await page.goto(path);
       await expect(page.getByRole("main")).toBeVisible();
-      await audit(page, cpu);
+      await audit(page, cpu, theme);
     }
   }
   const dismiss = page
@@ -365,6 +379,6 @@ test("planned sources support keyboard reminders, both themes and long-name 320p
   await expect(page.getByRole("main")).toContainText(
     "Planned recurring obligation",
   );
-  await audit(page, cpu);
+  await audit(page, cpu, "dark");
   await cpu.detach();
 });

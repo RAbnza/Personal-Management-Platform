@@ -306,6 +306,14 @@ export default async function JobApplicationDetailPage({
           title="Application details"
           description="This record represents one application attempt. Dates and stage history preserve what actually happened."
         >
+          {application.appliedDate && (
+            <Link
+              href={`/reports/career?period=month&anchorDate=${application.appliedDate}`}
+              className="inline-flex min-h-11 text-link underline"
+            >
+              View this attempt’s submission cohort
+            </Link>
+          )}
           <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <dt className="text-xs font-medium text-muted-foreground">

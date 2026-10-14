@@ -3,6 +3,11 @@ import { Readable } from "node:stream";
 import { stringify } from "csv-stringify";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import {
+  careerBaseQuery,
+  CAREER_CALCULATION_VERSION,
+  type CareerReportQuery,
+} from "../domain/career-analytics";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import { lockActivePrivateWorkspace } from "@/modules/core/repositories/private-domain-write-repository";
 import {
@@ -35,23 +40,32 @@ export const exportKindSchema = z.enum([
   "applications",
   "report",
 ]);
-export const CSV_SCHEMA_VERSION = 3;
+export const CSV_SCHEMA_VERSION = 4;
 export const EXPORT_BYTE_LIMIT = 10 * 1024 * 1024;
 export async function prepareCsvSnapshotInTransaction(
   t: ScopedTransaction,
   input: {
     workspaceId: string;
     kind: ExportKind;
-    query: z.input<typeof reportQuerySchema>;
+    query: CareerReportQuery;
   },
 ) {
-  const kind = exportKindSchema.parse(input.kind),
-    context = await resolveReport(t, input.workspaceId, input.query);
+  const kind = exportKindSchema.parse(input.kind);
+  const careerSelection =
+    kind === "report" || kind === "applications"
+      ? careerBaseQuery(input.query)
+      : null;
+  const baseQuery =
+    careerSelection?.query ?? reportQuerySchema.parse(input.query);
+  const context = {
+    ...(await resolveReport(t, input.workspaceId, baseQuery)),
+    filters: { scope: "all_owned_records", ...input.query },
+  };
   let rows: ExportRow[];
   if (kind === "report") {
     const financial = await getFinancialReportInTransaction(t, {
         workspaceId: input.workspaceId,
-        query: input.query,
+        query: baseQuery,
       }),
       career = await getCareerReportInTransaction(t, {
         workspaceId: input.workspaceId,
@@ -158,6 +172,89 @@ export async function prepareCsvSnapshotInTransaction(
       label:
         "Explicit response events / submitted-date cohort; blank denominator is not applicable",
     });
+    for (const [metric, rate] of Object.entries({
+      interview_rate: career.summary.interviewRate,
+      offer_rate: career.summary.offerRate,
+      accepted_rate: career.summary.acceptedRate,
+      response_to_interview: career.summary.responseToInterviewRate,
+      interview_to_offer: career.summary.interviewToOfferRate,
+    }))
+      rows.push({
+        record_type: "career_rate",
+        metric,
+        numerator: rate?.numerator ?? null,
+        denominator: rate?.denominator ?? null,
+      });
+    const summaries = [
+      {
+        record_type: "career_cohort_summary",
+        summary: career.summary,
+        source: null,
+        start: career.period.startDate,
+        end: career.period.endDate,
+      },
+      ...career.analytics.sources.map((s) => ({
+        record_type: "career_source_summary",
+        summary: s,
+        source: s.source,
+        start: career.period.startDate,
+        end: career.period.endDate,
+      })),
+      ...career.analytics.cohorts.map((s) => ({
+        record_type: "career_trend_summary",
+        summary: s,
+        source: null,
+        start: s.startDate,
+        end: s.endDate,
+      })),
+      ...(career.comparison
+        ? [
+            {
+              record_type: "career_comparison_summary",
+              summary: career.comparison.summary,
+              source: null,
+              start: career.comparison.period.startDate,
+              end: career.comparison.period.endDate,
+            },
+          ]
+        : []),
+    ];
+    for (const s of summaries)
+      rows.push({
+        record_type: s.record_type,
+        source_name: s.source,
+        period_start: s.start,
+        period_end_inclusive: s.end,
+        count_value: s.summary.submitted,
+        numerator: s.summary.responded,
+        denominator: s.summary.responseRate?.denominator ?? null,
+        summary_json: JSON.stringify(s.summary),
+        calculation_version: CAREER_CALCULATION_VERSION,
+        observation_cutoff: career.asOfDate,
+        career_source_revision: career.coverage.sourceRevision,
+      });
+    for (const s of career.analytics.stageTiming)
+      rows.push({
+        record_type: "career_stage_timing",
+        stage: s.stage,
+        summary_json: JSON.stringify(s),
+        calculation_version: CAREER_CALCULATION_VERSION,
+      });
+    for (const s of career.analytics.eventSummary)
+      rows.push({
+        record_type: "career_event_activity",
+        summary_json: JSON.stringify(s),
+        calculation_version: CAREER_CALCULATION_VERSION,
+      });
+    rows.push({
+      record_type: "career_coverage",
+      observation_cutoff: career.asOfDate,
+      calculation_version: CAREER_CALCULATION_VERSION,
+      career_source_revision: career.coverage.sourceRevision,
+      pre_submission_evidence: career.analytics.preSubmissionEvidence,
+      label: `${career.coverage.note} ${career.coverage.comparisonNote}`,
+      filters_json: JSON.stringify(career.filters),
+    });
   } else
     rows = await readExportRows(
       t,
@@ -165,6 +262,8 @@ export async function prepareCsvSnapshotInTransaction(
       context.period,
       kind,
       context.asOfDate,
+      careerSelection?.sourceName,
+      careerSelection?.sourceMissing,
     );
   if (rows.length > 10000) throw new ReportLimitError();
   const coverage = await readReportCoverage(
@@ -251,6 +350,11 @@ export async function recordExportProvenanceInTransaction(
       scope: "all_owned_records",
       period: s.context.period,
       asOfDate: s.context.asOfDate,
+      filters: Object.fromEntries(
+        Object.entries(s.context.filters).filter(
+          ([, value]) => value !== undefined,
+        ),
+      ) as Record<string, string>,
     };
   const receipt = await claimCommandReceipt(t, {
     workspaceId: input.workspaceId,
@@ -277,7 +381,7 @@ export async function prepareCsvExport(input: {
   userId: string;
   workspaceId: string;
   kind: ExportKind;
-  query: z.input<typeof reportQuerySchema>;
+  query: CareerReportQuery;
 }) {
   const started = Date.now();
   const snapshot = await withDomainTransaction(
@@ -293,6 +397,11 @@ export async function prepareCsvExport(input: {
     export_kind: snapshot.kind,
     schema_version: String(CSV_SCHEMA_VERSION),
     definition_version: c.definitionVersion,
+    career_calculation_version: ["report", "applications"].includes(
+      snapshot.kind,
+    )
+      ? CAREER_CALCULATION_VERSION
+      : null,
     period_start: c.period.startDate,
     period_end_inclusive: c.period.endDate,
     period_end_exclusive: c.period.endDateExclusive,

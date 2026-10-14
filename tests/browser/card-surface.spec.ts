@@ -231,7 +231,7 @@ test("integrated cards, exact reporting and CSV, due-date Agenda and reviewed re
     bom: true,
   }) as Record<string, string>[];
   expect(rows[0]).toMatchObject({
-    schema_version: "3",
+    schema_version: "4",
     definition_version: "v2-a6-integrated-cards-1",
   });
   expect(

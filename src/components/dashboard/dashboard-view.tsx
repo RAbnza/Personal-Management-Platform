@@ -6,6 +6,7 @@ import { Panel } from "@/components/ui/panel";
 import { AgendaList } from "@/components/calendar/agenda-list";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { spendingHref } from "@/modules/reporting/domain/period";
+import { reportDates } from "@/modules/reporting/domain/reports";
 import type { DashboardResult } from "@/modules/dashboard/services/get-dashboard";
 import { DashboardFilters } from "./dashboard-filters";
 
@@ -283,6 +284,17 @@ export function DashboardView({
             note="Scheduled follow-up events."
           />
         </dl>
+        <Link
+          className={linkClass}
+          href={`/reports/career?${reportDates(data.period, data.today)}`}
+        >
+          Explore submission-cohort analytics for this period
+        </Link>
+        <p className="text-sm text-muted-foreground">
+          Active applications and upcoming scheduled events above are
+          operational counts; submission-cohort conversions use recorded
+          milestones and their own dated scope.
+        </p>
         <details id="active-applications" className="mt-4">
           <summary className="min-h-11 cursor-pointer font-semibold">
             Supporting applications ({data.career.activeCount} active,{" "}
