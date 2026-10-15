@@ -1,3 +1,6 @@
+import { processAttachment } from "../../src/platform/files/process-attachment";
+import { createPrivateEvidenceStore } from "../../src/platform/files/object-store";
+import { createClamScanner } from "../../src/platform/files/malware-scanner";
 import { loadEnvFile } from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { Pool, Client } from "pg";
@@ -82,6 +85,30 @@ async function main() {
         })
       : null;
   notifications?.on("error", () => logOperationalEvent("worker_error"));
+  const fileUrl = process.env.FILES_DATABASE_URL;
+  if (
+    process.env.FILES_ENABLED === "true" &&
+    (!fileUrl ||
+      new URL(fileUrl).username !== "worker_domain" ||
+      (["staging", "production"].includes(
+        process.env.PMP_DEPLOYMENT_ENV ?? "local",
+      ) &&
+        new URL(fileUrl).searchParams.get("sslmode") !== "verify-full"))
+  )
+    throw new Error("Restricted file worker configuration required.");
+  const files =
+    process.env.FILES_ENABLED === "true"
+      ? new Pool({
+          connectionString: fileUrl,
+          max: 2,
+          connectionTimeoutMillis: 5000,
+          options: "-c statement_timeout=15000 -c lock_timeout=5000",
+          application_name: "pmp-private-files",
+        })
+      : null;
+  const fileStore = files ? createPrivateEvidenceStore() : null,
+    fileScanner = files ? createClamScanner() : null;
+  files?.on("error", () => logOperationalEvent("worker_error"));
   const queue = new Pool({
     connectionString: urls.QUEUE_DATABASE_URL,
     max: 3,
@@ -111,7 +138,9 @@ async function main() {
   let stopping = false,
     maintenanceAt = 0;
   let ready = false;
+  let fileTask: Promise<void> | null = null;
   let heartbeatAt = 0;
+  let fileCursor = "00000000-0000-0000-0000-000000000000";
   let notificationCursor = "00000000-0000-0000-0000-000000000000";
   const health = createServer((_request, response) => {
     const healthy = ready && Date.now() - heartbeatAt < 90_000;
@@ -163,6 +192,36 @@ async function main() {
           client.release();
         }
       }
+      if (files && fileStore && fileScanner && !fileTask) {
+        const fileJobs = await boss.fetch("v2-private-file-scan", {
+          batchSize: 1,
+        });
+        for (const job of fileJobs) {
+          fileTask = (async () => {
+            try {
+              const result = await processAttachment(
+                files,
+                job.data,
+                fileStore,
+                fileScanner,
+                abort.signal,
+              );
+              if (result.processed)
+                await boss.complete("v2-private-file-scan", job.id);
+              else
+                await boss.fail("v2-private-file-scan", job.id, {
+                  code: "file_scan_unconfirmed",
+                });
+            } catch {
+              await boss.fail("v2-private-file-scan", job.id, {
+                code: "file_scan_unconfirmed",
+              });
+            } finally {
+              fileTask = null;
+            }
+          })().catch(() => logOperationalEvent("worker_error"));
+        }
+      }
       if (notifications && notificationsAllowed()) {
         const notificationJobs = await boss.fetch(NOTIFICATION_EMAIL_QUEUE, {
           batchSize: 1,
@@ -184,6 +243,24 @@ async function main() {
         }
       }
       if (Date.now() >= maintenanceAt) {
+        if (files) {
+          const candidates = (
+            await files.query("SELECT id FROM ops.file_candidates($1)", [
+              fileCursor,
+            ])
+          ).rows;
+          const producer = createRuntimeBoss(files);
+          fileCursor =
+            candidates.length === 100
+              ? candidates[99].id
+              : "00000000-0000-0000-0000-000000000000";
+          for (const f of candidates)
+            await producer.send(
+              "v2-private-file-scan",
+              { schemaVersion: 1, attachmentId: f.id },
+              { singletonKey: f.id },
+            );
+        }
         if (notifications && notificationsAllowed()) {
           let after = notificationCursor;
           for (let page = 0; page < 100; page++) {
@@ -235,6 +312,9 @@ async function main() {
             count: dead[0]?.totalCount ?? 0,
           });
         }
+        await operator.query(
+          "SELECT ops.expire_portable_artifacts(),ops.expire_import_staging()",
+        );
         await boss.supervise(); // DML-only: stats partitioning/reindex are disabled.
         await auth.query(
           "UPDATE ops.email_delivery SET status='expired',recipient_ciphertext=decode('','hex'),payload_ciphertext=NULL,updated_at=clock_timestamp() WHERE id IN(SELECT id FROM ops.email_delivery WHERE status IN ('queued','uncertain') AND expires_at<=clock_timestamp() ORDER BY expires_at LIMIT 500)",
@@ -261,7 +341,13 @@ async function main() {
               requestedAt: request.requested_at.toISOString(),
               purgeAfter: request.purge_after.toISOString(),
             });
-            await purgeDeletionStep(operator, request.id);
+            await purgeDeletionStep(
+              operator,
+              request.id,
+              10000,
+              fileStore ?? undefined,
+              abort.signal,
+            );
           } catch {
             logOperationalEvent("lifecycle_error");
           }
@@ -285,12 +371,14 @@ async function main() {
     ready = false;
     if (health.listening)
       await new Promise<void>((resolve) => health.close(() => resolve()));
+    await fileTask;
     await boss.stop({ graceful: true });
     await Promise.all([
       queue.end(),
       auth.end(),
       operator.end(),
       notifications?.end(),
+      files?.end(),
     ]);
     logOperationalEvent("worker_stopped");
   }

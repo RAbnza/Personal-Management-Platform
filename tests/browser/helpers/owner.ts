@@ -80,7 +80,7 @@ export async function removeBrowserOwner(owner: BrowserOwner) {
       owner.userId,
     ]);
     const tables = await c.query<{ table_schema: string; table_name: string }>(
-      `SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema IN ('core','finance','career','time','audit','ops','planning')`,
+      `SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema IN ('core','finance','career','time','audit','ops','planning','files')`,
     );
     for (const row of tables.rows) {
       if (

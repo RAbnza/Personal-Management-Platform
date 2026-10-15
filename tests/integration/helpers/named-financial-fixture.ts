@@ -15,6 +15,7 @@ const labels = [
   "V2-E forecast fixture",
   "V2-F career analytics fixture",
   "V2-G notification fixture",
+  "V2-H portability fixture",
 ] as const;
 /** Committed, large synthetic fixture teardown only. Never called by product
  * services. Mirrors established administrator fixture cleanup, with database,
@@ -49,7 +50,18 @@ export async function removeNamedFinancialFixture(
     const tables = (
       await c.query(
         "SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema=ANY($1)",
-        [["core", "finance", "career", "time", "audit", "ops", "planning"]],
+        [
+          [
+            "core",
+            "finance",
+            "career",
+            "time",
+            "audit",
+            "ops",
+            "planning",
+            "files",
+          ],
+        ],
       )
     ).rows;
     for (const t of tables)

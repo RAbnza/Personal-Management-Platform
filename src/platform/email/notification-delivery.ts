@@ -57,6 +57,7 @@ export async function notificationScheduledAt(
   instant: string,
   p: NotificationPreferences,
 ) {
+  if (p.quietStart === null) return instant;
   return (
     await tx.db.execute<{ at: string }>(
       sql`WITH local AS (SELECT ${instant}::timestamptz at,COALESCE(${p.timezone},timezone) zone FROM core.workspace),civil AS (SELECT *,at AT TIME ZONE zone t FROM local) SELECT (CASE WHEN ${p.quietStart}::text IS NULL THEN at WHEN ${p.quietStart}::time<${p.quietEnd}::time AND t::time>=${p.quietStart}::time AND t::time<${p.quietEnd}::time THEN (t::date+${p.quietEnd}::time) AT TIME ZONE zone WHEN ${p.quietStart}::time>${p.quietEnd}::time AND t::time>=${p.quietStart}::time THEN ((t::date+1)+${p.quietEnd}::time) AT TIME ZONE zone WHEN ${p.quietStart}::time>${p.quietEnd}::time AND t::time<${p.quietEnd}::time THEN (t::date+${p.quietEnd}::time) AT TIME ZONE zone ELSE at END)::text at FROM civil`,
@@ -130,11 +131,89 @@ export async function scanNotificationScopeInTransaction(
       actor.workspaceId,
       targets,
     );
+    const retirementKey = (
+      v: (typeof views)[number],
+      r: (typeof v.rules)[number],
+    ) =>
+      JSON.stringify([
+        (v.target as ReminderSource).sourceKind,
+        (v.target as ReminderSource).sourceId,
+        v.sourceGeneration,
+        r.generation,
+        r.offsetDays,
+        r.localTime,
+      ]);
+    const candidates = views.filter(valid).flatMap((v) =>
+      v.rules
+        .filter((r) => r.id && ["active", "snoozed"].includes(r.state))
+        .map((r) => ({
+          key: retirementKey(v, r),
+          kind: (v.target as ReminderSource).sourceKind,
+          source_id: (v.target as ReminderSource).sourceId,
+          source_generation: v.sourceGeneration,
+          rule_generation: r.generation,
+          offset_days: r.offsetDays,
+          local_time: r.localTime,
+        })),
+    );
+    const retired = new Set(
+      (
+        await tx.db.execute<{ key: string }>(
+          sql`SELECT key FROM jsonb_to_recordset(${JSON.stringify(candidates)}::jsonb) AS c(key text,kind text,source_id uuid,source_generation integer,rule_generation integer,offset_days integer,local_time text) WHERE ops.notification_generation_retired(c.kind,c.source_id,c.source_generation,c.rule_generation,c.offset_days,c.local_time)`,
+        )
+      ).rows.map((r) => r.key),
+    );
+    const occurrenceIds = views.flatMap((v) =>
+      v.rules.flatMap((r) => (r.occurrenceId ? [r.occurrenceId] : [])),
+    );
+    const existingDeliveries = new Map(
+      occurrenceIds.length
+        ? (
+            await tx.db.execute<{
+              id: string;
+              reminder_occurrence_id: string;
+              status: string;
+              scheduled_at: string;
+            }>(
+              sql`SELECT id,reminder_occurrence_id,status,scheduled_at::text FROM time.notification_delivery WHERE reminder_occurrence_id=ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(occurrenceIds)}::jsonb))::uuid[])`,
+            )
+          ).rows.map((d) => [d.reminder_occurrence_id, d] as const)
+        : [],
+    );
     for (const v of views) {
       if (!valid(v)) continue;
       const c = sourceColumns(v.target as ReminderSource);
       for (const r of v.rules) {
         if (!r.id || !["active", "snoozed"].includes(r.state)) continue;
+        if (retired.has(retirementKey(v, r))) continue;
+        const existing = r.occurrenceId
+          ? existingDeliveries.get(r.occurrenceId)
+          : undefined;
+        if (existing) {
+          current.add(existing.reminder_occurrence_id);
+          if (existing.status === "scheduled") {
+            const at = await notificationScheduledAt(
+              tx,
+              r.snoozedUntil ?? r.scheduledFor,
+              p,
+            );
+            if (
+              new Date(existing.scheduled_at).getTime() !==
+              new Date(at).getTime()
+            ) {
+              const changed = (
+                await tx.db.execute<{ id: string }>(
+                  sql`UPDATE time.notification_delivery SET scheduled_at=${at}::timestamptz WHERE id=${existing.id}::uuid AND status='scheduled' AND scheduled_at<>${at}::timestamptz RETURNING id`,
+                )
+              ).rows[0];
+              if (changed) {
+                await enqueue(tx, changed.id, at);
+                scheduled++;
+              }
+            }
+          }
+          continue;
+        }
         const occurrence = (
           await tx.db.execute<{ id: string }>(
             sql`INSERT INTO time.reminder_occurrence(workspace_id,rule_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,expected_occurrence_id,occurrence_key,source_generation,rule_generation,scheduled_for) VALUES(${actor.workspaceId}::uuid,${r.id}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${c.recurring}::uuid,${v.occurrenceKey},${v.sourceGeneration},${r.generation},${r.scheduledFor}::timestamptz) ON CONFLICT ON CONSTRAINT uq_reminder_occurrence_logical DO NOTHING RETURNING id`,

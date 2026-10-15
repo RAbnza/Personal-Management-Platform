@@ -26,3 +26,5 @@ export function createRuntimeBossWithDatabase(database: Db) {
     persistQueueStats: false,
   });
 }
+
+export const FILE_SCAN_QUEUE = "v2-private-file-scan";

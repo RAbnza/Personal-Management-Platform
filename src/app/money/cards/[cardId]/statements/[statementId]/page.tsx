@@ -1,3 +1,4 @@
+import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -249,6 +250,10 @@ export default async function StatementPage({
           </Link>
         )}
       </Panel>
+      <Attachments
+        sourceKind="card_statement_revision"
+        sourceId={s.revisionId}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { Attachments } from "@/components/files/attachments";
 import { DebtSettlementHistory } from "@/components/money/debt-settlement-history";
 import Link from "next/link";
 import { z } from "zod";
@@ -313,6 +314,7 @@ export default async function DebtDetailPage({
         initialItems={result.payments}
         initialCursor={result.nextPaymentCursor}
       />
+      <Attachments sourceKind="debt" sourceId={debt.debtId} />
     </article>
   );
 }

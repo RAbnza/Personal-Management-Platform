@@ -93,7 +93,7 @@ async function fixture(
       async (tx) =>
         (
           await tx.db.execute<{ date: string }>(
-            sql`SELECT (clock_timestamp() AT TIME ZONE timezone)::date::text date FROM core.workspace`,
+            sql`SELECT ((clock_timestamp() AT TIME ZONE timezone)::date-1)::text date FROM core.workspace`,
           )
         ).rows[0]!.date,
     );
@@ -102,6 +102,7 @@ async function fixture(
       clientCommandId: randomUUID(),
       title: "Private financial company note",
       temporalKind: "date",
+      // A past 09:00 occurrence is due at every time of day; consent ageing remains explicit.
       eventDate: today,
     });
     if (aged) {

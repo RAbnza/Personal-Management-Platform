@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "@playwright/test";
 import "./tests/setup/integration";
 import { readFileSync } from "node:fs";
@@ -20,6 +21,14 @@ const baseURL = "http://localhost:3100";
 // never become part of those process environments.
 const runtimeEnvironment = {
   ...process.env,
+  FILES_TEST_ADAPTER_DIR: resolve(
+    process.cwd(),
+    "out",
+    "pmp-files-test-runtime",
+  ),
+  FILES_ENABLED: "true",
+  FILES_DATABASE_URL: "",
+  PMP_DEPLOYMENT_ENV: "local",
   DATABASE_MIGRATION_URL: "",
   TEST_DATABASE_ADMIN_URL: "",
   BOOTSTRAP_DATABASE_URL: "",
@@ -68,6 +77,7 @@ export default defineConfig({
         DATABASE_URL: "",
         QUEUE_DATABASE_URL: queueUrl.toString(),
         NOTIFICATION_DATABASE_URL: notificationUrl.toString(),
+        FILES_DATABASE_URL: notificationUrl.toString(),
         BETTER_AUTH_URL: baseURL,
         LIFECYCLE_DATABASE_URL: lifecycleUrl.toString(),
         WORKER_PAUSED: "false",

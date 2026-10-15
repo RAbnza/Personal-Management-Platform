@@ -311,6 +311,7 @@ async function mappedPaymentNeedsRevision(
 async function executeCorrection(
   t: ScopedTransaction,
   input: CorrectFinancialActionInput,
+  rebaseBatchId?: string,
 ) {
   const { userId, workspaceId, requestId, actionId, ...raw } = input,
     a = actorSchema.parse({ userId, workspaceId, requestId, actionId }),
@@ -459,7 +460,7 @@ async function executeCorrection(
       });
       if (
         p.effectiveDate !== account.openingCutoffDate ||
-        p.effectiveDate !== current.effectiveDate ||
+        (!rebaseBatchId && p.effectiveDate !== current.effectiveDate) ||
         current.evidence.accountId !== p.financialAccountId
       )
         throw new RangeError(
@@ -1145,5 +1146,33 @@ export async function getFinancialActionDetailInTransaction(
 export function getFinancialActionDetail(input: Actor) {
   return withDomainTransaction(input, (t) =>
     getFinancialActionDetailInTransaction(t, input),
+  );
+}
+
+/** Internal confirmed import path. Public correction bodies cannot opt into
+ * rebasing. The SQL boundary validates the frozen coverage equation. */
+export async function rebaseCashOpeningForImport(
+  t: ScopedTransaction,
+  input: CorrectFinancialActionInput,
+  batchId: string,
+) {
+  await t.db.execute(sql`SELECT ops.authorize_cash_rebase(${batchId}::uuid)`);
+  const p = input.replacement;
+  if (p.actionKind !== "opening_cash")
+    throw new RangeError("Cash baseline required.");
+  await t.db.execute(
+    sql`UPDATE finance.financial_account SET opening_cutoff_date=${p.effectiveDate}::date,version=version+1,updated_at=clock_timestamp() WHERE id=${p.financialAccountId}::uuid`,
+  );
+  const fresh = (
+    await t.db.execute<{ revision: string }>(
+      sql`SELECT financial_revision::text revision FROM core.workspace`,
+    )
+  ).rows[0]!.revision;
+  return financialMutationResultSchema.parse(
+    await executeCorrection(
+      t,
+      { ...input, expectedFinancialRevision: fresh },
+      batchId,
+    ),
   );
 }

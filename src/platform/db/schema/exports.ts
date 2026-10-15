@@ -45,6 +45,9 @@ export const exportRun = opsSchema.table(
     coverageJson: jsonb("coverage_json")
       .$type<Record<string, unknown>>()
       .notNull(),
+    bundleJson: jsonb("bundle_json").$type<Record<string, unknown>>(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    checksumSha256: text("checksum_sha256"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -62,12 +65,12 @@ export const exportRun = opsSchema.table(
     index("ix_export_run_scope_created").on(t.workspaceId, t.createdAt, t.id),
     check(
       "ck_export_run_kind",
-      sql`${t.exportKind} IN ('transactions','debts','applications','report')`,
+      sql`${t.exportKind} IN ('transactions','debts','applications','report','workspace_bundle')`,
     ),
     check("ck_export_run_version", sql`${t.schemaVersion}>0`),
     check(
       "ck_export_run_completed",
-      sql`${t.state}='completed' AND ${t.rowCount} BETWEEN 0 AND 10000 AND ${t.snapshotFinancialRevision}>=0`,
+      sql`${t.state} IN ('completed','expired') AND ${t.rowCount} BETWEEN 0 AND 10000 AND ${t.snapshotFinancialRevision}>=0`,
     ),
     check(
       "ck_export_run_manifest",

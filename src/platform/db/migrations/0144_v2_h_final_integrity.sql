@@ -1,0 +1,20 @@
+
+CREATE FUNCTION ops.guard_import_state() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$ DECLARE c core.command_receipt;BEGIN
+ IF ops.restore_scope_allowed(NEW.workspace_id) OR current_user='migration_owner' AND current_setting('ops.expiring_imports',true)='yes' THEN RETURN NEW;END IF;
+ SELECT * INTO c FROM core.command_receipt WHERE workspace_id=NEW.workspace_id AND id=CASE WHEN TG_OP='INSERT' THEN NEW.command_receipt_id ELSE NULLIF(current_setting('imports.receipt_id',true),'')::uuid END;
+ IF TG_OP='INSERT' THEN IF c.command_type<>'imports.stage' OR c.state<>'claimed' OR NEW.state<>'previewed' OR NEW.confirmed_preview_hash IS NOT NULL OR NEW.decisions_json IS NOT NULL OR NEW.confirmed_at IS NOT NULL OR NEW.version<>1 OR NEW.preview_hash<>sha256(convert_to(ops.canonical_json(NEW.preview_json-'previewHash'),'UTF8')) THEN RAISE EXCEPTION 'immutable staged preview required';END IF;
+ ELSE
+ IF c.command_type='imports.confirm' THEN IF OLD.state<>'previewed' OR NEW.state<>'confirmed' OR NEW.confirmed_preview_hash IS DISTINCT FROM NEW.preview_hash OR NEW.decisions_json IS NULL OR NEW.confirmed_at IS NULL OR NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'explicit preview confirmation required';END IF;
+ ELSIF c.command_type='imports.cancel' THEN IF OLD.state IN ('completed','cancelled') OR NEW.state<>'cancelled' OR NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'valid cancellation required';END IF;
+ ELSIF c.command_type='imports.process' THEN IF NOT(OLD.state IN ('confirmed','partial','running') AND NEW.state='running' AND NEW.version=OLD.version+1 OR OLD.state='running' AND NEW.state IN ('partial','completed') AND NEW.version=OLD.version) OR NEW.confirmed_preview_hash IS DISTINCT FROM NEW.preview_hash THEN RAISE EXCEPTION 'confirmed chunk transition required';END IF;
+ ELSE RAISE EXCEPTION 'import state command invalid';END IF;
+ END IF;RETURN NEW;END $$;
+REVOKE ALL ON FUNCTION ops.guard_import_state() FROM PUBLIC;CREATE TRIGGER import_state_guard BEFORE INSERT OR UPDATE ON ops.import_batch FOR EACH ROW EXECUTE FUNCTION ops.guard_import_state();
+CREATE FUNCTION ops.validate_private_stage_completion() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$ DECLARE receipt uuid;subject uuid;operation text;BEGIN
+ IF current_user<>'app_domain' THEN RETURN NULL;END IF;
+ receipt:=CASE WHEN TG_TABLE_NAME='import_batch' AND TG_OP='UPDATE' THEN NULLIF(current_setting('imports.receipt_id',true),'')::uuid ELSE NEW.command_receipt_id END;subject:=NEW.id;
+ operation:=CASE WHEN TG_TABLE_NAME='restore_run' THEN 'portability.preview' ELSE 'imports.'||CASE WHEN TG_OP='INSERT' THEN 'stage' ELSE replace((SELECT command_type FROM core.command_receipt WHERE id=receipt),'imports.','') END END;
+ IF NOT EXISTS(SELECT 1 FROM core.command_receipt c JOIN audit.private_revision a ON a.workspace_id=c.workspace_id AND a.command_receipt_id=c.id WHERE c.workspace_id=NEW.workspace_id AND c.id=receipt AND c.state='completed' AND c.command_type=operation AND c.result_json->>CASE WHEN TG_TABLE_NAME='restore_run' THEN 'runId' ELSE 'batchId' END=subject::text AND a.subject_id=subject AND a.operation=operation) THEN RAISE EXCEPTION 'private staging completion/audit required';END IF;RETURN NULL;END $$;
+CREATE CONSTRAINT TRIGGER import_completion AFTER INSERT OR UPDATE ON ops.import_batch DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ops.validate_private_stage_completion();
+CREATE CONSTRAINT TRIGGER restore_preview_completion AFTER INSERT ON ops.restore_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ops.validate_private_stage_completion();REVOKE ALL ON FUNCTION ops.validate_private_stage_completion() FROM PUBLIC;
+DO $$ DECLARE d text;BEGIN d:=pg_get_functiondef('files.guard_attachment()'::regprocedure);d:=replace(d,'IF total+NEW.declared_bytes>1073741824','IF (SELECT count(*) FROM files.private_attachment WHERE workspace_id=NEW.workspace_id AND status<>''deleted'')>=1000 OR total+NEW.declared_bytes>1073741824');EXECUTE d;END $$;

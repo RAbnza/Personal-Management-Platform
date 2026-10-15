@@ -27,6 +27,13 @@ export async function migrateJobStorage(connectionString: string) {
   boss.on("error", () => {});
   try {
     await boss.start();
+    await boss.createQueue("v2-private-file-scan", {
+      retryLimit: 3,
+      retryDelay: 30,
+      retryBackoff: true,
+      expireInSeconds: 300,
+      retentionSeconds: 7 * 86400,
+    });
     await boss.createQueue(SECURITY_EMAIL_DEAD_QUEUE, {
       retentionSeconds: 7 * 86400,
     });

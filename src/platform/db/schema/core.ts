@@ -375,6 +375,9 @@ export const commandReceipt = coreSchema.table(
       table.clientCommandId,
     ),
 
+    index("ix_retired_notification_source")
+      .on(table.workspaceId, sql`(${table.resultJson}->>'sourceKeyHash')`)
+      .where(sql`${table.commandType}='portability.retire_notification'`),
     index("ix_command_receipt_expiry")
       .on(table.workspaceId, table.retainUntil)
       .where(sql`${table.retainUntil} IS NOT NULL`),

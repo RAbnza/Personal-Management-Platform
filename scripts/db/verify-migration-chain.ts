@@ -209,29 +209,32 @@ async function main() {
       process.argv.includes("--upgrade-a6") ||
       process.argv.includes("--upgrade-b") ||
       process.argv.includes("--upgrade-c") ||
-      process.argv.includes("--upgrade-f")
+      process.argv.includes("--upgrade-f") ||
+      process.argv.includes("--upgrade-g")
     ) {
-      const baselineCount = process.argv.includes("--upgrade-f")
-        ? 115
-        : process.argv.includes("--upgrade-c")
-          ? 111
-          : process.argv.includes("--upgrade-b")
-            ? 104
-            : process.argv.includes("--upgrade-a6")
-              ? 94
-              : process.argv.includes("--upgrade-a5")
-                ? 89
-                : process.argv.includes("--upgrade-a4")
-                  ? 86
-                  : process.argv.includes("--upgrade-a3")
-                    ? 82
-                    : process.argv.includes("--upgrade-a2")
-                      ? 80
-                      : process.argv.includes("--upgrade-a1")
-                        ? 78
-                        : process.argv.includes("--upgrade-v1")
-                          ? 76
-                          : 67;
+      const baselineCount = process.argv.includes("--upgrade-g")
+        ? 127
+        : process.argv.includes("--upgrade-f")
+          ? 115
+          : process.argv.includes("--upgrade-c")
+            ? 111
+            : process.argv.includes("--upgrade-b")
+              ? 104
+              : process.argv.includes("--upgrade-a6")
+                ? 94
+                : process.argv.includes("--upgrade-a5")
+                  ? 89
+                  : process.argv.includes("--upgrade-a4")
+                    ? 86
+                    : process.argv.includes("--upgrade-a3")
+                      ? 82
+                      : process.argv.includes("--upgrade-a2")
+                        ? 80
+                        : process.argv.includes("--upgrade-a1")
+                          ? 78
+                          : process.argv.includes("--upgrade-v1")
+                            ? 76
+                            : 67;
       const priorJournal = JSON.parse(
         await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
       ) as { entries: Array<{ tag: string }> };

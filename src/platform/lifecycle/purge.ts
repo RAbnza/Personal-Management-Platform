@@ -1,3 +1,7 @@
+import {
+  createPrivateEvidenceStore,
+  type PrivateEvidenceStore,
+} from "../files/object-store";
 import { z } from "zod";
 import type { Client } from "pg";
 
@@ -13,6 +17,8 @@ export async function purgeDeletionStep(
   client: Client,
   requestId: string,
   rowBudget = 10_000,
+  evidenceStore?: PrivateEvidenceStore,
+  signal?: AbortSignal,
 ) {
   requestSchema.parse(requestId);
   budgetSchema.parse(rowBudget);
@@ -105,6 +111,10 @@ export async function purgeDeletionStep(
         "time.reminder_occurrence",
         "time.reminder_rule",
         "time.source_reminder_setting",
+        "ops.restore_id_map",
+        "ops.restore_run",
+        "ops.import_row",
+        "ops.import_batch",
         "ops.export_run",
       ]) {
         if (removed >= rowBudget) break;
@@ -130,10 +140,60 @@ export async function purgeDeletionStep(
     }
     if (r.progress_json.phase !== "private_graph")
       throw new Error("Unknown purge checkpoint.");
+    // Never forget object keys before storage has acknowledged deletion.
+    const objects = (
+      await client.query<{
+        id: string;
+        object_key: string;
+        bucket_key: string;
+        status: string;
+      }>(
+        "SELECT id,object_key,bucket_key,status FROM files.private_attachment WHERE workspace_id=$1 ORDER BY id LIMIT $2 FOR UPDATE",
+        [r.target_workspace_id, Math.min(rowBudget, 1)],
+      )
+    ).rows;
+    if (objects.length) {
+      const store = objects.some((f) => f.status !== "deleted")
+        ? (evidenceStore ?? createPrivateEvidenceStore())
+        : null;
+      for (const f of objects) {
+        if (f.status !== "deleted") {
+          if (f.bucket_key !== (store!.namespace ?? "evidence"))
+            throw new Error("FILE_STORAGE_NAMESPACE_MISMATCH");
+          await store!.delete(f.object_key, signal);
+          await client.query(
+            "UPDATE files.private_attachment SET status='deleted',deleted_at=clock_timestamp(),version=version+1 WHERE workspace_id=$1 AND id=$2",
+            [r.target_workspace_id, f.id],
+          );
+        }
+        for (const table of [
+          "action_attachment",
+          "debt_attachment",
+          "settlement_attachment",
+          "reconciliation_attachment",
+          "card_statement_attachment",
+          "application_attachment",
+          "application_event_attachment",
+          "resume_attachment",
+        ])
+          await client.query(
+            "DELETE FROM files." +
+              identifier(table) +
+              " WHERE workspace_id=$1 AND attachment_id=$2",
+            [r.target_workspace_id, f.id],
+          );
+        await client.query(
+          "DELETE FROM files.private_attachment WHERE workspace_id=$1 AND id=$2",
+          [r.target_workspace_id, f.id],
+        );
+      }
+      await client.query("COMMIT");
+      return { state: "purging", phase: "private_graph" };
+    }
     const tables = (
       await client.query<{ schema: string; table: string }>(`
       SELECT n.nspname AS schema,c.relname AS table FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE c.relkind='r' AND n.nspname IN ('core','finance','career','time','audit','ops','planning')
+      WHERE c.relkind='r' AND n.nspname IN ('core','finance','career','time','audit','ops','planning','files')
       AND c.relname NOT IN ('deletion_request','deletion_tombstone')
       AND EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='workspace_id' AND NOT a.attisdropped)
       ORDER BY n.nspname,c.relname`)

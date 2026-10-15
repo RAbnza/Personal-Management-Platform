@@ -1,4 +1,6 @@
 import { recordSavingsGoalCommand } from "../../src/modules/planning/services/savings-goals";
+import { stageImport } from "../../src/modules/portability/services/imports";
+import { prepareWorkspaceExport } from "../../src/modules/portability/services/workspace-bundles";
 import { saveNotificationPreferences } from "../../src/modules/time/services/notification-preferences";
 import { createPersonalEvent } from "../../src/modules/time/services/create-personal-event";
 import { scanNotificationScope } from "../../src/platform/email/notification-delivery";
@@ -385,6 +387,31 @@ async function main() {
       temporalKind: "date",
       eventDate: "2027-01-10",
     });
+    const stagedImport = (await stageImport(target, {
+      clientCommandId: randomUUID(),
+      csv: "date,kind,amount_minor,classification,description,reference\n2026-10-03,expense,500,expense,Recovery staged row,restore-h\n",
+      assumptions: {
+        sourceFormat: "pmp-cash-activity",
+        formatVersion: 1,
+        mapping: {
+          date: "date",
+          kind: "kind",
+          amountMinor: "amount_minor",
+          classification: "classification",
+          description: "description",
+          reference: "reference",
+        },
+        dateInterpretation: "YYYY-MM-DD",
+        currency: "PHP",
+        targetAccountId: account.accountId,
+        cutoffStrategy: "after_opening",
+        cutoffDate: "2026-09-30",
+        earlierOpeningMinor: null,
+        earlierOpeningDate: null,
+      },
+    })) as { batchId: string };
+    await prepareWorkspaceExport(target, randomUUID());
+
     const notificationUrl = new URL(process.env.AUTH_DATABASE_URL!);
     notificationUrl.username = "worker_domain";
     notificationUrl.password = bootstrap.WORKER_DOMAIN_PASSWORD!;
@@ -474,6 +501,24 @@ async function main() {
     try {
       stage = "restored_snapshot";
       assert.deepEqual(await snapshot(restored), before);
+      assert.equal(
+        (
+          await restored.query(
+            "SELECT count(*)::int n FROM ops.import_row WHERE batch_id=$1 AND state='ready'",
+            [stagedImport.batchId],
+          )
+        ).rows[0].n,
+        1,
+      );
+      assert.equal(
+        (
+          await restored.query(
+            "SELECT count(*)::int n FROM ops.export_run WHERE workspace_id=$1 AND export_kind='workspace_bundle' AND bundle_json IS NOT NULL",
+            [target.workspaceId],
+          )
+        ).rows[0].n,
+        1,
+      );
       const domainUrl = new URL(process.env.DATABASE_URL!);
       domainUrl.pathname = `/${database}`;
       const domain = new Client({ connectionString: domainUrl.toString() });
@@ -758,6 +803,7 @@ async function main() {
             checks: [
               "encrypted dump/decrypt",
               "actual pg_restore",
+              "durable H import staging and private portable artifact recovery",
               "exact counts/ledger balances",
               "balanced journals",
               "owner-scoped report",

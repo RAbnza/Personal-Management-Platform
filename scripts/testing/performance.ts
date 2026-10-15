@@ -40,7 +40,8 @@ import { removeNamedFinancialFixture } from "../../tests/integration/helpers/nam
 
 let phase = "configuration";
 async function main() {
-  const scale = Number(process.env.PMP_PERFORMANCE_ACTIONS ?? "50000");
+  // Household default; the original larger stress scale remains opt-in.
+  const scale = Number(process.env.PMP_PERFORMANCE_ACTIONS ?? "10000");
   assert.ok(Number.isInteger(scale) && scale >= 1000 && scale <= 50000);
   const careerCount = Math.min(5000, Math.floor(scale / 10)),
     debtCount = 10;

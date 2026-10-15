@@ -1,0 +1,3 @@
+
+GRANT UPDATE(scan_lease_until) ON files.private_attachment TO app_domain;
+DO $$ DECLARE d text;BEGIN d:=pg_get_functiondef('files.guard_attachment()'::regprocedure);d:=regexp_replace(d,'\mBEGIN\M','BEGIN IF current_user=''app_domain'' AND TG_OP=''UPDATE'' AND OLD.status=''pending_upload'' AND OLD.uploaded_at IS NULL AND OLD.expires_at>clock_timestamp() AND (OLD.scan_lease_until IS NULL OR OLD.scan_lease_until<clock_timestamp()) AND NEW.scan_lease_until>clock_timestamp() AND NEW.scan_lease_until<=statement_timestamp()+interval ''4 minutes'' AND NEW.version=OLD.version+1 AND (to_jsonb(NEW)-ARRAY[''scan_lease_until'',''version''])=(to_jsonb(OLD)-ARRAY[''scan_lease_until'',''version'']) THEN RETURN NEW;END IF;');EXECUTE d;END $$;

@@ -1,3 +1,4 @@
+import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -196,6 +197,7 @@ export default async function FinancialActionPage({
           ))}
         </ol>
       </Panel>
+      <Attachments sourceKind="financial_action" sourceId={id.data} />
     </div>
   );
 }

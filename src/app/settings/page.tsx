@@ -68,6 +68,8 @@ export default async function SettingsPage() {
         <div className="flex flex-wrap gap-5">
           {[
             ["/settings/notifications", "Manage optional reminder email"],
+            ["/settings/files", "Manage private evidence files"],
+            ["/settings/portability", "Import, export and restore workspace"],
             ["/settings/sessions", "Review sessions and security"],
             ["/settings/lifecycle", "Review account deletion"],
             ["/help", "Task guides and replayable tour"],

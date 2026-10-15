@@ -1,0 +1,5 @@
+CREATE OR REPLACE FUNCTION ops.file_scope(file_id uuid) RETURNS TABLE(user_id uuid,workspace_id uuid) LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$ SELECT created_by_user_id,workspace_id FROM files.private_attachment WHERE id=file_id $$;
+DO $$ DECLARE r record;p record;BEGIN FOR r IN SELECT c.oid,n.nspname ns,c.relname tab FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE (n.nspname,c.relname) IN (('finance','financial_action'),('finance','debt'),('finance','debt_settlement'),('finance','reconciliation'),('finance','card_statement_revision'),('career','job_application'),('career','application_event'),('career','resume_version')) LOOP
+ EXECUTE format('GRANT SELECT ON %I.%I TO worker_domain',r.ns,r.tab);
+ FOR p IN SELECT polname,pg_get_expr(polqual,polrelid) qual FROM pg_policy WHERE polrelid=r.oid AND 'app_domain'::regrole=ANY(polroles) AND polcmd IN('r','*') LOOP EXECUTE format('CREATE POLICY %I ON %I.%I FOR SELECT TO worker_domain USING(%s)','file_read_'||p.polname,r.ns,r.tab,p.qual);END LOOP;
+END LOOP;END $$;

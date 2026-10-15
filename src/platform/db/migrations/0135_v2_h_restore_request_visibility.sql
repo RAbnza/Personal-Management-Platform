@@ -1,0 +1,1 @@
+CREATE POLICY h_restore_request_receipt ON core.command_receipt FOR SELECT TO migration_owner USING(workspace_id=NULLIF(current_setting('app.workspace_id',true),'')::uuid AND command_type LIKE 'portability.%' AND EXISTS(SELECT 1 FROM core.workspace w WHERE w.id=workspace_id AND w.owner_user_id=NULLIF(current_setting('app.user_id',true),'')::uuid));

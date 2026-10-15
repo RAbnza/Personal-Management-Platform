@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "ix_retired_notification_source" ON "core"."command_receipt" USING btree ("workspace_id",("result_json"->>'sourceKeyHash')) WHERE "core"."command_receipt"."command_type"='portability.retire_notification';

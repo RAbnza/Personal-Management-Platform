@@ -19,3 +19,5 @@ export const timeSchema = pgSchema("time");
 export const auditSchema = pgSchema("audit");
 export const opsSchema = pgSchema("ops");
 export const planningSchema = pgSchema("planning");
+
+export const filesSchema = pgSchema("files");

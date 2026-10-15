@@ -1,0 +1,1 @@
+DO $$ DECLARE d text;BEGIN d:=pg_get_functiondef('ops.validate_private_stage_completion()'::regprocedure);d:=replace(d,'operation text;','expected_operation text;');d:=replace(d,'operation:=','expected_operation:=');d:=replace(d,'c.command_type=operation','c.command_type=expected_operation');d:=replace(d,'a.operation=operation','a.operation=expected_operation');EXECUTE d;END $$;

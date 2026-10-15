@@ -1,3 +1,4 @@
+import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -705,6 +706,10 @@ export default async function JobApplicationDetailPage({
             </ol>
           )}
         </Panel>
+        <Attachments
+          sourceKind="job_application"
+          sourceId={application.applicationId}
+        />
       </div>
     </AppShell>
   );
