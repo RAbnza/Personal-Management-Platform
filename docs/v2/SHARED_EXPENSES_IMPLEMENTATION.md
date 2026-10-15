@@ -2,6 +2,8 @@
 
 Implementation date: October 15, 2026 (Asia/Manila). Baseline: accepted V2-H `f81260cffd0cb225936631deed6bbafea0723e54`. Branch: `feat/v2-i1-i3-shared-expenses`.
 
+Verified remote implementation commit: `756f35d913741b69da1b2e4b8fe57bd4f1c23ed8`. The feature branch was pushed and its SHA matched `git ls-remote`; `main` was unchanged.
+
 I1, I2 and I3 are implemented for focused checkpoint acceptance. **V2-I remains incomplete and unaccepted as a whole.** I4–I7, deployment and V3 are outside this assignment. The preview defaults off and is forcibly unavailable in staging/production, even when its flag is true.
 
 ## Completed workflows
@@ -46,7 +48,7 @@ Private workspace export/replacement fails closed when group ledger bindings exi
 - New boundary units/API/components: 18 passing tests. Tests cover full bigint precision, deterministic allocation, invalid inputs, ownership spoofing/origin/authentication, release gates, accessible controls, exact preview and response-loss replay with frozen intent.
 - Focused PostgreSQL run: 62 passing tests across `sharing.test.ts`, `card-purchases.test.ts`, `financial-recipes.test.ts` and `financial-corrections.test.ts`. The final affected sharing rerun passes 19/19 cases after the creation-race fix (63 distinct integration cases across the four focused files). The sharing cases cover role/RLS grants, verified invitations/claims, historical visibility and subsequent revisions, owner protection, raw deferred totals, receipt/audit enforcement, cross-group references, concurrency/replay, atomic integration, cash/card/existing-purchase accounting, partial payer positions, private reporting, retention and approved deletion with another owner's preservation.
 - The dedicated migration verifier applies the 156-migration H baseline and I additions in a disposable database, preserves an exact bigint sentinel, validates 15 forced-RLS tables and verifies no-change migrator replay. Final chain: 170 migrations. Drizzle generation reports no schema changes.
-- Route type generation, TypeScript and lint pass. The affected five-file unit/component run passes 31 tests. Compile-mode succeeds with existing tracing and Windows standalone symlink warnings; it is not complete production packaging. Formatting passes for changed source.
+- Route type generation, TypeScript and lint pass. The affected five-file unit/component run passes 31 tests. The compile-mode check before the final client-entry/creation-race refinements succeeded with existing tracing and Windows standalone symlink warnings; subsequent affected checks cover those refinements, and it is not complete production packaging. Formatting passes for changed source.
 - Full V1–H regressions, comprehensive I acceptance, browser suites, container builds, capacity and restore drills were intentionally deferred to Assignment 2. No hosted CI, external invitation delivery or production acceptance is claimed.
 
 ## Assignment 2 prerequisites and remaining work
