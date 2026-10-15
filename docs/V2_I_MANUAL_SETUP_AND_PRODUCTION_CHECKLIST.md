@@ -1,0 +1,36 @@
+# V2-I manual setup and production checklist
+
+October 15, 2026 (Asia/Manila). This is the **I1–I3 intermediate checkpoint**, not final domain or production acceptance. No credentials are needed to complete local group entry/adoption. Never put real secrets, invitation bearer links or private examples in Git or diagnostic logs.
+
+## Local preview
+
+1. Check out `feat/v2-i1-i3-shared-expenses`; retain the existing pinned Node/pnpm/PostgreSQL setup. Use the already provisioned restricted roles and ignored environment files described by the repository setup. Do not use an administrator connection for the web process.
+2. Apply the additive chain using the existing migration-owner connection: `pnpm db:migrate`. For the isolated synthetic database, use `pnpm db:migrate:test`. There are 170 migrations through `0169_v2_i_group_read_indexes`; baseline V2-H had 156.
+3. Add `SHARED_EXPENSES_PREVIEW_ENABLED=true` to your ignored local `.env`, with `PMP_DEPLOYMENT_ENV=local`, and restart `pnpm dev`. The example defaults false. The flag is honored only in local/test; staging and production remain unavailable even if it is true.
+4. Sign in as a verified test user. Open `/sharing` or select **Split with people** in Add Expense. Create a group and add manual participants as needed.
+5. Before invitations, membership changes or archival, verify your password through the existing Settings/session assurance flow. Assurance lasts five minutes. Group owners choose **Create secure invitation** and privately copy the resulting link to the named recipient.
+6. The recipient signs in with the exact verified invited email, opens `/sharing/invitations#token=…`, reviews the group history policy and any manual identity's bills/balance, and explicitly accepts. Links expire after seven days. Use revoke/reissue when the target or identity nomination is wrong. No name-based merge or user-directory lookup exists.
+7. Record a bill and inspect independent paid/share totals and extra-centavo recipients. To post privately, review and approve your own funding/share. Choose **Link an existing purchase** when already recorded; do not select new funding for the same event. Other members approve independently.
+8. Group corrections can mark private evidence **Needs private correction**. The ledger retains the approved amounts. Complete correction/refund resolution belongs to I6; do not bypass the temporary mutation guards with SQL.
+
+## Invitation delivery and maintenance
+
+- I1 uses explicit private link handoff. It sends no email. Existing authentication mail and opted-in reminder delivery do not deliver group invitations. Production email invitation transport remains an I7/human acceptance gate: select the approved adapter, configure a verified sender/domain and provider credentials through secret storage, enforce recipient binding/expiry and privacy-safe content, then verify rejection/timeout/replay behavior in staging before release. No new email credential or outbound send was activated here.
+- Schedule the bounded maintenance CLI with the existing separate operator secret: `pnpm exec tsx scripts/sharing/maintain-invitations.ts`. It reads ignored `.env.lifecycle` and requires `LIFECYCLE_DATABASE_URL` to use `lifecycle_operator`. Deployed connections require verified TLS (`sslmode=verify-full`). Run at least hourly; each invocation handles at most 100 groups without waiting on busy groups. Scale schedule frequency to measured backlog before production.
+- Maintenance expires pending invitations, preserves compact consent/financial uniqueness evidence, and retires contact/bearer data 30 days after expiry. Detailed claim review snapshots compact after 30 days. Output contains aggregate redaction counts, not contacts or bearer links. Alert on nonzero exit, stalled schedules and retention backlog; verify with synthetic expired invitations under controlled staging administration.
+- Verify that expired/revoked/retired tokens cannot be reviewed or accepted, that current owners can reissue invitations, and that stale manual-claim review versions require another review. Do not log request bodies or URL fragments in reverse proxies, analytics or support tools.
+
+## Infrastructure and release gates requiring a human
+
+1. Keep this branch isolated from accepted-only `main` until I4–I7 and consolidated acceptance finish. Do not enable Shared Expenses in a deployed environment at this checkpoint.
+2. Apply reviewed migrations with the migration role before deploying compatible code; verify forced RLS and composite FKs, fixed-search-path permission helpers, and restricted role grants. Keep migration/operator credentials out of web/worker environments. Review any future grants individually.
+3. Approve history policy version 1 and its retention/deletion language. Exit preserves access to existing bills and their later resolution, never unrelated newer records. Account deletion removes private adoption and pseudonymizes structured group identity while retaining shared evidence. Shared descriptions/reasons can retain identifying free text; legal/support policy must address that limitation before release.
+4. Verify the existing lifecycle operator invokes the group-lock helper before profile/workspace locks. Test approved deletion, ownerless-group archival and another participant's retained evidence on staging. Maintain the independent deletion register and backup/restore checkpoints required by H; do not run a production purge as an invitation maintenance substitute.
+5. Complete I7's private/group portability contract. Export/replacement currently fails closed for workspaces with group bindings. Do not manually remove bindings or omit their postings to force an export. Existing H file-byte, storage, scanner and provider-history gates remain unchanged.
+6. Configure independent encrypted backups/PITR, retention, least-privilege access and deletion reapplication. Confirm recovery includes shared history and private source bindings without resending old invitations, restoring bearer usability or restoring deleted identity links.
+7. Configure metrics/alerts for failed/stale commands, lock timeouts/deadlocks, invitation expiry/retention lag, unauthorized access and reconciliation backlog. Use IDs and aggregate codes; exclude contacts, tokens, account identifiers and financial payloads from general operational logs.
+8. After I4–I7, perform the consolidated domain/regression/browser/mobile/keyboard/screen-reader/theme acceptance, hosted CI, production build/container checks, capacity and recovery drills. Confirm provider delivery and monitoring independently. Only then decide staging promotion and eventual release after the existing V3/release gates.
+
+The focused Windows compile succeeded, but standalone copying reported EPERM symlink warnings and an existing H file-adapter tracing warning. For final packaging, use the supported pinned Linux environment or an approved Windows setup with symlink capability; review the existing tracing warning during consolidated acceptance. No deployable standalone artifact is claimed here.
+
+No production deployment, real external invitation delivery, production backup drill or final operational acceptance was performed by this assignment.

@@ -21,3 +21,4 @@ export const opsSchema = pgSchema("ops");
 export const planningSchema = pgSchema("planning");
 
 export const filesSchema = pgSchema("files");
+export const sharingSchema = pgSchema("sharing");

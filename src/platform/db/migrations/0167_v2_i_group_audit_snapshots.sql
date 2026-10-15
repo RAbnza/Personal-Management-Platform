@@ -1,0 +1,1 @@
+ALTER TABLE "audit"."group_revision" ADD COLUMN "before_json" jsonb;

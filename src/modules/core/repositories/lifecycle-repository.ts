@@ -64,6 +64,7 @@ export async function readDeletionScope(
       "Profile, sign-in credentials, recovery tokens, encrypted security email and all sessions. Non-secret queue metadata expires separately within seven days.",
     files:
       "Private attachment bytes must be acknowledged deleted before metadata purge. Import staging, portable artifacts and recovery bodies are included. Backup retention is handled separately.",
-    sharedHistory: "No shared workspaces or group records in this V1 release",
+    sharedHistory:
+      "Private adoption is deleted with your workspace. Shared bills and balances remain as other participants' evidence. Your registered group identity is detached and pseudonymized; ownerless groups are archived. Free text in retained shared financial history may still identify participants. Former members keep only their authorized historical records while their account is active.",
   };
 }

@@ -18,6 +18,9 @@ import { isCalendarDate } from "@/shared/calendar-date";
 import { MAX_FINANCIAL_COMPONENT_MINOR, parseMinorUnits } from "@/shared/money";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { exactDecimal } from "@/modules/reporting/domain/reports";
+import { SharedExpenseEntry } from "@/components/sharing/bill-form";
+import type { GroupSummary } from "@/modules/sharing/services/read-groups";
+import type { PrivateSharingSetup } from "@/modules/finance/services/private-sharing-setup";
 
 const decimalAmountPattern = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 
@@ -268,6 +271,7 @@ async function postFinancialAction(
 }
 
 export interface TransactionCreateFormProps {
+  sharing?: { groups: GroupSummary[]; setup: PrivateSharingSetup };
   currency: string;
   cards?: readonly CreditCardReadModel[];
 
@@ -291,8 +295,10 @@ export function TransactionCreateForm({
   categories,
   cards = [],
   planningSuggestion,
+  sharing,
 }: TransactionCreateFormProps) {
   const router = useRouter();
+  const [sharedMode, setSharedMode] = useState(false);
 
   const [acknowledgeNegativeBalance, setAcknowledgeNegativeBalance] =
     useState(false);
@@ -311,6 +317,7 @@ export function TransactionCreateForm({
     setError,
     clearErrors,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -732,6 +739,23 @@ export function TransactionCreateForm({
     await executeFinancialCommand(pendingCommand);
   }
 
+  if (sharedMode && sharing)
+    return (
+      <SharedExpenseEntry
+        groups={sharing.groups}
+        setup={sharing.setup}
+        defaults={{
+          amount: getValues("amount"),
+          description: getValues("description"),
+          date: getValues("effectiveDate"),
+          funding: `${selectedCard ? "card" : "cash"}:${selectedAccountId}`,
+          categoryId: getValues("categoryId"),
+          postingDate: getValues("postingDate"),
+          providerReference: getValues("providerReference"),
+        }}
+        onCancel={() => setSharedMode(false)}
+      />
+    );
   return (
     <section
       aria-labelledby="record-transaction-title"
@@ -746,6 +770,16 @@ export function TransactionCreateForm({
         >
           Record a transaction
         </h2>
+        {sharing && actionKind === "expense" && !planningSuggestion && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={fieldsDisabled}
+            onClick={() => setSharedMode(true)}
+          >
+            Split with people
+          </Button>
+        )}
 
         <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
           Record money that was actually received or spent. Planned or expected

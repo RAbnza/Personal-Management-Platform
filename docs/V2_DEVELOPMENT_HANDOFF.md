@@ -420,9 +420,7 @@ No production requirement is waived by this sequence.
 
 ## 15. Immediate next step
 
-V2-A6 is implemented and locally accepted. **V2-A — Credit Cards and Statements is a completed domain for independently testable acceptance scenarios 1–21.** Section 21 records final implementation, actual verification and the explicitly deferred V2-I integration scenario 22; sections 16–20 preserve A1–A5 evidence.
-
-V2-B — Recurring Obligations, V2-C — Budgets, V2-D — Savings Goals, V2-E — Forecasts and V2-F — Richer Career Analytics are implemented; sections 22–26 record domain acceptance evidence. V2-G — Scheduled Opted-In Notifications is implemented; section 27 records its actual acceptance work. **V2-H — Supporting Files, Imports and Portability is the current authorized domain and remains incomplete/unaccepted.** Section 28 records its partial validation/adaptor foundation, actual checks, unavailable operating prerequisites and outstanding implementation. Resume H1–H4 from that evidence; do not treat the foundation as a released upload/import/restore feature or proceed to V2-I. Commit/push remains conditional on complete applicable domain acceptance.
+V2-A through V2-H are implemented and locally accepted, with the existing external production gates retained. **V2-I Assignment 1 (I1-I3) is implemented as an isolated intermediate checkpoint on `feat/v2-i1-i3-shared-expenses`.** Section 29 records actual scope, focused checks and the exact boundary for Assignment 2. V2-I remains incomplete/unaccepted as a whole. Keep the preview off for general release; do not merge into accepted-only `main`. Begin I4-I7 only when the user provides the second assignment.
 
 ---
 
@@ -1006,3 +1004,38 @@ Final Windows and Linux production builds pass. Fresh web/worker/backup images p
 Portable bounds are 10 MiB/10,000 total graph rows; CSV bounds are 1 MiB/500 rows. Workspace file quota is 1 GiB/1,000 live objects, 10 MiB per object. Larger formats, versioned bucket erasure, byte-inclusive bundles, image metadata stripping, unknown provider protocols and group restoration require separately reviewed support. Live file bytes cannot be silently discarded during replacement. Current account identity/tombstones and operational retirement remain outside user-controlled restoration.
 
 No unresolved local implementation blocker remains. Stop after H; I/V3 requires a new explicit request. Authorized completion commit: feat(portability): complete V2-H files imports and recovery on main. Resolve its SHA through Git history; the completion report records remote-push verification.
+
+## 29. V2-I Assignment 1 - I1-I3 intermediate checkpoint
+
+Date: October 15, 2026 (Asia/Manila). Accepted baseline: `f81260cffd0cb225936631deed6bbafea0723e54` on `main`. Checkpoint branch: `feat/v2-i1-i3-shared-expenses`. No production release, domain acceptance or merge is authorized by this checkpoint.
+
+### Delivered scope
+
+- I1: separate group authority, manual/registered identities, verified invitations/consented claims, membership intervals/roles, recent authentication, owner protection, archive/exit/removal, explicit historical bill entitlements, narrow RLS predicates, permanent receipts, immutable group audits, operator retention and pseudonymized lifecycle deletion.
+- I2: versioned immutable bills, multiple payers, independent equal/exact selected shares, persisted deterministic centavos, full bigint components and numeric aggregate positions, current-revision-only balances, bill/person/history/preview UI.
+- I3: owner-controlled private cash/card/unpaid-share adoption, group receivable/payable bindings, same-logical-action existing-purchase reclassification, atomic integrated Add Expense with inline group creation and retained entry fields, exact private reporting and source-version/hash reconciliation status. No other participant's private records are exposed or posted.
+- Fifteen new forced-RLS tables; 109 declarative tables / 170 forward migrations through `0169`. Published migrations `0000`-`0155` are unchanged. Existing financial component limits, balanced journal and correction constraints remain authoritative.
+- Group-first, profile/workspace-second locking includes lifecycle purge; permissions are rechecked after serialization. Historical source correction can mark private adoption stale, but never rewrites it. Ordinary mutation/refund paths for linked private actions fail closed pending I6's complete reconciliation recipes.
+- The preview is default-off and local/test-only (`SHARED_EXPENSES_PREVIEW_ENABLED=true` plus local/test deployment environment). Staging/production reject it even with the flag enabled. Local development and synthetic databases received the migrations; production did not.
+
+### Actual focused verification
+
+- New unit/API/component cases and affected ordinary expense/review components: **31 passing tests in five files**, including 18 new sharing cases. Inline group creation preserves amount/funding/category intent; response-loss retry freezes and reuses one command.
+- Focused integration: the 62-case sharing/card-purchase/financial-recipe/correction run passed. A subsequent creation-race check adds one passing case; the final affected sharing suite passes all 19 cases. Retention, approved deletion, former-member correction visibility, raw deferred totals, role/RLS grants, cross-group IDs, private isolation, partial/multiple payer accounting, existing cash/card conversion and integrated atomic replay are represented. No complete V1-H regression was run.
+- Dedicated fresh migration verifier passes all **170 migrations**, H-baseline upgrade with exact bigint sentinel preservation, no-change replay and 15 forced-RLS tables. Drizzle generation reports no schema changes. No full migration-chain business regression/restore drill is claimed.
+- Next route type generation, TypeScript and lint pass. Next compile-mode build succeeded. Windows standalone copying reported EPERM symlink warnings; the existing H local-file adapter also produced a tracing warning. This is compilation evidence, **not** a clean standalone artifact or complete production build. Final production packaging remains Assignment 2 work.
+- Formatting and whitespace checks cover the changed source. All verification uses existing assertions and restricted runtime roles; privileged synthetic teardown/backdating follows the repository's established guarded test-only fixture pattern.
+
+### Exact prerequisites and stop boundary
+
+Continue on this feature branch with migrations through `0169`. Read `docs/v2/SHARED_EXPENSES_IMPLEMENTATION.md` for decisions, bounds and the repository-relative file inventory, and `docs/V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md` for setup/operations. Keep H/G external infrastructure gates intact.
+
+Assignment 2 must implement I4 settlements/pending confirmation/clearing; I5 relationship explanations and agreed suggestions; I6 refunds and explicit shared/private correction revisions/reporting; and I7 cross-domain integration plus consolidated acceptance. In particular, define portability for adopted workspaces before lifting the current export/replacement guard, complete group File/Time/Dashboard integration and external invitation delivery, and verify historical/deletion/restoration behavior.
+
+Browser suites, actual mobile/theme/assistive-technology checks, comprehensive regression, hosted CI, full production builds, containers, benchmarks and recovery drills remain for that consolidated cycle. Resolve the Windows standalone packaging restriction using the supported Linux build environment or approved Windows symlink capability then; no packaging workaround or broader architecture change was introduced here.
+
+History policy version 1 is implemented and disclosed; production legal/retention review remains a human gate. Invitation links are privately handed off locally; no external mail was sent. Schedule the new bounded operator maintenance command before production use. No I4-I7, V3, deployment or broad redesign was started.
+
+Commit/push identity: the implementation checkpoint uses Conventional Commit `feat(sharing): implement V2-I1-I3 shared expense checkpoint`. The verified remote implementation SHA is recorded in the checkpoint reference below after push; any following documentation-only commit records that immutable reference.
+
+<!-- V2_I_REMOTE_CHECKPOINT -->

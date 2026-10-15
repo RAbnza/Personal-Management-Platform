@@ -161,7 +161,30 @@ export default async function FinancialActionPage({
             </div>
           </details>
         )}
-      {detail.current.changeKind !== "void" && (
+      {detail.privateGroupLink && (
+        <Panel
+          title="Your private group adoption"
+          description={
+            detail.privateGroupLink.needsPrivateCorrection
+              ? "Needs private correction: the group source changed after your approval."
+              : "Retained accounting for your approved group allocation."
+          }
+        >
+          <p>
+            Actual funding{" "}
+            {formatMoneyMinorUnits("PHP", detail.privateGroupLink.paidMinor)} ·
+            Your spending{" "}
+            {formatMoneyMinorUnits("PHP", detail.privateGroupLink.shareMinor)}
+          </p>
+          <Link
+            className="text-link underline"
+            href={`/sharing/${detail.privateGroupLink.groupId}/expenses/${detail.privateGroupLink.expenseId}`}
+          >
+            Review group source and your private adoption
+          </Link>
+        </Panel>
+      )}
+      {detail.current.changeKind !== "void" && !detail.privateGroupLink && (
         <FinancialActionReviewForm
           detail={detail}
           accounts={accounts.items}

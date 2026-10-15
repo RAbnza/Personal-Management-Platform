@@ -1093,6 +1093,104 @@
                         "when":  1792010979520,
                         "tag":  "0155_v2_h_debt_notification_identity",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  156,
+                        "version":  "7",
+                        "when":  1792049186096,
+                        "tag":  "0156_v2_i_group_foundation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  157,
+                        "version":  "7",
+                        "when":  1792049209369,
+                        "tag":  "0157_v2_i_group_security",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  158,
+                        "version":  "7",
+                        "when":  1792049676817,
+                        "tag":  "0158_v2_i_private_adoption",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  159,
+                        "version":  "7",
+                        "when":  1792049700567,
+                        "tag":  "0159_v2_i_adoption_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  160,
+                        "version":  "7",
+                        "when":  1792050201591,
+                        "tag":  "0160_v2_i_exit_receipt_visibility",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  161,
+                        "version":  "7",
+                        "when":  1792050672188,
+                        "tag":  "0161_v2_i_authority_hardening",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  162,
+                        "version":  "7",
+                        "when":  1792050739906,
+                        "tag":  "0162_v2_i_system_attribution",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  163,
+                        "version":  "7",
+                        "when":  1792050810859,
+                        "tag":  "0163_v2_i_shared_identity_lifecycle",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  164,
+                        "version":  "7",
+                        "when":  1792051027129,
+                        "tag":  "0164_v2_i_lifecycle_receipt_check",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  165,
+                        "version":  "7",
+                        "when":  1792051247937,
+                        "tag":  "0165_v2_i_invitation_maintenance",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  166,
+                        "version":  "7",
+                        "when":  1792051338311,
+                        "tag":  "0166_v2_i_claim_history_review",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  167,
+                        "version":  "7",
+                        "when":  1792051543848,
+                        "tag":  "0167_v2_i_group_audit_snapshots",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  168,
+                        "version":  "7",
+                        "when":  1792051545488,
+                        "tag":  "0168_v2_i_group_audit_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  169,
+                        "version":  "7",
+                        "when":  1792052017991,
+                        "tag":  "0169_v2_i_group_read_indexes",
+                        "breakpoints":  true
                     }
                 ]
 }

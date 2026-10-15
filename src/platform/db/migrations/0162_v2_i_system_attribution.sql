@@ -1,0 +1,2 @@
+ALTER TABLE "audit"."group_revision" ADD COLUMN "actor_kind" text DEFAULT 'participant' NOT NULL;--> statement-breakpoint
+ALTER TABLE "audit"."group_revision" ADD CONSTRAINT "ck_group_actor_kind" CHECK ("audit"."group_revision"."actor_kind" IN ('participant','system'));

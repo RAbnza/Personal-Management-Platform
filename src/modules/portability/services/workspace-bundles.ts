@@ -56,6 +56,16 @@ export async function captureWorkspaceGraph(
   tx: ScopedTransaction,
   a: ScopedDatabaseContext,
 ) {
+  // Group-owned history cannot be reconstructed from a private workspace
+  // bundle. I7 must define that cross-scope restore contract before enabling it.
+  if (
+    (
+      await tx.db.execute(
+        sql`SELECT id FROM finance.group_ledger_binding LIMIT 1`,
+      )
+    ).rows.length
+  )
+    throw new FileBoundaryError("PORTABLE_SHARING_REVIEW_REQUIRED");
   const root = (
     await tx.db.execute<{
       currency: string;

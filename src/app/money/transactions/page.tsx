@@ -20,6 +20,9 @@ import {
 import { listCreditCards } from "@/modules/finance/services/read-credit-cards";
 import { getRecurringOccurrence } from "@/modules/planning/services/read-recurring";
 import { PlanningUnavailableError } from "@/modules/planning/domain/recurrence";
+import { sharingEnabled } from "@/modules/sharing/domain/sharing";
+import { listGroups } from "@/modules/sharing/services/read-groups";
+import { getPrivateSharingSetup } from "@/modules/finance/services/private-sharing-setup";
 
 export default async function MoneyTransactionsPage({
   searchParams,
@@ -158,6 +161,19 @@ export default async function MoneyTransactionsPage({
         }
       : null;
 
+  const sharing =
+    sharingEnabled() && !planningSuggestion
+      ? {
+          groups: await listGroups({
+            userId: user.id,
+            workspaceId: workspace.id,
+          }),
+          setup: await getPrivateSharingSetup({
+            userId: user.id,
+            workspaceId: workspace.id,
+          }),
+        }
+      : undefined;
   return (
     <AppShell
       pageTitle="Transactions"
@@ -242,6 +258,7 @@ export default async function MoneyTransactionsPage({
           </Panel>
         ) : (
           <TransactionCreateForm
+            {...(sharing ? { sharing } : {})}
             key={
               planningSuggestion
                 ? `${planningSuggestion.occurrenceId}:${planningSuggestion.occurrenceVersion}`

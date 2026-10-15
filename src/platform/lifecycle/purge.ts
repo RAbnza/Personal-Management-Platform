@@ -53,7 +53,10 @@ export async function purgeDeletionStep(
     }
     if (r.state === "cancelled" || !r.due)
       throw new Error("Deletion is cancelled or still within grace.");
-    // Match the global lock order even when retrying a failed phase.
+    // Group first, then profile/workspace, including every retry phase.
+    await client.query("SELECT sharing.lock_identity_groups($1::uuid)", [
+      requestId,
+    ]);
     await client.query(
       "SELECT user_id FROM core.user_profile WHERE user_id=$1 FOR UPDATE",
       [r.target_user_id],
