@@ -107,6 +107,13 @@ describe("current user overview", () => {
 
           version: 0,
         },
+        {
+          moduleKey: "trackers",
+          enabled: true,
+          agendaVisible: true,
+          remindersEnabled: true,
+          version: 0,
+        },
       ]);
     } finally {
       await removeProvisionedTestUser(
