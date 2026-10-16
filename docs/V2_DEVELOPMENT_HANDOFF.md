@@ -6,6 +6,8 @@
 **Phase:** V2 — Financial Maturity and Shared Expenses  
 **Transition date:** October 10, 2026
 
+**Roadmap amendment:** October 16, 2026 (Asia/Manila). [ADR 0005](adr/0005-v3-scope-and-platform-transition.md) and the [V3 plan](V3_DEVELOPMENT_PLAN.md) supersede earlier post-V3 web launch expectations. Sections 16–30 remain historical implementation/acceptance evidence; references there to deferred production gates describe the direction at that time. V1 and V2-A through V2-I remain locally accepted, with no production-release claim.
+
 ---
 
 ## 1. Purpose
@@ -92,15 +94,13 @@ V1 should therefore be described during continued development as:
 
 ---
 
-## 4. Deferred final production acceptance
+## 4. Preserved historical production requirements
 
-The application is intended to be released only after V3.
+Production deployment and production-readiness completion for the current web application are no longer planned. Keep the application as the development/verification environment through V3 and the subsequent comprehensive UI/UX redesign. Then plan the future Windows/Android architecture before implementation; see ADR 0005.
 
-Infrastructure-dependent production acceptance is therefore intentionally deferred until completion of V2 and V3.
+The following list is preserved as historical and conditional operational guidance. It is not a requirement to provision services or complete a web production release during V3 preparation/development. Existing human-configuration and production checklists remain intact, including [V2-H](V2_H_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md), [V2-I](V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md) and [V1 operations](V1_OPERATIONS.md).
 
-This is a sequencing decision only.
-
-The following remain mandatory before public release:
+If a web production release is ever separately authorized, its applicable requirements still include:
 
 - approved production infrastructure;
 - paid hosting/database plan where required by the architecture;
@@ -126,9 +126,9 @@ Do not claim production readiness before those gates pass.
 
 ## 5. Engineering quality during V2 and V3
 
-Deferring final production deployment does not defer engineering quality.
+Removing current web production-readiness completion from the roadmap does not weaken engineering quality, data integrity, privacy, authorization or security.
 
-Every V2 milestone must continue to use the applicable repository gates:
+The following repository gates governed V2 and remain applicable engineering checks during V3; their timing follows the V3 two-assignment plan rather than repeating a full campaign after each internal milestone:
 
 - unit/domain tests;
 - component tests;
@@ -151,6 +151,8 @@ Every V2 milestone must continue to use the applicable repository gates:
 - documentation updates.
 
 Financial changes must continue to preserve immutable evidence, exact integer minor units, balanced journals, workspace serialization, safe retries, server-owned authorization, and existing V1 financial invariants.
+
+For V3, Assignment 1 covers A/B with focused critical database, authorization, validation and migration tests. Assignment 2 covers C/D and one consolidated full applicable V1–V3 verification phase, including applicable local build/browser/restore/container/capacity acceptance. Use affected reruns after fixes; do not weaken essential assertions. Documentation preparation itself runs only documentation checks.
 
 ---
 
@@ -315,7 +317,7 @@ During V2 functional implementation:
 - maintain responsive/accessibility quality;
 - do not perform a broad application-wide visual redesign unless separately assigned.
 
-A comprehensive visual redesign may be performed after V3 before final release.
+A comprehensive UI/UX redesign is the intended separately assigned stage after V3, still using the current web development/verification environment. It precedes platform architecture planning, not a current-web production release. Preserve established design decisions during V3 except for necessary feature-specific improvements.
 
 ---
 
@@ -374,7 +376,7 @@ Before V2 is functionally complete:
 - accessibility/responsive acceptance passes;
 - documentation reflects actual implementation.
 
-Production deployment acceptance remains deferred until after V3.
+These local V2 completion gates remain valid historical evidence. Current web production deployment/readiness completion is no longer planned under ADR 0005.
 
 ---
 
@@ -388,11 +390,13 @@ After V2 completion:
 4. begin V3 only from the verified repository;
 5. do not silently carry unresolved V2 correctness issues into V3.
 
-V3 remains focused on adaptable trackers.
+V3 remains focused on adaptable trackers: Learning, Books and Personal Tasks presets; versioned definitions; custom templates/fields; supported text/number/date/checkbox/single-select values; validated entries, immutable history and safe migrations; reporting/statistics; internal Calendar/Agenda deadlines/reminders; and relevant onboarding/navigation, exports, lifecycle, accessibility and security integration. Preserve database Section 14 and existing V1/V2 protections.
+
+Follow [V3_DEVELOPMENT_PLAN.md](V3_DEVELOPMENT_PLAN.md): V3-A — Tracker Foundation and Presets; V3-B — Custom Templates and Versioned Migrations; V3-C — Reporting, Calendar, and Cross-Domain Integration; V3-D — Consolidated Acceptance and Documentation. Use two future implementation assignments: A/B with focused critical-boundary testing, then C/D with one consolidated full applicable V1–V3 verification phase. External calendar-provider synchronization is deferred to approved future platform architecture. Offline support, platform packaging, scripting/formulas, general page builders and premature habit streaks are outside V3.
 
 ---
 
-## 14. Final release sequence
+## 14. Revised development and platform sequence
 
 Current intended sequence:
 
@@ -405,22 +409,24 @@ V2 Shared Expenses & Settlements
         ↓
 V3 adaptable trackers
         ↓
-Optional approved comprehensive visual redesign
+Comprehensive UI/UX Redesign
         ↓
-Final production infrastructure and hosted acceptance
+Platform Architecture Planning
         ↓
-Final regression/security/performance acceptance
+Windows/Android Development
         ↓
-Production release
+Platform-Specific Acceptance
 ```
 
-No production requirement is waived by this sequence.
+The existing web application supports V3 and redesign; its production deployment/readiness completion is no longer planned. The future direction is mostly offline personal functionality with device-local data and selected online synchronization/collaboration. Reconsider features, infrastructure and architecture before transition. Tauri, Firebase, SQLite, Android frameworks, synchronization protocols and other replacement technologies remain undecided. Each later stage requires its own assignment; current engineering guarantees and historical conditional operations guidance remain intact.
 
 ---
 
 ## 15. Immediate next step
 
-V2-A through V2-I are locally accepted. **V2-I I1-I7 are complete and all 40 approved scenarios passed.** Section 30 supersedes the intermediate checkpoint in Section 29. Keep Shared Expenses default-off for deployed environments pending the documented release gates. The final completion report records safe main integration and the verified remote SHA. Stop after I; do not begin V3, deployment or a broad redesign.
+V2-A through V2-I are locally accepted. **V2-I I1-I7 are complete and all 40 approved scenarios passed.** Section 30 supersedes the intermediate checkpoint in Section 29. Accepted V2 baseline on `main`: `54a08d67c4ef7f5be01f5eaf63ba5c071e708b93`, verified equal to `origin/main` during V3 preparation. Keep Shared Expenses default-off for deployed environments pending the preserved release gates.
+
+V3 preparation creates the [development plan](V3_DEVELOPMENT_PLAN.md) and [ADR 0005](adr/0005-v3-scope-and-platform-transition.md) and aligns the roadmap only. Stop after documentation, commit/push and remote-SHA verification. Do not begin V3 implementation, UI redesign, production deployment or Windows/Android development. The next implementation assignment, when explicitly requested, is V3-A and V3-B together as specified by the plan.
 
 ---
 

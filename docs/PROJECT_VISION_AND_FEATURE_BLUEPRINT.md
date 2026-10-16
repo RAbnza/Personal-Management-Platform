@@ -1,11 +1,13 @@
 # Project Vision and Feature Blueprint
 
 **Working name:** Personal Management Platform — final product name to be decided  
-**Document version:** 1.3  
+**Document version:** 1.4 — V3 roadmap alignment, October 16, 2026\
 **Created:** October 5, 2026  
 **Purpose:** Foundational product document, consolidated from the “Strengthen Tracker Project” brainstorm and refined into a coherent vision and staged delivery plan.
 
 This document describes the intended product, its core behaviors, and its boundaries. It is a starting point for requirements, interface design, data modeling, and development planning. The full vision is larger than the first release; future features are included here so they can be added deliberately without delaying a usable product.
+
+**Current development direction:** V1 and V2-A through V2-I are locally accepted. The current web application remains the development and verification environment through V3 and a subsequent comprehensive UI/UX redesign; completing its production deployment or production readiness is no longer planned. The approved sequence is **V3 → Comprehensive UI/UX Redesign → Platform Architecture Planning → Windows/Android Development → Platform-Specific Acceptance**. Most future personal features should operate offline with device-local data, with selected synchronization/collaboration online. This is strategic direction, not an approved replacement architecture. See [ADR 0005](adr/0005-v3-scope-and-platform-transition.md) and the [V3 development plan](V3_DEVELOPMENT_PLAN.md). Existing V1/V2 business rules, privacy, authorization, security and data integrity remain mandatory.
 
 ## 1. Product vision
 
@@ -473,13 +475,13 @@ Support dismissing, snoozing, and disabling reminders. Source changes must resch
 
 Notification settings should include timezone, quiet hours for external delivery, and whether amounts or company names may appear on a device notification. Dismissing a reminder does not mark a debt paid or an interview completed. Calendar conflicts may be flagged for timed events, but the application must not reschedule them automatically.
 
-External calendar integration is future work. Define its permissions, synchronization direction, conflict handling, and deletion behavior before implementation.
+External calendar-provider synchronization is outside V3 and deferred until future platform architecture planning explicitly designs and approves its permissions, synchronization direction, conflict handling and deletion behavior. V3 includes internal source-driven Calendar/Agenda integration and existing appropriate reminder behavior; it does not require external calendar providers.
 
 ## 10. Generic tracker templates
 
 Templates extend the platform to learning, books, personal tasks, goals, and other structured activities. A template defines fields; a tracker is a user’s instance of that template; entries contain its records.
 
-Begin with preset templates before building a general template editor. Initial field types can be text, number, date, checkbox, and single-select status. Templates can mark fields required and identify a primary title, status, and deadline field for shared views.
+V3 begins with preset Learning, Books and Personal Tasks templates, then adds user-created templates and custom fields. Supported field types are text, number, date, checkbox and single-select. Templates can mark fields required and identify a primary title, status and deadline field for shared views. Definitions are versioned; entries retain immutable history, with validation and explicit safe migrations between versions.
 
 Examples:
 
@@ -492,7 +494,7 @@ Examples:
 
 Financial subscriptions belong to recurring obligations. A template may link to them later, but must not maintain a competing financial balance. Likewise, the specialized application tracker remains authoritative for job pipelines.
 
-User-created templates, custom fields, richer relations, and template sharing are later extensions. Editing a template must preserve existing entries or provide an explicit migration; removing a field must not silently discard data. Arbitrary formulas, scripting, and a Notion-style page builder are outside the initial scope.
+User-created templates and custom fields are part of V3; richer relations and template sharing remain later extensions. Editing a template must preserve existing entries or provide an explicit migration; removing a field must not silently discard data. V3 also includes tracker reporting/statistics, internal Calendar/Agenda deadlines and reminders, and relevant onboarding, navigation, exports, lifecycle, accessibility and security integration. Arbitrary formulas, scripting, a general page builder and habit-streak functionality are outside V3.
 
 ## 11. Reports
 
@@ -579,11 +581,11 @@ Money pages include accounts, ledger, transaction detail/entry, debts and schedu
 
 Prioritize a responsive interface suitable for entering an expense or updating an application on a phone. Use readable labels, keyboard-accessible forms, visible validation, and status indicators that do not rely only on color.
 
-Include visible saving/saved/failed states and preserve recoverable form input after an error. The initial product is an online web application. If a connection fails, show that an action has not been confirmed; do not imply it is safely stored. Offline entry, device synchronization, and installation as a PWA are optional later work with explicit conflict and duplicate handling.
+Include visible saving/saved/failed states and preserve recoverable form input after an error. The current web development/verification environment remains online through V3 and redesign. If a connection fails, show that an action has not been confirmed; do not imply it is safely stored. Future mostly offline Windows/Android behavior, device synchronization and packaging require separate approved platform architecture; they are not V3 work or a decision to build a PWA.
 
 ## 14. Scope and delivery sequence
 
-The full vision is a roadmap, not a commitment to implement everything before launching.
+The full vision is a roadmap, not a commitment to implement everything before launching. V1/V2 completion evidence remains in the handoffs. The current web environment is retained for V3 and redesign; a production release of that web application is no longer planned.
 
 | Stage | Deliverable | Release boundary |
 | --- | --- | --- |
@@ -591,10 +593,15 @@ The full vision is a roadmap, not a commitment to implement everything before la
 | V1: coherent core | Debts with manual schedules, partial payments and explicit settlement/adjustments, reconciliation, connected dashboard, period reports for all requested intervals, in-app due indicators, history, CSV export | Complete core workflows with financial accuracy and user separation |
 | V2: financial maturity | Credit cards/statements, recurring obligations, budgets, savings goals, forecasts, richer career analytics, scheduled opted-in notifications | Card and planning workflows verified with realistic cases |
 | V2: shared expenses and settlements | Groups for family/friends/roommates/trips, registered/manual participants, one or multiple payers, equal/exact splits, net balances, partial/full/selected-expense settlements, pending confirmation, settlement suggestions, private ledger links | Participants can record and settle realistic shared spending without exposing private data or duplicating financial effects |
-| V3: adaptable trackers | Preset trackers, then user-created templates/custom fields, richer tracker reporting, calendar integration | Existing records survive customization and synchronization changes |
+| V3: adaptable trackers | Learning, Books and Personal Tasks presets; versioned custom templates/fields, validated entries/history and safe migrations; reporting/statistics; internal Calendar/Agenda, reminders and relevant cross-domain integration | Existing records survive customization; external calendar synchronization, offline support and platform packaging are excluded |
+| Comprehensive UI/UX Redesign | Separately assigned application-wide redesign using the current web development/verification environment | Preserve business behavior, accessibility, privacy and data integrity |
+| Platform Architecture Planning | Reassess features, infrastructure and architecture for Windows/Android, mostly offline personal use and selected online synchronization/collaboration | Approve the replacement architecture before implementation; no binding technology selection yet |
+| Windows/Android Development → Platform-Specific Acceptance | Implement and verify the subsequently approved platform plan | Separate assignments and acceptance criteria; no current web production-readiness prerequisite |
 | Later, selectively | Receipt OCR, suggested categorization, import integrations, investments, multiple currencies, shared workspaces, annual-review exports | Added only for a demonstrated user need and supportable accuracy |
 
 Tutorials and contextual guidance evolve with each release. They are part of the product, not a final task after all features are built.
+
+V3 has four internal milestones: **V3-A — Tracker Foundation and Presets; V3-B — Custom Templates and Versioned Migrations; V3-C — Reporting, Calendar, and Cross-Domain Integration; V3-D — Consolidated Acceptance and Documentation**. Execute them in two future assignments: A/B with focused critical-boundary testing, then C/D with one consolidated full applicable V1–V3 verification phase. See the [execution plan](V3_DEVELOPMENT_PLAN.md) for prerequisites, acceptance and stop boundaries.
 
 Initially defer automatic provider fee lookup, bank connections, payment execution, automatic loan settlement calculations, credit scoring, AI financial recommendations, collaborative editing, and a fully general no-code builder. The app records and organizes information; executing bank payments is a separate future product decision.
 
@@ -649,6 +656,8 @@ Restoring a workspace must preview whether it creates a separate workspace or re
 V1 can store notes and reference links. Later allow receipts, provider statements, settlement confirmations, resume versions, and assessment documents to attach to their source record. Restrict file types/sizes, enforce private access, and define retention/export behavior. Do not expose a private file through a public link by default. Uploaded files supply evidence; they do not automatically change balances or application stages.
 
 ### Operational expectations
+
+Existing production/human-configuration checklists remain historical and conditional operational requirements. They do not require provisioning external services or completing a current-web launch. Local verification and all applicable integrity, privacy, authorization, security and recovery guarantees continue; future platform operational requirements will be designed during architecture planning.
 
 Define measurable performance and storage limits before launch, using a realistic multi-year personal dataset. Large histories need search, filtering, and pagination. Expose actionable failure messages and a support/feedback route. Report generation and reminder failures must be detectable without logging sensitive contents. Agree on backup frequency and recovery expectations before storing real user data.
 

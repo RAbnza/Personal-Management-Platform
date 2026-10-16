@@ -7,6 +7,8 @@
 **Source SHA-256:** `AAB9E718338D3D11EC4D434330D2573456FA6BF953E4A6D3397DC9618915ECB4`  
 **Status:** Recommended implementation baseline; explicit launch gates and unresolved product decisions are listed below. This document specifies a design, not an implemented or tested application.
 
+**Roadmap amendment — October 16, 2026:** [ADR 0005](adr/0005-v3-scope-and-platform-transition.md) and the [V3 development plan](V3_DEVELOPMENT_PLAN.md) supersede the earlier V3 external-calendar commitment and post-V3 web production-release sequence. The version/date/source hash above identify the original design inputs, not the amended files. Actual V1/V2 completion evidence is in the handoffs. Current web infrastructure remains the development/verification baseline through V3 and comprehensive UI/UX redesign; completing its production deployment/readiness is no longer planned. Historical hosting/provider/production requirements below remain preserved and conditional, not current provisioning tasks or future-platform technology decisions.
+
 ## 1. Authority, intent, and reading guide
 
 The blueprint defines the product requirements. The accompanying request additionally requires a complete technology recommendation and private multi-user accounts from the beginning. Instructions inside the blueprint are treated as product requirements and design context, not as commands to deploy, install software, or change accounts.
@@ -21,6 +23,8 @@ Terminology used throughout:
 - **Future:** a designed extension boundary, not a requirement to implement its tables or infrastructure in V1.
 
 The default architecture is an online, responsive web application with a modular monolith, one PostgreSQL database, and one private personal workspace per user. The financial core uses a small balanced journal underneath user-friendly financial actions. Applications and trackers remain specialized domains. Calendar entries and reports derive from domain records. Authentication, ownership checks, database isolation, and account deletion are part of the first release.
+
+That architecture continues to govern V3; the later Windows/Android direction does not authorize replacing it now. Most future personal features should operate offline with device-local data and selected synchronization/collaboration online. Frameworks, local persistence, backend, identity, synchronization/conflict protocols and data migration remain subject to separate platform architecture planning and approval. Preserve current security, privacy, authorization and integrity guarantees throughout.
 
 Sections 2–5 cover scope and stack; 6–10 cover identity, data, finance, and transactional APIs; 11–16 cover UI and product modules; 17–21 cover privacy, operations, and tests; 22–24 record decisions, release sequencing, and the final consistency review.
 
@@ -43,7 +47,8 @@ Sections 2–5 cover scope and stack; 6–10 cover identity, data, finance, and 
 | Coherent V1 | Manual debts/schedules, imported opening liabilities, net disbursement, payment allocation, schedule revision, settlement, reconciliation, dashboard, all requested reporting periods, history, CSV exports, in-app reminder controls, deletion | Manual provider-confirmed amounts; no general amortization engine. No dependency on external reminder delivery. |
 | V2 financial maturity | Cards/statements, recurring plans, budgets, goals, forecasts, richer career analytics, opted-in scheduled notifications | Actual postings remain distinct from expected occurrences. Uploads/imports/portable restoration can be added here behind separate gates. |
 | V2 companion | Shared expense groups, accepted invitations, one payer, equal/exact shares, confirmation/disputes, private ledger linking | Required for the completed product. Group membership never grants private workspace access. |
-| V3 | Preset trackers, then custom templates, richer tracker reporting, external calendar integration | Preserve schema versions and existing entries; agree synchronization policy before integration. |
+| V3 | Learning, Books and Personal Tasks presets; versioned templates/custom fields; validated entries, immutable history and safe migrations; tracker reporting/statistics; internal Calendar/Agenda deadlines, reminders and relevant cross-domain integration | Preserve versions, ownership and existing entries. External calendar-provider synchronization is deferred to approved future platform architecture; no offline support or packaging in V3. |
+| After V3 | Comprehensive UI/UX Redesign → Platform Architecture Planning → Windows/Android Development → Platform-Specific Acceptance | Web remains the environment through redesign; future technologies and feature changes require separate decisions. No current web production deployment/readiness completion is planned. |
 | Later selectively | In-transit transfers, refinancing, multiple payment sources, standalone lending, richer group splits/simplification, multiple currencies, offline synchronization, general sharing | Add only with explicit financial and authorization rules; no premature implementations. |
 
 Core partial refund support is a **recommended V1 addition** because it exercises the same journal and correction machinery and prevents users from misclassifying common receipts. It is not presented as an extra blueprint release commitment. If deferred, do not expose a refund form until its allocation and reporting rules are implemented. Credit-card refunds arrive with cards.
@@ -631,7 +636,7 @@ Recurring definitions generate expected occurrences with unique `(rule_id, logic
 
 Implement the limited supported recurrence grammar with date-fns calendar operations: daily/weekly/monthly and explicit end/count/interval. For monthly days 29–31 default to an explicitly selected last-valid-day rule, with a preview. If arbitrary RFC-style recurrence is needed later, evaluate a mature recurrence library then; it must not silently replace the product's shorter-month rule with skipped months.
 
-Changing one occurrence records an override; changing future occurrences creates a rule version effective from a boundary. Preserve completed/past occurrences and cancel obsolete pending jobs. Do not shift weekends/holidays without a confirmed rule. External calendar synchronization is deferred until direction, scopes, conflict policy, stable external IDs, echo suppression and deletion semantics are agreed.
+Changing one occurrence records an override; changing future occurrences creates a rule version effective from a boundary. Preserve completed/past occurrences and cancel obsolete pending jobs. Do not shift weekends/holidays without a confirmed rule. External calendar synchronization is outside V3 and deferred until future platform architecture planning approves direction, scopes, conflict policy, stable external IDs, echo suppression and deletion semantics. Internal Calendar/Agenda integration remains required in V3; notification delivery is a separate existing capability.
 
 ## 13. Reports, dashboards, and analytical definitions
 
@@ -692,11 +697,13 @@ Career reporting uses history to calculate elapsed stage durations and explicitl
 
 `TrackerTemplateVersion` owns field definitions with stable field IDs, type, validation, choices and primary title/status/deadline mapping. `Tracker` references a template lineage/version; `TrackerEntry` stores validated JSONB values plus version and indexed extracted title/status/due date. Extracted columns update transactionally with entry values and are rebuildable, not separately edited.
 
-Begin with preset Learning, Books and Tasks templates and field types text, number, date, checkbox and single-select. TypeScript/Zod validation is constructed from a strict allowlist of definition types. No arbitrary JavaScript, SQL, formulas or executable template content. Number fields are not the financial Money type unless a separately designed nonfinancial display use requires it.
+Begin with preset Learning, Books and Personal Tasks templates and field types text, number, date, checkbox and single-select. User-created templates and custom fields follow within V3, after version/migration safety is established. TypeScript/Zod validation is constructed from a strict allowlist of definition types. No arbitrary JavaScript, SQL, formulas or executable template content. Number fields are not the financial Money type unless a separately designed nonfinancial display use requires it.
 
 Adding optional fields can be compatible; adding required fields needs defaults or a migration plan. Removing a field archives its definition and retains values; changing type/select options creates a version and migration preview with invalid-entry handling. Do not rewrite every entry silently. Date/status mappings drive agenda projections through the same source contract as Career and Debt.
 
 Habit streaks require dated check-in records and timezone rules; they cannot be derived reliably from a single completion checkbox. Tracker template sharing is later content sharing, not permission to read instances. Trackers may link to financial/career records, but those modules remain authoritative.
+
+The [V3 plan](V3_DEVELOPMENT_PLAN.md) preserves database Section 14's template/version/field identity/definition/option, tracker, entry/revision and migration model. V3-A/B establish presets, customization and safe migration; V3-C integrates reports/statistics, internal Calendar/reminders, onboarding/navigation, exports/portability, lifecycle, accessibility and security; V3-D consolidates acceptance/documentation. Two implementation assignments cover A/B with focused critical-boundary checks, then C/D with one full applicable V1–V3 verification phase. Do not repeat full regression/build/browser/restore/container campaigns after each internal milestone.
 
 ## 15. Financial roadmap extension design
 
@@ -986,6 +993,8 @@ Replace the workspace-wide financial lock with finer aggregate locking only if r
 
 ## 20. Deployment, CI/CD, observability, and recovery
 
+**Scope of retained guidance:** The hosting topology, hosted acceptance, paid services and deployment pipeline below are historical/conditional requirements for the current web application. ADR 0005 removes their completion from the current roadmap; do not provision them for V3 preparation. Existing local build/runtime, recovery, security and integrity verification remains applicable, scheduled under the V3 plan. These recommendations do not select the future platform infrastructure.
+
 ### 20.1 Recommended topology
 
 Deploy a containerized Next.js Node web service, a separately started worker using the same source revision, and a paid managed PostgreSQL instance on Render. Prefer Singapore for the initial Manila-centered audience, subject to confirmed latency/data-location requirements. Render lists Singapore and regional private networking in its [region documentation](https://render.com/docs/regions), and supports [long-running workers](https://render.com/docs/background-workers).
@@ -1043,6 +1052,8 @@ Revoke all restored sessions/recovery tokens, pause outbound queues, reconcile t
 
 The following specifies required implementation tests; no application implementation or passing test result is claimed by this architecture document.
 
+For V3, the [two-assignment verification strategy](V3_DEVELOPMENT_PLAN.md#6-two-prompt-execution-strategy) governs timing: focused critical database/authorization/validation/migration checks during A/B, then one consolidated full applicable V1–V3 acceptance phase in Assignment 2. Retain all essential security/integrity assertions and use affected reruns for fixes. A production-mode build or container check is local engineering evidence, not a commitment to deploy the web product. Documentation-only preparation runs none of these application checks.
+
 | Layer | Required evidence |
 | --- | --- |
 | Pure domain | Posting recipes, exact parsing/rounding, fee treatments, schedule residuals, reversals/refunds, report classifications and date/recurrence boundaries. |
@@ -1088,7 +1099,8 @@ Release evidence is workflow-based: required acceptance tests pass, invariants h
 | ADR-009 | Workspace-level serialization for financial commands | Simple safe concurrent financial writes; finer-grained locking deferred until measured contention. |
 | ADR-010 | PostgreSQL-backed durable jobs with transactional enqueue | Avoids another broker and missed side effects; DB load and delivery uncertainty remain observable concerns. |
 | ADR-011 | Group sharing separate from workspace ownership | Enables required family workflows without broad data exposure; each private ledger adoption is explicit. |
-| ADR-012 | Online first; minimal private caching | Honest failed-save behavior and less synchronization risk; offline/PWA is a separate later design. |
+| ADR-012 | Current web baseline remains online; minimal private caching | Applies through V3/redesign. ADR 0005 approves a later mostly offline Windows/Android direction; replacement architecture is undecided and no offline implementation is authorized now. |
+| File ADR 0005 | V3 scope and platform transition | [Accepted roadmap amendment](adr/0005-v3-scope-and-platform-transition.md): internal tracker/Calendar integration in V3; external calendar sync deferred; no current web production-readiness completion; future architecture requires separate approval. |
 
 ### 22.2 Gates and open product decisions
 
@@ -1108,7 +1120,7 @@ Release evidence is workflow-based: required acceptance tests pass, invariants h
 | Group disputes, creator loss and unlinked corrections | Creator-only bill revisions; recorded resolution workflow; never auto-correct another private ledger | Before shared-expense release; product owner/technical lead. |
 | File limits and approved formats | PDF/JPEG/PNG initially, scan/private access, exact export coverage | Before uploads; owner/operator. |
 | Portable restore and shared-history scope | Replace private workspace after preview; group history excluded from portable private restore unless a separate controlled merge is designed | Before portability release; technical lead. |
-| External calendar synchronization | No integration until direction, permissions, deletion and conflict policy are agreed | Before integration implementation; product owner. |
+| External calendar synchronization | Outside V3; defer direction, permissions, deletion and conflict policy to future platform architecture | Future platform architecture planning and explicit approval; product owner/technical lead. |
 | Public-launch performance/capacity | Measure section 19 targets and set real quotas; adjust infrastructure or promises to evidence | Before public launch; technical lead/operator. |
 
 These gates prevent unresolved behavior from becoming an accidental schema convention. They do not postpone the baseline account model, ownership rules, exact money or core transactional guarantees.
@@ -1135,10 +1147,11 @@ These gates prevent unresolved behavior from becoming an accidental schema conve
 3. **Career and agenda:** application attempt/history, timed events, manual events and source-driven agenda; onboarding skip/resume/replay and module preferences.
 4. **Financial core completion:** existing debt cutoff, net proceeds, known/unknown payment allocations, schedules/revisions, early settlement and reconciliation. Build the ledger and financial test fixtures before elaborate charts.
 5. **Coherent V1:** dashboard, all period reports with drilldown, in-app reminder controls, CSV coverage, corrections, lifecycle deletion, support route and accessibility checks.
-6. **Production readiness:** CI/migrations, isolation attack tests, failure/retry/concurrency tests, real-size performance, paid backup configuration and successful restore/purge drills.
+6. **Historical web production-readiness stage:** Retain its CI/migration, isolation, failure/retry/concurrency, local capacity and restore/purge evidence and protections. Paid hosting/backups and hosted acceptance are no longer planned completion work for this web product under ADR 0005; preserved runbooks remain conditional operational requirements.
 7. **V2 financial workflows:** cards/statements and planning, then opted-in notifications; uploads/imports/portability have independent readiness gates.
 8. **V2 shared expenses:** group authorization/invitations and zero-sum bill model first, then confirmations, disputes, explicit private links/corrections and guided privacy explanation.
-9. **V3 and selective growth:** preset trackers before editing, versioned migration before customization, calendar integration only after synchronization policy; defer remaining expansions to proven demand.
+9. **V3 adaptable trackers:** V3-A foundation/presets → V3-B customization/versioned migrations → V3-C reports/internal Calendar and cross-domain integration → V3-D consolidated acceptance/documentation. Assign A/B together with focused checks, then C/D with one full applicable V1–V3 verification phase. External calendar synchronization is deferred to future architecture planning.
+10. **Subsequent direction:** Comprehensive UI/UX Redesign in the existing web environment → Platform Architecture Planning → Windows/Android Development → Platform-Specific Acceptance. Reassess features/infrastructure before transition; select no replacement technology or protocol until that plan is approved.
 
 For AI-assisted implementation, every task specifies the owning module, applicable invariant/ADR, authorized transaction boundary, source contract, migration impact and acceptance evidence. Never accept generated shortcuts that add mutable account balances, cast money to Number, accept client ownership, post expected occurrences automatically, use production data in demos, or implement a second expense source. Update this architecture/ADRs when behavior changes and keep the subsequent database/API specifications consistent with it.
 
