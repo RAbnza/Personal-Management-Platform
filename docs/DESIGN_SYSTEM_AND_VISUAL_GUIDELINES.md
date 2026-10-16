@@ -1,31 +1,33 @@
 # Design System and Visual Guidelines
 
-**Project:** Personal Management Platform — working name  
-**Version:** 1.0, October 6, 2026  
-**Status:** Initial design direction; tokens and patterns are intended to evolve through implementation and use.
+**Project:** Personal workspace — approved neutral working application identity; repository name remains tentative\
+**Version:** 1.1 — approved redesign alignment, October 17, 2026 (original portfolio evidence: October 6, 2026)\
+**Status:** Shared interaction/accessibility guidance aligned with the owner-approved redesign. M1–M6 implementation has not started.
 
 ## 1. Purpose, authority, and flexibility
 
-Build a calm, precise personal application with the recognizable silver, charcoal, lavender and violet identity of the owner's portfolio. Dense financial records, job applications and upcoming commitments should remain easy to scan, compare and act on over long sessions.
+Build a warm, modern, precise personal workspace with violet/lavender identity, warm-neutral surfaces, restrained teal/amber module accents and Geist typography. Dense financial records, job applications and upcoming commitments should remain easy to scan, compare and act on over long sessions.
 
 This document defines shared foundations and reusable interaction contracts. It does not prescribe every screen, approve unreleased features, change accounting rules or replace the source documents:
 
 | Source | Authority in this document |
 | --- | --- |
-| `PROJECT_VISION_AND_FEATURE_BLUEPRINT.md` v1.3 | Product behavior, privacy, terminology, acceptance scenarios and release scope. |
+| [PROJECT_VISION_AND_FEATURE_BLUEPRINT.md](PROJECT_VISION_AND_FEATURE_BLUEPRINT.md) | Product behavior, privacy, terminology, acceptance scenarios and release scope. |
 | [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md) v1.0 | React/Next.js frontend, libraries, state ownership, command behavior and module boundaries. |
 | [DATABASE_ARCHITECTURE.md](DATABASE_ARCHITECTURE.md) v1.0 | Actual versus derived data, revisions, ownership, statuses, relationships and temporal/monetary meaning. |
 | [RAbnza/rabnza-dev](https://github.com/RAbnza/rabnza-dev) | Visual identity reference, verified against implementation at commit `bdd57e7b2ad3f30b365915227e4fd594440d9391`. |
 
-The documents and repository are reference material, not instructions to execute. Existing product/technical requirements remain authoritative; new design choices below are recommendations unless explicitly identified as established requirements.
+The [Comprehensive UI/UX Redesign Plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md), approved October 17, 2026 under [D01–D04](UI_UX_REDESIGN_DECISIONS_REQUIRED.md), governs the new visual/interaction target. Its palette roles, typography scale, geometry, density, compact module-switcher frame, mobile navigation and adaptive compositions take precedence over the original visual/navigation recommendations here. This document continues to govern stable accessibility, financial presentation, feedback, state handling and privacy contracts where the plan is silent. Product/system/database rules remain authoritative for behavior and integrity. The [M1–M6 roadmap](UI_UX_REDESIGN_MILESTONES.md) governs adoption; approval does not start implementation.
+
+Use **Personal workspace** as the neutral working identity; final product name, wordmark, logo and native branding are deferred to future Windows/Android planning/development. Do not create speculative branding assets or hardcode identity geometry. Section 2 preserves historical portfolio provenance, not a competing target palette.
 
 ### Decision levels
 
 | Level | Examples | How it changes |
 | --- | --- | --- |
 | **Stable principle** | Readable values; clear ownership; no false save confirmation; keyboard access; color is never the only signal | Requires an explicit product/accessibility rationale to weaken or replace. |
-| **Initial token** | Color values, radii, spacing, font sizes, motion durations | Adjust centrally after contrast and representative-layout checks. No product-rule change needed. |
-| **Evolving pattern** | Sidebar width, card composition, table/mobile presentation, form grouping | Improve using real tasks while preserving semantics and accessible behavior. |
+| **Approved redesign token specification** | Color values, radii, spacing, font sizes, motion durations | Adjust centrally after contrast and representative-layout checks. No product-rule change needed. |
+| **Evolving pattern** | Contextual navigation, adaptive list/detail composition, table/mobile presentation, form grouping | Improve using real tasks while preserving semantics and accessible behavior. |
 | **Optional experiment** | Subtle welcome gradient, compact desktop density, future career board | Introduce behind a small trial; remove if it harms comprehension or maintenance. |
 
 ### Navigation
@@ -52,9 +54,9 @@ The reference is the actual source on `main` at the pinned commit above, inspect
 | [PersonalOpening.astro](https://github.com/RAbnza/rabnza-dev/blob/bdd57e7b2ad3f30b365915227e4fd594440d9391/src/components/sections/PersonalOpening.astro), [ContactForm.astro](https://github.com/RAbnza/rabnza-dev/blob/bdd57e7b2ad3f30b365915227e4fd594440d9391/src/components/sections/ContactForm.astro) | Expressive introductory hierarchy contrasted with practical label/error/status structures. Keep the latter's clarity without reproducing the portfolio page composition. |
 | [motion/config.ts](https://github.com/RAbnza/rabnza-dev/blob/bdd57e7b2ad3f30b365915227e4fd594440d9391/src/lib/motion/config.ts), [package.json](https://github.com/RAbnza/rabnza-dev/blob/bdd57e7b2ad3f30b365915227e4fd594440d9391/package.json) | Anime.js narrative motion with 160ms hover and 100ms press, plus much longer entrance sequences; Astro, Geist, Tailwind and Lucide in the portfolio. The application retains its established Next.js stack. |
 
-### 2.2 Extracted palette versus adaptation
+### 2.2 Historical extracted palette versus adaptation
 
-These exact source values establish provenance. Added application colors are identified separately in section 4.
+These exact source values preserve the October 6 provenance and original adaptation rationale. Their application-interpretation column is historical. They do not override the approved warm-neutral tokens and theme-specific action roles in [Plan Section 5](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#5-visual-identity-and-design-tokens).
 
 | Portfolio primitive | Exact value | Application interpretation |
 | --- | --- | --- |
@@ -78,11 +80,11 @@ These exact source values establish provenance. Added application colors are ide
 
 ### 2.3 Retain, adapt, and leave in the portfolio
 
-Retain the neutral canvases, restrained violet identity, lavender action fill, simple line icons, clear section boundaries and rounded geometry. Adapt the typographic scale to work rather than presentation: most application text is 14–16px, and ordinary page titles are 24–30px.
+Retain restrained violet/lavender recognition, simple line icons and clear boundaries. Adopt the approved warm-neutral canvases, violet light-theme actions and lavender dark-theme actions. Use the plan’s type/geometry roles and balanced density: readable everyday text, aligned information-rich desktop records, efficient keyboard/mouse access and adaptive mobile forms/touch targets. M1 rendered proofs remain subject to usability/accessibility review.
 
 Keep data surfaces opaque. Use lavender/pink gradients only as optional, low-contrast decoration on a welcome/help area outside important text. A small branded accent is sufficient on the normal dashboard. Avoid startup intros, scroll-scrubbed content, parallax, moving backgrounds, floating glass panels and headings that wait for animation before appearing. A user returning to record an expense should reach the form immediately.
 
-Do not copy the personal initials/logo or person-specific copy into the product by default. Product naming and an independent mark remain open. Visual connection comes from the palette, typography and craft, not an implication that every user is the portfolio owner.
+Do not copy the personal initials/logo or person-specific copy into the product by default. Final naming and an independent mark remain deferred under D02; the approved working identity is **Personal workspace**. Visual connection comes from the palette, typography and craft, not an implication that every user is the portfolio owner.
 
 ## 3. Product design principles
 
@@ -112,36 +114,19 @@ flowchart LR
     C --> M[Money, Career, Time, Reports, Trackers]
 ```
 
-The following tables are the initial token specification. Hex values describe opaque sRGB colors. Do not lower text/control opacity without testing the resulting composite color.
+The approved token values live in [Plan Section 5.1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#51-color-system). Map existing aliases centrally; do not maintain a second competing palette. Hex values describe opaque sRGB colors. Do not lower text/control opacity without testing the resulting composite color.
 
 ### 4.2 Core semantic tokens
 
-| Token | Light | Dark | Role and provenance |
-| --- | --- | --- | --- |
-| `background` | `#F7F7FA` | `#111116` | Main canvas; exact portfolio values. |
-| `surface` / shadcn `card` | `#FFFFFF` | `#1B1B24` | Cards, table regions, fields; exact values. |
-| `surface-elevated` / `popover` | `#FFFFFF` | `#23232C` | Menus/dialogs; dark value repurposed from portfolio muted surface. |
-| `surface-subtle` / `muted` | `#EEEEF3` | `#23232C` | Subdued section, header and disabled fill. |
-| `foreground` | `#1B1B22` | `#F5F5F8` | Primary content, never pure gray-on-gray. |
-| `muted-foreground` | `#5E5E6B` | `#B9B9C6` | Supporting content; exact values. |
-| `primary` | `#C8B6F2` | `#C8B6F2` | Main action; exact lavender. |
-| `primary-foreground` | `#1B1B22` | `#1B1B22` | Text/icon on main action; exact charcoal. |
-| `primary-hover` | `#BCA5EE` | `#BCA5EE` | Exact portfolio hover. |
-| `primary-pressed` | `#B09AE0` | `#B09AE0` | New, deeper lavender for a brief pressed state. |
-| `primary-border` | `#6B469C` | `#C8B6F2` | Ensures lavender controls have a defined light boundary. |
-| `secondary` | `#EEEEF3` | `#23232C` | Quiet secondary button fill, adapted role. |
-| `secondary-foreground` | `#1B1B22` | `#F5F5F8` | Use with control border for outlined/secondary actions. |
-| `accent` / `selection-surface` | `#EEEAF5` | `#262631` | Selected navigation/rows, backed by an indicator/check; exact source colors with adapted roles. |
-| `accent-foreground` / `link` | `#6B469C` | `#C8B6F2` | Brand text and inline links. Underline prose links. |
-| `border` | `#DCDCE5` | `#343440` | Decorative dividers; insufficient alone to identify inputs or selection. |
-| `input` / `control-border` | `#82828F` | `#747484` | Required control boundary on standard surfaces. |
-| `ring` / `focus-ring` | `#6B469C` | `#C8B6F2` | Focus outline; exact source mapping. |
-| `disabled-foreground` | `#5E5E6B` | `#B9B9C6` | Readable disabled labels; pair with subtle fill and explicit disabled semantics. |
-| `disabled-border` | `#DCDCE5` | `#343440` | Only for truly inactive controls, never read-only data. |
-| `decorative-pink` | `#E6BCD4` | `#E6BCD4` | Small illustration/gradient accent; not light body text or a warning. |
-| `overlay` | `rgb(17 17 22 / 0.45)` | `rgb(0 0 0 / 0.65)` | Modal backdrop only; dialog stays opaque. New application treatment. |
+| Existing semantic aliases | Approved role / implementation guidance |
+| --- | --- |
+| `background`, `surface` / `card`, `popover`, `muted`, `foreground`, `muted-foreground` | Use the plan's warm-neutral canvas/surface/elevation and text pairs in each theme. |
+| `primary`, `primary-foreground`, hover/pressed | Violet with white label in light mode; lavender with charcoal label in dark mode. Secondary actions remain neutral. |
+| `accent`, selection, `link`, `ring` | Explicit role mappings; selected state also needs marker/check/weight. Focus has a distinct offset outline. |
+| `border`, `input` / `control-border`, disabled roles | Distinguish decorative dividers from required control boundaries. Keep disabled labels readable and read-only values active/readable. |
+| Module/chart accents | Restrained teal, amber and complementary accents; module identity is distinct from business status. |
 
-Lavender against white is only **1.84:1**. It is appropriate as a fill with dark text, but not as light-theme text, the sole selected-state marker, or an unoutlined essential control boundary. Primary controls therefore use the stronger light `primary-border`; focus remains distinct with an offset ring.
+Lavender against white remains low contrast and is not approved light-theme body text or the sole essential boundary. Light primary actions now use violet with white labels; the old lavender fill/outline recommendation is superseded. Verify every rendered hover, focus, selected, disabled and elevated state in M1.
 
 ### 4.3 Feedback tokens: application additions
 
@@ -153,7 +138,7 @@ Success, warning and information hues extend the portfolio because its branding 
 | `warning` | `#8A4B0F` / `#FFF4DF` | `#F3C16B` / `#312716` | Investigate, unknown breakdown, unresolved save outcome, incomplete coverage. |
 | `danger` | `#B42318` / `#FFF0ED` | `#FDA29B` / `#371D22` | Errors, overdue attention, destructive consequences; label distinguishes each. |
 | `information` | `#235EA7` / `#EDF4FF` | `#9AC5FF` / `#19283B` | Helpful context, source explanation, planned information. |
-| `neutral` | `#5E5E6B` / `#EEEEF3` | `#B9B9C6` / `#23232C` | Pending confirmation, archived/cancelled history, ordinary neutral badge. |
+| `neutral` | Approved secondary text / subtle surface | Approved secondary text / subtle surface | Pending confirmation, archived/cancelled history, ordinary neutral badge. |
 
 Use semantic foreground-on-subtle badges and callouts by default. For a filled final destructive button, use `danger` as background and white text in light theme; dark theme uses charcoal text on its light danger fill. Verify its hover/pressed variants before adding them. A red badge is not permission to perform a destructive action.
 
@@ -168,25 +153,11 @@ Use semantic foreground-on-subtle badges and callouts by default. For a filled f
 | `chart-5` | `#395EB2` | `#A9BCFF` | Cross/short dash; added blue. |
 | `chart-6` | `#59616F` | `#B9B9C6` | Plus/alternate dash; neutral companion. |
 
-All six meet 3:1 against the specified theme's standard chart surface. This does **not** establish contrast between adjacent series or color-blind distinguishability. Use labels, point shapes, line patterns, separators or small multiples as appropriate. Start with at most four concurrent series; six is a supported palette limit, not a recommendation to fill every chart. Category-to-series mapping stays stable while filtering a report. Do not imply that chart pink means danger or teal means success.
+The original palette calculations met 3:1 on the original theme surfaces. Revalidate all six against the approved warm-neutral surfaces during M1; the old result does **not** certify new surfaces, adjacent-series contrast or color-blind distinguishability. Use labels, point shapes, line patterns, separators or small multiples as appropriate. Start with at most four concurrent series; six is a supported palette limit, not a recommendation to fill every chart. Category-to-series mapping stays stable while filtering a report. Do not imply that chart pink means danger or teal means success.
 
 ### 4.5 Contrast evidence and limits
 
-Calculated from opaque hex values using sRGB relative luminance, rounded here to two decimals. These are token-pair checks, not certification of rendered components.
-
-| Pair | Light ratio | Dark ratio |
-| --- | ---: | ---: |
-| Main text on card | 17.12:1 | 15.70:1 |
-| Muted text on card | 6.38:1 | 8.80:1 |
-| Primary label on lavender | 9.32:1 | 9.32:1 |
-| Primary label on pressed lavender | 6.97:1 | 6.97:1 |
-| Link/focus on card | 7.04:1 | 9.30:1 |
-| Control border on card | 3.79:1 | 3.72:1 |
-| Control border on elevated surface | 3.79:1 | 3.39:1 |
-| Success text on success surface | 5.93:1 | 8.45:1 |
-| Warning text on warning surface | 6.22:1 | 8.83:1 |
-| Danger text on danger surface | 5.93:1 | 7.95:1 |
-| Information text on information surface | 5.88:1 | 8.38:1 |
+Use the [approved plan's token-pair calculations](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#51-color-system) as design evidence for its palette, replacing the original cooler-palette calculations. Neither the old nor new arithmetic certifies rendered components. M1 verifies contrast for actual composed states, and consumer milestones recheck affected combinations.
 
 Target at least 4.5:1 for normal text and 3:1 for qualifying large text; this system aims for 4.5:1 even in ordinary display labels. These thresholds follow [WCAG contrast guidance](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html). Essential control outlines, focus indicators and chart marks must retain sufficient non-text contrast in their actual surrounding context. Translucency, gradients, selected rows, autofill, error states and native browser controls require separate rendered checks.
 
@@ -200,9 +171,9 @@ Persist signed-in preference through `core.workspace_preference.theme`. A non-se
 
 ### 5.1 Recommended family and delivery
 
-Choose **Geist Variable** as the initial primary family. Its restrained shapes suit forms, dashboards and financial tables, and it preserves the existing portfolio connection without needing a display family. This is an independent application recommendation supported by the portfolio's actual font use. [Geist's official font information](https://vercel.com/font) is the reference for the family and license.
+Retain **Geist** as the approved primary family. Its restrained shapes suit forms, dashboards and financial tables, and it preserves the existing portfolio connection without needing a display family. This is an independent application recommendation supported by the portfolio's actual font use. [Geist's official font information](https://vercel.com/font) is the reference for the family and license.
 
-Use the existing `@fontsource-variable/geist` approach as a small font asset dependency, loaded once through Next.js `next/font/local` from the pinned package's WOFF2 asset. Resolve the supported asset path during implementation rather than copying an unverified package path. An alternative is Next.js's Geist font integration; choose one loading path, never both. Self-hosted delivery avoids a runtime third-party font request. [Next.js font documentation](https://nextjs.org/docs/app/getting-started/fonts) describes the framework integration.
+The current application already loads Geist through `next/font/google` in the root layout. Retain a single Next-managed loading path and system fallbacks. A separate `@fontsource-variable/geist` asset dependency is not installed or required by this documentation change. Any later delivery change needs a concrete requirement and glyph/license/rendering review; do not add a second font loader for styling.
 
 | Role | Recommended stack / use |
 | --- | --- |
@@ -214,18 +185,18 @@ Start with normal weights 400, 500 and 600 from one variable font file. Use 700 
 
 ### 5.2 Type scale
 
-Sizes are initial rem tokens, with pixel equivalents at a 16px root. Do not change the root size to defeat browser preferences.
+Use the approved semantic roles in [Plan Section 5.2](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#52-typography-spacing-and-geometry); the aligned scale below uses a 16px root. Do not change the root size to defeat browser preferences.
 
 | Token / role | Size | Weight | Line height | Tracking |
 | --- | --- | --- | --- | --- |
-| `text-caption` | 0.75rem / 12px | 400–500 | 1.5 / 18px | 0 |
-| `text-meta` | 0.8125rem / 13px | 400 | 1.5 | 0 |
-| `text-sm` | 0.875rem / 14px | 400; 500 for labels | 1.5 / 21px | 0 |
+| `text-caption` | 0.75rem / 12px | 400–500 | 16px | 0 |
+| `text-meta` | 0.875rem / 14px | 400 | 20px | 0 |
+| `text-sm` | 0.875rem / 14px | 400; 500 for labels | 20px | 0 |
 | `text-base` | 1rem / 16px | 400 | 1.5 / 24px | 0 |
-| `text-section` | 1.125rem / 18px | 600 | 1.4 | -0.01em |
-| `text-panel-title` | 1.25rem / 20px | 600 | 1.4 / 28px | -0.01em |
-| `text-page-title` | 1.5rem mobile; 1.875rem desktop / 24–30px | 600 | 1.2–1.3 | -0.02em |
-| `text-metric` | 1.5rem mobile; 2rem desktop / 24–32px | 600 | 1.2–1.3 | 0 for numbers |
+| `text-section` | 1.125rem / 18px | 600 | 26px | -0.01em |
+| `text-panel-title` | Alias of section title, 18px | 600 | 26px | -0.01em |
+| `text-page-title` | 1.5rem mobile; 1.75rem desktop / 24–28px | 600 | 30px mobile / 34px desktop | -0.02em |
+| `text-metric` | 1.75rem mobile; 2rem desktop / 28–32px | 600; 700 only for focal amount | 34px mobile / 38px desktop | 0 for numbers |
 
 Use semantic heading levels based on structure, not font size. One clear page heading; panel headings underneath. Data tables use 14px by default, form input text 16px on all devices, labels 14px, explanatory text 14–16px. Reserve 12px for supplementary captions, never error instructions, financial values or the only version of a crucial date.
 
@@ -255,13 +226,13 @@ Long values must not shrink below readable size or be ellipsized without an imme
 | `space-10` | 2.5 / 40 | Major form sections where needed. |
 | `space-12` | 3 / 48 | Sparse onboarding/help separation only. |
 
-Use an additional 2px micro token only for optical details, not normal layout. The default is comfortable density: 44px minimum button/input height, approximately 48–56px table rows, and 8–12px related-item gaps. Multi-line rows grow naturally. Optional compact desktop density can use 40px controls/rows with 14px text and adequate target spacing; touch and zoom layouts return to comfortable density. Do not persist a density setting until a product preference is approved.
+Use an additional 2px micro token only for optical details, not normal layout. The default is comfortable density: 44px minimum button/input height, approximately 48–56px table rows, and 8–12px related-item gaps. Multi-line rows grow naturally. Information-rich mouse layouts may use 40px rows with at least 32px individual controls and adequate target separation; coarse-pointer/mobile actions use at least 48px, with comfortable adaptive forms. Do not apply desktop density to touch or high-zoom layouts. Do not persist a density setting until a product preference is approved.
 
 ### 6.2 Geometry, borders, and elevation
 
 | Foundation | Initial guidance |
 | --- | --- |
-| Radius | 4px micro markers; 8px (`0.5rem`) inputs/small controls; 10px (`0.625rem`) standard buttons/panels; 12px (`0.75rem`) cards; 16px (`1rem`) dialogs. Full pill only for compact badges or selected chips. |
+| Radius | Approved roles: 6px markers; 10px controls; 12px ordinary content regions; 18px focal summaries/dialogs. Pills are reserved for the module switcher, local segmented controls and short status badges. |
 | Border | 1px structural/control borders; 2px focus/selected indicator. Use `border` for structural rules and `input` for required interactive boundaries. |
 | Surface hierarchy | Canvas → opaque panel/table → elevated popover/dialog. Group related rows without putting a separate shadowed card around every field. |
 | Level 0 | No shadow for page canvas, fields and normal tables. |
@@ -282,30 +253,25 @@ Centralize stacking layers: base 0, sticky content 10, shell navigation 20, norm
 
 ### 7.1 Application shell
 
-Use the established hierarchy: Dashboard; Money; Career; Calendar; released Trackers; Reports; Help and Settings. Money owns accounts, transactions, debts and reconciliation, with cards, planning and Shared Expenses added only when released. Keep module subnavigation local; do not expose every Money page as a peer in the global sidebar.
+Use the [approved frame and navigation model](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#6-application-frame-navigation-and-shared-interaction-contracts): Home, integrated module switcher, Find a screen, contextual Add and Account in a compact utility frame. Money, Career, Calendar, Trackers, Shared expenses when enabled, and Reports remain discoverable through one complete directory. Local module sections and actions sit above content; contextual Settings/detail panels remain useful. A permanent global sidebar is not the new target.
 
-On wide layouts, use a 240–256px labeled sidebar and an approximately 56–64px top/context bar. Keep the active module visible using an accent surface, a 2px brand indicator, font weight and `aria-current="page"`; color alone is insufficient. The top bar can contain page context, help and the signed-in account menu. Keep the user's identity and workspace scope discoverable without showing financial balances in the shell.
+On phones use labeled **Home / Calendar / Modules / More** navigation; Modules opens the complete directory. Reserve bottom-bar height plus safe-area space, and avoid obscuring fields/focus with the keyboard or sticky actions. Menus/sheets retain accessible dismissal and focus restoration. Desktop keyboard search is an accelerator, never the only destination path.
 
-On phones, use a compact top bar with page/module name and a labeled Menu button opening a modal navigation sheet. This supports the existing number of modules without inventing a crowded seven-item bottom bar. Bottom navigation for a few proven daily destinations remains an optional later experiment. Quick actions belong near the page title or in a clearly labeled page action, not a floating button that covers records.
-
-Desktop sidebar collapse is optional; if introduced, icon-only destinations retain tooltips and accessible names. Hiding a module must not remove its retained data from reports. Agenda items from hidden modules receive the established hidden-module cue and still open the source when authorized.
+Preserve capability flags, every current URL/deep link and contextual source route. Use active marker/weight plus `aria-current`, not color alone. Module hiding retains data/report inclusion and independent Agenda/reminder settings. Scope and identity remain discoverable without exposing balances in the shell.
 
 ### 7.2 Widths and breakpoints
 
-Retain the portfolio's familiar breakpoint values, but let content determine when a layout changes.
+Follow available width, input and zoom rather than device detection. The [plan's adaptive compositions](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#62-adaptive-composition) replace the original sidebar-driven breakpoint rules.
 
-| Token / width | Initial behavior |
+| Available width | Approved behavior |
 | --- | --- |
-| Base, below 40rem / 640px | One main column, 16px gutters, navigation sheet, stacked forms, compact summary lists. Support 320 CSS px without page-level horizontal scrolling. |
-| `sm`, 40rem / 640px | Two columns only for related short fields/cards when their minimum readable width fits. |
-| `md`, 48rem / 768px | 24px gutters; optional two-column content. Sidebar still collapses if it would squeeze work. |
-| `lg`, 64rem / 1024px | Persistent sidebar when usable; wider table and form/preview arrangements. |
-| `xl`, 80rem / 1280px | Expanded multi-panel dashboards and detail side panels; avoid filling width with decorative cards. |
-| Standard page maximum | 75rem / 1200px **within the content region**, excluding sidebar; inherited starting scale. |
-| Wide data page maximum | 85rem / 1360px initially; allow wider tables when justified. |
-| Form / reading maximum | 40–44rem forms; approximately 68ch explanatory reading. |
+| 320–599px | Single column, 16px gutters, labeled bottom navigation; full-screen details and complex forms, no page overflow. |
+| 600–1023px | 24px gutters, compact frame/switcher, visible local section selector; one or two compatible regions. |
+| 1024–1439px | 24px gutters; list/detail split only when the main region retains at least 600px; detail typically 340–400px. |
+| 1440px+ | 32px gutters, work area up to 1600px; dense aligned records and detail 400–440px. |
+| Forms / reading | Ordinary form 680px; complex reviewed form up to 1100px with summary; reading/help 68ch. |
 
-Use CSS Grid with 4/8/12 conceptual columns on phone/tablet/desktop and 16/24px gaps, without forcing every section into a literal twelve-column implementation. A dashboard card usually needs at least 16rem of useful width. Breakpoint behavior also responds to zoom, long content and sidebar presence; container queries may refine individual panels later without another library.
+Collapse columns before shrinking text. Keep one active accessible page/detail presentation, canonical URLs, safe Back/filter/scroll restoration and focus return. Use space/alignment instead of mandatory nested panels or fixed twelve-column layouts.
 
 ### 7.3 Page composition
 
@@ -343,7 +309,7 @@ Mobile sheets use available viewport height and safe-area insets. Inputs stay ab
 
 ### 8.2 Tables and data grids
 
-Start with semantic HTML tables powered by TanStack Table, not an editable spreadsheet. Use a caption or nearby accessible title, column headers and `aria-sort` on the sorted header. Numeric columns align right; header and totals follow the same alignment. Dates, amounts and primary record identity remain visible. Thin row separators and restrained header fill are enough; zebra striping is optional after checking all states.
+Use semantic HTML tables, with TanStack Table introduced only for actual consumers under the approved plan; an editable spreadsheet is outside scope. Use a caption or nearby accessible title, column headers and `aria-sort` on the sorted header. Numeric columns align right; header and totals follow the same alignment. Dates, amounts and primary record identity remain visible. Thin row separators and restrained header fill are enough; zebra striping is optional after checking all states.
 
 Sorting/filtering/pagination follows the server's supported fields. Keep selected-row state separate from hover, keyboard focus and row status. Bulk actions announce how many records are selected and whether selection covers only the current page. Do not offer mass deletion of posted money records.
 
@@ -446,7 +412,7 @@ Use a status label and an urgency label separately when both apply. Business sta
 | Inline field error | Specific validation and how to fix it. |
 | Form/task banner | Save failure, conflict, stale preview, unresolved status or missing permissions. |
 | Small inline status | “Saved,” refresh progress or settings update result. |
-| Sonner toast | Brief secondary confirmation and optional “View record.” It never carries the only error, exact financial effect or recovery control. |
+| Shared transient toast (Sonner only if adopted) | Brief secondary confirmation and optional “View record.” It never carries the only error, exact financial effect or recovery control. |
 | Persistent attention panel | Overdue records, unresolved reconciliation, incomplete allocations or coverage. Dismissal changes attention preference, not the source fact. |
 | Page error boundary | A section/page cannot load. State what is unavailable, provide retry/back and a privacy-safe support reference. |
 
@@ -486,13 +452,13 @@ Salary expectations retain currency and time basis, such as “PHP 35,000–45,0
 
 V1 uses an agenda list grouped by date, with module filters, today/overdue groups, clear all-day versus timed presentation, and a source label such as Debt or Interview. Show an exact date alongside relative text when ambiguity matters. Date-only debt obligations do not display a fictitious midnight time. Timed events preserve source timezone; show the user's display timezone and source-zone detail when different.
 
-V2 month/week views complement, rather than replace, the agenda. FullCalendar theme adapters use the same surface, foreground, focus and status tokens. Selected date, today and overdue are different treatments: selected outline/fill, a labeled today marker, and explicit overdue text. Multiple events remain reachable through a “3 more” control and agenda list.
+The current Calendar is Agenda-based. Month/week views and FullCalendar remain conditional, uninstalled extensions rather than required redesign deliverables. If separately scoped, they must complement Agenda and use the same semantic tokens. Selected date, today and overdue are different treatments: selected outline/fill, a labeled today marker, and explicit overdue text. Multiple events remain reachable through a “3 more” control and agenda list.
 
 Calendar edits dispatch to the source workflow. Dragging a lender due date must not silently rewrite a schedule; initially disable source-date dragging where a reviewed domain command is required. Personal-event rescheduling can be added with keyboard controls and confirmation appropriate to its effect. Completion, payment, reminder snooze and reminder dismissal are separate actions.
 
 Keep reminders accessible from their source and a clear attention area. V1 is in-app; external delivery controls appear only when supported and opted in. Future “Accepted by email provider” is not “Delivered” or “Read.” Quiet-hour settings show timezone and an understandable overnight interval.
 
-### 11.4 Cards and planning, when released
+### 11.4 Implemented cards and planning
 
 Credit-card purchases reuse the ordinary purchase/expense-entry experience. Selecting a credit card as the funding source changes the financial meaning but should not force the user into a duplicate card-purchase form.
 
@@ -530,11 +496,11 @@ When a card-funded purchase is also shared, the user enters the purchase once. T
 
 Expected salary/bills use a planned badge and remain excluded from actual totals until linked/recorded. A **Record actual payment** action remains distinct from **Skip occurrence**. Recurrence changes preview the next dates and distinguish one occurrence from future occurrences. Budget progress shows period/basis and explicit overspend/remaining amount; savings reservations show funded/underfunded coverage without becoming another asset card.
 
-### 11.5 Shared expenses, when released
+### 11.5 Implemented shared expenses
 
 Shared Expenses supports family, friends, roommates, couples, trips and other groups. Do not label the module as family-only.
 
-Group pages clearly display the group name and **Shared with this group** context. Private adoption/account selection explicitly says **Only you can see this account selection**. These are scoped Money surfaces, not a global switch into a shared workspace.
+Group pages clearly display the group name and **Shared with this group** context. Private adoption/account selection explicitly says **Only you can see this account selection**. Shared expenses has its own directory entry and local group navigation. Group facts remain a separate authority from private Money records; entering My private record makes that scope transition visible.
 
 Shared-expense creation uses progressive disclosure.
 
@@ -663,9 +629,9 @@ An overpayment previews the reverse balance/advance. A refund after settlement m
 | --- | --- |
 | Trackers, V3 | Presets before template editing; field labels/types from versioned definitions; visible migration review for incompatible changes. A custom template editor cannot masquerade as the finance system. |
 | Imports, V2 | Mapping preview, date/currency interpretation, valid/invalid/duplicate counts, sample exact values and opening cutoff. Imported/skipped/failed results remain separate; retry does not invite duplicate confirmed rows. |
-| Attachments, later | Name/type/size, upload/scan/ready/failed state, privacy scope and source record. A successful upload does not imply a payment was recorded or stage changed. Shared receipts have group-specific visibility. |
+| Implemented attachments | Name/type/size, upload/scan/ready/failed state, privacy scope and source record. A successful upload does not imply a payment was recorded or stage changed. Shared receipts have group-specific visibility. |
 | Export/report | Scope, filters, dates and coverage; CSV export is not labeled “Full backup.” A pending generated export has truthful state and expiry where relevant. |
-| Restore, later | Preview replacement behavior, supported record/file/group coverage and missing relationships before confirmation; align with the architecture's restore gate. |
+| Implemented private graph restore | Preview replacement behavior, supported record/file/group coverage and missing relationships before confirmation; align with the architecture's restore gate. |
 | Authentication | Labeled email/password, password visibility control, password-manager support, verification/recovery status and safe generic recovery response. Password paste remains allowed. |
 | Sessions | Current-session marker, understandable device/time information and explicit revocation; avoid exposing raw tokens or technical IDs. |
 | Module preferences | Explain hiding versus retained data, separate agenda visibility/reminders, and how to re-enable. |
@@ -752,7 +718,7 @@ Radix supplies much of the keyboard/focus machinery, but correct labeling, compo
 
 ## 15. UI libraries and implementation responsibilities
 
-Use the System Architecture's selected frontend stack. Status below describes this design system's adoption priority, not a new competing architecture. Pin a compatible release set at implementation; review major upgrades, especially shadcn recipes, date picker and calendar packages.
+Use the current web stack and [Plan Section 9](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#9-library-strategy-and-platform-reuse) for staged/conditional additions. The original architecture selection is not proof of installation. The statuses below reflect the inspected manifest; add/pin dependencies only during assigned implementation when a real consumer justifies them. No package is installed by this approval task.
 
 | Library / tool | Priority and phase | Purpose and manual work avoided | Tradeoff / responsibility |
 | --- | --- | --- | --- |
@@ -761,24 +727,24 @@ Use the System Architecture's selected frontend stack. Status below describes th
 | [shadcn/ui](https://ui.shadcn.com/docs/theming) + Radix Primitives | Established; strongly recommended | Owned control source, dialogs, menus, select/popover/tab behavior | Choose Radix-backed recipes consistently. Copied source needs review/maintenance; do not import a second primitive family by accident. |
 | `class-variance-authority`, `clsx`, `tailwind-merge` | Established; with UI components | Typed visual variants and predictable conditional utilities | Small complementary helpers; do not add a competing styling framework. |
 | React Hook Form + `@hookform/resolvers` + Zod | Established; first slice | Dirty/touched state, dynamic split rows and shared validation | Server remains authoritative; user-facing schema errors need intentional wording. |
-| TanStack Query | Established; interactive data | Request state, safe invalidation, scoped caches and pagination | No optimistic financial totals; no persisted private query cache. |
-| TanStack Table | Established; first slice | Headless sorting/filter/selection and table models | Semantic rendering, mobile records and server query contracts are still ours. |
-| TanStack Virtual | Optional; measured need | Large rendered-list efficiency | Requires focus/screen-reader/height testing; do not adopt just because histories can grow. |
+| TanStack Query | Proposed targeted adoption; not installed | Request state, safe invalidation, scoped caches and pagination | No optimistic financial totals; no persisted private query cache. |
+| TanStack Table | Proposed for actual consumers; not installed | Headless sorting/filter/selection and table models | Semantic rendering, mobile records and server query contracts are still ours. |
+| TanStack Virtual | Conditional measured need; not installed | Large rendered-list efficiency | Requires focus/screen-reader/height testing; do not adopt just because histories can grow. |
 | Lucide React | Established; strongly recommended | Coherent SVG icons without drawing a new set | Import only needed icons, label actions and keep stroke sizes consistent. |
-| Sonner | Established; strongly recommended | Toast scheduling, dismissal and accessible notification mechanics | Persistent task/field state still required; configure position and duration for mobile/dialogs. |
+| Sonner | Conditional shared feedback; not installed | Toast scheduling, dismissal and accessible notification mechanics | Persistent task/field state still required; configure position and duration for mobile/dialogs. |
 | Recharts | Established; V1 reports | Responsive React chart rendering | Lazy-load; exact data tables and business definitions remain outside chart calculations. |
-| React DayPicker | Established; date fields | Date/range selection and keyboard calendar behavior | Use the package/major supported by the chosen shadcn recipe; retain typed date input and explicit date-only conversion. |
+| React DayPicker | Conditional date/range requirement; not installed | Date/range selection and keyboard calendar behavior | Use the package/major supported by the chosen shadcn recipe; retain typed date input and explicit date-only conversion. |
 | date-fns + `@date-fns/tz` | Established; first slice | Formatting and explicit timezone/calendar calculations | No accidental UTC conversion of an all-day date; share the existing domain date contract. |
 | Native `Intl.NumberFormat` + shared exact formatter | Established; required | Localized display without a separate currency UI dependency | No lossy conversion of minor-unit integers or reparsing formatted text. |
-| FullCalendar React + compatible view/interaction modules + `temporal-polyfill` | Established; V2 calendar views | Month/week interaction and widget timezone support | Honor the architecture's selected major/package compatibility; no premium resource scheduler; source edits still use domain commands. |
-| [Geist variable font assets](https://fontsource.org/fonts/geist/use) + `next/font/local` | New design recommendation; first slice | Reliable self-hosted typography and managed font loading | One font loading path; verify asset/license/glyph coverage. System fallback is acceptable if font delivery fails. |
-| [next-themes](https://github.com/pacocoursey/next-themes) | New, strongly recommended for dual themes | System-theme detection, root class and first-paint handling | Client theme state does not replace server preferences. Review CSP nonce/hydration integration; no blanket suppression of hydration errors. |
+| FullCalendar React + compatible view/interaction modules + `temporal-polyfill` | Deferred; not installed | Month/week interaction and widget timezone support | Honor the architecture's selected major/package compatibility; no premium resource scheduler; source edits still use domain commands. |
+| Geist + current `next/font/google` | Installed font integration; retain | Existing typography and managed loading | One font-loading path; no separate font asset package required. System fallback remains usable. |
+| [next-themes](https://github.com/pacocoursey/next-themes) | Installed; retain | System-theme detection, root class and first-paint handling | Client theme state does not replace server preferences. Review CSP nonce/hydration integration; no blanket suppression of hydration errors. |
 | CSS transitions/keyframes | Recommended default | Simple state/overlay polish with zero animation runtime | Explicit reduced-motion rules. No Anime.js/Motion dependency required for initial application UI. |
-| Driver.js | Established optional; V1 guidance | Contextual tour placement/highlight | Help/checklist must stand alone; never submit forms or force a tour to finish. |
-| `@dnd-kit` | Established optional; later career board | Drag/drop behavior when a board is justified | Keep keyboard/menu stage editing; dropping cannot invent dates/history. |
+| Driver.js | Optional; not installed or required | Contextual tour placement/highlight | Help/checklist must stand alone; never submit forms or force a tour to finish. |
+| `@dnd-kit` | Optional; not installed or required | Drag/drop behavior when a board is justified | Keep keyboard/menu stage editing; dropping cannot invent dates/history. |
 | Testing Library + user-event + jsdom, Vitest | Established; component behavior | Accessible-name driven interaction tests | Test public behavior rather than class strings; real browser tests handle layout/focus. |
 | Playwright + `@axe-core/playwright` | Established; release verification | Responsive themes, keyboard flows, screenshots and automated accessibility checks | Add manual keyboard/screen-reader checks; axe alone cannot validate all visual or cognitive behavior. |
-| MSW | Established optional; development | Deterministic loading, conflicts, failed/unconfirmed saves and permission scenarios | Mock data stays synthetic; actual authorization/transaction tests remain necessary. |
+| MSW | Optional development aid; not installed | Deterministic loading, conflicts, failed/unconfirmed saves and permission scenarios | Mock data stays synthetic; actual authorization/transaction tests remain necessary. |
 
 Use a small development-only component gallery before adding a separate component documentation platform. Each library must solve an active problem; charts, month/week calendars, tours, drag/drop and virtualization should not all enter the first-slice client bundle. Do not migrate the application to the portfolio's Astro setup or import its full CSS/motion stack.
 
@@ -789,23 +755,21 @@ Use a small development-only component gallery before adding a separate componen
 Start within the existing application repository; no separate design-system package or token build pipeline is necessary for a solo developer.
 
 ```text
-src/styles/
-  tokens.css               # primitives, light/dark semantics, geometry, motion
-  globals.css              # Tailwind aliases, base rules, focus, print
-src/components/ui/         # owned shadcn/Radix primitives and variants
-src/components/patterns/   # PageHeader, EmptyState, FormStatus, PeriodFilterBar
-src/features/<module>/ui/  # domain-specific composition and status mapping
-src/lib/format/            # shared exact money and date display boundaries
-src/dev/                   # synthetic gallery/fixtures; excluded from production
+src/styles/tokens.css       # canonical theme/geometry/motion tokens
+src/app/globals.css         # existing Tailwind aliases and base rules
+src/components/ui/          # owned Radix-backed primitives and variants
+src/components/shell/       # current frame/navigation ownership
+src/components/<module>/    # existing domain presentation and adapters
+src/modules/<module>/       # existing services/validation, outside presentation
 ```
 
-This is a suggested placement, adapted to the architecture's module layout; existing module folder names may differ. Keep semantic tokens canonical in CSS. Charts/calendar adapters consume CSS variables, with browser-resolved values only where a library actually needs them. Do not maintain a second independently edited JavaScript hex palette. No runtime theme editor or per-user arbitrary color selection initially.
+Preserve existing folder ownership rather than migrating to a new feature architecture. Add shared compositions only when concrete consumers demonstrate reuse. Keep any synthetic component proofs development/test-only, with no public route exposing private records. Keep semantic tokens canonical in CSS. Charts/calendar adapters consume CSS variables, with browser-resolved values only where a library actually needs them. Do not maintain a second independently edited JavaScript hex palette. No runtime theme editor or per-user arbitrary color selection initially.
 
 Map shadcn's `card`, `popover`, `muted`, `accent`, `destructive`, `input` and `ring` conventions explicitly to this system. Add `card-foreground`, `popover-foreground` and `destructive-foreground` as necessary. Audit copied recipes for default `primary/90`, `ring/50`, low-opacity borders or automatically calculated radii: those defaults may violate the specified state colors/contrast. Use named variants rather than ad hoc opacity utilities.
 
 ### 16.2 Illustrative token wiring
 
-This excerpt demonstrates the mapping pattern for Tailwind's CSS-first theme configuration. It is not the entire stylesheet: implement the remaining semantic/status/chart values from section 4 and the geometry/motion tokens from sections 5–6/13 before building all components. [Tailwind theme variables](https://tailwindcss.com/docs/theme) and [shadcn CSS-variable theming](https://ui.shadcn.com/docs/theming) are the integration references.
+This documentation-only excerpt illustrates aliases aligned with the approved plan; it is not an applied stylesheet or a second token authority. Implement the complete approved palette/state/geometry roles during M1 and verify rendered consumers. [Tailwind theme variables](https://tailwindcss.com/docs/theme) and [shadcn CSS-variable theming](https://ui.shadcn.com/docs/theming) are the integration references.
 
 ```css
 @import "tailwindcss";
@@ -816,43 +780,47 @@ This excerpt demonstrates the mapping pattern for Tailwind's CSS-first theme con
   --brand-lavender: #c8b6f2;
   --brand-violet: #6b469c;
   --brand-charcoal: #1b1b22;
-  --background: #f7f7fa;
-  --foreground: var(--brand-charcoal);
+  --background: #f6f5f2;
+  --foreground: #22252b;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface-elevated);
   --popover-foreground: var(--foreground);
-  --primary: var(--brand-lavender);
-  --primary-foreground: var(--brand-charcoal);
-  --primary-hover: #bca5ee;
-  --primary-pressed: #b09ae0;
+  --primary: var(--brand-violet);
+  --primary-foreground: #ffffff;
+  --primary-hover: #5d3d88;
+  --primary-pressed: #503474;
   --primary-border: var(--brand-violet);
-  --muted: #eeeef3;
-  --muted-foreground: #5e5e6b;
+  --muted: #efede8;
+  --muted-foreground: #5e6570;
   --accent: #eeeaf5;
   --accent-foreground: var(--brand-violet);
-  --border: #dcdce5;
-  --input: #82828f;
+  --border: #dddad4;
+  --input: #7d8490;
   --ring: var(--brand-violet);
-  --radius-control: 0.5rem;
+  --radius-control: 0.625rem;
   --radius-panel: 0.75rem;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #111116;
-  --foreground: #f5f5f8;
-  --surface: #1b1b24;
-  --surface-elevated: #23232c;
+  --background: #15181d;
+  --foreground: #f2f4f5;
+  --surface: #20252c;
+  --surface-elevated: #2b323b;
+  --primary: var(--brand-lavender);
+  --primary-foreground: var(--brand-charcoal);
+  --primary-hover: #bca5ee;
+  --primary-pressed: #b09ae0;
   --primary-border: var(--brand-lavender);
-  --muted: #23232c;
-  --muted-foreground: #b9b9c6;
-  --accent: #262631;
+  --muted: #262d35;
+  --muted-foreground: #b5bec8;
+  --accent: #332a45;
   --accent-foreground: var(--brand-lavender);
-  --border: #343440;
-  --input: #747484;
+  --border: #3a424c;
+  --input: #8994a3;
   --ring: var(--brand-lavender);
 }
 
@@ -872,7 +840,7 @@ This excerpt demonstrates the mapping pattern for Tailwind's CSS-first theme con
     BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
 }
 
-/* --font-geist is supplied once by the chosen Next.js font loader. */
+/* --font-geist is supplied by the existing Next.js Geist integration. */
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
@@ -892,7 +860,7 @@ Reusable patterns initially include `PageHeader`, `SectionPanel`, `MoneyValue`, 
 
 Each owned component records purpose, supported sizes/variants, keyboard behavior, loading/disabled/error states, theme examples and a short usage example. Status definitions live in domain adapters with typed exhaustive mappings; presentation tone is not another persisted database state. `MoneyValue` takes exact amount/currency and optional explicit meaning; `DateValue` takes a date-only or timed contract rather than guessing from a string.
 
-Server Components render the initial authenticated structure. Client Components handle interaction and receive narrow DTOs, not entire ORM rows. TanStack Query owns remote state, React Hook Form owns edits, safe URL parameters own filters and local state owns disclosure/dialog state. A design-system component must not introduce its own private cache or bypass these established responsibilities.
+Server Components render authenticated initial data. Small Client Components receive narrow DTOs. Retain existing read/command lifecycles; introduce TanStack Query only where it replaces an interactive fetch lifecycle, with scoped identity and no persisted private cache. React Hook Form owns edits, safe URL parameters own filters and local state owns disclosures/dialogs. A design-system component must not introduce its own private cache or bypass these established responsibilities.
 
 ### 16.4 Change management
 
@@ -902,9 +870,11 @@ New feature UI should compose existing patterns first. Add a shared abstraction 
 
 ## 17. Adoption, testing, and release sequence
 
-### 17.1 Build foundations alongside real workflows
+### 17.1 Historical adoption sequence and current roadmap
 
-| Phase | Design-system scope | Evidence before completion |
+The table below preserves the original staged adoption rationale. V1/V2 are complete under their documented scope and V3 is locally accepted under targeted verification; this is not the current implementation backlog. Follow the approved M1–M6 roadmap, beginning with separately assigned M1, and its [change-impact verification strategy](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#145-approved-change-impact-verification-and-delivery-boundaries). M6 covers the redesigned application, not an automatic complete V1–V3 campaign; existing CI and mandatory assertions remain unchanged.
+
+| Historical phase | Design-system scope | Evidence before completion |
 | --- | --- | --- |
 | First usable slice | Light/dark tokens, font, shell, auth, fields/buttons/dialogs, transaction preview, tables/mobile lists, basic application stage/history and agenda | Phone expense entry, desktop keyboard entry, failed-save recovery, account isolation and readable theme states. |
 | Coherent V1 | Debt allocations, schedule comparison, settlement, reconciliation, dashboard/report charts, in-app reminders, exports/history and lifecycle review | Blueprint's 18 scenarios represented with exact values and clear states; no misleading money totals. |
@@ -935,17 +905,17 @@ Testing this document's tokens does not replace testing the built UI. Acceptance
 
 | Decision | Recommended starting point | What remains flexible / when to revisit |
 | --- | --- | --- |
-| Product name and mark | Neutral working title; palette connection only | Decide before public branding; do not assume the portfolio initials are the application's identity. |
-| Primary action appearance | Lavender fill, charcoal label, strong light-theme outline | Test with actual dense screens; a violet solid variant is possible if a clear hierarchy problem is demonstrated and contrast is rechecked. |
+| Product name and mark | **Personal workspace** working identity approved (D02) | Final name/wordmark/logo/native branding deferred to future Windows/Android planning/development; no speculative assets. |
+| Primary action appearance | Approved violet/white in light mode; lavender/charcoal in dark mode | Verify rendered states in M1; refine centrally with contrast evidence, not a competing default palette. |
 | Light/dark defaults | System with explicit overrides; both supported | Usage may suggest onboarding guidance, but do not change saved preferences silently. |
 | Typography | Geist Variable, single family, 14–16px working text | Change centrally if glyph coverage or long-session testing exposes problems. Keep exact numeric alignment and readable sizes. |
 | Density | Comfortable default; compact desktop only as a trial | Add persistent preference only after product/schema agreement and keyboard/touch validation. |
-| Mobile navigation | Labeled menu sheet and contextual actions | Consider a short bottom bar after daily destinations are known; retain all enabled modules. |
+| Mobile navigation | Approved Home / Calendar / Modules / More with complete directory | Validate safe-area/keyboard/focus and discoverability in M1/M2; retain all enabled modules and contextual actions. |
 | Motion | CSS only; brief optional transitions | Add an animation library only for a concrete requirement that CSS/primitives cannot maintainably satisfy. |
 | Card composition | Few useful summaries and a dominant work area | Rearrange using user tasks; no fixed requirement for a particular number of cards. |
 | Charts | Bars/lines with exact table alternative | Add chart types only when they answer a defined question; verify definitions before new analytics. |
 | Date/time presentation | Unambiguous localized date; visible zone when needed | Match supported locale/time preferences; do not create a new unsupported time-format preference silently. |
-| Shared-history/deletion wording | Follow finalized architecture/product policy | Privacy copy is gated until actual former-member/deletion behavior is agreed. |
+| Shared-history/deletion wording | Preserve implemented history, provenance and lifecycle rules | Explain actual scope/retention; redesign does not reopen accepted business/privacy policy. |
 | Customization | Token changes by developer, per-user theme only | Arbitrary user colors, layout builders and custom chart systems remain separate product decisions. |
 
 Experiments use synthetic or properly authorized data and record their hypothesis. A successful experiment improves comprehension, accessibility or task efficiency; novelty alone is insufficient. Do not add telemetry containing private financial/contact details to measure design preferences.
@@ -962,17 +932,17 @@ Experiments use synthetic or properly authorized data and record their hypothesi
 | Blueprint/database: debt payments, schedules and settlement | Two allocation axes, partial/overdue cues, schedule comparison, payoff/waiver distinction | Compatible; no UI shortcut silently forces settlement or duplicates spending. |
 | System/database: immutable financial evidence and corrections | Current logical action plus linked history; before/after preview and reasons | Compatible; ordinary trash/undo does not erase posted financial history. |
 | System/database: command receipts and uncertain outcomes | Saving/saved/failed/unconfirmed model and same-command status/retry | Compatible; no speculative financial success or invented offline persistence. |
-| System: Next.js/React and existing UI stack | Radix-backed shadcn, Tailwind, Query, forms, tables, charts, date tools and phased calendar | Preserved; no framework migration or duplicate UI ecosystem. |
+| System: current Next.js/React UI stack | Existing Radix/Tailwind/forms/charts/dates; staged conditional additions under Plan Section 9 | Preserved; proposed Query/Table/calendar packages are not represented as installed. |
 | Database: career stages, outcomes, repeated events | Separate stage/outcome badges, chronological history, distinct event records | Compatible; no forced linear pipeline or auto-rejection. |
 | Database: projected agenda and reminder state | Source-linked editing, date-only/timed display, separate snooze/dismiss/pay actions | Compatible; no duplicate calendar authority. |
 | Product/system/database: multiple private users and group boundary | Private/shared scope cues, narrow DTOs, theme reconciliation, owner-only adoption | Compatible; group membership never implies household access. |
-| Roadmap: cards, planning, uploads, imports, trackers | Future patterns documented with release gates and state distinctions | Compatible; no extra first-slice schema or feature obligation. |
+| Implemented cards, planning, uploads, imports, trackers | Current redesigned routes preserve scope and state distinctions | Compatible; M1–M6 reorganize presentation without adding feature/schema obligations. |
 | Product: recovery, disable/re-enable, exports and deletion | Accessible auth/session UI, preserved-data copy, coverage and lifecycle previews | Compatible; no unsupported backup/privacy promise. |
 
 ### 19.2 Portfolio, readability and evidence review
 
-The base palette is genuinely derived from the pinned repository implementation: its exact silver/night surfaces, foregrounds, lavender, violet, pink, dividers and control borders are recorded in section 2. New status hues, deeper light chart companions, pressed state and application elevation roles are explicitly labeled as adaptations/additions. The document preserves the portfolio's identity without importing its Astro architecture, personal branding or presentation motion.
+The historical base palette was derived from the pinned repository implementation: its exact silver/night surfaces, foregrounds, lavender, violet, pink, dividers and control borders are recorded in section 2. New status hues, deeper light chart companions, pressed state and application elevation roles are explicitly labeled as adaptations/additions. That provenance remains historical; the approved warm-neutral redesign supersedes corresponding palette/layout roles without importing Astro, personal branding or narrative motion.
 
 Typography favors readable working sizes, tabular financial figures, one font family and system fallbacks. Light/dark semantic pairs and initial chart marks have been calculated for contrast; rendered component states, assistive-technology behavior and the final UI still require implementation testing. No production interface, migrations or accessibility conformance certification is claimed by this design document.
 
-The stable commitments are clarity, privacy, exact meaning, accessible operation and honest feedback. The palette mappings, typography scale, spacing, geometry, layouts and optional effects form a strong starting point that can evolve through centralized tokens and reviewed reusable components.
+The stable commitments are clarity, privacy, exact meaning, accessible operation and honest feedback. The approved plan governs palette, typography, spacing, geometry, density and layouts; M1 rendered review validates their application. Evolve centrally with evidence while retaining these stable commitments.

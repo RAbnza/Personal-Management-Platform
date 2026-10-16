@@ -2,14 +2,15 @@
 
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
-**Status:** Proposed implementation roadmap. No milestone has started.  
+**Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
+**Status:** Approved roadmap; no milestone has started. M1 is next for individual assignment.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
 
 Six substantial milestones implement the **CURRENT V3 REDESIGN** and its **FUTURE-READY FOUNDATION**. They preserve all V1–V3 behavior. They do not implement local profiles, offline persistence/queues, cloud synchronization, native Windows/Android applications, database changes, replacement authentication or production deployment.
 
-Sequence: **M1 → M2 → M3 → M4 → M5 → M6**. This is a suggested serial sequence for a solo developer, not an instruction to delegate or run parallel agents. Each milestone can be assigned as one future session or continued across sessions without changing scope. Do not start implementation until the owner approves D01 and authorizes the work.
+Sequence: **M1 → M2 → M3 → M4 → M5 → M6**. This is a suggested serial sequence for a solo developer, not an instruction to delegate or run parallel agents. Each milestone can be assigned as one future session or continued across sessions without changing scope. D01/D03/D04 and the working identity **Personal workspace** are approved. Direction approval does not automatically assign implementation; start only the individually assigned milestone. No further product or architecture decision blocks M1.
 
 | Milestone | Outcome                                                        | Principal ownership                                                              |
 | --------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -18,9 +19,9 @@ Sequence: **M1 → M2 → M3 → M4 → M5 → M6**. This is a suggested serial 
 | M3        | Complete Money workspaces and entry/review flows               | Accounts/activity, debts/cards, recurring/budgets/goals                          |
 | M4        | Complete Career, Calendar and Trackers workspaces              | Daily tracking, source deadlines, templates and migration                        |
 | M5        | Complete reports, collaboration and data-control workflows     | Forecasts/reports, shared expenses, notifications/files/import/restore/lifecycle |
-| M6        | Consolidated polish and V1–V3 preservation acceptance          | Responsive/accessibility/performance/visual and complete workflow validation     |
+| M6        | Redesign-wide polish and targeted preservation acceptance          | Responsive/accessibility/performance/visual and complete workflow validation     |
 
-Each implementation milestone runs focused relevant checks. M6 is the consolidated acceptance phase; it does not postpone essential correctness/accessibility checks or become a bucket for omitted screens. Future decisions F01–F07 are **not dependencies** for any milestone.
+Each milestone uses owner-approved change-impact verification: changed UI, affected shared contracts/workflows and materially affected existing behavior, with relevant responsive/theme/keyboard/accessibility and financial/privacy/authorization/lifecycle checks. M6 is final redesign-wide acceptance, not an automatic complete V1–V3 campaign; essential checks are not postponed to M6. Broaden only for changed shared contracts, discovered failures or significant security/financial integrity risks. Preserve all assertions and unchanged CI. Record executed tests, results, coverage, exclusions and rationale; historical evidence supports unchanged behavior, not new interfaces. Final branding and F01–F07 are **not dependencies**; platform decisions wait until after redesign and before native implementation.
 
 ## 2. M1 — Design foundations and shared interaction patterns
 
@@ -31,7 +32,7 @@ Each implementation milestone runs focused relevant checks. M6 is the consolidat
 **Specific tasks:**
 
 1. Verify repository changes since the inspected baseline and record current route, package and regression inventory. Capture representative existing screens/timings in the established local synthetic environment.
-2. Map the proposed palette, typography, geometry, focus and motion tokens to the existing theme aliases. Preserve System/Light/Dark and workspace preference/version behavior.
+2. Map the approved palette, typography, geometry, focus and motion tokens to the existing theme aliases. Preserve System/Light/Dark and workspace preference/version behavior.
 3. Expand the existing Radix family with only the needed shadcn-backed primitives. Implement component states, semantic labels, focus restoration, popover help and safe confirmation behavior.
 4. Establish WorkArea/ScreenHeader/DetailLayout, RecordTable/CompactRecordList, FilterBar/PageControls, Metric/CoverageNotice and ReviewSummary/CommandStatus compositions. Keep domain values and commands outside generic presentation logic.
 5. Define typed adapters for current cursor/offset list sources. Introduce TanStack Table only for actual table consumers. Introduce TanStack Query only where it replaces an interactive fetch lifecycle, with identity scoping and existing command retry semantics.
@@ -40,13 +41,13 @@ Each implementation milestone runs focused relevant checks. M6 is the consolidat
 
 **Required components/libraries:** retain Tailwind/CVA/clsx/tailwind-merge, RHF/Zod, Lucide, themes and existing tests; expand Radix-backed components; staged TanStack Table/Query adoption. Sonner only if a shared transient-feedback need is demonstrated. No motion/calendar/grid package by default.
 
-**Dependencies:** D01 approval and explicit M1 assignment; current stack/docs. Final name/logo, F01–F07 and real external services are not required.
+**Dependencies:** D01 approval **satisfied October 17, 2026**; explicit M1 assignment and current stack/docs remain required. Final name/logo, F01–F07 and real external services are not required.
 
 **Functionality preservation:** existing primitive public behavior, form field semantics, no private persisted cache, identity/theme cleanup, exact money strings and authoritative validation. No new generic command abstraction may change existing business payloads.
 
 **Testing/verification:** affected Button/Panel/form/theme/shell component tests; dialog keyboard/focus tests; rendered contrast/reflow and reduced-motion checks; static checks. Test interactive-query account switching and retries if adopted. Record bundle/render baseline; do not benchmark the whole database for token changes.
 
-**Acceptance criteria:** both themes and every primitive state work; proofs reflow at 320px and desktop; focus/keyboard targets are clear; no new private-state persistence; owner feedback on material visual choices is incorporated before mass conversion; source contracts remain unchanged.
+**Acceptance criteria:** both themes and every primitive state work; proofs reflow at 320px and desktop; focus/keyboard targets are clear; no new private-state persistence; representative rendered layouts undergo usability/accessibility review and owner feedback is incorporated before mass conversion; source contracts remain unchanged.
 
 **Expected deliverables:** token/component changes, representative reviewed proofs/screenshots, updated component guidance and focused test evidence. These artifacts are created only during the future authorized milestone, not by the planning assignment.
 
@@ -164,7 +165,7 @@ Each implementation milestone runs focused relevant checks. M6 is the consolidat
 
 **Expected deliverables:** complete redesigned analytical/shared/data-control screens, cross-domain evidence, exact-value/permission/recovery regression results and any explicitly documented deferred presentation-only enhancements.
 
-## 7. M6 — Consolidated polish, accessibility and regression acceptance
+## 7. M6 — Redesign-wide polish, accessibility and targeted acceptance
 
 **Objective:** verify that the entire redesigned V3 application is coherent, usable and functionally preserved.
 
@@ -177,16 +178,16 @@ Each implementation milestone runs focused relevant checks. M6 is the consolidat
 3. Inspect representative screens and consequential states across the specified viewport/theme/long-value matrix. Remove repeated boilerplate without removing warnings or constraints.
 4. Complete keyboard, focus, screen-reader, forced-color, reduced-motion, zoom and touch checks. Record manual checks actually performed and environment limitations.
 5. Measure client bundle/interactions/loading against M1; investigate regressions, new N+1 reads and hidden duplicated page instances. Retain current backend limits/budgets.
-6. Run one consolidated applicable V1–V3 regression campaign for the broad UI change, using existing assertions. Run static checks and the supported production build. After fixes, rerun affected checks rather than every expensive campaign automatically.
+6. Execute redesign-wide, risk-based acceptance: complete redesigned screen/route coverage; cross-module navigation/contextual links; shared presentation components; responsive/theme/keyboard/accessibility behavior; consequential workflows; changed UI performance; and existing behavior affected by redesign. Use existing assertions, appropriate static checks and the supported production build where needed. Do not automatically run the complete V1–V3 campaign or unrelated backend/database/infrastructure/performance/browser suites. Broaden only for changed shared contracts, discovered failures or significant security/financial integrity risks; rerun affected checks after fixes.
 7. Conduct the task walkthroughs in Plan Section 14; record findings, fixes, remaining limitations and final acceptance status. Confirm only approved current scope was delivered.
 
 **Required components/libraries:** existing Playwright/axe/Testing Library/Vitest and local browser/build environment; no new runner or native tooling. Motion remains optional, not a milestone completion condition.
 
-**Dependencies:** M1–M5 complete with focused checks; D01 adopted. Name/logo can remain working assets if explicitly documented; future decisions remain deferred.
+**Dependencies:** M1–M5 complete with focused checks; D01 approval already satisfied. Use **Personal workspace** as the working identity; final branding and F01–F07 remain deferred and non-blocking.
 
 **Functionality preservation:** no numerical, security, history, retry, import/restore, permission or lifecycle assertion is weakened to make redesigned screens pass. UI selectors can change to follow improved accessible names while retaining the behavior being tested.
 
-**Testing/verification:** all applicable unit/API/component and integration regressions, full relevant browser workflows, theme/viewport/accessibility checks, static checks and supported build. Do not add migration generation, production deployment or full infrastructure recovery campaigns unless a concrete changed seam requires them. No test result is claimed before execution.
+**Testing/verification:** meaningful cross-screen browser/accessibility coverage of all redesigned inventory areas and consequential journeys, plus changed/affected unit/API/component/integration contracts, visual/theme/viewport/keyboard checks, changed UI performance, appropriate static checks and supported build where required. Complete route coverage is mandatory; complete historical suite execution is not. Record an impact matrix with actual results, coverage, exclusions/rationale and unverified gates. Preserve mandatory guarantees and existing CI; broader automatic CI outcomes are separate evidence. Do not add migration generation, production deployment or infrastructure recovery campaigns without a concrete changed seam/risk. No result is claimed before execution.
 
 **Acceptance criteria:** all inventory IDs verified; no unresolved critical financial/privacy/accessibility regression; all required gates pass or a material limitation is explicitly accepted by the owner; measured performance is within agreed budgets; ordinary and advanced workflows remain discoverable; current V3 remains functional throughout adoption.
 
@@ -213,11 +214,11 @@ Use the project's code-output rule when creating or updating code/configuration 
 
 | Milestone | State at planning delivery                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1        | Not started; awaiting approval/assignment | Planning documents only       |
+| M1        | Not started; approved direction, awaiting individual assignment | Approved planning baseline only |
 | M2        | Not started                               | No implementation claimed     |
 | M3        | Not started                               | No implementation claimed     |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Recommended next step: resolve D01, then assign M1. Do not request decisions about local databases, cloud services or native runtimes as prerequisites to that work.
+Recommended next step: assign **M1 only** as the next individual implementation milestone. No further product or architecture decision blocks it. Do not request decisions about local databases, cloud services or native runtimes as prerequisites to that work.

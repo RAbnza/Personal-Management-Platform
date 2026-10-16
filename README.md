@@ -1,8 +1,31 @@
 # Personal Management Platform
 
-Private V1 workspace for exact PHP accounting, accounts and reconciliation, debt payment/schedule/settlement history, Career applications/events, source-driven Agenda, reports and scoped CSV exports, onboarding, Settings, sessions and account lifecycle.
+**Working application identity: Personal workspace.** The repository name is tentative; final product name, wordmark, logo and native branding are deferred to future Windows/Android planning and development.
 
-Authoritative requirements are in `docs/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`, `docs/SYSTEM_ARCHITECTURE.md`, `docs/DATABASE_ARCHITECTURE.md` and `docs/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md`. Read `docs/PROJECT_DEVELOPMENT_HANDOFF.md` before continuing development. Final acceptance is tracked in [V1-C5 acceptance](docs/verification/V1_C5_ACCEPTANCE.md).
+Private personal management application with exact PHP financial workflows, accounts/debts/cards/planning, Career, source-driven Calendar/reminders, reports/CSV, shared expenses with separate group authority, versioned custom Trackers, onboarding, files/imports/private graph restore and account lifecycle.
+
+| Stage | Verified status / evidence |
+| --- | --- |
+| V1 | Completed under its documented functional/local acceptance scope, with recorded hosted CI evidence; [handoff](docs/PROJECT_DEVELOPMENT_HANDOFF.md) and [acceptance](docs/verification/V1_C5_ACCEPTANCE.md). Production-dependent gates were separate. |
+| V2-A–I | Completed under documented acceptance scopes; [handoff, including final V2-I acceptance](docs/V2_DEVELOPMENT_HANDOFF.md#30-v2-i-assignment-2---complete-domain-and-consolidated-acceptance). No production-release claim. |
+| V3-A–D | Completed and locally accepted under the approved targeted strategy; [handoff](docs/V3_DEVELOPMENT_HANDOFF.md), [impact matrix](docs/V3_TARGETED_ACCEPTANCE.md). Separately, [automatic CI at `239c360`](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/38911065106) passed 1,104 unit, 681 integration and 62 browser tests, migration/build/restore/container checks and production dependency audit. |
+| Current phase | Comprehensive UI/UX redesign direction and M1–M6 roadmap approved October 17, 2026 (Asia/Manila); implementation not started. M1 is next for individual assignment; no further product/architecture decision blocks it. |
+| Later | Dedicated offline-first Windows/Android platform architecture planning after redesign and before native implementation, then platform development/acceptance. F01–F07 remain deferred; no replacement technology selected. |
+
+[ADR 0005](docs/adr/0005-v3-scope-and-platform-transition.md) keeps the existing web application as the implementation/verification environment through redesign. Current web production deployment/readiness completion is no longer planned. Local and CI evidence do not establish production readiness, real cloud/provider activation, or human/hosted product acceptance. Historical handoffs retain their original phase boundaries; follow their latest accepted sections and the current approved roadmap.
+
+## Project documentation
+
+The four authoritative project documents preserve product and technical contracts. The approved redesign plan takes precedence over superseded visual/navigation guidance; it changes presentation without authorizing feature removal or architecture replacement.
+
+- [Product vision and feature blueprint](docs/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md)
+- [System architecture](docs/SYSTEM_ARCHITECTURE.md)
+- [Database architecture](docs/DATABASE_ARCHITECTURE.md)
+- [Design system and visual guidelines](docs/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md)
+- [V3 handoff](docs/V3_DEVELOPMENT_HANDOFF.md) and [targeted acceptance](docs/V3_TARGETED_ACCEPTANCE.md)
+- [Approved comprehensive UI/UX redesign plan](docs/COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md)
+- [Approved redesign milestones](docs/UI_UX_REDESIGN_MILESTONES.md)
+- [Owner decisions and deferred platform questions](docs/UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## Local setup
 
@@ -23,9 +46,13 @@ Migration credentials belong to deployment commands. The web runtime uses only `
 
 ## Verification
 
-Run `pnpm check`, `pnpm test`, `pnpm test:integration`, `pnpm db:verify:chain`, `pnpm build`, then `pnpm test:browser`. On memory-constrained machines, use `pnpm test --maxWorkers=1 --pool=threads`; it runs the complete suite with the same assertions, isolation and timeouts. Install Playwright Chromium with `pnpm exec playwright install chromium`, or on Windows set `PMP_BROWSER_CHANNEL=msedge` to use installed Edge. Browser acceptance starts its own production server on port **3100** and refuses reuse of a user's development server.
+For assigned redesign milestones, use the [approved change-impact strategy](docs/COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#145-approved-change-impact-verification-and-delivery-boundaries). M1–M5 test changed/affected components, workflows and shared contracts with relevant responsive/theme/keyboard/accessibility and correctness/security checks. M6 covers the complete redesigned screen/route inventory and meaningful cross-screen workflows/accessibility; it is not an automatic complete V1–V3 regression campaign. Broaden only for changed shared contracts, discovered failures or significant security/financial risks. Preserve assertions and existing CI; record executed tests, results, coverage, exclusions and rationale. Historical evidence supports unchanged behavior, not redesigned screens.
 
-Integration tests refuse databases other than `personal_management_test`. Migration verification creates and removes a uniquely named disposable database, proves a no-op repeat, and runs committed financial/lifecycle smoke checks. `pnpm db:verify:chain --upgrade` also preserves committed C4 balances and reports across the upgrade. Preserve numbered migrations; never use schema push. Generate reviewed additions with `pnpm db:generate`, test the chain before applying to development, and deploy migrations once with the migration owner.
+The commands below are general full-suite and specialized verification references, not a requirement to run every campaign for each milestone. Documentation-only approval runs none of the application tests, builds, benchmarks or Docker operations. Broader automatic CI remains enabled and its outcomes are reported separately.
+
+For a separately justified full-suite run, use `pnpm check`, `pnpm test`, `pnpm test:integration`, `pnpm db:verify:chain`, `pnpm build`, then `pnpm test:browser`. On memory-constrained machines, use `pnpm test --maxWorkers=1 --pool=threads`; it runs the complete suite with the same assertions, isolation and timeouts. Install Playwright Chromium with `pnpm exec playwright install chromium`, or on Windows set `PMP_BROWSER_CHANNEL=msedge` to use installed Edge. Browser acceptance starts its own production server on port **3100** and refuses reuse of a user's development server.
+
+Integration tests refuse databases other than `personal_management_test`. Migration verification creates and removes a uniquely named disposable database, proves a no-op repeat, and runs committed financial/lifecycle smoke checks. `pnpm db:verify:chain --upgrade` also preserves committed C4 balances and reports across the upgrade. Preserve numbered migrations; never use schema push. Generate reviewed additions with `pnpm db:generate`, test the chain before applying to development, and apply migrations once with the migration owner in the authorized environment; this is not an instruction to provision production.
 
 `pnpm verify:performance` measures a guarded multi-year synthetic test dataset and 100 users/20 active callers against documented latency budgets. Its 50,000-action default can take considerable time with all financial integrity checks enabled; run it separately from final regressions. `pnpm verify:restore` performs the isolated encrypted local restore/deletion-register drill. Neither command proves production capacity or cloud retention. See operations for the separate controlled `pnpm backup:daily` deployment command.
 
@@ -37,8 +64,8 @@ Build Linux artifacts with `docker build --target web --tag pmp-v1-c5-web .`, th
 
 - [V1 user guide](docs/V1_USER_GUIDE.md)
 - [Environment, deployment, worker and recovery operations](docs/V1_OPERATIONS.md)
-- [Acceptance evidence and remaining release blockers](docs/verification/V1_C5_ACCEPTANCE.md)
+- [Historical V1 acceptance evidence and conditional production gates](docs/verification/V1_C5_ACCEPTANCE.md)
 
-V1-C5 production acceptance is in progress. Local passing checks do not establish production backup, restore, performance or delivery guarantees. V2 is a separate effort and has not started.
+V1/V2/V3 acceptance records remain historical evidence within their stated scopes. Operational/provider checklists are conditional under ADR 0005, not active web-production provisioning tasks. Existing local setup, role isolation and recovery safeguards remain applicable.
 
 Adaptable Trackers: see [workflows](docs/V3_TRACKER_WORKFLOWS.md), [targeted V3 acceptance](docs/V3_TARGETED_ACCEPTANCE.md) and [deferred configuration](docs/V3_MANUAL_ACTIONS_AND_DEFERRED_GATES.md). The V3 assignment uses change-impact verification; the existing full CI workflow remains enabled.

@@ -2,99 +2,97 @@
 
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
-**Status:** Recommendations for owner review; no implementation authorization is inferred.  
+**Owner decisions recorded:** October 17, 2026, Asia/Manila\
+**Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
+**Status:** Current direction and M1–M6 roadmap approved; implementation not started. Each milestone still requires its own assignment.\
 **Related:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Milestones](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. How to use this register
 
-Only **D01** requires a decision before implementation begins, because the owner explicitly requested planning first and approval before coding. It is not a blocker to completing the planning documents. The remaining current preferences have sensible defaults and can be settled during foundation review. All future-platform decisions are deferred and **do not block any current redesign milestone**.
+The owner's explicit October 17, 2026 approvals resolve D01, D03 and D04. D02 approves **Personal workspace** as the neutral working application identity and defers final branding. No further product or architecture decision blocks M1; its next prerequisite is an individual implementation assignment. Approval of the six-milestone roadmap does not start implementation. Future decisions F01–F07 remain deferred and do not block M1–M6.
 
 The requested plan does not select a desktop runtime, Android framework, local database, encryption scheme, cloud provider or synchronization protocol. It preserves the current V3 architecture and all implemented behavior. Approval of a visual proposal is not approval of future architecture or of feature removal.
 
 Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#1-purpose-authority-and-scope): CURRENT REDESIGN, FUTURE-READY FOUNDATION, FUTURE MIGRATION, and PROVISIONAL / UNRESOLVED.
 
-| ID  | Decision                                                 | Recommended default                                                                               | Blocks current implementation?                  | Future-only? |
-| --- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------ |
-| D01 | Approve visual/navigation direction and current scope    | Warm surfaces, violet identity, integrated module switcher, adaptive detail views, six milestones | **Yes, until explicit implementation approval** | No           |
-| D02 | Final product name and logo                              | Keep neutral working identity until chosen                                                        | No; required before final branded distribution  | No           |
-| D03 | Brand relationship and color emphasis                    | Retain violet connection; add restrained teal/amber; no copied reference branding                 | No; follow D01 default                          | No           |
-| D04 | Preferred everyday density and navigation emphasis       | Comfortable default; keyboard-efficient desktop; labeled mobile module directory                  | No; validate in M1/M2                           | No           |
-| F01 | Windows/Android implementation strategy                  | Decide after current redesign; carry tokens/specifications forward                                | **No**                                          | Yes          |
-| F02 | Local profiles and optional online identity relationship | One local profile initially; online identity only for features requiring it                       | **No**                                          | Yes          |
-| F03 | Local protection, unlock and recovery                    | Make no encryption/recovery promise until technically specified                                   | **No**                                          | Yes          |
-| F04 | Online collaboration and data boundary                   | Device-local personal records; separate online shared authority                                   | **No**                                          | Yes          |
-| F05 | Offline group writes, synchronization and conflicts      | Online-confirmed group writes initially; no assumed universal sync                                | **No**                                          | Yes          |
-| F06 | Backup, V3 migration, restore and deletion scope         | Explicit versioned coverage and reviewed restoration; CSV separate                                | **No**                                          | Yes          |
-| F07 | Native reminders, background work and lifecycle          | Contextual permission requests and honest delivery limits                                         | **No**                                          | Yes          |
+| ID | Decision | Owner status — October 17, 2026 | Blocks M1? |
+| --- | --- | --- | --- |
+| D01 | Overall direction and six-milestone roadmap | **APPROVED**; milestones individually assigned | No |
+| D02 | Working identity / final branding | **Personal workspace APPROVED**; final name, wordmark, logo and native branding deferred | No |
+| D03 | Complete visual identity | **APPROVED**; violet/lavender, warm neutrals, restrained accents, Geist, semantic tokens and accessible light/dark modes | No |
+| D04 | Balanced information density | **APPROVED**; readable everyday use, rich desktop records and adaptive mobile layouts | No |
+| F01 | Windows/Android runtime and code reuse | **DEFERRED** to platform architecture planning | No |
+| F02 | Local profile and online identity | **DEFERRED** to platform architecture planning | No |
+| F03 | Device security, encryption and recovery | **DEFERRED** to platform architecture planning | No |
+| F04 | Online collaboration and local/remote boundaries | **DEFERRED** to platform architecture planning | No |
+| F05 | Offline group writes, synchronization and conflicts | **DEFERRED** to platform architecture planning | No |
+| F06 | Backup, migration, restoration and deletion | **DEFERRED** to platform architecture planning | No |
+| F07 | Native reminders, permissions and lifecycle | **DEFERRED** to platform architecture planning | No |
 
-## 2. Current redesign blockers
+## 2. Approved current redesign direction
 
-### D01 — Approve the proposed redesign direction and implementation boundary
+### D01 — Approved redesign direction and implementation boundary
 
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
-- **Decision:** accept the proposed visual identity, navigation/composition and six-milestone scope, or identify specific changes before implementation.
+- **Approved decision:** adopt the warm, modern personal-workspace presentation, compact application frame, integrated module switcher rather than a mandatory permanent global sidebar, contextual navigation/actions, adaptive list/detail layouts and user-focused interactions. All six milestones M1–M6 are approved as the roadmap.
 - **Why it matters:** the proposal intentionally replaces the permanent sidebar and repetitive panel composition, changes the light primary-action treatment, and reorganizes access to implemented workflows. These should be deliberate owner choices.
 - **Recommended choice:** adopt [Plan Sections 4–6](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#4-reference-image-analysis): warm neutral surfaces, violet/lavender primary identity, charcoal emphasis, restrained teal/amber accents, one module switcher, local section navigation and contextual detail. Use a labeled mobile bottom bar: Home, Calendar, Modules, More. Preserve all current URLs and business behavior.
-- **Alternatives:** retain a compact labeled global rail if real navigation testing shows a meaningful advantage; or use the cooler existing silver canvas with the same new information architecture. A conventional full-width navbar or icon-only dock is not recommended for the feature inventory.
+- **Earlier alternatives (not selected):** compact global rail or cooler silver canvas. The approved target is the integrated switcher and warm-neutral visual system; material departures need review rather than silent substitution.
 - **Impact:** approval establishes the proposed visual supersession of the corresponding existing design-guideline roles. Product, architecture, database, financial and privacy authorities remain unchanged. It permits starting only the milestone(s) the owner subsequently assigns.
-- **Postponement:** planning remains complete; implementation waits. Future architecture discussions are not required to decide this.
-- **Blocks current redesign:** **Yes, implementation only**, because the user explicitly requires approval before implementation.
+- **Implementation boundary:** planning approval is complete. M1 waits only for its individual assignment; no future architecture decision is needed.
+- **Blocks current redesign:** **No**; direction approved. Implementation remains separately assigned.
 - **Only affects future migration:** **No**.
 - **Review evidence:** the complete plan and route inventory now; representative rendered Home, financial review, dense record list and tracker-migration proofs during M1 before broad adoption.
 
-**Owner's final decision:** _Pending — approve, approve with listed changes, or request revision._  
-**Conditions / date:** _Not recorded._
+**Owner's final decision: APPROVED — October 17, 2026 (Asia/Manila).** Preserve every V1–V3 capability, financial rule, privacy/security/authorization guarantee and historical behavior. Approval authorizes the direction and roadmap, not automatic implementation. M1 representative rendered layouts remain subject to usability/accessibility review before broad adoption.
 
-## 3. Current redesign non-blocking preferences
+## 3. Approved current identity, visual system and density
 
-### D02 — Final product name and brand assets
+### D02 — Approved working identity; final branding deferred
 
 - **Class:** CURRENT REDESIGN; assets also carry into FUTURE-READY FOUNDATION.
-- **Decision:** choose a product name, wordmark and eventual application icon. The repository name is not automatically the product brand.
+- **Approved decision:** use **Personal workspace** as the neutral working application identity. The repository name is tentative and is not the final product brand.
 - **Why it matters:** window titles, first-launch screens, Help, installed-app identity and export wording need a stable name eventually.
-- **Recommended choice:** use a neutral text identity such as “Personal workspace” in design proofs and retain the existing working project name only where needed to identify the project. Choose the final brand independently of the owner's personal initials.
+- **Approved working choice:** use **Personal workspace** in design proofs and retain the repository name only to identify the project. Final branding remains a later owner decision.
 - **Alternatives:** a distinct short product name or a descriptive utility name; a personal portfolio connection can remain in color/type without copying its logo.
 - **Impact:** later text/asset substitution; do not hardcode brand geometry into navigation or business components. Naming/trademark availability research is a separate task once candidates exist.
-- **Postponement:** no effect on M1–M5 foundations or functionality. Final branded distribution assets wait; current web production launch is not a requirement.
+- **Postponement:** no effect on M1–M6 foundations, functionality or acceptance. Final branded distribution assets wait; current web production launch is not a requirement.
 - **Blocks current redesign:** **No**.
 - **Only affects future migration:** **No**; native app icons and store assets are future applications of the choice.
 
-**Owner's final decision:** _Pending; use the neutral working identity._  
-**Approved name / asset source / date:** _Not recorded._
+**Owner's final decision: WORKING IDENTITY APPROVED; FINAL BRANDING DEFERRED — October 17, 2026 (Asia/Manila).** The owner will choose the final product name, wordmark, logo and native application branding during future Windows/Android planning and development. Create no speculative branding assets. Keep text/assets and navigation geometry flexible for later substitution; final branding does not block M1–M6.
 
 ### D03 — Brand connection and color emphasis
 
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
-- **Decision:** retain the portfolio's violet/lavender connection or establish a more independent identity.
+- **Approved decision:** adopt the complete visual system: violet/lavender primary identity, warm-neutral canvases/surfaces, restrained teal/amber and complementary module accents, Geist, consistent light/dark modes, centralized semantic tokens and the documented accessibility/contrast requirements.
 - **Why it matters:** the previous guidelines explicitly reference that visual family, while the new references introduce warmer and more varied color.
 - **Recommended choice:** retain violet/lavender and Geist; adopt the plan's warm canvas, teal secondary accent and restrained amber/plum/blue chart/module roles. Use strong light-theme violet actions and dark-theme lavender actions. This supplies variety without recoloring every screen.
-- **Alternatives:** keep the cooler silver canvas; or later commission an independent brand palette. The saturated orange/red gradient direction is not recommended for long financial sessions.
+- **Earlier alternatives (not selected):** cooler silver canvas or an independent palette. The comprehensive redesign plan governs the approved visual direction; final brand assets remain deferred under D02.
 - **Impact:** centralized token changes and representative contrast/layout checks. Do not introduce another icon/font/component system to express a color preference.
-- **Postponement:** proceed with D01's recommended palette; M1 proofs make the choice concrete before broad screen conversion.
-- **Blocks current redesign:** **No**, once D01 is approved.
+- **Validation:** M1 rendered proofs validate the approved palette and all relevant contrast states before broad screen conversion; token calculations alone do not certify the interface.
+- **Blocks current redesign:** **No**; D01 is approved.
 - **Only affects future migration:** **No**.
 
-**Owner's final decision:** _Pending; use the proposed violet/teal/warm-neutral palette._  
-**Requested adjustments / date:** _Not recorded._
+**Owner's final decision: APPROVED — October 17, 2026 (Asia/Manila).** [Plan Section 5](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#5-visual-identity-and-design-tokens) is authoritative for the new visual direction.
 
 ### D04 — Everyday density and navigation emphasis
 
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
-- **Decision:** confirm whether long desktop review sessions or quick mobile entry should receive additional emphasis after testing the proposed balanced layout.
+- **Approved decision:** balanced density: comfortable everyday readability; information-rich desktop records/tables; keyboard/mouse efficiency; mobile-friendly targets/forms; adaptive layouts instead of compressed desktop interfaces; consistent navigation and interaction across screen sizes.
 - **Why it matters:** information density and switcher discoverability should reflect actual use rather than screenshot aesthetics.
 - **Recommended choice:** comfortable default controls, aligned dense desktop records, larger mobile targets, no mandatory sidebar, and a complete visible module directory. Keep keyboard Find a screen as an accelerator, never the sole path. Avoid persistent custom pins/layout settings until an actual supported preference model is scoped.
-- **Alternatives:** a compact labeled desktop rail if M2 testing demonstrates better discovery; more generous spacing for predominantly touch use. Do not make Android look like a squeezed desktop table.
+- **Validation boundary:** review representative M1 rendered layouts for usability/accessibility. Material changes to the approved navigation/density direction require review; no new persistent density/layout preference is approved.
 - **Impact:** layout and interaction choices only. Breakpoint behavior follows available width and input; no architecture change is needed.
-- **Postponement:** defaults remain usable; collect feedback using actual tasks during M1/M2 and verify in M6.
+- **Validation:** apply the approved balanced approach; collect task feedback during M1/M2 and verify affected layouts in M6.
 - **Blocks current redesign:** **No**.
 - **Only affects future migration:** **No**.
 
-**Owner's final decision:** _Pending; use comfortable defaults and the proposed module directory._  
-**Primary usage notes / date:** _Not recorded._
+**Owner's final decision: APPROVED — October 17, 2026 (Asia/Manila).** Representative M1 rendered layouts remain subject to usability and accessibility review.
 
 ## 4. Future Windows/Android migration decisions
 
-All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affect the future screen concepts in [Plan Section 13](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#13-future-offline-first-windows-and-android-ux). They do not add tasks or dependencies to the current six milestones.
+**Owner deferral recorded: October 17, 2026 (Asia/Manila).** All F01–F07 decisions wait for the dedicated platform architecture planning phase **after the current redesign and before native application implementation**. Recommendations and alternatives below are preserved as provisional design guidance, not approved technical decisions. The high-level direction remains Windows desktop and Android, mostly offline personal functionality, device-local private data and selected online collaboration. Select no runtime, replacement database, cloud provider, encryption mechanism, sync protocol or local authentication system here; preserve the current web architecture. All items here remain **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affect the future screen concepts in [Plan Section 13](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#13-future-offline-first-windows-and-android-ux). They do not add tasks or dependencies to the current six milestones.
 
 ### F01 — Client runtimes and reuse boundary
 
@@ -106,7 +104,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** no visual/specification rework is required merely to defer the runtime; some native control metrics will adapt later.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred to platform architecture planning._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F02 — Local profile model and identity relationship
 
@@ -118,7 +116,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** current Better Auth sign-in and one personal workspace per owner remain unchanged. Current Setup/Settings redesign proceeds.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; provisional default is one local profile with optional online connection._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F03 — Device-local security and recovery
 
@@ -130,7 +128,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** no effect on current authentication/security controls or theme/component work.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; no encryption or recovery guarantee selected._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F04 — Online feature scope and shared-data authority
 
@@ -142,7 +140,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** current shared server authority, manual invitation handoff, feature flags and private consent remain. Current group redesign is fully specified.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; provisional default is separate online group authority and local personal data._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F05 — Offline group writes, queues and conflict policy
 
@@ -154,7 +152,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** current commands continue their existing online pending/unknown/retry behavior. No offline queue is added to M1–M6.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; provisional default is online-confirmed group writes._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F06 — Backup, existing V3 data migration, restoration and deletion
 
@@ -166,7 +164,7 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** current 24-hour recovery, graph/file limits, proof rules and deletion lifecycle remain as implemented; their current UI can be redesigned now.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; no new backup format or retention promise selected._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
 ### F07 — Native reminders, permissions and application lifecycle
 
@@ -178,10 +176,16 @@ All items here are **FUTURE MIGRATION — PROVISIONAL / UNRESOLVED**. They affec
 - **Postponement:** current in-app and explicitly opted-in delivery semantics remain unchanged. No current milestone needs native permission or notification APIs.
 - **Blocks current redesign:** **No**. **Future-only:** **Yes**.
 
-**Owner's final decision:** _Deferred; native delivery/lifecycle architecture not selected._
+**Owner's final decision: DEFERRED — October 17, 2026 (Asia/Manila)** to the platform architecture phase defined above. No technical recommendation in this item is approved.
 
-## 5. Recommended next decision
+## 5. Approved change-impact verification and next assignment
 
-Review D01 and the current route inventory. If the direction is acceptable, authorize **M1 only** or explicitly assign a wider set of current milestones. M1 makes the visual proposal concrete on representative rendered screens before broad rollout. Naming, logo and future architecture may remain pending.
+**Owner approval recorded: October 17, 2026 (Asia/Manila).** Replace the proposed automatic comprehensive V1–V3 regression campaign with targeted, risk-based verification.
 
-Record the owner's actual decision here when provided. Do not replace a Pending/Deferred field with an assumption or interpret silence as authorization. No additional questionnaire is needed to complete the planning assignment.
+M1–M5 verify changed components/screens/workflows, affected shared contracts and materially affected existing functionality. Include appropriate browser, responsive, theme, keyboard and accessibility checks, and financial, authorization, privacy and lifecycle invariants wherever changed flows could affect them. Do not automatically repeat unrelated backend/database/infrastructure/performance/browser suites.
+
+M6 is final **redesign-wide acceptance**: complete screen/route coverage, cross-module navigation/contextual links, visual consistency, responsive layouts, both themes, keyboard/accessibility, shared presentation components, consequential workflows, changed UI performance and affected existing behavior. Meaningful cross-screen browser/accessibility coverage remains required because most screens change. It is not an automatic complete V1–V3 regression campaign.
+
+Broaden verification only for changed shared contracts, discovered failures or significant security/financial integrity risks. Preserve existing assertions, mandatory correctness guarantees and unchanged CI. Historical evidence supports unchanged behavior, not newly redesigned interfaces. Record executed tests, actual results, coverage, exclusions and rationale.
+
+**M1 can now be assigned individually.** No further product or architecture decision blocks it. Final branding and F01–F07 remain deferred and non-blocking. This documentation task starts no milestone; stop after committing and pushing the aligned records.

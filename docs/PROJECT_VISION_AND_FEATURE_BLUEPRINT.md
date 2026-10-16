@@ -1,13 +1,15 @@
 # Project Vision and Feature Blueprint
 
-**Working name:** Personal Management Platform — final product name to be decided  
-**Document version:** 1.4 — V3 roadmap alignment, October 16, 2026\
+**Working application identity:** Personal workspace — approved October 17, 2026; repository name remains tentative, final branding deferred\
+**Document version:** 1.5 — approved redesign alignment, October 17, 2026\
 **Created:** October 5, 2026  
 **Purpose:** Foundational product document, consolidated from the “Strengthen Tracker Project” brainstorm and refined into a coherent vision and staged delivery plan.
 
 This document describes the intended product, its core behaviors, and its boundaries. It is a starting point for requirements, interface design, data modeling, and development planning. The full vision is larger than the first release; future features are included here so they can be added deliberately without delaying a usable product.
 
-**Current development direction:** V1 and V2-A through V2-I are locally accepted. The current web application remains the development and verification environment through V3 and a subsequent comprehensive UI/UX redesign; completing its production deployment or production readiness is no longer planned. The approved sequence is **V3 → Comprehensive UI/UX Redesign → Platform Architecture Planning → Windows/Android Development → Platform-Specific Acceptance**. Most future personal features should operate offline with device-local data, with selected synchronization/collaboration online. This is strategic direction, not an approved replacement architecture. See [ADR 0005](adr/0005-v3-scope-and-platform-transition.md) and the [V3 development plan](V3_DEVELOPMENT_PLAN.md). Existing V1/V2 business rules, privacy, authorization, security and data integrity remain mandatory.
+**Current development direction:** V1 and V2-A through V2-I are complete under their documented acceptance scopes; [V3-A through V3-D are complete and locally accepted under approved targeted verification](V3_DEVELOPMENT_HANDOFF.md). The [V3 impact matrix](V3_TARGETED_ACCEPTANCE.md) records selected local checks; broader automatic CI passed separately at implementation commit `239c360` ([run](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/38911065106)). No production or manual/hosted product acceptance is implied.
+
+The owner approved the [comprehensive UI/UX redesign](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md), [M1–M6 roadmap](UI_UX_REDESIGN_MILESTONES.md) and [current decisions](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) on October 17, 2026. Implementation has not started; M1 is next for individual assignment. The approved sequence is **completed V3 → UI/UX Redesign → Platform Architecture Planning → Windows/Android Development → Platform-Specific Acceptance**. The existing web application remains the implementation/verification environment through redesign; its production deployment/readiness completion is no longer planned under [ADR 0005](adr/0005-v3-scope-and-platform-transition.md). Future direction remains mostly offline Windows/Android personal use with device-local private data and selected online collaboration; replacement architecture and final branding remain deferred. Preserve all implemented V1–V3 capabilities, business rules, privacy, authorization, security and integrity.
 
 ## 1. Product vision
 
@@ -57,7 +59,7 @@ Disabling a module hides it from normal navigation without deleting its records;
 | Shared expenses | Family/group bills, participant shares, amounts owed, settlements | Explicit links to private ledgers, group history, reminders |
 | Career | Applications, stages, interviews, assessments, follow-ups | Calendar, reminders, reports, activity |
 | Time | Agenda, calendar, recurring obligations, deadlines | Links back to source records |
-| Trackers | Preset and eventually customizable trackers | Dates, status, reminders, reports where applicable |
+| Trackers | Implemented presets and versioned custom templates/trackers | Dates, status, reminders, reports where applicable |
 | Shared foundation | User settings, categories, tags, history, onboarding, navigation | Used by all modules |
 
 Use specialized finance and career records. Sharing common capabilities does not require forcing every record into a generic tracker schema. Financial balances require stricter validation than a reading list.
@@ -573,19 +575,19 @@ Users can skip optional steps, save progress, and resume later. Career-only user
 
 ## 13. Main screens
 
-Primary navigation: Dashboard, Money, Career, Calendar, Trackers, Reports, and Help/Settings. Group related pages inside modules to avoid an oversized sidebar.
+The [approved redesign frame](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#6-application-frame-navigation-and-shared-interaction-contracts) uses **Home** (the current Dashboard route), an integrated module switcher, contextual actions and local section navigation rather than a mandatory permanent global sidebar. The directory exposes Money, Career, Calendar, Trackers, Shared expenses when enabled, and Reports; More/Account provides Getting started, Settings and Help. Mobile uses labeled Home / Calendar / Modules / More navigation. Preserve current routes, capability flags and contextual source links.
 
-Shared Expenses is a Money submodule with a group list, group details, bill entry, member balances, settlement history, invitations, and group settings. Group reports show total bills, individual shares, advances, confirmed repayments, and remaining balances; personal reports include only that user's posted private-ledger effects. Group and personal totals must not be summed as though they were separate spending.
+Shared expenses has its own directory entry and group-local navigation for its implemented group list, details, bill entry, member balances, settlement history, invitations and settings. Private financial integration remains owned by Money; navigation placement does not change group/private authority. Group reports show total bills, individual shares, advances, confirmed repayments, and remaining balances; personal reports include only that user's posted private-ledger effects. Group and personal totals must not be summed as though they were separate spending.
 
-Money pages include accounts, ledger, transaction detail/entry, debts and schedules, reconciliation, and later cards, budgets, goals, and recurring obligations. Career pages include the application list, application details/timeline, and analytics. Reports share consistent period and filter controls.
+Implemented Money pages include accounts, ledger, transaction detail/entry, debts/schedules, reconciliation, cards, budgets, goals, recurring obligations and forecasts. Career pages include the application list, application details/timeline, and analytics. Reports share consistent period and filter controls.
 
-Prioritize a responsive interface suitable for entering an expense or updating an application on a phone. Use readable labels, keyboard-accessible forms, visible validation, and status indicators that do not rely only on color.
+The redesign reorganizes presentation and navigation without changing module capabilities or business rules. Its approved visual specification governs colors, typography, density and adaptive list/detail layouts; this blueprint does not duplicate that system or authorize new features/native architecture. Prioritize a responsive interface suitable for entering an expense or updating an application on a phone. Use readable labels, keyboard-accessible forms, visible validation, and status indicators that do not rely only on color.
 
 Include visible saving/saved/failed states and preserve recoverable form input after an error. The current web development/verification environment remains online through V3 and redesign. If a connection fails, show that an action has not been confirmed; do not imply it is safely stored. Future mostly offline Windows/Android behavior, device synchronization and packaging require separate approved platform architecture; they are not V3 work or a decision to build a PWA.
 
 ## 14. Scope and delivery sequence
 
-The full vision is a roadmap, not a commitment to implement everything before launching. V1/V2 completion evidence remains in the handoffs. The current web environment is retained for V3 and redesign; a production release of that web application is no longer planned.
+The full vision is a roadmap, not a commitment to implement every later idea. The first usable slice and V1/V2/V3 stages below are completed under their documented acceptance scopes; historical handoffs preserve that evidence. Current work is the approved redesign planning baseline, with implementation not started. Later stages require separate assignments; the current web environment remains through redesign and its production release is no longer planned.
 
 | Stage | Deliverable | Release boundary |
 | --- | --- | --- |
@@ -594,14 +596,14 @@ The full vision is a roadmap, not a commitment to implement everything before la
 | V2: financial maturity | Credit cards/statements, recurring obligations, budgets, savings goals, forecasts, richer career analytics, scheduled opted-in notifications | Card and planning workflows verified with realistic cases |
 | V2: shared expenses and settlements | Groups for family/friends/roommates/trips, registered/manual participants, one or multiple payers, equal/exact splits, net balances, partial/full/selected-expense settlements, pending confirmation, settlement suggestions, private ledger links | Participants can record and settle realistic shared spending without exposing private data or duplicating financial effects |
 | V3: adaptable trackers | Learning, Books and Personal Tasks presets; versioned custom templates/fields, validated entries/history and safe migrations; reporting/statistics; internal Calendar/Agenda, reminders and relevant cross-domain integration | Existing records survive customization; external calendar synchronization, offline support and platform packaging are excluded |
-| Comprehensive UI/UX Redesign | Separately assigned application-wide redesign using the current web development/verification environment | Preserve business behavior, accessibility, privacy and data integrity |
+| Comprehensive UI/UX Redesign | Approved M1–M6 roadmap; M1 next for individual assignment, implementation not started | Preserve all V1–V3 behavior; targeted change-impact checks and final redesign-wide acceptance, unchanged CI |
 | Platform Architecture Planning | Reassess features, infrastructure and architecture for Windows/Android, mostly offline personal use and selected online synchronization/collaboration | Approve the replacement architecture before implementation; no binding technology selection yet |
 | Windows/Android Development → Platform-Specific Acceptance | Implement and verify the subsequently approved platform plan | Separate assignments and acceptance criteria; no current web production-readiness prerequisite |
 | Later, selectively | Receipt OCR, suggested categorization, import integrations, investments, multiple currencies, shared workspaces, annual-review exports | Added only for a demonstrated user need and supportable accuracy |
 
 Tutorials and contextual guidance evolve with each release. They are part of the product, not a final task after all features are built.
 
-V3 has four internal milestones: **V3-A — Tracker Foundation and Presets; V3-B — Custom Templates and Versioned Migrations; V3-C — Reporting, Calendar, and Cross-Domain Integration; V3-D — Consolidated Acceptance and Documentation**. Execute them in two future assignments: A/B with focused critical-boundary testing, then C/D with one consolidated full applicable V1–V3 verification phase. See the [execution plan](V3_DEVELOPMENT_PLAN.md) for prerequisites, acceptance and stop boundaries.
+Completed V3 has four internal milestones: **V3-A — Tracker Foundation and Presets; V3-B — Custom Templates and Versioned Migrations; V3-C — Reporting, Calendar, and Cross-Domain Integration; V3-D — Consolidated Acceptance and Documentation**. They were delivered in two assignments. Assignment 2 explicitly replaced the originally proposed comprehensive campaign with approved change-impact verification; the [handoff](V3_DEVELOPMENT_HANDOFF.md) and [targeted acceptance matrix](V3_TARGETED_ACCEPTANCE.md) govern actual results. Historical V1–V3 evidence supports unchanged behavior and does not certify future redesigned interfaces. M1–M5 verify changed/affected UI and contracts; M6 provides redesign-wide screen, navigation, theme, responsive, accessibility, consequential workflow and changed-performance coverage. Broaden only for changed shared contracts, failures or significant security/financial risks; retain mandatory assertions and existing CI.
 
 Initially defer automatic provider fee lookup, bank connections, payment execution, automatic loan settlement calculations, credit scoring, AI financial recommendations, collaborative editing, and a fully general no-code builder. The app records and organizes information; executing bank payments is a separate future product decision.
 
@@ -623,7 +625,7 @@ Potential concepts, to refine in a separate data-model document:
 
 A debt payment is one financial action linked to its allocations, not two separate records both deducted from cash. The calendar projects source dates rather than independently owning another copy of each deadline. Financial history and general activity history serve related but distinct purposes.
 
-Begin with one application divided into clear modules and one transactional database. A modular monolith is sufficient; microservices are unnecessary for this scope. Select the implementation stack in a later decision based on existing skills, deployment constraints, and target roles rather than adding unfamiliar tools to every layer.
+Begin with one application divided into clear modules and one transactional database. A modular monolith is sufficient; microservices are unnecessary for this scope. The current web stack is already established in [System Architecture](SYSTEM_ARCHITECTURE.md) and remains through redesign. Select no replacement native stack until the separately approved post-redesign platform architecture phase.
 
 ## 16. Quality, privacy, and trust
 
@@ -708,6 +710,8 @@ Build in focused sessions alongside job applications. Each session should end wi
 
 ## 19. Decisions to make next
 
+**Current next step — October 17, 2026:** individually assign M1 using the approved redesign documents. D01/D03/D04 and the working identity are resolved; final branding and F01–F07 remain deferred and non-blocking. The initial planning checklist and proposed-choice table below are retained as historical product rationale, not unresolved M1 prerequisites. Implemented V1–V3 contracts and accepted handoffs supersede their original tentative wording; do not reopen them or infer new features from this list.
+
 1. Choose the first usable slice and its exact user stories.
 2. Define report terminology and the treatment of known versus unposted interest.
 3. Decide which debt types and schedule behaviors V1 supports explicitly.
@@ -716,9 +720,9 @@ Build in focused sessions alongside job applications. Each session should end wi
 6. Select the stack, hosting, authentication approach, and backup strategy.
 7. Create a development backlog with acceptance criteria and a small release boundary.
 
-### Remaining product decisions
+### Historical initial product decisions
 
-The blueprint can be used as a foundation now, but these choices should be resolved before their affected workflows are built:
+These were initial questions for the affected releases; use accepted implementation evidence for current behavior and separately scope any genuinely new extension:
 
 | Decision | Proposed starting position | What must be confirmed |
 | --- | --- | --- |
@@ -731,6 +735,6 @@ The blueprint can be used as a foundation now, but these choices should be resol
 | Shared expenses | One payer, equal/exact splits, confirmed settlements, explicit private-ledger linking | Invitation/role policies, historical access, disputes, and private-ledger correction behavior when group records change |
 | Uploads and growth | Notes/links first, private uploads later | Supported formats, file limits, dataset targets, and costs |
 
-These are open design choices, not promises that every option will be supported. Record their final decisions in the relevant requirements before implementation.
+This historical table does not override implemented rules or promise every option. New changes require explicit scope and updated requirements before implementation; it authorizes no native-platform choices.
 
 The intended result is one connected personal workspace that grows with the user—from job searching and everyday spending to managing credit, recurring responsibilities, and long-term goals.

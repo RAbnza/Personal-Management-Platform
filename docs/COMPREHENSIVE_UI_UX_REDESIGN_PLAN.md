@@ -3,14 +3,16 @@
 **Repository:** `RAbnza/Personal-Management-Platform` (working repository name, not an approved product brand)  
 **Prepared:** October 16, 2026, Asia/Manila  
 **Inspected baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
-**Status:** Complete planning proposal for owner review. Implementation has not been authorized or started.  
+**Owner approval:** October 17, 2026, Asia/Manila — D01, D03 and D04 approved; D02 working identity approved and final branding deferred.\
+**Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
+**Status:** Approved visual/interaction baseline and M1–M6 roadmap. Implementation has not started; M1 remains the next individually assigned milestone.\
 **Companions:** [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) · [Six-milestone roadmap](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. Purpose, authority, and scope
 
 Replace the accumulated page-and-panel interface with a coherent personal application: quick to enter, easy to navigate, precise about financial meaning, and comfortable for daily use. This is a structural redesign of navigation, composition, task flows, presentation, and interaction. Preserve every implemented V1–V3 capability, including less frequent correction, archival, recovery, and permission-sensitive workflows.
 
-This document is the proposed redesign specification. Until approval, the existing design guidelines remain the implemented baseline. Approval of decision D01 adopts the visual and layout changes described here; it does not supersede product, financial, security, persistence, or API rules. Where the plan is silent, retain the existing contract. Later implementation must explicitly record any newly discovered conflict instead of silently changing behavior.
+This document is the owner-approved redesign specification as of October 17, 2026. It takes precedence over superseded visual, navigation, geometry, palette-role, typography and density recommendations in the existing design guidelines. The current UI remains the implemented baseline until separately assigned milestones change it; approval does not supersede product, financial, security, persistence, API or historical behavior. Where the plan is silent, retain the existing contract. Later implementation must explicitly record any newly discovered conflict instead of silently changing behavior.
 
 ### 1.1 Source hierarchy and inspection evidence
 
@@ -19,7 +21,7 @@ This document is the proposed redesign specification. Until approval, the existi
 | [Product blueprint](PROJECT_VISION_AND_FEATURE_BLUEPRINT.md)                                                                                                                                                             | Module scope, financial distinctions, Career semantics, source-driven Calendar, trackers, onboarding, privacy, acceptance scenarios. Roadmap ideas are not automatically implemented features.    |
 | [System architecture](SYSTEM_ARCHITECTURE.md)                                                                                                                                                                            | Current modular monolith, frontend/state ownership, selected libraries, authenticated commands, reports, files, group/private boundaries, performance and tests.                                  |
 | [Database architecture](DATABASE_ARCHITECTURE.md)                                                                                                                                                                        | Exact financial values, immutable revisions, source ownership, group confirmation, date types, tracker evolution, restoration and invariant register.                                             |
-| [Existing design guidelines](DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md)                                                                                                                                                     | Violet/lavender identity, Geist, semantic tokens, light/dark themes, truthful feedback and accessibility. The new proposal changes geometry, composition, navigation, and selected palette roles. |
+| [Existing design guidelines](DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md)                                                                                                                                                     | Violet/lavender identity, Geist, semantic tokens, light/dark themes, truthful feedback and accessibility. The approved redesign supersedes earlier geometry, composition, navigation and selected palette roles; stable accessibility/financial/privacy contracts remain binding. |
 | [ADR 0005](adr/0005-v3-scope-and-platform-transition.md)                                                                                                                                                                 | Current web/PostgreSQL/authentication remain through redesign. Windows/Android architecture comes afterward. No current web production launch is a redesign prerequisite.                         |
 | [V1 handoff](PROJECT_DEVELOPMENT_HANDOFF.md), [V2 handoff](V2_DEVELOPMENT_HANDOFF.md), [V3 handoff](V3_DEVELOPMENT_HANDOFF.md), [tracker workflows](V3_TRACKER_WORKFLOWS.md), [V3 acceptance](V3_TARGETED_ACCEPTANCE.md) | Current capabilities and limitations; newer completion sections supersede historical intermediate restrictions. V3 local acceptance was targeted, not a fresh comprehensive V1–V3 campaign.       |
 | [Package manifest](../package.json), [shell](../src/components/shell/app-shell.tsx), [navigation](../src/components/shell/app-navigation.tsx), [tokens](../src/styles/tokens.css), [root layout](../src/app/layout.tsx)  | Actual installed stack, theme delivery, 16rem desktop sidebar, mobile drawer, sparse primary navigation, current shared components.                                                               |
@@ -27,7 +29,7 @@ This document is the proposed redesign specification. Until approval, the existi
 | `tests/browser`, `tests/unit`, `tests/integration`                                                                                                                                                                       | Existing observable workflow, security, exact-value, retry, accessibility, restoration, and source-integration assertions. See Section 14 for traceability.                                       |
 | User-supplied `1.png`, `2.png`, `3.webp`, `4.webp`, `5.webp`                                                                                                                                                             | Visual references analyzed individually in Section 4. Images are inspiration, not executable requirements or permission to copy a brand.                                                          |
 
-Local HEAD matched the latest GitHub commit returned during inspection, and the local working tree was clean before documentation creation. This is a source-based UI/UX audit with visual analysis of the supplied references. No live application usability study, new rendered-screen audit, application test run, or production/CI certification is claimed by this planning task. Validate the proposals on real rendered screens during implementation.
+Local HEAD matched the latest GitHub commit returned during inspection, and the local working tree was clean before documentation creation. This is a source-based UI/UX audit with visual analysis of the supplied references. No live application usability study, new rendered-screen audit, application test run, or production/CI certification is claimed by this documentation task. Validate the approved direction on real rendered screens during implementation. The October 17 alignment verified clean local/remote `main` at `62043c1`; the inspected V3 implementation baseline above and historical audit findings remain unchanged.
 
 ### 1.2 Requirement classes
 
@@ -147,11 +149,11 @@ Rejected directions: a uniform wall of rounded metric cards; a giant marketing g
 
 ## 5. Visual identity and design tokens
 
-**CURRENT REDESIGN + FUTURE-READY FOUNDATION.** The descriptive direction is “warm, precise personal workspace.” It is not a proposed product name. Retain violet/lavender recognition and Geist, but make light-theme primary actions stronger, warm the neutral canvas, and give analytical/content regions more varied composition.
+**CURRENT REDESIGN + FUTURE-READY FOUNDATION.** The descriptive direction is “warm, precise personal workspace.” The approved neutral working application identity is **Personal workspace** (D02). Final name, wordmark, logo and native branding are deferred to future Windows/Android planning and development; create no speculative branding assets and keep identity substitution flexible. Retain violet/lavender recognition and Geist, but make light-theme primary actions stronger, warm the neutral canvas, and give analytical/content regions more varied composition.
 
 ### 5.1 Color system
 
-Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The values below are a proposed replacement for the corresponding visual roles after D01 approval.
+Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The values below are the approved replacement specification for corresponding visual roles (D01/D03); M1 must verify rendered states and contrast before broad adoption.
 
 | Semantic role              | Light                  | Dark                  | Intended use                                         |
 | -------------------------- | ---------------------- | --------------------- | ---------------------------------------------------- |
@@ -180,7 +182,7 @@ Primary actions are violet in light mode and lavender in dark mode. Secondary bu
 
 Suggested module markers: Money violet, Career teal, Calendar blue, Trackers plum, Shared expenses ochre, Reports neutral. Markers occupy an icon tile, small leading edge or header symbol; they do not recolor every control or encode permissions. Category colors are stable within a report and independent of statuses.
 
-Calculated opaque sRGB contrast checks for this proposal: text/surface **15.36:1 light, 13.97:1 dark**; secondary text/surface **5.88:1, 8.19:1**; primary label/fill **7.04:1, 9.32:1**; control border/surface **3.77:1, 5.01:1**; dark control/elevated surface **4.21:1**; teal/tint **5.79:1, 7.35:1**; warm accent/tint **4.75:1, 8.50:1**. These calculations are not rendered accessibility certification. Hover, focus, selected rows, chart marks, overlays and native control states need actual theme checks.
+Calculated opaque sRGB contrast checks for these specified tokens: text/surface **15.36:1 light, 13.97:1 dark**; secondary text/surface **5.88:1, 8.19:1**; primary label/fill **7.04:1, 9.32:1**; control border/surface **3.77:1, 5.01:1**; dark control/elevated surface **4.21:1**; teal/tint **5.79:1, 7.35:1**; warm accent/tint **4.75:1, 8.50:1**. These calculations are not rendered accessibility certification. Hover, focus, selected rows, chart marks, overlays and native control states need actual theme checks.
 
 ### 5.2 Typography, spacing and geometry
 
@@ -799,18 +801,24 @@ For each journey, verify keyboard and pointer/touch access, expected API payload
 - A new user must distinguish actual cash, recognized spending, available credit, planned amount, reservation and unknown value from the screen without opening long technical documentation.
 - Feature inventory IDs are marked verified with evidence before completion. A milestone is not accepted solely because screenshots look finished.
 
-### 14.5 Verification cadence and delivery boundaries
+### 14.5 Approved change-impact verification and delivery boundaries
 
-M1 records baseline and component checks. M2–M5 run affected component/API/integration/browser suites with relevant cross-domain boundaries. M6 runs the consolidated applicable V1–V3 user-interface regression, static checks and supported production build, then only affected reruns for fixes. Preserve the existing supported Linux build approach and known tracing caveat if still applicable; do not treat a Windows packaging issue as authorization for native migration.
+**Owner-approved October 17, 2026:** targeted, risk-based verification replaces the proposed automatic comprehensive V1–V3 regression campaign. M1–M5 verify newly implemented/changed components, affected screens/workflows, shared presentation/interaction contracts and materially affected existing functionality. Select the smallest meaningful unit/component/API/integration and browser checks from Section 14.2; test responsive layouts, both themes, keyboard and accessibility where affected. Financial, authorization, privacy and lifecycle invariants remain mandatory wherever the changed flow could affect them.
 
-No schema-generation/migration rewrite, full infrastructure restore campaign, real email/S3 activation, deployment or new provider configuration is required solely for this redesign. Escalate verification if a changed seam actually touches those contracts. Record checks not run and their reason. Historical acceptance remains evidence of the baseline, not proof that the redesigned UI passes.
+M6 is final **redesign-wide acceptance**, not an automatic complete V1–V3 campaign. Verify every redesigned screen/route and shared state, cross-module navigation/contextual links, visual consistency, responsive layouts, both themes, keyboard/accessibility, shared components, consequential journeys in Section 14.3, changed UI performance and affected existing behavior. Because most screens change, meaningful cross-screen browser/accessibility coverage is required. Full route coverage does not require re-executing every unrelated backend or historical test.
+
+Broaden verification only when changed shared contracts, discovered failures or significant security/financial integrity risks justify it. Do not automatically repeat unrelated V1–V3 backend, database, infrastructure, performance or browser suites. Preserve existing behavioral/numerical/security assertions and mandatory guarantees; do not disable, narrow or weaken existing CI. Automatically triggered broader CI is recorded separately from targeted local verification.
+
+Use appropriate static checks and a supported production build when implementation changes require it; rerun affected checks after fixes instead of repeating successful campaigns without cause. Preserve the established supported Linux build approach and known tracing caveat if still applicable. Record a concise impact matrix: changed surface/contract, affected behavior/risk, executed checks, actual results, coverage, exclusions/rationale and any unverified required gate. Historical V1–V3 evidence supports unchanged behavior and cannot certify redesigned interfaces.
+
+No schema-generation/migration rewrite, full infrastructure restore campaign, real email/S3 activation, deployment or new provider configuration is required solely for redesign. A concrete changed seam or material risk can justify wider verification. This documentation-only approval task runs no application tests, builds, benchmarks or Docker operations.
 
 ## 15. Implementation handoff and decision boundaries
 
-The [roadmap](UI_UX_REDESIGN_MILESTONES.md) assigns each current inventory row to one of six substantial milestones. The [decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) distinguishes approval of this proposal from non-blocking brand preferences and deferred architecture.
+The [roadmap](UI_UX_REDESIGN_MILESTONES.md) assigns each current inventory row to one of six substantial milestones. The [decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) records the approved direction, working identity, visual system and balanced density separately from deferred final branding and platform architecture.
 
-Only D01 (accept the proposed direction/plan, or give concrete revisions) gates beginning implementation. No unresolved future-platform decision is a current blocker. Product name and final logo can remain placeholders while shared foundations are built. M1 produces representative rendered design proofs for review before the entire application is migrated to the visual treatment.
+D01, D03 and D04 are approved; D02 establishes **Personal workspace** as the working identity. No further product or architecture decision blocks M1. Roadmap approval does not assign implementation: M1 is the next individually assigned milestone. It produces representative rendered design proofs for usability/accessibility review before broad adoption of the approved treatment. Final branding remains deferred, not an M1–M6 prerequisite.
 
 At the start of each implementation session: verify repository changes since this baseline, read the assigned milestone and linked sections, preserve unrelated work, implement only its current scope, retain behavioral assertions, and record actual verification. If a required screen is missing from the inventory after new development, add it explicitly and assign ownership before claiming coverage.
 
-The intended result is one recognizable application with focused workflows, complete capability access, clear evidence and platform-adaptable presentation. The current redesign completes before offline/native architecture and development begin.
+The intended result is one recognizable application with focused workflows, complete capability access, clear evidence and platform-adaptable presentation. The current redesign completes before dedicated platform architecture planning, which must precede native implementation. F01–F07 are explicitly deferred to that phase; all Section 13 recommendations remain provisional guidance, not approved technical choices.
