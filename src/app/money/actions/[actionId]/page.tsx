@@ -87,8 +87,12 @@ export default async function FinancialActionPage({
         description="One business action with its current revision and complete correction history."
       >
         <p>
-          {detail.current.actionKind.replaceAll("_", " ")} · Revision{" "}
-          {detail.current.revisionNo} ·{" "}
+          {detail.current.actionKind === "group_effect"
+            ? "Shared payment or refund"
+            : detail.current.actionKind === "group_adoption"
+              ? "Shared expense"
+              : detail.current.actionKind.replaceAll("_", " ")}{" "}
+          · Revision {detail.current.revisionNo} ·{" "}
           {detail.current.changeKind === "void" ? "Reversed" : "Current"} ·
           Effective {detail.current.effectiveDate}
         </p>
@@ -165,20 +169,31 @@ export default async function FinancialActionPage({
         <Panel
           title="Your private group adoption"
           description={
-            detail.privateGroupLink.needsPrivateCorrection
-              ? "Needs private correction: the group source changed after your approval."
-              : "Retained accounting for your approved group allocation."
+            detail.privateGroupLink.reviewedDifferenceReason
+              ? "Reviewed group/private difference; prior private evidence retained."
+              : detail.privateGroupLink.needsPrivateCorrection
+                ? "Needs private correction: the group source changed after your approval."
+                : "Retained accounting for your approved group allocation."
           }
         >
           <p>
-            Actual funding{" "}
+            Accepted source amount{" "}
             {formatMoneyMinorUnits("PHP", detail.privateGroupLink.paidMinor)} ·
-            Your spending{" "}
+            Accepted share amount{" "}
             {formatMoneyMinorUnits("PHP", detail.privateGroupLink.shareMinor)}
           </p>
+          {detail.privateGroupLink.reviewedDifferenceReason && (
+            <p>
+              Review reason: {detail.privateGroupLink.reviewedDifferenceReason}
+            </p>
+          )}
           <Link
             className="text-link underline"
-            href={`/sharing/${detail.privateGroupLink.groupId}/expenses/${detail.privateGroupLink.expenseId}`}
+            href={
+              detail.privateGroupLink.expenseId
+                ? `/sharing/${detail.privateGroupLink.groupId}/expenses/${detail.privateGroupLink.expenseId}`
+                : `/sharing/${detail.privateGroupLink.groupId}/effects/${detail.privateGroupLink.refundId ? `refund/${detail.privateGroupLink.refundId}` : `settlement/${detail.privateGroupLink.settlementId}`}`
+            }
           >
             Review group source and your private adoption
           </Link>

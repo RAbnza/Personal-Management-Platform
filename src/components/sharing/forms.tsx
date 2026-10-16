@@ -107,7 +107,12 @@ export function CommandForm({
     <form onSubmit={submit} className="space-y-4">
       <fieldset disabled={command.locked} className="grid min-w-0 gap-4">
         {children}
-        <Button type="submit">{label}</Button>
+        <Button
+          type="submit"
+          className="min-w-0 max-w-full whitespace-normal break-words"
+        >
+          {label}
+        </Button>
       </fieldset>
       {command.uncertain && (
         <Button

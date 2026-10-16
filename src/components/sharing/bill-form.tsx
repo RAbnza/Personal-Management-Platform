@@ -34,63 +34,68 @@ export function FundingFields({
   setup,
   paid = true,
   defaults,
+  showFunding = true,
 }: {
   setup: PrivateSharingSetup;
   paid?: boolean;
   defaults?: ExpenseDefaults;
+  showFunding?: boolean;
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {paid ? (
-        <>
-          <Field label="Private funding or existing purchase">
-            <select
-              name="funding"
-              className={selectClass}
-              required
-              defaultValue={defaults?.funding}
-            >
-              <optgroup label="New cash funding">
-                {setup.accounts.map((a) => (
-                  <option key={a.id} value={`cash:${a.id}`}>
-                    {a.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="New card purchase">
-                {setup.cards.map((a) => (
-                  <option key={a.id} value={`card:${a.id}`}>
-                    {a.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Link an existing purchase">
-                {setup.purchases.map((a) => (
-                  <option key={a.id} value={`existing:${a.id}`}>
-                    {a.date} · {a.description} · {money(a.amountMinor)}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </Field>
-          <Field label="Provider posting date (new card funding)">
-            <Input
-              name="postingDate"
-              type="date"
-              defaultValue={defaults?.postingDate}
-            />
-          </Field>
-          <Field label="Provider reference (optional)">
-            <Input
-              name="providerReference"
-              maxLength={2000}
-              defaultValue={defaults?.providerReference}
-            />
-          </Field>
-        </>
-      ) : (
-        <p>No cash or card funding: you are adopting your own unpaid share.</p>
-      )}
+      {showFunding &&
+        (paid ? (
+          <>
+            <Field label="Private funding or existing purchase">
+              <select
+                name="funding"
+                className={selectClass}
+                required
+                defaultValue={defaults?.funding}
+              >
+                <optgroup label="New cash funding">
+                  {setup.accounts.map((a) => (
+                    <option key={a.id} value={`cash:${a.id}`}>
+                      {a.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="New card purchase">
+                  {setup.cards.map((a) => (
+                    <option key={a.id} value={`card:${a.id}`}>
+                      {a.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Link an existing purchase">
+                  {setup.purchases.map((a) => (
+                    <option key={a.id} value={`existing:${a.id}`}>
+                      {a.date} · {a.description} · {money(a.amountMinor)}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </Field>
+            <Field label="Provider posting date (new card funding)">
+              <Input
+                name="postingDate"
+                type="date"
+                defaultValue={defaults?.postingDate}
+              />
+            </Field>
+            <Field label="Provider reference (optional)">
+              <Input
+                name="providerReference"
+                maxLength={2000}
+                defaultValue={defaults?.providerReference}
+              />
+            </Field>
+          </>
+        ) : (
+          <p>
+            No cash or card funding: you are adopting your own unpaid share.
+          </p>
+        ))}
       <Field label="Your private spending category">
         <select
           name="categoryId"

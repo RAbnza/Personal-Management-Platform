@@ -1191,6 +1191,216 @@
                         "when":  1792052017991,
                         "tag":  "0169_v2_i_group_read_indexes",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  170,
+                        "version":  "7",
+                        "when":  1792062945747,
+                        "tag":  "0170_v2_i_settlement_refund_structure",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  171,
+                        "version":  "7",
+                        "when":  1792062953247,
+                        "tag":  "0171_v2_i_refund_allocation_structure",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  172,
+                        "version":  "7",
+                        "when":  1792062976062,
+                        "tag":  "0172_v2_i_settlement_refund_security",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  173,
+                        "version":  "7",
+                        "when":  1792063283590,
+                        "tag":  "0173_v2_i_settlement_trigger_scope",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  174,
+                        "version":  "7",
+                        "when":  1792063504037,
+                        "tag":  "0174_v2_i_private_settlement_refund_sources",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  175,
+                        "version":  "7",
+                        "when":  1792063598121,
+                        "tag":  "0175_v2_i_private_effect_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  176,
+                        "version":  "7",
+                        "when":  1792063945658,
+                        "tag":  "0176_v2_i_historical_settlement_resolution",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  177,
+                        "version":  "7",
+                        "when":  1792064164852,
+                        "tag":  "0177_v2_i_private_group_portability_proof",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  178,
+                        "version":  "7",
+                        "when":  1792064166826,
+                        "tag":  "0178_v2_i_private_group_restore",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  179,
+                        "version":  "7",
+                        "when":  1792064424785,
+                        "tag":  "0179_v2_i_shared_proof_reads",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  180,
+                        "version":  "7",
+                        "when":  1792064477944,
+                        "tag":  "0180_v2_i_shared_recovery_provenance",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  181,
+                        "version":  "7",
+                        "when":  1792064505033,
+                        "tag":  "0181_v2_i_shared_proof_composite_rows",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  182,
+                        "version":  "7",
+                        "when":  1792064590990,
+                        "tag":  "0182_v2_i_exact_restored_shared_rows",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  183,
+                        "version":  "7",
+                        "when":  1792064828181,
+                        "tag":  "0183_v2_i_private_funding_corrections",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  184,
+                        "version":  "7",
+                        "when":  1792065091998,
+                        "tag":  "0184_v2_i_group_effect_edge_integrity",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  185,
+                        "version":  "7",
+                        "when":  1792065180171,
+                        "tag":  "0185_v2_i_private_settlement_reassignment",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  186,
+                        "version":  "7",
+                        "when":  1792065464104,
+                        "tag":  "0186_v2_i_history_clock_and_card_rows",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  187,
+                        "version":  "7",
+                        "when":  1792065593432,
+                        "tag":  "0187_v2_i_operational_receipts_and_bounds",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  188,
+                        "version":  "7",
+                        "when":  1792066012932,
+                        "tag":  "0188_v2_i_settlement_reassignment_alias",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  189,
+                        "version":  "7",
+                        "when":  1792067558963,
+                        "tag":  "0189_v2_i_indexed_provenance_validation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  190,
+                        "version":  "7",
+                        "when":  1792068133769,
+                        "tag":  "0190_v2_i_private_source_review",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  191,
+                        "version":  "7",
+                        "when":  1792068261564,
+                        "tag":  "0191_v2_i_reviewed_private_differences",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  192,
+                        "version":  "7",
+                        "when":  1792068424312,
+                        "tag":  "0192_v2_i_historical_private_lock",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  193,
+                        "version":  "7",
+                        "when":  1792070064227,
+                        "tag":  "0193_v2_i_review_provenance_history",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  194,
+                        "version":  "7",
+                        "when":  1792070287300,
+                        "tag":  "0194_v2_i_restore_link_revision_order",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  195,
+                        "version":  "7",
+                        "when":  1792085371609,
+                        "tag":  "0195_v2_i_restore_lock_authority",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  196,
+                        "version":  "7",
+                        "when":  1792087621490,
+                        "tag":  "0196_v2_i_current_revision_lookup",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  197,
+                        "version":  "7",
+                        "when":  1792088085269,
+                        "tag":  "0197_v2_i_scoped_settlement_validation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  198,
+                        "version":  "7",
+                        "when":  1792088312844,
+                        "tag":  "0198_v2_i_exact_obligation_projection",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  199,
+                        "version":  "7",
+                        "when":  1792122166576,
+                        "tag":  "0199_v2_i_sealed_allocation_validation",
+                        "breakpoints":  true
                     }
                 ]
 }

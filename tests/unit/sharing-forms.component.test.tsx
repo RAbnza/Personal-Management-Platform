@@ -10,6 +10,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { CommandForm } from "@/components/sharing/forms";
+import { AdoptionPanel } from "@/components/sharing/adoption-panel";
+import type { AdoptionPreview } from "@/modules/finance/services/adopt-group-expense";
 import {
   SharedBillForm,
   SharedExpenseEntry,
@@ -57,6 +59,89 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe("sharing forms", () => {
+  it("keeps retained funding independent of active funding choices and submits one reviewed private category", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    const preview: AdoptionPreview = {
+      groupId: a,
+      expenseId: b,
+      revisionId: c,
+      description: "Dinner",
+      expenseDate: "2026-10-15",
+      paidMinor: "2000",
+      shareMinor: "1000",
+      sourceHash: "ab".repeat(32),
+      financialRevision: "1",
+      receivableMinor: "1000",
+      payableMinor: "0",
+      link: {
+        id: a,
+        actionId: b,
+        acceptedSourceRevisionId: a,
+        acceptedSourceHash: "cd".repeat(32),
+        actionRevisionId: a,
+        currentActionRevisionId: a,
+        linkRevisionId: b,
+      },
+      review: null,
+      retainedAmounts: {
+        fundingMinor: "-2000",
+        spendingMinor: "500",
+        groupMinor: "1500",
+        clearingMinor: "0",
+      },
+      needsPrivateCorrection: true,
+    };
+    const privateSetup = {
+      ...setup,
+      accounts: [],
+      cards: [],
+      categories: [{ id: c, name: "Reviewed category" }],
+    };
+    const { rerender } = render(
+      <AdoptionPanel preview={preview} setup={privateSetup} />,
+    );
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    fireEvent.change(screen.getByLabelText("Your private spending category"), {
+      target: { value: c },
+    });
+    const fundingConsent = screen.getByLabelText(
+      /I approve correcting the original actual funding/,
+    );
+    fireEvent.click(fundingConsent);
+    expect(
+      screen.getByLabelText("Private funding or existing purchase"),
+    ).toBeRequired();
+    const changedPreview = { ...preview, sourceHash: "ef".repeat(32) };
+    rerender(<AdoptionPanel preview={changedPreview} setup={privateSetup} />);
+    expect(
+      screen.getByLabelText(/I approve correcting the original actual funding/),
+    ).not.toBeChecked();
+    expect(
+      screen.queryByLabelText("Private funding or existing purchase"),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    fireEvent.click(
+      screen.getByLabelText(
+        /I approve this exact correction to my private ledger/,
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Approve reviewed private correction",
+      }),
+    );
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toMatchObject({
+      funding: { kind: "keep" },
+      categoryId: c,
+      expectedSourceHash: changedPreview.sourceHash,
+      acknowledgeFundingCorrection: false,
+      approved: true,
+    });
+  });
   it("creates a group inside Add Expense and retains the original private funding and amount", async () => {
     const fetch = vi
       .fn()

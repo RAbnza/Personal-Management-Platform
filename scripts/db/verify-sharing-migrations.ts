@@ -91,11 +91,19 @@ async function main() {
       journal.entries.length,
     );
     const count = await client.query(
-      "SELECT count(*)::int n FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND (n.nspname='sharing' OR n.nspname='finance' AND c.relname IN('group_ledger_binding','private_group_link','private_group_link_revision') OR n.nspname='audit' AND c.relname='group_revision') AND c.relrowsecurity AND c.relforcerowsecurity",
+      "SELECT count(*)::int n FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND (n.nspname='sharing' OR n.nspname='finance' AND c.relname IN('group_ledger_binding','private_group_link','private_group_link_revision','private_group_review') OR n.nspname='audit' AND c.relname='group_revision' OR n.nspname='ops' AND c.relname='shared_bundle_proof') AND c.relrowsecurity AND c.relforcerowsecurity",
     );
-    assert.equal(count.rows[0].n, 15);
+    assert.equal(count.rows[0].n, 22);
+    assert.deepEqual(
+      (
+        await client.query(
+          "SELECT condeferrable,condeferred FROM pg_constraint WHERE conrelid='finance.private_group_link_revision'::regclass AND conname='fk_private_link_previous'",
+        )
+      ).rows,
+      [{ condeferrable: true, condeferred: true }],
+    );
     console.log(
-      `Focused sharing migration verification passed: ${files.length} migrations; H-to-I sentinel preserved; replay unchanged; 15 new tables force RLS.`,
+      `Sharing migration verification passed: ${files.length} migrations; H-to-I sentinel preserved; replay unchanged; 22 new tables force RLS.`,
     );
   } finally {
     await client.end();

@@ -614,7 +614,11 @@ export function WorkspacePortability() {
                 </p>
                 {restore.preview.blockers.map((b) => (
                   <p key={b} className="break-words">
-                    Blocked: {b}
+                    Blocked:{" "}
+                    {b ===
+                    "SHARED_PRIVATE_HISTORY_REQUIRES_UNMODIFIED_TRUSTED_OWN_EXPORT"
+                      ? "Adopted shared history requires an unmodified export from this same account. Shared group authority cannot be imported from a private bundle."
+                      : b}
                   </p>
                 ))}
                 <label className="block">

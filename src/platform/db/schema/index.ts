@@ -25,3 +25,5 @@ export * from "./notifications";
 export * from "./files-portability";
 export * from "./sharing";
 export * from "./private-group-links";
+export * from "./settlements";
+export * from "./group-portability";

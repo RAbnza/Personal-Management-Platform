@@ -2,7 +2,7 @@ import { randomUUID, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { Client } from "pg";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 import {
   getAuthPool,
@@ -16,9 +16,14 @@ import {
   recordGroupCommand,
   finishGroupCommand,
   lockGroup,
+  executeGroupCommand,
   type SharingActor,
 } from "@/modules/sharing/services/groups";
-import { getGroup, getBill } from "@/modules/sharing/services/read-groups";
+import {
+  getGroup,
+  getBill,
+  type InvitationReview,
+} from "@/modules/sharing/services/read-groups";
 import { invitationCommand } from "@/modules/sharing/services/invitations";
 import {
   adoptGroupExpense,
@@ -34,8 +39,22 @@ import {
 } from "@/modules/finance/services/record-expense";
 import { createCreditCard } from "@/modules/finance/services/credit-cards";
 import { getFinancialReport } from "@/modules/reporting/services/get-reports";
+import {
+  adoptGroupEffect,
+  getGroupEffectPreview,
+} from "@/modules/finance/services/adopt-group-effect";
 import { removeNamedFinancialFixture } from "./helpers/named-financial-fixture";
+import {
+  prepareWorkspaceExport,
+  downloadWorkspaceExport,
+  downloadWorkspaceRecovery,
+  previewWorkspaceRestore,
+  restoreWorkspace,
+} from "@/modules/portability/services/workspace-bundles";
+import { previewDigest } from "@/modules/portability/domain/csv-preview";
 const label = "V2-I sharing fixture" as const;
+import { reviewGroupSource } from "@/modules/finance/services/review-group-source";
+import { getDashboard } from "@/modules/dashboard/services/get-dashboard";
 async function admin() {
   const url = new URL(process.env.TEST_DATABASE_ADMIN_URL!);
   url.pathname = "/personal_management_test";
@@ -158,9 +177,10 @@ async function invite(
     token,
     claimParticipantId,
   });
-  const review = (await invitationCommand(b, { kind: "review", token })) as {
-    version: number;
-  };
+  const review = (await invitationCommand(b, {
+    kind: "review",
+    token,
+  })) as InvitationReview;
   const accept = {
     kind: "accept",
     token,
@@ -170,7 +190,7 @@ async function invite(
     displayName: "B",
   };
   await invitationCommand(b, accept);
-  return { token, accept };
+  return { token, accept, review };
 }
 async function bill(a: SharingActor, g: string, amount = "120000") {
   const d = await getGroup(a, g),
@@ -205,6 +225,1335 @@ async function cash(a: SharingActor) {
   });
 }
 afterAll(closeRuntimeDatabasePools);
+describe("V2-I settlements, refunds and exact history", () => {
+  it("lets a former member review or reconcile private differences without changing shared history or posting during a retained-evidence decision", async () => {
+    vi.stubEnv("SHARED_EXPENSES_ENABLED", "true");
+    try {
+      await fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const expense = await bill(a, g, "2000");
+        let p = await getAdoptionPreview(b, g, expense.subjectId);
+        await adoptGroupExpense(b, {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          expenseId: expense.subjectId,
+          expectedSourceRevisionId: p.revisionId,
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: { kind: "none" },
+        });
+        const own = (await getGroup(a, g)).group.participantId,
+          former = (await getGroup(b, g)).group.participantId,
+          rev = (await getBill(a, g, expense.subjectId))[0]!;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Different group shares",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "2000",
+            splitMethod: "exact",
+            contributions: rev.contributions,
+            shares: [
+              { participantId: own, amountMinor: "500" },
+              { participantId: former, amountMinor: "1500" },
+            ],
+          },
+        });
+        await command(a, g, {
+          kind: "membership",
+          participantId: former,
+          operation: "remove",
+        });
+        p = await getAdoptionPreview(b, g, expense.subjectId);
+        expect(p.needsPrivateCorrection).toBe(true);
+        expect(p.retainedAmounts!.spendingMinor).toBe("1000");
+        const before = await withDomainTransaction(
+          b,
+          async (t) =>
+            (
+              await t.db.execute<{
+                revision: string;
+                postings: number;
+                actions: number;
+              }>(
+                sql`SELECT financial_revision::text revision,(SELECT count(*)::int FROM finance.posting) postings,(SELECT count(*)::int FROM finance.financial_action) actions FROM core.workspace`,
+              )
+            ).rows[0]!,
+        );
+        expect(
+          (
+            await getDashboard({ ...b, query: { period: "month" } })
+          ).attention.some((x) => x.key === `shared-review:${p.link!.id}`),
+        ).toBe(true);
+        const c = {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          linkId: p.link!.id,
+          expectedLinkRevisionId: p.link!.linkRevisionId,
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          reason: "I retain my independently verified private amounts",
+        };
+        const reviewed = await reviewGroupSource(b, c);
+        expect(await reviewGroupSource(b, c)).toEqual(reviewed);
+        await expect(
+          reviewGroupSource(a, { ...c, clientCommandId: randomUUID() }),
+        ).rejects.toThrow();
+        const after = await withDomainTransaction(
+          b,
+          async (t) =>
+            (
+              await t.db.execute<{
+                revision: string;
+                postings: number;
+                actions: number;
+              }>(
+                sql`SELECT financial_revision::text revision,(SELECT count(*)::int FROM finance.posting) postings,(SELECT count(*)::int FROM finance.financial_action) actions FROM core.workspace`,
+              )
+            ).rows[0]!,
+        );
+        expect(after).toEqual(before);
+        p = await getAdoptionPreview(b, g, expense.subjectId);
+        expect(p.needsPrivateCorrection).toBe(true);
+        expect(p.review?.reason).toBe(c.reason);
+        expect(
+          (
+            await getDashboard({ ...b, query: { period: "month" } })
+          ).attention.some((x) => x.key === `shared-review:${p.link!.id}`),
+        ).toBe(false);
+        expect(
+          await withDomainTransaction(
+            a,
+            async (t) =>
+              (
+                await t.db.execute(
+                  sql`SELECT id FROM finance.private_group_review`,
+                )
+              ).rows,
+          ),
+        ).toEqual([]);
+        const groupVersion = (await getGroup(b, g)).group.version;
+        await adoptGroupExpense(b, {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          expenseId: expense.subjectId,
+          expectedSourceRevisionId: p.revisionId,
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: { kind: "keep" },
+        });
+        p = await getAdoptionPreview(b, g, expense.subjectId);
+        expect(p.needsPrivateCorrection).toBe(false);
+        expect(p.retainedAmounts!.spendingMinor).toBe("1500");
+        expect((await getGroup(b, g)).group.version).toBe(groupVersion);
+        await expect(
+          command(b, g, {
+            kind: "manual",
+            displayName: "Forbidden shared write",
+          }),
+        ).rejects.toThrow();
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  }, 25000);
+  it(
+    "nets reciprocal bills, replays racing full reports and confirmations once, and preserves a later correction to settled sources",
+    async () =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const first = await bill(a, g, "2000");
+        await bill(b, g, "1600");
+        let d = await getGroup(b, g);
+        const pa = (await getGroup(a, g)).group.participantId,
+          pb = d.group.participantId;
+        expect(d.participants.find((p) => p.id === pb)!.netMinor).toBe("-200");
+        expect(d.ledger!.suggestions).toEqual([
+          { senderId: pb, recipientId: pa, amountMinor: "200" },
+        ]);
+        const report = {
+          kind: "settlement",
+          groupId: g,
+          expectedVersion: d.group.version,
+          clientCommandId: randomUUID(),
+          recipientId: pa,
+          mode: "full",
+          amountMinor: "200",
+          paymentDate: "2026-10-15",
+          allocations: [],
+        };
+        const results = await Promise.all([
+          recordGroupCommand(b, report),
+          recordGroupCommand(b, report),
+        ]);
+        expect(results[0]).toEqual(results[1]);
+        d = await getGroup(a, g);
+        expect(d.ledger!.settlements).toHaveLength(1);
+        expect(d.participants.find((p) => p.id === pa)!.netMinor).toBe("200");
+        const confirm = {
+          kind: "settlement_transition",
+          groupId: g,
+          expectedVersion: d.group.version,
+          clientCommandId: randomUUID(),
+          settlementId: results[0]!.subjectId,
+          expectedSettlementVersion: 1,
+          operation: "confirm",
+          reason: "Full current relationship received",
+        };
+        expect(
+          (
+            await Promise.all([
+              recordGroupCommand(a, confirm),
+              recordGroupCommand(a, confirm),
+            ])
+          )[0],
+        ).toEqual(await recordGroupCommand(a, confirm));
+        d = await getGroup(a, g);
+        expect(d.participants.every((p) => p.netMinor === "0")).toBe(true);
+        expect(d.bills).toHaveLength(2);
+        const rev = (await getBill(a, g, first.subjectId))[0]!;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: first.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Correct shares after settlement",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "2000",
+            splitMethod: "exact",
+            contributions: rev.contributions,
+            shares: [
+              { participantId: pa, amountMinor: "500" },
+              { participantId: pb, amountMinor: "1500" },
+            ],
+          },
+        });
+        d = await getGroup(a, g);
+        expect(d.participants.find((p) => p.id === pa)!.netMinor).toBe("500");
+        expect(d.ledger!.settlements[0]!.state).toBe("confirmed");
+        expect(await getBill(a, g, first.subjectId)).toHaveLength(2);
+        expect(
+          await withDomainTransaction(
+            b,
+            async (t) =>
+              (
+                await t.db.execute<{ n: string }>(
+                  sql`SELECT sharing.obligation(${g}::uuid,${pb}::uuid,${pa}::uuid,NULL)::text n`,
+                )
+              ).rows[0]!.n,
+          ),
+        ).toBe("500");
+      }),
+    20000,
+  );
+  it(
+    "shows late resolution of entitled bills while hiding unrelated settlements even when their transaction began before exit",
+    async () =>
+      fixture(async (a, b, o, g) => {
+        await invite(a, b, g);
+        await invite(a, o, g);
+        await bill(b, g, "3000");
+        const pa = (await getGroup(a, g)).group.participantId,
+          pb = (await getGroup(b, g)).group.participantId,
+          po = (await getGroup(o, g)).group.participantId;
+        await command(a, g, {
+          kind: "membership",
+          participantId: pb,
+          operation: "owner",
+        });
+        let begin!: () => void, resume!: () => void;
+        const started = new Promise<void>((r) => (begin = r)),
+          continueAfterExit = new Promise<void>((r) => (resume = r));
+        const olderTransaction = withDomainTransaction(b, async (t) => {
+          await t.db.execute(sql`SELECT transaction_timestamp()`);
+          begin();
+          await continueAfterExit;
+          let current = await lockGroup(t, g);
+          await executeGroupCommand(t, b, {
+            kind: "bill",
+            groupId: g,
+            expectedVersion: current.version,
+            clientCommandId: randomUUID(),
+            bill: {
+              description: "Unrelated later bill",
+              expenseDate: "2026-10-15",
+              totalMinor: "600",
+              splitMethod: "equal",
+              contributions: [{ participantId: po, amountMinor: "600" }],
+              shares: [{ participantId: pb }, { participantId: po }],
+            },
+          });
+          current = await lockGroup(t, g);
+          return executeGroupCommand(t, b, {
+            kind: "settlement",
+            groupId: g,
+            expectedVersion: current.version,
+            clientCommandId: randomUUID(),
+            recipientId: po,
+            mode: "custom",
+            amountMinor: "500",
+            paymentDate: "2026-10-15",
+            allocations: [],
+            acknowledgeAdvance: true,
+          });
+        });
+        await started;
+        try {
+          await command(a, g, {
+            kind: "membership",
+            participantId: pa,
+            operation: "leave",
+          });
+        } finally {
+          resume();
+        }
+        const hidden = await olderTransaction;
+        const before = await getGroup(a, g);
+        expect(before.bills).toHaveLength(1);
+        expect(
+          before.ledger!.settlements.some((s) => s.id === hidden.subjectId),
+        ).toBe(false);
+        const visible = await command(o, g, {
+          kind: "settlement",
+          recipientId: pb,
+          mode: "custom",
+          amountMinor: "500",
+          paymentDate: "2026-10-15",
+          allocations: [],
+        });
+        await command(b, g, {
+          kind: "settlement_transition",
+          settlementId: visible.subjectId,
+          expectedSettlementVersion: 1,
+          operation: "confirm",
+          reason: "Received on historical source",
+        });
+        const after = await getGroup(a, g);
+        expect(after.group.active).toBe(false);
+        expect(after.ledger!.settlements.map((s) => s.id)).toEqual([
+          visible.subjectId,
+        ]);
+        expect(
+          after.participants.reduce((n, p) => n + BigInt(p.netMinor), 0n),
+        ).toBe(0n);
+      }),
+    20000,
+  );
+  it(
+    "relinks one actual private payment from a cancelled report to reviewed corrected allocations without another cash deduction",
+    async () =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const account = await cash(b);
+        await bill(a, g, "2000");
+        const recipient = (await getGroup(a, g)).group.participantId;
+        const report = async () =>
+          command(b, g, {
+            kind: "settlement",
+            recipientId: recipient,
+            mode: "custom",
+            amountMinor: "400",
+            paymentDate: "2026-10-15",
+            allocations: [],
+          });
+        const old = await report(),
+          ref = {
+            groupId: g,
+            sourceKind: "settlement",
+            sourceId: old.subjectId,
+          };
+        let p = await getGroupEffectPreview(b, ref);
+        const original = (await adoptGroupEffect(b, {
+          ...ref,
+          clientCommandId: randomUUID(),
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: { kind: "cash", accountId: account.accountId },
+        })) as { actionId: string; actionRevisionId: string };
+        await command(a, g, {
+          kind: "settlement_transition",
+          settlementId: old.subjectId,
+          expectedSettlementVersion: 1,
+          operation: "dispute",
+          reason: "Please review allocation evidence",
+        });
+        await command(b, g, {
+          kind: "settlement_transition",
+          settlementId: old.subjectId,
+          expectedSettlementVersion: 2,
+          operation: "cancel",
+          reason: "Superseded by reviewed report",
+        });
+        const next = await report(),
+          nextRef = { ...ref, sourceId: next.subjectId };
+        p = await getGroupEffectPreview(b, nextRef);
+        expect(
+          p.existingMovements.some((m) => m.id === original.actionId),
+        ).toBe(true);
+        const result = (await adoptGroupEffect(b, {
+          ...nextRef,
+          clientCommandId: randomUUID(),
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: {
+            kind: "existing",
+            actionId: original.actionId,
+            expectedActionRevisionId: original.actionRevisionId,
+          },
+        })) as { actionId: string };
+        expect(result.actionId).toBe(original.actionId);
+        const totals = await withDomainTransaction(
+          b,
+          async (t) =>
+            (
+              await t.db.execute<{
+                cash: string;
+                links: number;
+                revisions: number;
+              }>(
+                sql`SELECT (SELECT sum(p.amount_minor::numeric)::text FROM finance.posting p JOIN finance.ledger_account l ON l.workspace_id=p.workspace_id AND l.id=p.ledger_account_id WHERE l.kind='cash_asset') cash,(SELECT count(*)::int FROM finance.private_group_link) links,(SELECT count(*)::int FROM finance.private_group_link_revision) revisions`,
+              )
+            ).rows[0]!,
+        );
+        expect(totals).toEqual({ cash: "999600", links: 1, revisions: 2 });
+        expect((await getGroup(b, g)).ledger!.settlements).toHaveLength(2);
+      }),
+    20000,
+  );
+  it(
+    "rejects unfinished raw transitions and mismatched allocation totals under the restricted domain role",
+    async () =>
+      fixture(async (a, b, o, g) => {
+        await invite(a, b, g);
+        const expense = await bill(a, g, "2000"),
+          rev = (await getBill(a, g, expense.subjectId))[0]!,
+          sender = (await getGroup(b, g)).group.participantId,
+          recipient = (await getGroup(a, g)).group.participantId;
+        const r = await command(b, g, {
+          kind: "settlement",
+          recipientId: recipient,
+          mode: "custom",
+          amountMinor: "500",
+          paymentDate: "2026-10-15",
+          allocations: [],
+        });
+        await expect(
+          withDomainTransaction(b, async (t) => {
+            await lockGroup(t, g);
+            await t.db.execute(
+              sql`UPDATE sharing.settlement SET state='confirmed',version=2 WHERE group_id=${g}::uuid AND id=${r.subjectId}::uuid`,
+            );
+          }),
+        ).rejects.toThrow();
+        expect((await getGroup(a, g)).ledger!.settlements[0]!.state).toBe(
+          "pending",
+        );
+        await expect(
+          withDomainTransaction(b, async (t) => {
+            const group = await lockGroup(t, g),
+              receipt = randomUUID(),
+              settlement = randomUUID();
+            await t.db.execute(
+              sql`UPDATE sharing.expense_group SET version=version+1 WHERE id=${g}::uuid`,
+            );
+            await t.db.execute(
+              sql`INSERT INTO sharing.group_command_receipt(id,group_id,client_command_id,actor_participant_id,command_type,payload_hash) VALUES(${receipt}::uuid,${g}::uuid,${randomUUID()}::uuid,${sender}::uuid,'settlement',${"ab".repeat(32)})`,
+            );
+            await t.db.execute(
+              sql`INSERT INTO sharing.settlement(id,group_id,sender_id,recipient_id,reported_by,amount_minor,advance_minor,mode,payment_date,original_receipt_id) VALUES(${settlement}::uuid,${g}::uuid,${sender}::uuid,${recipient}::uuid,${sender}::uuid,1000,0,'custom','2026-10-15',${receipt}::uuid)`,
+            );
+            await t.db.execute(
+              sql`INSERT INTO sharing.settlement_allocation(group_id,settlement_id,expense_id,source_revision_id,amount_minor) VALUES(${g}::uuid,${settlement}::uuid,${expense.subjectId}::uuid,${rev.revisionId}::uuid,500)`,
+            );
+            await t.db.execute(
+              sql`INSERT INTO sharing.settlement_event(group_id,settlement_id,version,actor_id,receipt_id,to_state,confirmation_type,reason) VALUES(${g}::uuid,${settlement}::uuid,1,${sender}::uuid,${receipt}::uuid,'pending','reported','Reported actual payment')`,
+            );
+            await finishGroupCommand(
+              t,
+              { id: g, version: group.version + 1 },
+              receipt,
+              sender,
+              "settlement",
+              settlement,
+              "settlement",
+              { after: { settlementId: settlement, state: "pending" } },
+            );
+          }),
+        ).rejects.toThrow(/allocation total mismatch/);
+        const foreign = await withDomainTransaction(
+          o,
+          async (t) =>
+            (
+              await t.db.execute(
+                sql`SELECT id FROM sharing.settlement UNION ALL SELECT id FROM sharing.refund UNION ALL SELECT id FROM sharing.settlement_event`,
+              )
+            ).rows,
+        );
+        expect(foreign).toEqual([]);
+      }),
+    20000,
+  );
+  it.each(["cash", "card"])(
+    "reviews changed %s funding and removal of a previously adopted allocation without duplicating funds",
+    async (mode) =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const account = await cash(a),
+          card = await createCreditCard({
+            ...privateScope(a),
+            clientCommandId: randomUUID(),
+            name: "Private correction card",
+            issuerName: "Private issuer",
+          }),
+          expense = await bill(a, g, "2000");
+        const funding =
+          mode === "cash"
+            ? { kind: "cash", accountId: account.accountId }
+            : { kind: "card", cardId: card.cardId, postingDate: "2026-10-11" };
+        const adopt = async (
+          funding: unknown,
+          acknowledgeFundingCorrection?: boolean,
+        ) => {
+          const p = await getAdoptionPreview(a, g, expense.subjectId);
+          return adoptGroupExpense(a, {
+            clientCommandId: randomUUID(),
+            groupId: g,
+            expenseId: expense.subjectId,
+            expectedSourceRevisionId: p.revisionId,
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+            ...(acknowledgeFundingCorrection === undefined
+              ? {}
+              : { acknowledgeFundingCorrection }),
+          });
+        };
+        await adopt(funding);
+        let rev = (await getBill(a, g, expense.subjectId))[0]!;
+        const pa = (await getGroup(a, g)).group.participantId,
+          pb = (await getGroup(b, g)).group.participantId;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Correct actual amount",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "3000",
+            splitMethod: "equal",
+            contributions: [{ participantId: pa, amountMinor: "3000" }],
+            shares: [{ participantId: pa }, { participantId: pb }],
+          },
+        });
+        await expect(adopt({ kind: "keep" })).rejects.toThrow(
+          /actual funding/i,
+        );
+        await expect(adopt(funding)).rejects.toThrow(/explicitly approve/i);
+        await adopt(funding, true);
+        const totals = () =>
+          withDomainTransaction(
+            a,
+            async (t) =>
+              (
+                await t.db.execute<{ kind: string; n: string }>(
+                  sql`SELECT l.kind,sum(p.amount_minor::numeric)::text n FROM finance.posting p JOIN finance.ledger_account l ON l.workspace_id=p.workspace_id AND l.id=p.ledger_account_id GROUP BY l.kind`,
+                )
+              ).rows,
+          );
+        expect(
+          (await totals()).find(
+            (p) =>
+              p.kind === (mode === "cash" ? "cash_asset" : "card_liability"),
+          )!.n,
+        ).toBe(mode === "cash" ? "997000" : "-3000");
+        rev = (await getBill(a, g, expense.subjectId))[0]!;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Correct payer and participation",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "3000",
+            splitMethod: "exact",
+            contributions: [{ participantId: pb, amountMinor: "3000" }],
+            shares: [{ participantId: pb, amountMinor: "3000" }],
+          },
+        });
+        await adopt({ kind: "none" }, true);
+        expect(
+          (await totals()).find(
+            (p) =>
+              p.kind === (mode === "cash" ? "cash_asset" : "card_liability"),
+          )!.n,
+        ).toBe(mode === "cash" ? "1000000" : "0");
+        expect(
+          (await getAdoptionPreview(a, g, expense.subjectId))
+            .needsPrivateCorrection,
+        ).toBe(false);
+      }),
+    20000,
+  );
+  it(
+    "keeps a card refund exact through independent bill and clearing review",
+    async () =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const card = await createCreditCard({
+            ...privateScope(a),
+            clientCommandId: randomUUID(),
+            name: "Private refund card",
+            issuerName: "Private issuer",
+          }),
+          expense = await bill(a, g, "2000"),
+          pa = (await getGroup(a, g)).group.participantId,
+          pb = (await getGroup(b, g)).group.participantId;
+        const adopt = async (funding: unknown) => {
+          const p = await getAdoptionPreview(a, g, expense.subjectId);
+          return adoptGroupExpense(a, {
+            clientCommandId: randomUUID(),
+            groupId: g,
+            expenseId: expense.subjectId,
+            expectedSourceRevisionId: p.revisionId,
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+          });
+        };
+        await adopt({
+          kind: "card",
+          cardId: card.cardId,
+          postingDate: "2026-10-11",
+        });
+        const rev = (await getBill(a, g, expense.subjectId))[0]!;
+        const refund = await command(a, g, {
+            kind: "refund",
+            expenseId: expense.subjectId,
+            expectedRevisionId: rev.revisionId,
+            totalMinor: "400",
+            refundDate: "2026-10-15",
+            reason: "Actual card refund",
+            received: [{ participantId: pa, amountMinor: "400" }],
+            shareCredits: [
+              { participantId: pa, amountMinor: "100" },
+              { participantId: pb, amountMinor: "300" },
+            ],
+          }),
+          ref = {
+            groupId: g,
+            sourceKind: "refund",
+            sourceId: refund.subjectId,
+          };
+        const accept = async (funding: unknown) => {
+          const p = await getGroupEffectPreview(a, ref);
+          return adoptGroupEffect(a, {
+            ...ref,
+            clientCommandId: randomUUID(),
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+          });
+        };
+        await accept({
+          kind: "card",
+          cardId: card.cardId,
+          postingDate: "2026-10-16",
+        });
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Correct own shares after refund",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "2000",
+            splitMethod: "exact",
+            contributions: rev.contributions,
+            shares: [
+              { participantId: pa, amountMinor: "500" },
+              { participantId: pb, amountMinor: "1500" },
+            ],
+          },
+        });
+        await accept({ kind: "keep" });
+        await adopt({ kind: "keep" });
+        await accept({ kind: "keep" });
+        const rows = await withDomainTransaction(
+          a,
+          async (t) =>
+            (
+              await t.db.execute<{ liability: string; refunds: number }>(
+                sql`SELECT (SELECT sum(amount_minor::numeric)::text FROM finance.posting WHERE ledger_account_id IN(SELECT liability_ledger_account_id FROM finance.credit_card)) liability,(SELECT count(*)::int FROM finance.card_activity WHERE activity_kind='refund') refunds`,
+              )
+            ).rows[0]!,
+        );
+        expect(rows).toEqual({ liability: "-1600", refunds: 1 });
+      }),
+    20000,
+  );
+  it(
+    "exports adopted private evidence and restores trusted historical acceptance without changing group authority or trusting edited bundles",
+    async () =>
+      fixture(async (a, b, o, g) => {
+        await invite(a, b, g);
+        const account = await cash(a),
+          expense = await bill(a, g, "2000"),
+          p = await getAdoptionPreview(a, g, expense.subjectId);
+        await adoptGroupExpense(a, {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          expenseId: expense.subjectId,
+          expectedSourceRevisionId: p.revisionId,
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: { kind: "cash", accountId: account.accountId },
+        });
+        const exported = (await prepareWorkspaceExport(a, randomUUID())) as {
+            exportRunId: string;
+          },
+          bundle = await downloadWorkspaceExport(a, exported.exportRunId);
+        expect(
+          bundle.entities.find((e) => e.kind === "finance.private_group_link")!
+            .records,
+        ).toHaveLength(1);
+        expect(bundle.entities.some((e) => e.kind.startsWith("sharing."))).toBe(
+          false,
+        );
+        const foreignPreview = (await previewWorkspaceRestore(o, {
+          clientCommandId: randomUUID(),
+          bundle,
+        })) as { runId: string; preview: { blockers: string[] } };
+        expect(foreignPreview.preview.blockers).toContain(
+          "SHARED_PRIVATE_HISTORY_REQUIRES_UNMODIFIED_TRUSTED_OWN_EXPORT",
+        );
+        await withDomainTransaction(a, async (ownerTx) => {
+          await ownerTx.db.execute(
+            sql`SELECT id FROM sharing.expense_group WHERE id=${g}::uuid FOR UPDATE`,
+          );
+          await withDomainTransaction(o, async (outsiderTx) => {
+            expect(
+              (
+                await outsiderTx.db.execute<{ v: boolean }>(
+                  sql`SELECT sharing.visible(${g}::uuid) v`,
+                )
+              ).rows[0]!.v,
+            ).toBe(false);
+            await outsiderTx.db.execute(sql`SET LOCAL lock_timeout='100ms'`);
+            // Even a blocked, foreign uploaded bundle must not acquire another
+            // group's mutex before restore's authorization preflight rejects it.
+            await outsiderTx.db.execute(
+              sql`SELECT ops.lock_shared_restore_groups(${foreignPreview.runId}::uuid)`,
+            );
+          });
+        });
+        const rev = (await getBill(a, g, expense.subjectId))[0]!,
+          pb = (await getGroup(b, g)).group.participantId;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Changed shares after export",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "2000",
+            splitMethod: "exact",
+            contributions: rev.contributions,
+            shares: [
+              {
+                participantId:
+                  p.revisionId === rev.revisionId
+                    ? (await getGroup(a, g)).group.participantId
+                    : "",
+                amountMinor: "500",
+              },
+              { participantId: pb, amountMinor: "1500" },
+            ],
+          },
+        });
+        const groupVersion = (await getGroup(a, g)).group.version;
+        const correctedPreview = await getAdoptionPreview(
+          a,
+          g,
+          expense.subjectId,
+        );
+        await reviewGroupSource(a, {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          linkId: correctedPreview.link!.id,
+          expectedLinkRevisionId: correctedPreview.link!.linkRevisionId,
+          expectedSourceHash: correctedPreview.sourceHash,
+          expectedFinancialRevision: correctedPreview.financialRevision,
+          approved: true,
+          reason: "Retain prior evidence pending verification",
+        });
+        await adoptGroupExpense(a, {
+          clientCommandId: randomUUID(),
+          groupId: g,
+          expenseId: expense.subjectId,
+          expectedSourceRevisionId: correctedPreview.revisionId,
+          expectedSourceHash: correctedPreview.sourceHash,
+          expectedFinancialRevision: correctedPreview.financialRevision,
+          approved: true,
+          funding: { kind: "keep" },
+        });
+        const preview = (await previewWorkspaceRestore(a, {
+          clientCommandId: randomUUID(),
+          bundle,
+        })) as {
+          runId: string;
+          previewHash: string;
+          preview: { blockers: string[] };
+        };
+        expect(preview.preview.blockers).toEqual([]);
+        expect(
+          await restoreWorkspace(a, {
+            clientCommandId: randomUUID(),
+            runId: preview.runId,
+            previewHash: preview.previewHash,
+            confirmation: "replace-private-workspace",
+          }),
+        ).toMatchObject({ restored: true });
+        expect((await getGroup(a, g)).group.version).toBe(groupVersion);
+        expect(
+          (await getAdoptionPreview(a, g, expense.subjectId))
+            .needsPrivateCorrection,
+        ).toBe(true);
+        const recovery = await downloadWorkspaceRecovery(a, preview.runId);
+        expect(
+          recovery.entities.find(
+            (e) => e.kind === "finance.private_group_review",
+          )!.records,
+        ).toHaveLength(1);
+        const recoverPreview = (await previewWorkspaceRestore(a, {
+          clientCommandId: randomUUID(),
+          bundle: recovery,
+        })) as {
+          runId: string;
+          previewHash: string;
+          preview: { blockers: string[] };
+        };
+        expect(recoverPreview.preview.blockers).toEqual([]);
+        expect(
+          await restoreWorkspace(a, {
+            clientCommandId: randomUUID(),
+            runId: recoverPreview.runId,
+            previewHash: recoverPreview.previewHash,
+            confirmation: "replace-private-workspace",
+          }),
+        ).toMatchObject({ restored: true });
+        const recoveredAdoption = await getAdoptionPreview(
+          a,
+          g,
+          expense.subjectId,
+        );
+        expect(recoveredAdoption.needsPrivateCorrection).toBe(false);
+        expect(recoveredAdoption.retainedAmounts!.spendingMinor).toBe("500");
+        expect(recoveredAdoption.review).toBeNull();
+        const changed = structuredClone(bundle),
+          link = changed.entities.find(
+            (e) => e.kind === "finance.private_group_link_revision",
+          )!.records[0]!;
+        link.share_minor = "999";
+        const { checksumSha256: ignored, ...unsigned } = changed;
+        void ignored;
+        changed.checksumSha256 = previewDigest(unsigned);
+        const rejected = (await previewWorkspaceRestore(a, {
+          clientCommandId: randomUUID(),
+          bundle: changed,
+        })) as { preview: { blockers: string[] } };
+        expect(rejected.preview.blockers).toContain(
+          "SHARED_PRIVATE_HISTORY_REQUIRES_UNMODIFIED_TRUSTED_OWN_EXPORT",
+        );
+      }),
+    25000,
+  );
+  it(
+    "preserves actual cash through pending clearing, confirmed classification and reversal, independently for each owner",
+    async () =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const ba = await cash(a),
+          bb = await cash(b),
+          expense = await bill(a, g, "2000");
+        for (const [actor, funding] of [
+          [a, { kind: "cash", accountId: ba.accountId }],
+          [b, { kind: "none" }],
+        ] as const) {
+          const p = await getAdoptionPreview(actor, g, expense.subjectId);
+          await adoptGroupExpense(actor, {
+            clientCommandId: randomUUID(),
+            groupId: g,
+            expenseId: expense.subjectId,
+            expectedSourceRevisionId: p.revisionId,
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+          });
+        }
+        const recipient = (await getGroup(a, g)).group.participantId,
+          r = await command(b, g, {
+            kind: "settlement",
+            recipientId: recipient,
+            mode: "custom",
+            amountMinor: "400",
+            paymentDate: "2026-10-15",
+            allocations: [],
+          });
+        const ref = {
+          groupId: g,
+          sourceKind: "settlement",
+          sourceId: r.subjectId,
+        };
+        const accept = async (actor: SharingActor, funding: unknown) => {
+          const p = await getGroupEffectPreview(actor, ref);
+          const c = {
+            ...ref,
+            clientCommandId: randomUUID(),
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+          };
+          const result = await adoptGroupEffect(actor, c);
+          expect(await adoptGroupEffect(actor, c)).toEqual(result);
+          return result;
+        };
+        const totals = async (actor: SharingActor) =>
+          withDomainTransaction(
+            actor,
+            async (t) =>
+              (
+                await t.db.execute<{ kind: string; amount: string }>(
+                  sql`SELECT l.kind,sum(p.amount_minor::numeric)::text amount FROM finance.posting p JOIN finance.ledger_account l ON l.workspace_id=p.workspace_id AND l.id=p.ledger_account_id GROUP BY l.kind ORDER BY l.kind`,
+                )
+              ).rows,
+          );
+        await accept(b, { kind: "cash", accountId: bb.accountId });
+        let t = await totals(b);
+        expect(t.find((p) => p.kind === "cash_asset")!.amount).toBe("999600");
+        expect(t.find((p) => p.kind === "payment_clearing_asset")!.amount).toBe(
+          "400",
+        );
+        expect(
+          t.find((p) => p.kind === "group_payable_liability")!.amount,
+        ).toBe("-1000");
+        await command(a, g, {
+          kind: "settlement_transition",
+          settlementId: r.subjectId,
+          expectedSettlementVersion: 1,
+          operation: "confirm",
+          reason: "Actual payment received",
+        });
+        expect((await getGroupEffectPreview(b, ref)).needsReview).toBe(true);
+        await accept(b, { kind: "keep" });
+        t = await totals(b);
+        expect(t.find((p) => p.kind === "cash_asset")!.amount).toBe("999600");
+        expect(t.find((p) => p.kind === "payment_clearing_asset")!.amount).toBe(
+          "0",
+        );
+        expect(
+          t.find((p) => p.kind === "group_payable_liability")!.amount,
+        ).toBe("-600");
+        await accept(a, { kind: "cash", accountId: ba.accountId });
+        expect(
+          (await totals(a)).find((p) => p.kind === "cash_asset")!.amount,
+        ).toBe("998400");
+        await command(a, g, {
+          kind: "settlement_transition",
+          settlementId: r.subjectId,
+          expectedSettlementVersion: 2,
+          operation: "reverse",
+          reason: "Shared confirmation withdrawn; actual funds not returned",
+        });
+        await accept(b, { kind: "keep" });
+        t = await totals(b);
+        expect(t.find((p) => p.kind === "cash_asset")!.amount).toBe("999600");
+        expect(t.find((p) => p.kind === "payment_clearing_asset")!.amount).toBe(
+          "400",
+        );
+        expect(
+          t.find((p) => p.kind === "group_payable_liability")!.amount,
+        ).toBe("-1000");
+      }),
+    20000,
+  );
+  it(
+    "reviews stale private adoption with immutable cash-preserving revisions and independently adopts exact refund effects",
+    async () =>
+      fixture(async (a, b, _o, g) => {
+        await invite(a, b, g);
+        const account = await cash(a),
+          expense = await bill(a, g, "2000"),
+          pa = (await getGroup(a, g)).group.participantId,
+          pb = (await getGroup(b, g)).group.participantId;
+        const adopt = async (actor: SharingActor, funding: unknown) => {
+          const p = await getAdoptionPreview(actor, g, expense.subjectId);
+          return adoptGroupExpense(actor, {
+            clientCommandId: randomUUID(),
+            groupId: g,
+            expenseId: expense.subjectId,
+            expectedSourceRevisionId: p.revisionId,
+            expectedSourceHash: p.sourceHash,
+            expectedFinancialRevision: p.financialRevision,
+            approved: true,
+            funding,
+          });
+        };
+        await adopt(a, { kind: "cash", accountId: account.accountId });
+        await adopt(b, { kind: "none" });
+        let rev = (await getBill(a, g, expense.subjectId))[0]!;
+        await command(a, g, {
+          kind: "bill",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          reason: "Correct personal shares",
+          bill: {
+            description: rev.description,
+            expenseDate: rev.expenseDate,
+            totalMinor: "2000",
+            splitMethod: "exact",
+            contributions: [{ participantId: pa, amountMinor: "2000" }],
+            shares: [
+              { participantId: pa, amountMinor: "500" },
+              { participantId: pb, amountMinor: "1500" },
+            ],
+          },
+        });
+        expect(
+          (await getAdoptionPreview(a, g, expense.subjectId))
+            .needsPrivateCorrection,
+        ).toBe(true);
+        await adopt(a, { kind: "keep" });
+        expect(
+          (await getAdoptionPreview(a, g, expense.subjectId))
+            .needsPrivateCorrection,
+        ).toBe(false);
+        expect(
+          (await getAdoptionPreview(b, g, expense.subjectId))
+            .needsPrivateCorrection,
+        ).toBe(true);
+        const cashAmount = () =>
+          withDomainTransaction(
+            a,
+            async (t) =>
+              (
+                await t.db.execute<{ n: string }>(
+                  sql`SELECT sum(p.amount_minor::numeric)::text n FROM finance.posting p JOIN finance.ledger_account l ON l.workspace_id=p.workspace_id AND l.id=p.ledger_account_id WHERE l.kind='cash_asset'`,
+                )
+              ).rows[0]!.n,
+          );
+        expect(await cashAmount()).toBe("998000");
+        rev = (await getBill(a, g, expense.subjectId))[0]!;
+        const refund = await command(a, g, {
+          kind: "refund",
+          expenseId: expense.subjectId,
+          expectedRevisionId: rev.revisionId,
+          totalMinor: "400",
+          refundDate: "2026-10-15",
+          reason: "Merchant partial refund",
+          received: [{ participantId: pa, amountMinor: "400" }],
+          shareCredits: [
+            { participantId: pa, amountMinor: "100" },
+            { participantId: pb, amountMinor: "300" },
+          ],
+        });
+        const ref = {
+            groupId: g,
+            sourceKind: "refund",
+            sourceId: refund.subjectId,
+          },
+          p = await getGroupEffectPreview(a, ref);
+        expect(p.spendingMinor).toBe("-100");
+        expect(p.groupMinor).toBe("-300");
+        await adoptGroupEffect(a, {
+          ...ref,
+          clientCommandId: randomUUID(),
+          expectedSourceHash: p.sourceHash,
+          expectedFinancialRevision: p.financialRevision,
+          approved: true,
+          funding: { kind: "cash", accountId: account.accountId },
+        });
+        expect(await cashAmount()).toBe("998400");
+        const report = await getFinancialReport({
+          ...privateScope(a),
+          query: {
+            period: "custom",
+            startDate: "2026-10-01",
+            endDate: "2026-10-31",
+          },
+        });
+        expect(report.metrics.gross).toBe("500");
+        expect(report.metrics.offsets).toBe("100");
+        expect(report.metrics.net).toBe("400");
+      }),
+    20000,
+  );
+  it("keeps partial multi-bill payments pending until the authenticated recipient confirms, then reverses with evidence", async () =>
+    fixture(async (a, b, o, g) => {
+      await invite(a, b, g);
+      const one = await bill(a, g, "2000"),
+        two = await bill(a, g, "1200");
+      let d = await getGroup(b, g);
+      const recipient = d.participants.find(
+        (p) => p.id !== d.group.participantId,
+      )!.id;
+      const allocations = [
+        {
+          expenseId: one.subjectId,
+          sourceRevisionId: (await getBill(a, g, one.subjectId))[0]!.revisionId,
+          amountMinor: "400",
+        },
+        {
+          expenseId: two.subjectId,
+          sourceRevisionId: (await getBill(a, g, two.subjectId))[0]!.revisionId,
+          amountMinor: "300",
+        },
+      ];
+      const report = await command(b, g, {
+        kind: "settlement",
+        recipientId: recipient,
+        mode: "selected",
+        amountMinor: "700",
+        paymentDate: "2026-10-15",
+        allocations,
+      });
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === recipient)!.netMinor).toBe(
+        "1600",
+      );
+      expect(
+        d.ledger!.projected.positions.find(
+          (p) => p.participantId === recipient,
+        )!.netMinor,
+      ).toBe("900");
+      const transition = {
+        kind: "settlement_transition",
+        settlementId: report.subjectId,
+        expectedSettlementVersion: 1,
+        operation: "confirm",
+        reason: "Received exact payment",
+      };
+      await expect(command(b, g, transition)).rejects.toThrow();
+      await expect(getGroup(o, g)).rejects.toThrow();
+      await command(a, g, transition);
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === recipient)!.netMinor).toBe(
+        "900",
+      );
+      expect(d.ledger!.settlements[0]!.allocations).toHaveLength(2);
+      await command(a, g, {
+        ...transition,
+        expectedSettlementVersion: 2,
+        operation: "reverse",
+        reason: "Receipt entered in error; cash reviewed separately",
+      });
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === recipient)!.netMinor).toBe(
+        "1600",
+      );
+      expect(d.ledger!.settlements[0]!.events.map((e) => e.toState)).toEqual([
+        "pending",
+        "confirmed",
+        "reversed",
+      ]);
+    }));
+  it("rejects a late allocation after the complete parent constraints have already run", async () =>
+    fixture(async (a, b, _o, g) => {
+      await invite(a, b, g);
+      const one = await bill(a, g, "2000");
+      const two = await bill(a, g, "2000");
+      const snapshot = await getGroup(b, g);
+      const recipientId = snapshot.participants.find(
+        (p) => p.id !== snapshot.group.participantId,
+      )!.id;
+      const revisionOne = (await getBill(a, g, one.subjectId))[0]!.revisionId;
+      const revisionTwo = (await getBill(a, g, two.subjectId))[0]!.revisionId;
+      const failure = await withDomainTransaction(b, async (t) => {
+        const report = await executeGroupCommand(t, b, {
+          kind: "settlement",
+          clientCommandId: randomUUID(),
+          groupId: g,
+          expectedVersion: snapshot.group.version,
+          recipientId,
+          mode: "selected",
+          amountMinor: "500",
+          paymentDate: "2026-10-15",
+          allocations: [
+            {
+              expenseId: one.subjectId,
+              sourceRevisionId: revisionOne,
+              amountMinor: "500",
+            },
+          ],
+        });
+        await t.db.execute(sql`SET CONSTRAINTS ALL IMMEDIATE`);
+        await t.db.execute(
+          sql`INSERT INTO sharing.settlement_allocation(group_id,settlement_id,expense_id,source_revision_id,amount_minor) VALUES(${g}::uuid,${report.subjectId}::uuid,${two.subjectId}::uuid,${revisionTwo}::uuid,500)`,
+        );
+      }).then(
+        () => undefined,
+        (error: unknown) => (error as { cause?: unknown })?.cause ?? error,
+      );
+      expect(failure).toMatchObject({
+        code: "23514",
+        message: expect.stringContaining("allocation total mismatch"),
+      });
+      expect((await getGroup(b, g)).ledger!.settlements).toHaveLength(0);
+    }));
+  it("records full and custom payments, explicit overpayments, disputes and cancellation without false clearing", async () =>
+    fixture(async (a, b, _o, g) => {
+      await invite(a, b, g);
+      await bill(a, g, "2000");
+      let d = await getGroup(b, g);
+      const recipient = d.participants.find(
+        (p) => p.id !== d.group.participantId,
+      )!.id;
+      const body = {
+        kind: "settlement",
+        recipientId: recipient,
+        mode: "custom",
+        amountMinor: "1200",
+        paymentDate: "2026-10-15",
+        allocations: [],
+      };
+      await expect(command(b, g, body)).rejects.toThrow(/acknowledge/i);
+      const r = await command(b, g, { ...body, acknowledgeAdvance: true });
+      d = await getGroup(a, g);
+      expect(d.ledger!.settlements[0]!.advanceMinor).toBe("200");
+      await command(a, g, {
+        kind: "settlement_transition",
+        settlementId: r.subjectId,
+        expectedSettlementVersion: 1,
+        operation: "confirm",
+        reason: "Received, including acknowledged advance",
+      });
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === recipient)!.netMinor).toBe(
+        "-200",
+      );
+      const reverseDue = await command(a, g, {
+        kind: "settlement",
+        recipientId: (await getGroup(b, g)).group.participantId,
+        mode: "full",
+        amountMinor: "200",
+        paymentDate: "2026-10-15",
+        allocations: [],
+        acknowledgeAdvance: true,
+      });
+      await command(b, g, {
+        kind: "settlement_transition",
+        settlementId: reverseDue.subjectId,
+        expectedSettlementVersion: 1,
+        operation: "dispute",
+        reason: "No new receipt",
+      });
+      expect(
+        (await getGroup(a, g)).participants.find((p) => p.id === recipient)!
+          .netMinor,
+      ).toBe("-200");
+      await command(a, g, {
+        kind: "settlement_transition",
+        settlementId: reverseDue.subjectId,
+        expectedSettlementVersion: 2,
+        operation: "cancel",
+        reason: "Cancelled disputed report",
+      });
+      expect(
+        (await getGroup(a, g)).ledger!.settlements.find(
+          (s) => s.id === reverseDue.subjectId,
+        )!.events,
+      ).toHaveLength(3);
+    }));
+  it("requires explicit manual limitations and records a refund after settlement without changing the original bill", async () =>
+    fixture(async (a, b, _o, g) => {
+      const manual = await command(a, g, {
+        kind: "manual",
+        displayName: "Manual participant",
+      });
+      let d = await getGroup(a, g);
+      const own = d.group.participantId;
+      const expense = await command(a, g, {
+        kind: "bill",
+        bill: {
+          description: "Manual payer",
+          expenseDate: "2026-10-10",
+          totalMinor: "2000",
+          splitMethod: "equal",
+          contributions: [
+            { participantId: manual.subjectId, amountMinor: "2000" },
+          ],
+          shares: [{ participantId: own }, { participantId: manual.subjectId }],
+        },
+      });
+      const report = await command(a, g, {
+        kind: "settlement",
+        recipientId: manual.subjectId,
+        mode: "full",
+        amountMinor: "1000",
+        paymentDate: "2026-10-15",
+        allocations: [],
+      });
+      const transition = {
+        kind: "settlement_transition",
+        settlementId: report.subjectId,
+        expectedSettlementVersion: 1,
+        operation: "manual_confirm",
+        reason: "Owner recorded manual cash receipt",
+      };
+      await expect(command(a, g, transition)).rejects.toThrow();
+      await command(a, g, { ...transition, acknowledgeManualLimitation: true });
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === own)!.netMinor).toBe("0");
+      const rev = (await getBill(a, g, expense.subjectId))[0]!;
+      await command(a, g, {
+        kind: "refund",
+        expenseId: expense.subjectId,
+        expectedRevisionId: rev.revisionId,
+        totalMinor: "600",
+        refundDate: "2026-10-15",
+        reason: "Partial merchant refund",
+        received: [{ participantId: manual.subjectId, amountMinor: "600" }],
+        shareCredits: [
+          { participantId: own, amountMinor: "300" },
+          { participantId: manual.subjectId, amountMinor: "300" },
+        ],
+      });
+      d = await getGroup(a, g);
+      expect(d.participants.find((p) => p.id === own)!.netMinor).toBe("300");
+      expect(d.ledger!.settlements[0]!.state).toBe("confirmed");
+      expect(d.ledger!.settlements[0]!.events[1]!.confirmationType).toBe(
+        "manual_entry",
+      );
+      expect((await getBill(a, g, expense.subjectId))[0]!.totalMinor).toBe(
+        "2000",
+      );
+      const accepted = await invite(a, b, g, manual.subjectId);
+      expect(accepted.review.netMinor).toBe("-300");
+      expect(accepted.review.refunds).toHaveLength(1);
+      expect(accepted.review.settlements[0]!.events[1]!.confirmationType).toBe(
+        "manual_entry",
+      );
+      expect((await getGroup(b, g)).group.participantId).toBe(manual.subjectId);
+    }));
+});
 describe("V2-I focused group and private boundary", () => {
   it(
     "replays concurrent group creation and rejects an existing group under a new creation command",
@@ -243,10 +1592,10 @@ describe("V2-I focused group and private boundary", () => {
     try {
       const tables = (
         await c.query(
-          "SELECT n.nspname,c.relname,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND (n.nspname='sharing' OR n.nspname='finance' AND c.relname IN('group_ledger_binding','private_group_link','private_group_link_revision') OR n.nspname='audit' AND c.relname='group_revision')",
+          "SELECT n.nspname,c.relname,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND (n.nspname='sharing' OR n.nspname='finance' AND c.relname IN('group_ledger_binding','private_group_link','private_group_link_revision','private_group_review') OR n.nspname='audit' AND c.relname='group_revision' OR n.nspname='ops' AND c.relname='shared_bundle_proof')",
         )
       ).rows;
-      expect(tables).toHaveLength(15);
+      expect(tables).toHaveLength(22);
       for (const t of tables) {
         expect(t.relrowsecurity && t.relforcerowsecurity).toBe(true);
         for (const role of ["auth_adapter", "queue_broker", "worker_domain"])

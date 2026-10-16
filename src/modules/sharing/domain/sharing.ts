@@ -24,7 +24,7 @@ export const minor = z
       BigInt(v) <= 9223372036854775807n,
     "Amount exceeds PostgreSQL bigint.",
   );
-const positive = minor.pipe(
+export const positive = minor.pipe(
   z.string().refine((v) => BigInt(v) > 0n, "Amount must be positive."),
 );
 const command = {
@@ -106,6 +106,65 @@ export const groupCommandSchema = z.discriminatedUnion("kind", [
       reason: z.string().trim().min(1).max(2000).nullable().default(null),
     })
     .strict(),
+  z
+    .object({
+      ...command,
+      kind: z.literal("settlement"),
+      recipientId: id,
+      mode: z.enum(["full", "custom", "selected"]),
+      amountMinor: positive,
+      paymentDate: z.string().refine(isCalendarDate),
+      note: z.string().trim().max(2000).nullable().default(null),
+      allocations: z
+        .array(
+          z
+            .object({
+              expenseId: id,
+              sourceRevisionId: id,
+              amountMinor: positive,
+            })
+            .strict(),
+        )
+        .max(100),
+      acknowledgeAdvance: z.boolean().default(false),
+    })
+    .strict(),
+  z
+    .object({
+      ...command,
+      kind: z.literal("settlement_transition"),
+      settlementId: id,
+      expectedSettlementVersion: z.number().int().positive(),
+      operation: z.enum([
+        "confirm",
+        "dispute",
+        "cancel",
+        "reverse",
+        "manual_confirm",
+      ]),
+      reason: z.string().trim().min(1).max(2000),
+      acknowledgeManualLimitation: z.boolean().default(false),
+    })
+    .strict(),
+  z
+    .object({
+      ...command,
+      kind: z.literal("refund"),
+      expenseId: id,
+      expectedRevisionId: id,
+      totalMinor: positive,
+      refundDate: z.string().refine(isCalendarDate),
+      reason: z.string().trim().min(1).max(2000),
+      received: z
+        .array(z.object({ participantId: id, amountMinor: positive }).strict())
+        .min(1)
+        .max(100),
+      shareCredits: z
+        .array(z.object({ participantId: id, amountMinor: positive }).strict())
+        .min(1)
+        .max(100),
+    })
+    .strict(),
 ]);
 export type GroupCommand = z.infer<typeof groupCommandSchema>;
 export type Bill = z.infer<typeof billSchema>;
@@ -152,7 +211,8 @@ export function allocateBill(raw: z.input<typeof billSchema>) {
 
 export function sharingEnabled() {
   return (
-    process.env.SHARED_EXPENSES_PREVIEW_ENABLED === "true" &&
-    ["local", "test"].includes(process.env.PMP_DEPLOYMENT_ENV ?? "local")
+    process.env.SHARED_EXPENSES_ENABLED === "true" ||
+    (process.env.SHARED_EXPENSES_PREVIEW_ENABLED === "true" &&
+      ["local", "test"].includes(process.env.PMP_DEPLOYMENT_ENV ?? "local"))
   );
 }

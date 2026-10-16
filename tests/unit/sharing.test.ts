@@ -82,7 +82,8 @@ describe("shared bill arithmetic and release boundary", () => {
       }).success,
     ).toBe(false);
   });
-  it("keeps the incomplete domain disabled by default and in deployed environments", () => {
+  it("keeps the legacy preview local and requires explicit full-domain opt-in for deployed environments", () => {
+    vi.stubEnv("SHARED_EXPENSES_ENABLED", "false");
     vi.stubEnv("SHARED_EXPENSES_PREVIEW_ENABLED", "false");
     expect(sharingEnabled()).toBe(false);
     vi.stubEnv("SHARED_EXPENSES_PREVIEW_ENABLED", "true");
@@ -91,6 +92,9 @@ describe("shared bill arithmetic and release boundary", () => {
     for (const env of ["staging", "production"]) {
       vi.stubEnv("PMP_DEPLOYMENT_ENV", env);
       expect(sharingEnabled()).toBe(false);
+      vi.stubEnv("SHARED_EXPENSES_ENABLED", "true");
+      expect(sharingEnabled()).toBe(true);
+      vi.stubEnv("SHARED_EXPENSES_ENABLED", "false");
     }
   });
 });

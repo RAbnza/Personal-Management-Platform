@@ -44,6 +44,8 @@ const actionKindContent: Record<string, ActionKindContent> = {
   debt_payment: { label: "Debt payment", icon: ArrowUpRight },
   refund: { label: "Purchase / fee refund", icon: ArrowDownLeft },
   balance_adjustment: { label: "Balance adjustment", icon: Landmark },
+  group_effect: { label: "Shared payment or refund", icon: ArrowRightLeft },
+  group_adoption: { label: "Shared expense", icon: ReceiptText },
 
   transfer: {
     label: "Transfer",

@@ -10,6 +10,7 @@ import {
   jsonb,
   unique,
   uniqueIndex,
+  index,
   check,
   foreignKey,
 } from "drizzle-orm/pg-core";
@@ -207,6 +208,7 @@ export const sharedExpense = sharingSchema.table(
   (t) => [
     unique("uq_expense_scope").on(t.groupId, t.id),
     unique("uq_expense_receipt").on(t.groupId, t.originalCommandReceiptId),
+    index("ix_expense_current_revision").on(t.groupId, t.currentRevisionId),
     foreignKey({
       name: "fk_expense_creator",
       columns: [t.groupId, t.createdByParticipantId],

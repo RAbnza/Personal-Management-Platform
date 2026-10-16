@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { withDomainTransaction, type ScopedTransaction } from "@/platform/db";
 import { hashCommandPayload } from "@/modules/core/domain/command";
 import { assertRecentAuthentication } from "@/modules/core/services/workspace-lifecycle";
+import { executeGroupOperation } from "./operations";
 import {
   allocateBill,
   groupCommandSchema,
@@ -24,11 +25,21 @@ export type GroupResult = {
   version: number;
   subjectId: string;
 };
-export async function lockGroup(t: ScopedTransaction, groupId: string) {
+export async function lockGroup(
+  t: ScopedTransaction,
+  groupId: string,
+  privateRead = false,
+) {
   await t.db.execute(sql`SET LOCAL lock_timeout='5s'`);
   await t.db.execute(sql`SET LOCAL statement_timeout='15s'`);
+  if (privateRead)
+    await t.db.execute(
+      sql`SELECT sharing.lock_private_group(${groupId}::uuid)`,
+    );
   const locked = await t.db.execute(
-    sql`SELECT id FROM sharing.expense_group WHERE id=${groupId}::uuid FOR UPDATE`,
+    privateRead
+      ? sql`SELECT id FROM sharing.expense_group WHERE id=${groupId}::uuid`
+      : sql`SELECT id FROM sharing.expense_group WHERE id=${groupId}::uuid FOR UPDATE`,
   );
   if (!locked.rows[0]) throw new SharingUnavailableError();
   const profile = await t.db.execute(
@@ -131,9 +142,19 @@ export async function executeGroupCommand(
   if (c.kind === "create" && !createdHere) throw new SharingConflictError();
   if (c.kind !== "create" && c.expectedVersion !== group.version)
     throw new SharingConflictError();
-  if (!["create", "bill", "membership"].includes(c.kind) && !group.owner)
+  if (
+    ![
+      "create",
+      "bill",
+      "membership",
+      "settlement",
+      "settlement_transition",
+      "refund",
+    ].includes(c.kind) &&
+    !group.owner
+  )
     throw new SharingUnavailableError();
-  if (c.kind !== "create" && c.kind !== "bill")
+  if (["settings", "manual", "membership", "invite", "revoke"].includes(c.kind))
     await assertRecentAuthentication(t, actor.sessionId);
   if (group.archived && c.kind !== "settings" && c.kind !== "membership")
     throw new RangeError("Archived groups are read only.");
@@ -152,7 +173,16 @@ export async function executeGroupCommand(
     await t.db.execute(
       sql`UPDATE sharing.expense_group SET version=version+1 WHERE id=${c.groupId}::uuid`,
     );
-  if (c.kind === "manual") {
+  if (
+    c.kind === "settlement" ||
+    c.kind === "settlement_transition" ||
+    c.kind === "refund"
+  ) {
+    const result = await executeGroupOperation(t, c, group, receipt);
+    subjectId = result.subjectId;
+    subjectKind = result.subjectKind;
+    snapshot.after = result.after;
+  } else if (c.kind === "manual") {
     subjectId = randomUUID();
     subjectKind = "participant";
     snapshot.after = {};

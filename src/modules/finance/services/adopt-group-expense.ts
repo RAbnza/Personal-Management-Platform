@@ -43,6 +43,10 @@ import {
 } from "../repositories/financial-correction-repository";
 import { reviewCashChanges } from "../repositories/negative-balance-repository";
 import { MAX_FINANCIAL_COMPONENT_MINOR } from "@/shared/money";
+import {
+  readRetainedSourceReview,
+  readPrivateLinkAmounts,
+} from "./review-group-source";
 
 export const adoptionSchema = z
   .object({
@@ -55,6 +59,7 @@ export const adoptionSchema = z
     approved: z.literal(true),
     categoryId: id.nullable().default(null),
     funding: z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("keep") }).strict(),
       z.object({ kind: z.literal("none") }).strict(),
       z.object({ kind: z.literal("cash"), accountId: id }).strict(),
       z
@@ -74,6 +79,7 @@ export const adoptionSchema = z
         .strict(),
     ]),
     acknowledgeNegativeBalance: z.boolean().default(false),
+    acknowledgeFundingCorrection: z.boolean().optional(),
   })
   .strict();
 export type AdoptionInput = z.infer<typeof adoptionSchema>;
@@ -96,7 +102,16 @@ async function source(
       sql`SELECT r.id AS "revisionId",r.description,r.expense_date::text AS "expenseDate",p.paid::text AS "paidMinor",s.consumed::text AS "shareMinor",encode(sha256(convert_to(jsonb_build_object('revisionId',r.id,'paidMinor',p.paid::text,'shareMinor',s.consumed::text)::text,'UTF8')),'hex') AS "sourceHash" FROM sharing.shared_expense e JOIN sharing.expense_revision r ON r.group_id=e.group_id AND r.id=e.current_revision_id AND r.state='finalized' CROSS JOIN LATERAL(SELECT coalesce(sum(amount_minor::numeric),0) paid FROM sharing.payer_contribution WHERE group_id=e.group_id AND expense_revision_id=r.id AND participant_id=${participantId}::uuid) p CROSS JOIN LATERAL(SELECT coalesce(sum(amount_minor::numeric),0) consumed FROM sharing.participant_share WHERE group_id=e.group_id AND expense_revision_id=r.id AND participant_id=${participantId}::uuid) s WHERE e.group_id=${groupId}::uuid AND e.id=${expenseId}::uuid`,
     )
   ).rows[0];
-  if (!row || (BigInt(row.paidMinor) === 0n && BigInt(row.shareMinor) === 0n))
+  if (!row) throw new SharingUnavailableError();
+  if (
+    BigInt(row.paidMinor) === 0n &&
+    BigInt(row.shareMinor) === 0n &&
+    !(
+      await t.db.execute(
+        sql`SELECT id FROM finance.private_group_link WHERE group_id=${groupId}::uuid AND expense_id=${expenseId}::uuid`,
+      )
+    ).rows.length
+  )
     throw new SharingUnavailableError();
   return row;
 }
@@ -110,7 +125,7 @@ export async function getAdoptionPreview(
   return withDomainTransaction(
     actor,
     async (t) => {
-      const group = await lockGroup(t, groupId);
+      const group = await lockGroup(t, groupId, true);
       await lockActiveFinancialWorkspace(t, actor.workspaceId);
       const s = await source(t, groupId, expenseId, group.participantId);
       const financialRevision = (
@@ -127,8 +142,9 @@ export async function getAdoptionPreview(
             acceptedSourceHash: string;
             actionRevisionId: string;
             currentActionRevisionId: string;
+            linkRevisionId: string;
           }>(
-            sql`SELECT l.id,l.action_id AS "actionId",r.source_expense_revision_id AS "acceptedSourceRevisionId",r.accepted_source_hash AS "acceptedSourceHash",r.action_revision_id AS "actionRevisionId",a.current_revision_id AS "currentActionRevisionId" FROM finance.private_group_link l JOIN finance.private_group_link_revision r ON r.workspace_id=l.workspace_id AND r.id=l.current_link_revision_id JOIN finance.financial_action a ON a.workspace_id=l.workspace_id AND a.id=l.action_id WHERE l.workspace_id=${actor.workspaceId}::uuid AND l.group_id=${groupId}::uuid AND l.expense_id=${expenseId}::uuid`,
+            sql`SELECT l.id,r.id AS "linkRevisionId",l.action_id AS "actionId",r.source_expense_revision_id AS "acceptedSourceRevisionId",r.accepted_source_hash AS "acceptedSourceHash",r.action_revision_id AS "actionRevisionId",a.current_revision_id AS "currentActionRevisionId" FROM finance.private_group_link l JOIN finance.private_group_link_revision r ON r.workspace_id=l.workspace_id AND r.id=l.current_link_revision_id JOIN finance.financial_action a ON a.workspace_id=l.workspace_id AND a.id=l.action_id WHERE l.workspace_id=${actor.workspaceId}::uuid AND l.group_id=${groupId}::uuid AND l.expense_id=${expenseId}::uuid`,
           )
         ).rows[0] ?? null;
       const net = BigInt(s.paidMinor) - BigInt(s.shareMinor);
@@ -140,6 +156,15 @@ export async function getAdoptionPreview(
         receivableMinor: (net > 0n ? net : 0n).toString(),
         payableMinor: (net < 0n ? -net : 0n).toString(),
         link,
+        review: link
+          ? await readRetainedSourceReview(
+              t,
+              link.id,
+              link.linkRevisionId,
+              s.sourceHash,
+            )
+          : null,
+        retainedAmounts: link ? await readPrivateLinkAmounts(t, link.id) : null,
         needsPrivateCorrection:
           !!link &&
           (link.acceptedSourceRevisionId !== s.revisionId ||
@@ -153,7 +178,7 @@ export async function getAdoptionPreview(
   );
 }
 export type AdoptionPreview = Awaited<ReturnType<typeof getAdoptionPreview>>;
-async function ensureBinding(
+export async function ensureBinding(
   t: ScopedTransaction,
   actor: SharingActor,
   groupId: string,
@@ -184,16 +209,21 @@ export async function adoptGroupExpenseInTransaction(
   raw: unknown,
 ) {
   const c = adoptionSchema.parse(raw),
-    g = await lockGroup(t, c.groupId);
+    g = await lockGroup(t, c.groupId, true);
   if (!g.participantId) throw new SharingUnavailableError();
   // Mandatory global order: group -> private profile/workspace. Never invoke a
   // standalone private command before this lock in an integrated workflow.
   await lockActiveFinancialWorkspace(t, actor.workspaceId);
+  const { acknowledgeFundingCorrection, ...originalIntent } = c;
   const receipt = await claimFinancialCommandReceipt(t, {
     workspaceId: actor.workspaceId,
     clientCommandId: c.clientCommandId,
     commandType: "finance.adopt_group_expense",
-    payloadHash: hashFinancialCommandPayload(c),
+    payloadHash: hashFinancialCommandPayload(
+      acknowledgeFundingCorrection === undefined
+        ? originalIntent
+        : { ...originalIntent, acknowledgeFundingCorrection },
+    ),
   });
   if (receipt.kind === "replay") return receipt.result;
   const s = await source(t, c.groupId, c.expenseId, g.participantId);
@@ -210,15 +240,20 @@ export async function adoptGroupExpenseInTransaction(
     throw new SharingConflictError(
       "The group source or private ledger changed. Review the preview again.",
     );
-  if (
-    (
-      await t.db.execute(
-        sql`SELECT id FROM finance.private_group_link WHERE workspace_id=${actor.workspaceId}::uuid AND group_id=${c.groupId}::uuid AND expense_id=${c.expenseId}::uuid`,
-      )
-    ).rows[0]
-  )
-    throw new SharingConflictError(
-      "This bill is already adopted. Retained private evidence needs an explicit correction when the group source changes.",
+  const existingLink = (
+    await t.db.execute<{
+      id: string;
+      revisionId: string;
+      revisionNo: number;
+      actionId: string;
+      paidMinor: string;
+    }>(
+      sql`SELECT l.id,l.current_link_revision_id AS "revisionId",l.action_id AS "actionId",r.revision_no AS "revisionNo",r.paid_minor::text AS "paidMinor" FROM finance.private_group_link l JOIN finance.private_group_link_revision r ON r.workspace_id=l.workspace_id AND r.id=l.current_link_revision_id WHERE l.workspace_id=${actor.workspaceId}::uuid AND l.group_id=${c.groupId}::uuid AND l.expense_id=${c.expenseId}::uuid`,
+    )
+  ).rows[0];
+  if (existingLink ? c.funding.kind === "existing" : c.funding.kind === "keep")
+    throw new RangeError(
+      "Choose retained funding only when reviewing an existing private adoption.",
     );
   const paid = BigInt(s.paidMinor),
     share = BigInt(s.shareMinor),
@@ -230,7 +265,7 @@ export async function adoptGroupExpenseInTransaction(
     throw new RangeError(
       "The group bill is valid, but this allocation exceeds the existing private financial posting limit.",
     );
-  if ((paid === 0n) !== (c.funding.kind === "none"))
+  if (!existingLink && (paid === 0n) !== (c.funding.kind === "none"))
     throw new RangeError(
       "Select funding only for an actual payer contribution.",
     );
@@ -254,7 +289,105 @@ export async function adoptGroupExpenseInTransaction(
     actionRevisionId: string = randomUUID(),
     revisionNo = 1;
   let before: Record<string, unknown> | null = null;
-  if (c.funding.kind === "existing") {
+  if (existingLink) {
+    const current = await readCurrentFinancialAction(
+      t,
+      actor.workspaceId,
+      existingLink.actionId,
+    );
+    if (c.funding.kind === "keep" && existingLink.paidMinor !== s.paidMinor)
+      throw new RangeError(
+        "The corrected contribution changes actual funding. Resolve the actual cash/card evidence before adopting this correction; retained funding cannot invent a payment.",
+      );
+    const detail = (
+      await t.db.execute<{
+        ledger: string;
+        postingDate: string | null;
+        providerReference: string | null;
+        cardId: string | null;
+      }>(
+        sql`SELECT d.funding_ledger_account_id AS ledger,d.card_posting_date::text AS "postingDate",d.card_provider_reference AS "providerReference",c.id AS "cardId" FROM finance.purchase_detail d LEFT JOIN finance.credit_card c ON c.workspace_id=d.workspace_id AND c.liability_ledger_account_id=d.funding_ledger_account_id WHERE d.workspace_id=${actor.workspaceId}::uuid AND d.action_revision_id=${current.actionRevisionId}::uuid`,
+      )
+    ).rows[0];
+    if (c.funding.kind === "keep") {
+      actionKind = current.actionKind as typeof actionKind;
+      fundingLedger = detail?.ledger ?? null;
+      cardId = detail?.cardId ?? null;
+      postingDate = detail?.postingDate ?? null;
+      providerReference = detail?.providerReference ?? null;
+    } else {
+      if (!c.acknowledgeFundingCorrection)
+        throw new RangeError(
+          "Explicitly approve correcting the original actual funding evidence.",
+        );
+      if (
+        paid === 0n
+          ? c.funding.kind !== "none"
+          : !["cash", "card"].includes(c.funding.kind)
+      )
+        throw new RangeError(
+          "Choose corrected actual funding, or none for zero contribution.",
+        );
+      if (c.funding.kind === "cash") {
+        const account = await resolveFundingFinancialAccount(t, {
+          workspaceId: actor.workspaceId,
+          accountId: c.funding.accountId,
+        });
+        if (
+          account.archived ||
+          account.currency !== "PHP" ||
+          account.openingCutoffDate >= s.expenseDate
+        )
+          throw new RangeError(
+            "Choose an active PHP account with an earlier cutoff.",
+          );
+        fundingLedger = account.ledgerAccountId;
+        actionKind = "expense";
+        const delta =
+          -paid +
+          (detail?.ledger === fundingLedger
+            ? BigInt(existingLink.paidMinor)
+            : 0n);
+        await reviewCashChanges(t, {
+          workspaceId: actor.workspaceId,
+          acknowledgeNegativeBalance: c.acknowledgeNegativeBalance,
+          changes: [
+            {
+              accountId: c.funding.accountId,
+              effectiveDate: s.expenseDate,
+              signedMinor: delta,
+            },
+          ],
+        });
+      } else if (c.funding.kind === "card") {
+        const card = await resolvePurchaseCard(
+          t,
+          actor.workspaceId,
+          c.funding.cardId,
+        );
+        if (card.archived || card.currency !== "PHP")
+          throw new RangeError("Choose an active PHP card.");
+        fundingLedger = card.ledgerAccountId;
+        cardId = c.funding.cardId;
+        postingDate = c.funding.postingDate;
+        providerReference = c.funding.providerReference;
+        actionKind = "card_purchase";
+      }
+    }
+    const replacement = await beginActionReplacement(t, {
+      ...actor,
+      receiptId: receipt.receiptId,
+      current,
+      reason: "Owner reviewed changed shared bill; retained actual funding",
+      actionKind,
+      void: paid === 0n && share === 0n,
+      effectiveDate: s.expenseDate,
+    });
+    actionId = replacement.actionId;
+    actionRevisionId = replacement.actionRevisionId;
+    revisionNo = replacement.revisionNo;
+    before = replacement.before;
+  } else if (c.funding.kind === "existing") {
     const current = await readCurrentFinancialAction(
       t,
       actor.workspaceId,
@@ -388,11 +521,12 @@ export async function adoptGroupExpenseInTransaction(
       cardProviderReference: providerReference,
     });
   const journalId = randomUUID(),
-    linkId = randomUUID(),
+    linkId = existingLink?.id ?? randomUUID(),
     linkRevisionId = randomUUID();
-  await t.db.execute(
-    sql`INSERT INTO finance.journal(id,workspace_id,action_id,action_revision_id,sequence_no,effective_date,currency,role) VALUES(${journalId}::uuid,${actor.workspaceId}::uuid,${actionId}::uuid,${actionRevisionId}::uuid,1,${s.expenseDate}::date,'PHP','economic')`,
-  );
+  if (paid !== 0n || share !== 0n)
+    await t.db.execute(
+      sql`INSERT INTO finance.journal(id,workspace_id,action_id,action_revision_id,sequence_no,effective_date,currency,role) VALUES(${journalId}::uuid,${actor.workspaceId}::uuid,${actionId}::uuid,${actionRevisionId}::uuid,1,${s.expenseDate}::date,'PHP','economic')`,
+    );
   let line = 0;
   for (const p of [
     {
@@ -413,13 +547,18 @@ export async function adoptGroupExpenseInTransaction(
       await t.db.execute(
         sql`INSERT INTO finance.posting(workspace_id,action_id,action_revision_id,journal_id,ledger_account_id,currency,line_no,amount_minor,category_id,expense_class,cash_flow_kind,cash_flow_direction) VALUES(${actor.workspaceId}::uuid,${actionId}::uuid,${actionRevisionId}::uuid,${journalId}::uuid,${p.ledger}::uuid,'PHP',${++line},${p.amount},${p.expense ? c.categoryId : null}::uuid,${p.expense ? "gross" : "none"},${p.cash ? "purchase" : "none"},${p.cash ? "out" : "none"})`,
       );
+  if (existingLink)
+    await t.db.execute(
+      sql`UPDATE finance.private_group_link SET current_link_revision_id=${linkRevisionId}::uuid WHERE workspace_id=${actor.workspaceId}::uuid AND id=${linkId}::uuid`,
+    );
+  else
+    await t.db.execute(
+      sql`INSERT INTO finance.private_group_link(id,workspace_id,group_id,participant_id,expense_id,action_id,current_link_revision_id) VALUES(${linkId}::uuid,${actor.workspaceId}::uuid,${c.groupId}::uuid,${g.participantId}::uuid,${c.expenseId}::uuid,${actionId}::uuid,${linkRevisionId}::uuid)`,
+    );
   await t.db.execute(
-    sql`INSERT INTO finance.private_group_link(id,workspace_id,group_id,participant_id,expense_id,action_id,current_link_revision_id) VALUES(${linkId}::uuid,${actor.workspaceId}::uuid,${c.groupId}::uuid,${g.participantId}::uuid,${c.expenseId}::uuid,${actionId}::uuid,${linkRevisionId}::uuid)`,
+    sql`INSERT INTO finance.private_group_link_revision(id,workspace_id,link_id,group_id,participant_id,expense_id,source_expense_revision_id,action_id,action_revision_id,revision_no,previous_link_revision_id,accepted_source_hash,adoption_kind,paid_minor,share_minor,consent_json) VALUES(${linkRevisionId}::uuid,${actor.workspaceId}::uuid,${linkId}::uuid,${c.groupId}::uuid,${g.participantId}::uuid,${c.expenseId}::uuid,${s.revisionId}::uuid,${actionId}::uuid,${actionRevisionId}::uuid,${(existingLink?.revisionNo ?? 0) + 1},${existingLink?.revisionId ?? null}::uuid,${s.sourceHash},${c.funding.kind === "existing" || existingLink ? "existing_action_reclassification" : "new_posting"},${paid},${share},${JSON.stringify({ approved: true, sourceHash: s.sourceHash })}::jsonb)`,
   );
-  await t.db.execute(
-    sql`INSERT INTO finance.private_group_link_revision(id,workspace_id,link_id,group_id,participant_id,expense_id,source_expense_revision_id,action_id,action_revision_id,revision_no,accepted_source_hash,adoption_kind,paid_minor,share_minor,consent_json) VALUES(${linkRevisionId}::uuid,${actor.workspaceId}::uuid,${linkId}::uuid,${c.groupId}::uuid,${g.participantId}::uuid,${c.expenseId}::uuid,${s.revisionId}::uuid,${actionId}::uuid,${actionRevisionId}::uuid,1,${s.sourceHash},${c.funding.kind === "existing" ? "existing_action_reclassification" : "new_posting"},${paid},${share},${JSON.stringify({ approved: true, sourceHash: s.sourceHash })}::jsonb)`,
-  );
-  if (cardId)
+  if (cardId || existingLink)
     await createCardRevisionActivity(t, {
       workspaceId: actor.workspaceId,
       actionId,
@@ -450,7 +589,8 @@ export async function adoptGroupExpenseInTransaction(
     recordedByUserId: actor.userId,
     requestId: actor.requestId ?? null,
   });
-  await finalizeJournal(t, { workspaceId: actor.workspaceId, journalId });
+  if (paid !== 0n || share !== 0n)
+    await finalizeJournal(t, { workspaceId: actor.workspaceId, journalId });
   await finalizeActionRevision(t, {
     workspaceId: actor.workspaceId,
     actionRevisionId,
@@ -498,7 +638,7 @@ export function recordIntegratedSharedExpense(
     );
   return withDomainTransaction(actor, async (t) => {
     const groupResult = await executeGroupCommand(t, actor, c.groupCommand);
-    const g = await lockGroup(t, groupResult.groupId);
+    const g = await lockGroup(t, groupResult.groupId, true);
     await lockActiveFinancialWorkspace(t, actor.workspaceId);
     const accepted = (
       await t.db.execute<{ revisionId: string; sourceHash: string }>(

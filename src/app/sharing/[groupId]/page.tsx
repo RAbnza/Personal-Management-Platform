@@ -4,6 +4,7 @@ import { sharingActor } from "../_actor";
 import { getGroup } from "@/modules/sharing/services/read-groups";
 import { id } from "@/modules/sharing/domain/sharing";
 import { GroupAdmin } from "@/components/sharing/group-admin";
+import { SettlementPanel } from "@/components/sharing/settlements";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 const money = (v: string) => formatMoneyMinorUnits("PHP", v);
 export default async function GroupPage({
@@ -23,16 +24,49 @@ export default async function GroupPage({
   const data = await getGroup(await sharingActor(), groupId, cursor),
     { group } = data;
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 break-words">
       <h1 className="text-2xl font-semibold">
         {group.name}
         {group.archived ? " · Archived" : ""}
       </h1>
       <p>
         {group.active
-          ? "Current bill balances. Positive means gets back; negative means owes."
+          ? "Confirmed current balances after refunds and confirmed settlements. Positive means gets back; negative means owes."
           : "Historical access: balances below cover only your visible bills and their current revisions. Unrelated later activity is hidden."}
       </p>
+      <a
+        href={`/api/v1/sharing/export?groupId=${group.id}`}
+        className="inline-flex min-h-11 items-center text-link underline"
+      >
+        Download authorized group history (JSON)
+      </a>
+      {data.ledger && (
+        <p>
+          Gross group spending{" "}
+          {money(
+            data.ledger.sources
+              .reduce((n, p) => n + BigInt(p.shareMinor), 0n)
+              .toString(),
+          )}{" "}
+          · Share refunds{" "}
+          {money(
+            data.ledger.sources
+              .reduce((n, p) => n + BigInt(p.refundShareMinor), 0n)
+              .toString(),
+          )}{" "}
+          · Net group spending{" "}
+          {money(
+            data.ledger.sources
+              .reduce(
+                (n, p) => n + BigInt(p.shareMinor) - BigInt(p.refundShareMinor),
+                0n,
+              )
+              .toString(),
+          )}
+          . These group amounts are separate from each person’s private adopted
+          spending.
+        </p>
+      )}
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">People and bill positions</h2>
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -52,6 +86,35 @@ export default async function GroupPage({
               <p>
                 Paid {money(p.paidMinor)} · Share {money(p.shareMinor)}
               </p>
+              {data.ledger && (
+                <p>
+                  Confirmed sent{" "}
+                  {money(
+                    data.ledger.settlements
+                      .filter(
+                        (s) => s.state === "confirmed" && s.senderId === p.id,
+                      )
+                      .reduce((n, s) => n + BigInt(s.amountMinor), 0n)
+                      .toString(),
+                  )}{" "}
+                  · Confirmed received{" "}
+                  {money(
+                    data.ledger.settlements
+                      .filter(
+                        (s) =>
+                          s.state === "confirmed" && s.recipientId === p.id,
+                      )
+                      .reduce((n, s) => n + BigInt(s.amountMinor), 0n)
+                      .toString(),
+                  )}{" "}
+                  · Projected net after pending reports{" "}
+                  {money(
+                    data.ledger.projected.positions.find(
+                      (s) => s.participantId === p.id,
+                    )?.netMinor ?? "0",
+                  )}
+                </p>
+              )}
               <p className="font-semibold">
                 {BigInt(p.netMinor) > 0n
                   ? "Gets back "
@@ -104,6 +167,7 @@ export default async function GroupPage({
           </Link>
         )}
       </section>
+      <SettlementPanel data={data} />
       <GroupAdmin data={data} />
     </div>
   );

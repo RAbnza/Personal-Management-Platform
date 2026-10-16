@@ -83,14 +83,45 @@ export function InvitationReviewForm() {
             <ol className="space-y-3">
               {review.history.map((h) => (
                 <li key={h.revisionId}>
-                  {h.date} ? {h.description} ? Revision {h.revisionNo}
+                  {h.date} · {h.description} · Revision {h.revisionNo}
                   <p>
-                    Paid {money(h.paidMinor)} ? Share {money(h.shareMinor)}
+                    Paid {money(h.paidMinor)} · Share {money(h.shareMinor)}
                   </p>
                   {h.reason && <p>{h.reason}</p>}
                 </li>
               ))}
             </ol>
+          </details>
+          <details>
+            <summary className="min-h-11 cursor-pointer">
+              Review recorded refunds and settlements
+            </summary>
+            <ul>
+              {review.refunds?.map((r) => (
+                <li key={r.id}>
+                  {r.date} · Refund received {money(r.receivedMinor)} · Share
+                  credit {money(r.shareCreditMinor)} · {r.reason}
+                </li>
+              ))}
+              {review.settlements?.map((s) => (
+                <li key={s.id}>
+                  {s.date} ·{" "}
+                  {s.senderId === review.claimParticipantId
+                    ? "Sent"
+                    : "Received"}{" "}
+                  {money(s.amountMinor)} · {s.state} · Advance{" "}
+                  {money(s.advanceMinor)}
+                  <ul>
+                    {s.events.map((e) => (
+                      <li key={e.version}>
+                        {e.fromState ?? "New"} → {e.toState} ·{" "}
+                        {e.confirmationType} · {e.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
           </details>
           <CommandForm
             url="/api/v1/sharing/invitations"

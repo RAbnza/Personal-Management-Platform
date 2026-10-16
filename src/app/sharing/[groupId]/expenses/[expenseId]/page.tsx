@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sharingActor } from "../../../_actor";
 import { getGroup, getBill } from "@/modules/sharing/services/read-groups";
-import { id } from "@/modules/sharing/domain/sharing";
+import { id, SharingUnavailableError } from "@/modules/sharing/domain/sharing";
 import { getPrivateSharingSetup } from "@/modules/finance/services/private-sharing-setup";
 import { getAdoptionPreview } from "@/modules/finance/services/adopt-group-expense";
 import { SharedBillForm } from "@/components/sharing/bill-form";
 import { AdoptionPanel } from "@/components/sharing/adoption-panel";
+import { RefundPanel } from "@/components/sharing/settlements";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 export default async function BillPage({
   params,
@@ -23,23 +24,17 @@ export default async function BillPage({
       getPrivateSharingSetup(actor),
     ]),
     current = history[0]!;
-  const involved =
-    current.contributions.some(
-      (p) => p.participantId === data.group.participantId,
-    ) ||
-    current.shares.some(
-      (p) =>
-        p.participantId === data.group.participantId &&
-        BigInt(p.amountMinor) > 0n,
-    );
-  const preview = involved
-    ? await getAdoptionPreview(actor, groupId, expenseId)
-    : null;
+  const preview = await getAdoptionPreview(actor, groupId, expenseId).catch(
+    (e) => {
+      if (e instanceof SharingUnavailableError) return null;
+      throw e;
+    },
+  );
   const name = (id: string) =>
     data.participants.find((p) => p.id === id)?.displayName ??
     "Historical participant";
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 break-words">
       <h1 className="text-2xl font-semibold">{current.description}</h1>
       <Link href={`/sharing/${groupId}`} className="text-link underline">
         Back to group
@@ -76,7 +71,9 @@ export default async function BillPage({
               </li>
             ))}
           </ul>
-          <h3 className="font-semibold">Bill positions</h3>
+          <h3 className="font-semibold">
+            Bill positions before refunds and settlements
+          </h3>
           <ul>
             {b.positions.map((p) => (
               <li key={p.participantId}>
@@ -90,6 +87,64 @@ export default async function BillPage({
           {b.notes && <p className="whitespace-pre-wrap">{b.notes}</p>}
         </section>
       ))}
+      <RefundPanel
+        data={data}
+        expenseId={expenseId}
+        revisionId={current.revisionId}
+        creatorId={current.creatorId}
+      />
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">
+          Settlement allocations and remaining source positions
+        </h2>
+        <p>
+          These positions explain this bill after refunds and confirmed
+          allocations. Reciprocal obligations on other bills may reduce the
+          relationship amount due; use the group’s confirmed relationship
+          balance before paying.
+        </p>
+        <ul>
+          {data.participants.map((p) => {
+            const n = (data.ledger?.edges ?? [])
+              .filter((e) => e.expenseId === expenseId)
+              .reduce(
+                (n, e) =>
+                  n +
+                  (e.recipientId === p.id
+                    ? BigInt(e.amountMinor)
+                    : e.senderId === p.id
+                      ? -BigInt(e.amountMinor)
+                      : 0n),
+                0n,
+              );
+            return n !== 0n ? (
+              <li key={p.id}>
+                {p.displayName}: {formatMoneyMinorUnits("PHP", n.toString())}
+              </li>
+            ) : null;
+          })}
+        </ul>
+        <ul>
+          {data.ledger?.settlements
+            .filter((s) => s.allocations.some((a) => a.expenseId === expenseId))
+            .map((s) => (
+              <li key={s.id}>
+                <Link
+                  className="text-link underline"
+                  href={`/sharing/${groupId}#settlement-${s.id}`}
+                >
+                  {s.paymentDate} · {name(s.senderId)} → {name(s.recipientId)} ·{" "}
+                  {s.state} ·{" "}
+                  {formatMoneyMinorUnits(
+                    "PHP",
+                    s.allocations.find((a) => a.expenseId === expenseId)!
+                      .amountMinor,
+                  )}
+                </Link>
+              </li>
+            ))}
+        </ul>
+      </section>
       {preview && <AdoptionPanel preview={preview} setup={setup} />}
       {data.group.active &&
         !data.group.archived &&

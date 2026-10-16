@@ -18,6 +18,27 @@ import { graphRegistry } from "../domain/graph-registry";
 import { previewDigest } from "../domain/csv-preview";
 import { FileBoundaryError } from "@/modules/files/domain/supporting-file";
 const schemaFingerprint = previewDigest(graphRegistry);
+const sharedPrivateKinds = new Set([
+  "finance.group_ledger_binding",
+  "finance.private_group_link",
+  "finance.private_group_link_revision",
+  "finance.private_group_review",
+]);
+const legacyHRegistry = graphRegistry.filter(
+  (d) => !sharedPrivateKinds.has(d.kind),
+);
+const legacyHFingerprint = previewDigest(legacyHRegistry);
+const hasSharedPrivateEvidence = (bundle: {
+  entities: { kind: string; records: Record<string, unknown>[] }[];
+}) =>
+  bundle.entities.some(
+    (e) =>
+      (sharedPrivateKinds.has(e.kind) && e.records.length > 0) ||
+      (e.kind === "finance.action_revision" &&
+        e.records.some((r) =>
+          ["group_adoption", "group_effect"].includes(String(r.action_kind)),
+        )),
+  );
 const omittedFileFields = new Set([
   "object_key",
   "bucket_key",
@@ -56,16 +77,6 @@ export async function captureWorkspaceGraph(
   tx: ScopedTransaction,
   a: ScopedDatabaseContext,
 ) {
-  // Group-owned history cannot be reconstructed from a private workspace
-  // bundle. I7 must define that cross-scope restore contract before enabling it.
-  if (
-    (
-      await tx.db.execute(
-        sql`SELECT id FROM finance.group_ledger_binding LIMIT 1`,
-      )
-    ).rows.length
-  )
-    throw new FileBoundaryError("PORTABLE_SHARING_REVIEW_REQUIRED");
   const root = (
     await tx.db.execute<{
       currency: string;
@@ -123,6 +134,8 @@ export async function captureWorkspaceGraph(
       "operator mail/recovery metadata",
       "export artifacts",
       "attachment bytes",
+      "shared group authority and group-owned history",
+      "server-owned shared bundle provenance",
     ],
     notificationConsentRestored: false,
     calculationDefinitions: [
@@ -144,7 +157,10 @@ export function validateWorkspaceGraph(raw: unknown) {
         .object({
           format: z.literal("pmp-private-workspace-graph"),
           manifestVersion: z.literal(2),
-          schemaFingerprint: z.literal(schemaFingerprint),
+          schemaFingerprint: z.union([
+            z.literal(schemaFingerprint),
+            z.literal(legacyHFingerprint),
+          ]),
           sourceWorkspaceId: z.uuid(),
           generatedAt: z.iso.datetime(),
           financialRevision: z.string().regex(/^\d+$/),
@@ -187,6 +203,40 @@ export function validateWorkspaceGraph(raw: unknown) {
     throw new FileBoundaryError("PORTABLE_CHECKSUM_MISMATCH");
   if (Buffer.byteLength(JSON.stringify(basic)) > 10 * 1024 * 1024)
     throw new FileBoundaryError("PORTABLE_BYTE_LIMIT");
+  if (basic.manifest.schemaFingerprint === legacyHFingerprint) {
+    if (
+      basic.entities.length !== legacyHRegistry.length ||
+      basic.entities.some(
+        (e) => !legacyHRegistry.some((d) => d.kind === e.kind),
+      ) ||
+      basic.entities.some(
+        (e) =>
+          (e.kind === "finance.action_revision" &&
+            e.records.some((r) =>
+              ["group_adoption", "group_effect"].includes(
+                String(r.action_kind),
+              ),
+            )) ||
+          (e.kind === "finance.ledger_account" &&
+            e.records.some((r) =>
+              ["group_receivable_asset", "group_payable_liability"].includes(
+                String(r.kind),
+              ),
+            )),
+      )
+    )
+      throw new FileBoundaryError("PORTABLE_GRAPH_COVERAGE");
+    basic.entities.push(
+      ...graphRegistry
+        .filter((d) => sharedPrivateKinds.has(d.kind))
+        .map((d) => ({ kind: d.kind, records: [] })),
+    );
+    basic.manifest.schemaFingerprint = schemaFingerprint;
+    basic.checksumSha256 = previewDigest({
+      manifest: basic.manifest,
+      entities: basic.entities,
+    });
+  }
   if (
     basic.entities.length !== graphRegistry.length ||
     new Set(basic.entities.map((e) => e.kind)).size !== graphRegistry.length
@@ -506,6 +556,10 @@ export async function prepareWorkspaceExport(
       receiptId: r.receiptId,
       result,
     });
+    if (hasSharedPrivateEvidence(bundle))
+      await tx.db.execute(
+        sql`SELECT ops.bind_shared_bundle_export(${id}::uuid)`,
+      );
     return result;
   });
 }
@@ -528,7 +582,8 @@ export async function downloadWorkspaceExport(
       ).rows[0];
       if (!r?.fresh || !r.bundle_json)
         throw new FileBoundaryError("PORTABLE_EXPORT_EXPIRED");
-      const bundle = validateWorkspaceGraph(r.bundle_json);
+      validateWorkspaceGraph(r.bundle_json);
+      const bundle = r.bundle_json as WorkspaceBundle;
       if (bundle.checksumSha256 !== r.checksum_sha256)
         throw new FileBoundaryError("PORTABLE_CHECKSUM_MISMATCH");
       return bundle;
@@ -574,6 +629,17 @@ export async function previewWorkspaceRestore(
     if (receipt.kind === "replay") return receipt.result;
     const current = await captureWorkspaceGraph(tx, a),
       blockers: string[] = [];
+    if (hasSharedPrivateEvidence(bundle)) {
+      const trusted = (
+        await tx.db.execute<{ trusted: boolean }>(
+          sql`SELECT ops.shared_bundle_trusted(${JSON.stringify(bundle)}::jsonb) trusted`,
+        )
+      ).rows[0]!.trusted;
+      if (!trusted)
+        blockers.push(
+          "SHARED_PRIVATE_HISTORY_REQUIRES_UNMODIFIED_TRUSTED_OWN_EXPORT",
+        );
+    }
     if (bundle.manifest.currency !== current.manifest.currency)
       blockers.push("CURRENCY_MISMATCH");
     if (
@@ -617,7 +683,15 @@ export async function previewWorkspaceRestore(
           blockers.push("UNVERIFIED_EXTERNAL_PROVIDER_HISTORY");
       }
     const preview = {
-      sourceChecksumSha256: originalBundle.checksumSha256,
+      sourceChecksumSha256: (c.bundle as { checksumSha256: string })
+        .checksumSha256,
+      ...((c.bundle as { checksumSha256: string }).checksumSha256 !==
+      originalBundle.checksumSha256
+        ? {
+            sourceSchemaUpgrade:
+              "V2-H private graph; empty shared link tables added, financial evidence preserved",
+          }
+        : {}),
       sourceRows: bundle.manifest.rowCount,
       currentRows: current.manifest.rowCount,
       sourceTotals: bundleTotals(bundle),
@@ -628,6 +702,8 @@ export async function previewWorkspaceRestore(
       attachmentBytesIncluded: false,
       notificationConsentReset: true,
       pendingImportsCancelled: true,
+      groupOwnedHistoryRestored: false,
+      sharedPrivateEvidenceRequiresTrustedOwnExport: true,
       identityMapping: mapping.map.size
         ? "workspace/owner and evidence UUIDs remapped"
         : "workspace/owner remapped; evidence UUIDs preserved",
@@ -677,6 +753,9 @@ export async function restoreWorkspace(
     .strict()
     .parse(raw);
   return withDomainTransaction(a, async (tx) => {
+    await tx.db.execute(
+      sql`SELECT ops.lock_shared_restore_groups(${c.runId}::uuid)`,
+    );
     await lockActivePrivateWorkspace(tx, a);
     const receipt = await claimCommandReceipt(tx, {
       workspaceId: a.workspaceId,
@@ -713,7 +792,7 @@ export async function downloadWorkspaceRecovery(
   id: string,
 ) {
   z.uuid().parse(id);
-  return withDomainTransaction(
+  const bundle = await withDomainTransaction(
     a,
     async (tx) => {
       const r = (
@@ -787,4 +866,11 @@ export async function downloadWorkspaceRecovery(
     },
     { readOnlySnapshot: true },
   );
+  if (hasSharedPrivateEvidence(bundle))
+    await withDomainTransaction(a, async (tx) => {
+      await tx.db.execute(
+        sql`SELECT ops.bind_shared_recovery(${id}::uuid,${JSON.stringify(bundle)}::jsonb)`,
+      );
+    });
+  return bundle;
 }

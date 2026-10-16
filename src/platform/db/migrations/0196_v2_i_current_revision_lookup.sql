@@ -1,0 +1,1 @@
+CREATE INDEX "ix_expense_current_revision" ON "sharing"."shared_expense" USING btree ("group_id","current_revision_id");

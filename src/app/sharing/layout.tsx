@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { sharingEnabled } from "@/modules/sharing/domain/sharing";
 import { debtWorkspace } from "@/app/money/debts/_workspace";
@@ -9,11 +10,12 @@ export default async function SharingLayout({
 }: {
   children: ReactNode;
 }) {
+  await connection();
   if (!sharingEnabled()) notFound();
   const { user, preference } = await debtWorkspace();
   return (
     <AppShell
-      pageTitle="Shared Expenses preview"
+      pageTitle="Shared Expenses"
       activePath="/sharing"
       userName={user.name}
       userEmail={user.email}
@@ -24,7 +26,8 @@ export default async function SharingLayout({
       <div className="min-w-0 space-y-6 break-words">
         <p className="rounded-card border border-border p-3 text-sm">
           Shared group records · Private financial adoption requires your
-          approval. Intermediate preview: settlements and refunds are pending.
+          approval. Pending reports affect confirmed group balances only after
+          receipt confirmation.
         </p>
         <nav aria-label="Sharing" className="flex flex-wrap gap-5">
           <Link

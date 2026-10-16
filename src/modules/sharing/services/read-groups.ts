@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withDomainTransaction } from "@/platform/db";
 import { SharingUnavailableError, id } from "../domain/sharing";
+import { readGroupLedger, type GroupLedger } from "./ledger";
 
 export type GroupSummary = {
   id: string;
@@ -49,6 +50,7 @@ export type BillRevision = BillSummary & {
   }[];
 };
 export type GroupDetail = {
+  ledger?: GroupLedger;
   membershipHistory?: {
     id: string;
     participantId: string;
@@ -138,7 +140,13 @@ export function getGroup(
           sql`SELECT id,operation,subject_version AS version,actor_kind AS "actorKind",before_json AS before,after_json AS after,created_at::text AS "recordedAt" FROM audit.group_revision WHERE group_id=${groupId}::uuid ORDER BY created_at DESC,id LIMIT 50`,
         )
       ).rows;
+      const ledger = await readGroupLedger(t, groupId);
+      for (const p of participants)
+        p.netMinor =
+          ledger.positions.find((x) => x.participantId === p.id)?.netMinor ??
+          "0";
       return {
+        ledger,
         membershipHistory,
         changes,
         group,
@@ -206,6 +214,42 @@ export const invitationReviewSchema = z.object({
   netMinor: z.string(),
   historyPolicyVersion: z.number(),
   historyNotice: z.string(),
+  refunds: z
+    .array(
+      z.object({
+        id,
+        expenseId: id,
+        date: z.string(),
+        reason: z.string(),
+        receivedMinor: z.string(),
+        shareCreditMinor: z.string(),
+      }),
+    )
+    .default([]),
+  settlements: z
+    .array(
+      z.object({
+        id,
+        senderId: id,
+        recipientId: id,
+        date: z.string(),
+        amountMinor: z.string(),
+        advanceMinor: z.string(),
+        state: z.string(),
+        version: z.number(),
+        events: z.array(
+          z.object({
+            version: z.number(),
+            actorId: id,
+            confirmationType: z.string(),
+            fromState: z.string().nullable(),
+            toState: z.string(),
+            reason: z.string(),
+          }),
+        ),
+      }),
+    )
+    .default([]),
   history: z
     .array(
       z.object({

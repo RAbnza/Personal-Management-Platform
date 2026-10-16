@@ -24,7 +24,7 @@ export function sharingGate(requestId: string) {
     : createApiProblemResponse({
         status: 404,
         code: "UNAVAILABLE",
-        message: "Shared Expenses preview is unavailable.",
+        message: "Shared Expenses is unavailable.",
         requestId,
         retryable: false,
       });
