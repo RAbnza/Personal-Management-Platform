@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { test } from "./helpers/owner";
 import { signIn } from "./helpers/sign-in";
+import { settleAppearance } from "./helpers/settle-appearance";
 import { presets } from "@/modules/trackers/domain/presets";
 const headers = { origin: "http://localhost:3100" };
 test("tracker deadlines, recorded reports, CSV and private replacement work on mobile in both themes", async ({
@@ -71,9 +72,11 @@ test("tracker deadlines, recorded reports, CSV and private replacement work on m
     await page.getByRole("button", { name: "Menu", exact: true }).click();
     const nav = page.getByRole("dialog", { name: "Navigation" });
     await nav.getByLabel("Theme", { exact: true }).selectOption(theme);
+    await expect(nav.getByLabel("Theme", { exact: true })).toBeEnabled();
     await nav
       .getByRole("button", { name: "Close navigation", exact: true })
       .click();
+    await settleAppearance(page, theme);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

@@ -1,3 +1,4 @@
+import { settleAppearance } from "./helpers/settle-appearance";
 import { expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID, randomBytes } from "node:crypto";
@@ -335,6 +336,9 @@ test("shared entry, verified invitation, recipient confirmation, private clearin
         .getByRole("complementary")
         .getByLabel("Theme", { exact: true })
         .selectOption(theme);
+      await expect(
+        page.getByRole("complementary").getByLabel("Theme", { exact: true }),
+      ).toBeEnabled();
       await expect(page.locator("html")).toHaveClass(new RegExp(theme));
       await page.setViewportSize({ width: 320, height: 800 });
       await page
@@ -342,6 +346,7 @@ test("shared entry, verified invitation, recipient confirmation, private clearin
         .evaluateAll((nodes) =>
           nodes.forEach((n) => ((n as HTMLDetailsElement).open = true)),
         );
+      await settleAppearance(page, theme);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
