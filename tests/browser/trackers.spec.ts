@@ -93,10 +93,14 @@ test("tracker deadlines, recorded reports, CSV and private replacement work on m
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Custom start", { exact: true })).toBeFocused();
   await page.goto("/settings/portability");
-  await page
+  const portableWorkspace = page.getByRole("region", {
+    name: "Portable workspace",
+    exact: true,
+  });
+  await portableWorkspace
     .getByRole("button", { name: "Prepare private workspace export" })
     .click();
-  const href = await page
+  const href = await portableWorkspace
     .getByRole("link", { name: /Download private bundle/ })
     .getAttribute("href");
   const bundle = await (await page.request.get(href!)).json();
@@ -105,21 +109,21 @@ test("tracker deadlines, recorded reports, CSV and private replacement work on m
       e.kind.startsWith("tracker."),
     ),
   ).toHaveLength(9);
-  await page
+  await portableWorkspace
     .getByText("Preview replacement from a bundle", { exact: true })
     .click();
-  await page.getByLabel("Workspace JSON bundle").setInputFiles({
+  await portableWorkspace.getByLabel("Workspace JSON bundle").setInputFiles({
     name: "workspace.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(bundle)),
   });
-  await page
+  await portableWorkspace
     .getByRole("button", { name: "Validate restoration preview" })
     .click();
-  await page
+  await portableWorkspace
     .getByLabel("Type replace-private-workspace to approve this exact preview")
     .fill("replace-private-workspace");
-  await page
+  await portableWorkspace
     .getByRole("button", { name: "Replace after verified preview" })
     .click();
   await expect(page.getByRole("status")).toContainText("Workspace replaced.");
