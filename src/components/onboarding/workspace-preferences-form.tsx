@@ -48,6 +48,7 @@ const workspacePreferencesSchema = z.object({
     money: z.boolean(),
     career: z.boolean(),
     time: z.boolean(),
+    trackers: z.boolean(),
   }),
 });
 
@@ -91,6 +92,11 @@ const moduleLabels: Record<
     description: string;
   }
 > = {
+  trackers: {
+    title: "Tracker reminders",
+    description:
+      "Keep private tracker deadlines separate from navigation hiding and Calendar visibility.",
+  },
   money: {
     title: "Money reminders",
     description:
@@ -114,6 +120,8 @@ function getReminderValues(
   modules: readonly ModulePreferenceItem[],
 ): WorkspacePreferencesValues["reminders"] {
   return {
+    trackers:
+      modules.find((m) => m.moduleKey === "trackers")?.remindersEnabled ?? true,
     money:
       modules.find((module) => module.moduleKey === "money")
         ?.remindersEnabled ?? true,

@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { graphRegistry } from "@/modules/portability/domain/graph-registry";
+import { legacyV2GraphRegistry as graphRegistry } from "@/modules/portability/domain/graph-registry";
 import { previewDigest } from "@/modules/portability/domain/csv-preview";
 import { validateWorkspaceGraph } from "@/modules/portability/services/workspace-bundles";
 it("upgrades a checksummed V2-H graph by adding empty shared links without changing its financial evidence or original object", () => {

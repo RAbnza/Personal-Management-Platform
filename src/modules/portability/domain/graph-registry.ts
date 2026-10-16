@@ -1,3 +1,4 @@
+import { trackerGraph } from "./tracker-graph";
 /** Reviewed private graph registry. SQL names never come from an uploaded bundle. */
 export type GraphDescriptor = {
   kind: string;
@@ -5,7 +6,7 @@ export type GraphDescriptor = {
   primaryKey: string[];
   foreignKeys: { columns: string[]; target: string; targetColumns: string[] }[];
 };
-export const graphRegistry: GraphDescriptor[] = [
+export const legacyV2GraphRegistry: GraphDescriptor[] = [
   {
     kind: "audit.private_activity",
     columns: [
@@ -7042,3 +7043,30 @@ export const graphRegistry: GraphDescriptor[] = [
     ],
   },
 ];
+
+const reminderKinds = new Set([
+  "time.reminder_rule",
+  "time.reminder_occurrence",
+  "time.source_reminder_setting",
+]);
+export const graphRegistry: GraphDescriptor[] = legacyV2GraphRegistry
+  .map((d) =>
+    reminderKinds.has(d.kind)
+      ? {
+          ...d,
+          columns: [
+            ...d.columns,
+            { name: "tracker_entry_id", type: "uuid", notNull: false },
+          ],
+          foreignKeys: [
+            ...d.foreignKeys,
+            {
+              columns: ["workspace_id", "tracker_entry_id"],
+              target: "tracker.entry",
+              targetColumns: ["workspace_id", "id"],
+            },
+          ],
+        }
+      : d,
+  )
+  .concat(trackerGraph);

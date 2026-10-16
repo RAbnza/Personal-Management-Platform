@@ -22,6 +22,11 @@ const stepContent: Record<
     description: string;
   }
 > = {
+  "create-first-tracker": {
+    title: "Create a private tracker",
+    description:
+      "Choose Learning, Books or Personal Tasks, add an entry and review its history. Customize a versioned template when needed; deadlines feed Calendar without duplicate appointments.",
+  },
   "choose-goal": {
     title: "Choose a starting goal",
     description:
@@ -208,6 +213,14 @@ export function GettingStartedPanel({
                   <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
                     {content.description}
                   </p>
+                  {step.stepKey === "create-first-tracker" && (
+                    <Link
+                      href="/trackers"
+                      className="inline-flex min-h-11 items-center text-link underline"
+                    >
+                      Open Trackers
+                    </Link>
+                  )}
                   {!showGuideLink && (
                     <OnboardingStepControls
                       key={`${step.stepKey}:${step.state}`}

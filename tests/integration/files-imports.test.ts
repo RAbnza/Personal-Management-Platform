@@ -12,7 +12,11 @@ import { recordCardInstallmentPlan } from "@/modules/finance/services/card-insta
 import { createJobApplication } from "@/modules/career/services/create-job-application";
 import { createPersonalEvent } from "@/modules/time/services/create-personal-event";
 import { randomUUID } from "node:crypto";
-import { graphRegistry } from "@/modules/portability/domain/graph-registry";
+import { claimCommandReceipt } from "@/modules/core/repositories/command-receipt-repository";
+import {
+  graphRegistry,
+  legacyV2GraphRegistry,
+} from "@/modules/portability/domain/graph-registry";
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { Pool, Client } from "pg";
@@ -396,9 +400,18 @@ it("upgrades a V2-H portable artifact with exact original provenance and unchang
         "finance.private_group_link_revision",
         "finance.private_group_review",
       ]);
-    bundle.entities = bundle.entities.filter((e) => !kinds.has(e.kind));
+    bundle.entities = bundle.entities
+      .filter((e) => !kinds.has(e.kind) && !e.kind.startsWith("tracker."))
+      .map((e) => ({
+        ...e,
+        records: e.records.map((r) =>
+          Object.fromEntries(
+            Object.entries(r).filter(([k]) => k !== "tracker_entry_id"),
+          ),
+        ),
+      }));
     bundle.manifest.schemaFingerprint = previewDigest(
-      graphRegistry.filter((d) => !kinds.has(d.kind)),
+      legacyV2GraphRegistry.filter((d) => !kinds.has(d.kind)),
     );
     const { checksumSha256: ignored, ...unsigned } = bundle;
     void ignored;
@@ -423,6 +436,44 @@ it("upgrades a V2-H portable artifact with exact original provenance and unchang
         clientCommandId: randomUUID(),
         runId: preview.runId,
         previewHash: preview.previewHash,
+        confirmation: "replace-private-workspace",
+      }),
+    ).toMatchObject({ restored: true });
+    expect(bundleTotals(await exportWorkspace(a)).cashMinor).toBe("100000");
+  }));
+it("restores an original V2-I graph with exact provenance and safe empty tracker compatibility", async () =>
+  fixture(async (a) => {
+    const bundle = await exportWorkspace(a);
+    bundle.entities = bundle.entities
+      .filter((e) => !e.kind.startsWith("tracker."))
+      .map((e) => ({
+        ...e,
+        records: e.records.map((r) =>
+          Object.fromEntries(
+            Object.entries(r).filter(([k]) => k !== "tracker_entry_id"),
+          ),
+        ),
+      }));
+    bundle.manifest.schemaFingerprint = previewDigest(legacyV2GraphRegistry);
+    bundle.checksumSha256 = previewDigest({
+      manifest: bundle.manifest,
+      entities: bundle.entities,
+    });
+    const p = (await previewWorkspaceRestore(a, {
+      clientCommandId: randomUUID(),
+      bundle,
+    })) as {
+      runId: string;
+      previewHash: string;
+      preview: { sourceChecksumSha256: string; blockers: string[] };
+    };
+    expect(p.preview.sourceChecksumSha256).toBe(bundle.checksumSha256);
+    expect(p.preview.blockers).toEqual([]);
+    expect(
+      await restoreWorkspace(a, {
+        clientCommandId: randomUUID(),
+        runId: p.runId,
+        previewHash: p.previewHash,
         confirmation: "replace-private-workspace",
       }),
     ).toMatchObject({ restored: true });
@@ -1335,14 +1386,30 @@ it("rejects injected operational provider proofs in the database restore bridge"
       );
       await c.query("COMMIT");
     });
-    expect(
-      await restoreWorkspace(a, {
+    await expect(
+      restoreWorkspace(a, {
         clientCommandId: randomUUID(),
         runId: preview.runId,
         previewHash: preview.previewHash,
         confirmation: "replace-private-workspace",
       }),
-    ).toMatchObject({ restored: false });
+    ).rejects.toThrow("PORTABLE_OPERATIONAL_RECORD");
+    // Bypass application revalidation deliberately to keep proving the restricted SQL boundary.
+    const result = await withDomainTransaction(a, async (t) => {
+      const receipt = await claimCommandReceipt(t, {
+        workspaceId: a.workspaceId,
+        clientCommandId: randomUUID(),
+        commandType: "portability.restore",
+        payloadHash: Buffer.alloc(32),
+      });
+      if (receipt.kind !== "claimed") throw new Error("Expected fresh claim");
+      return (
+        await t.db.execute<{ result: unknown }>(
+          sql`SELECT ops.apply_private_restore(${preview.runId}::uuid,decode(${preview.previewHash},'hex'),${receipt.receiptId}::uuid) result`,
+        )
+      ).rows[0]!.result;
+    });
+    expect(result).toMatchObject({ restored: false });
     expect(
       await withDomainTransaction(
         a,

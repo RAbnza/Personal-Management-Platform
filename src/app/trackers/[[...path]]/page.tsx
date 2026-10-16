@@ -272,6 +272,12 @@ export default async function TrackersPage({
             : ""}
           .
         </p>
+        <Link
+          className={link}
+          href={`/calendar/reminders/tracker_entry/${data.entry.id}`}
+        >
+          Deadline reminders
+        </Link>
         <Values
           values={data.entry.values}
           definition={data.definition.definition}
@@ -421,6 +427,12 @@ export default async function TrackersPage({
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">{data.tracker.name}</h1>
+      <Link
+        className={link}
+        href={`/trackers/reports?trackerId=${data.tracker.id}`}
+      >
+        Reports for this tracker
+      </Link>
       <p>
         Template version {data.definition.versionNo}.{" "}
         {data.tracker.archived_at

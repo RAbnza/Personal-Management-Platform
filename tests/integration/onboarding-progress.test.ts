@@ -114,6 +114,14 @@ describe("onboarding progress", () => {
           })),
         ).toEqual([
           {
+            stepKey: "create-first-tracker",
+            requiredModule: "trackers",
+            applicable: true,
+            state: "pending",
+            completedAt: null,
+            updatedAt: null,
+          },
+          {
             stepKey: "choose-goal",
             requiredModule: null,
             applicable: true,
@@ -163,7 +171,7 @@ describe("onboarding progress", () => {
           },
         ]);
 
-        expect(first.applicableStepCount).toBe(6);
+        expect(first.applicableStepCount).toBe(7);
         expect(first.resolvedApplicableStepCount).toBe(0);
         expect(first.complete).toBe(false);
 
@@ -266,7 +274,7 @@ describe("onboarding progress", () => {
           state: "pending",
         });
 
-        expect(result.applicableStepCount).toBe(4);
+        expect(result.applicableStepCount).toBe(5);
       });
     } finally {
       await removeProvisionedTestUser(

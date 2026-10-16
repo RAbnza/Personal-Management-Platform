@@ -1415,6 +1415,34 @@
                         "when": 1792132338534,
                         "tag": "0201_v3_tracker_security",
                         "breakpoints": true
+                    },
+                    {
+                        "idx":  202,
+                        "version":  "7",
+                        "when":  1792138901257,
+                        "tag":  "0202_v3_tracker_reminder_sources",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  203,
+                        "version":  "7",
+                        "when":  1792138904278,
+                        "tag":  "0203_v3_tracker_time",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  204,
+                        "version":  "7",
+                        "when":  1792139107657,
+                        "tag":  "0204_v3_tracker_restore",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  205,
+                        "version":  "7",
+                        "when":  1792142223269,
+                        "tag":  "0205_v3_tracker_receipt_values",
+                        "breakpoints":  true
                     }
                 ]
 }

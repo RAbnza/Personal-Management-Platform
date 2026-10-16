@@ -18,6 +18,7 @@ export const ONBOARDING_STEP_KEYS = [
   "record-first-transaction",
   "add-job-application",
   "review-agenda",
+  "create-first-tracker",
 ] as const;
 
 export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
@@ -43,6 +44,7 @@ export type OnboardingStepDefinition = {
 };
 
 export const ONBOARDING_GUIDE_STEPS: readonly OnboardingStepDefinition[] = [
+  { stepKey: "create-first-tracker", requiredModule: "trackers" },
   {
     stepKey: "choose-goal",
     requiredModule: null,

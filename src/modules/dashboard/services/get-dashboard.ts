@@ -1,3 +1,4 @@
+import { readTrackerSummary } from "@/modules/trackers/repositories/summary";
 import { readSavingsGoals } from "@/modules/planning/repositories/savings-goal-repository";
 import { readCardSurface } from "@/modules/finance/repositories/card-surface-repository";
 import { readBudgetComparisons } from "@/modules/planning/repositories/budget-repository";
@@ -100,6 +101,15 @@ export async function getDashboardInTransaction(
   const scheduledMinor = sum(debts.map((d) => d.scheduledMinor ?? "0"));
   const upcomingMinor = sum(debts.map((d) => d.upcomingMinor));
   const attention: AttentionItem[] = await readSharingAttention(t);
+  const trackers = await readTrackerSummary(t);
+  if (trackers.agendaVisible)
+    for (const e of trackers.due)
+      attention.push({
+        key: `tracker:${e.id}`,
+        title: `Overdue tracker: ${e.title}`,
+        detail: `Deadline ${e.date}. Editing the entry updates its Calendar source.`,
+        href: `/trackers/entries/${e.id}`,
+      });
   for (const d of debts) {
     const href = `/money/debts/${d.debtId}`;
     if (BigInt(d.overdueMinor) > 0n)
@@ -214,6 +224,7 @@ export async function getDashboardInTransaction(
     period,
     filters: { source: query.source },
     horizon,
+    trackers,
     finance: {
       liquidMinor,
       liabilitiesMinor,

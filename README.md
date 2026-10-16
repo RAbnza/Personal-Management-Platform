@@ -40,3 +40,5 @@ Build Linux artifacts with `docker build --target web --tag pmp-v1-c5-web .`, th
 - [Acceptance evidence and remaining release blockers](docs/verification/V1_C5_ACCEPTANCE.md)
 
 V1-C5 production acceptance is in progress. Local passing checks do not establish production backup, restore, performance or delivery guarantees. V2 is a separate effort and has not started.
+
+Adaptable Trackers: see [workflows](docs/V3_TRACKER_WORKFLOWS.md), [targeted V3 acceptance](docs/V3_TARGETED_ACCEPTANCE.md) and [deferred configuration](docs/V3_MANUAL_ACTIONS_AND_DEFERRED_GATES.md). The V3 assignment uses change-impact verification; the existing full CI workflow remains enabled.

@@ -5,11 +5,17 @@ export const AGENDA_SOURCE_KINDS = [
   "card_statement",
   "card_installment",
   "expected_occurrence",
+  "tracker_entry",
 ] as const;
 
 export type AgendaSourceKind = (typeof AGENDA_SOURCE_KINDS)[number];
 
-export const AGENDA_DISPLAY_MODULES = ["career", "time", "money"] as const;
+export const AGENDA_DISPLAY_MODULES = [
+  "career",
+  "time",
+  "money",
+  "trackers",
+] as const;
 
 export type AgendaDisplayModule = (typeof AGENDA_DISPLAY_MODULES)[number];
 

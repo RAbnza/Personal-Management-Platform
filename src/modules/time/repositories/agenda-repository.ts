@@ -76,6 +76,7 @@ function buildModulePredicate(modules: readonly AgendaDisplayModule[]) {
         AND source."display_module" = 'time'
       )
       OR (${includeMoney}::boolean AND source."display_module" = 'money')
+      OR (${modules.includes("trackers")}::boolean AND source."display_module" = 'trackers')
     )
   `;
 }
@@ -181,6 +182,7 @@ export async function readAgendaPage(
               'personal_event'
             THEN 'time'
             WHEN agenda."source_kind" IN ('debt_installment','card_statement','card_installment','expected_occurrence') THEN 'money'
+            WHEN agenda."source_kind"='tracker_entry' THEN 'trackers'
             ELSE NULL
           END AS "display_module",
 

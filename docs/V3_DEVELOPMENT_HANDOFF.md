@@ -1,6 +1,53 @@
 # V3 Development Handoff
 
 **Date:** October 16, 2026 (Asia/Manila)\
+**Branch:** `feat/v3-a-b-trackers`\
+**A/B checkpoint:** `6e4a000d30b82e04c8a2d0a9d2ed8d3679732ab4`\
+**Status:** V3-A through V3-D locally accepted under approved targeted verification. Verified Git/CI results are recorded in the completion report.
+
+## Current V3 delivery
+
+| Milestone                        | Status                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V3-A foundation/presets          | Implemented; immutable private tracker model retained.                                                                                                                                              |
+| V3-B custom templates/migrations | Implemented; explicit review, bounded batches, partial cancellation/resume retained.                                                                                                                |
+| V3-C reports and integration     | Implemented: reports/CSV, Calendar, reminders/worker, Dashboard, navigation/preferences/onboarding/help, complete private graph replacement/recovery and lifecycle.                                 |
+| V3-D targeted acceptance         | Accepted within the targeted local scope; new/impacted correctness, security, static and production-build checks pass. Hosted CI is reported separately. Comprehensive regression was not repeated. |
+
+The owner's Assignment 2 explicitly supersedes the earlier comprehensive verification strategy. [The change-impact matrix](V3_TARGETED_ACCEPTANCE.md) records selected checks, actual results, fixes and exclusions. [Tracker workflows](V3_TRACKER_WORKFLOWS.md) document use and semantics; [manual/deferred gates](V3_MANUAL_ACTIONS_AND_DEFERRED_GATES.md) identify conditional steps without requesting production credentials.
+
+## Final architecture and inventory
+
+There are **125 declarative tables and 206 migrations through `0205`**. Assignment 2 adds no tables or dependencies. Published `0000`?`0201` SQL/snapshots and original journal entries remain unchanged.
+
+| New migration                      | Contract                                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0202_v3_tracker_reminder_sources` | Concrete same-workspace tracker FKs, closed reminder source unions/uniques and Trackers module key.                                                   |
+| `0203_v3_tracker_time`             | Invoker-security Agenda projection, minimal worker read grants/policies, stale reminder identity extension and archive epochs.                        |
+| `0204_v3_tracker_restore`          | Closed tracker restore graph/policies, deferred same-entry predecessor FK, original V2-I fingerprint support and safe partial migration cancellation. |
+| `0205_v3_tracker_receipt_values`   | Preserve literal tracker preview values in command/audit JSON during privileged ownership remapping.                                                  |
+
+The completed domain is normally available; `TRACKERS_ENABLED=false` is an optional operational disable. This switch never activates external delivery. The A/B `TRACKER_PORTABILITY_PENDING` guard was removed only after real nine-table graph, legacy H/I, recovery and notification-retirement verification.
+
+Reports separate current snapshots from recorded immutable activity in workspace civil dates. Receipt command types distinguish migrations from editable reasons. Manual completion dates never manufacture transitions; definitions without completion mapping are excluded from the denominator. Calendar projects authoritative entries once, with concrete reminder references and generation changes for resolution/deadline/archival. Navigation hiding, Agenda visibility and reminder preferences remain independent.
+
+All nine tracker tables retain forced RLS. Worker access is restricted to scoped SELECT on current entries and tracker parents; immutable definition/value histories remain unavailable to that role. Restore uses the existing authorized migration-owner bridge and active restore-transaction policy; constraints, financial balance checks, trusted shared history and provider provenance remain enforced. Dynamic literal field values and preview samples are preserved during ID remapping. Restored running/failed plans become cancelled; partial plans retain locks until explicit resume. Old unprocessed foreign previews can require fresh review.
+
+The lifecycle operator was verified to purge all nine populated private tracker tables while preserving another owner's private/shared evidence. Development and synthetic test databases received the additive migrations. No production system was deployed or provider activated.
+
+## Acceptance and continuation
+
+The selected API/component/PostgreSQL/browser/static/schema checks are detailed in the matrix. The supported Linux production build passes with the existing local-file adapter tracing warning; the receipt-value correction is included in the final passing artifact. Three new browser flows cover custom migration, reports/CSV/restore, mobile light/dark/keyboard/axe and hide/restore. Original V1/V2 evidence remains authoritative for untouched behavior.
+
+Conventional Commit: `feat(trackers): complete V3 integration and targeted acceptance`. Push this feature branch, verify its remote SHA, integrate into `main` without force or discarding work, and report the exact remote SHA plus automatically triggered CI result. Do not begin redesign, future platforms, offline/provider sync or deployment.
+
+## Historical Assignment 1 checkpoint
+
+Everything below records the earlier checkpoint as historical evidence. Its then-pending C/D items, preview flag, portability guard and stop boundary are superseded by Assignment 2 and the current sections above; they are not active instructions.
+
+# Assignment 1 record
+
+**Date:** October 16, 2026 (Asia/Manila)\
 **Phase:** Assignment 1 of 2 — V3-A and V3-B implementation checkpoint\
 **Branch:** `feat/v3-a-b-trackers`\
 **Starting main:** `4db895325210d76e7d9456c5639b837b38943987` (V3 documentation preparation), fetched and verified equal to `origin/main` before branching\

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackerNavigation } from "./tracker-navigation";
 import {
   LayoutDashboard,
   ChartNoAxesCombined,
@@ -34,6 +35,7 @@ export interface AppNavigationProps {
 export function AppNavigation({ activePath, onNavigate }: AppNavigationProps) {
   return (
     <ul className="space-y-1">
+      <TrackerNavigation activePath={activePath} onNavigate={onNavigate} />
       {navigationItems.map((item) => {
         const Icon = item.icon;
         const isActive =

@@ -33,7 +33,7 @@ type CalendarPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type AgendaSourceFilter = "all" | "career" | "time" | "money";
+type AgendaSourceFilter = "all" | "career" | "time" | "money" | "trackers";
 
 function firstQueryValue(
   value: string | string[] | undefined,
@@ -87,7 +87,12 @@ function addCalendarDays(value: CalendarDate, amount: number): CalendarDate {
 }
 
 function normalizeSourceFilter(value: string | undefined): AgendaSourceFilter {
-  if (value === "career" || value === "time" || value === "money") {
+  if (
+    value === "career" ||
+    value === "time" ||
+    value === "money" ||
+    value === "trackers"
+  ) {
     return value;
   }
 
@@ -208,7 +213,7 @@ export default async function CalendarPage({
 
   const modulesFilter =
     sourceFilter === "all"
-      ? (["career", "time", "money"] as const)
+      ? (["career", "time", "money", "trackers"] as const)
       : ([sourceFilter] as const);
 
   const rawCursor = firstQueryValue(query.cursor);
@@ -456,8 +461,9 @@ export default async function CalendarPage({
                 defaultValue={sourceFilter}
                 className={`mt-2 ${selectClassName}`}
               >
-                <option value="all">Money, Career and Calendar</option>
+                <option value="all">All sources</option>
                 <option value="money">Money only</option>
+                <option value="trackers">Trackers only</option>
 
                 <option value="career">Career only</option>
 
@@ -505,6 +511,9 @@ export default async function CalendarPage({
               moduleEnabled={{
                 career: careerEnabled,
                 time: timeEnabled,
+                trackers:
+                  modules.find((m) => m.moduleKey === "trackers")?.enabled ??
+                  true,
                 money:
                   modules.find((module) => module.moduleKey === "money")
                     ?.enabled ?? false,

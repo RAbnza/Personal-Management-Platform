@@ -1,7 +1,7 @@
 # V3 Development Plan
 
 **Date:** October 16, 2026 (Asia/Manila)\
-**Status:** V3-A/V3-B implemented as an intermediate feature-branch checkpoint; V3-C/V3-D and comprehensive V3 acceptance remain pending. See the [implementation handoff](V3_DEVELOPMENT_HANDOFF.md).\
+**Status:** V3-A through V3-D locally accepted under the approved targeted scope; verified remote/CI results are reported separately. See the [implementation handoff](V3_DEVELOPMENT_HANDOFF.md).\
 **Repository:** `RAbnza/Personal-Management-Platform`\
 **Accepted starting point:** `main`, `54a08d67c4ef7f5be01f5eaf63ba5c071e708b93` (`feat(sharing): complete V2-I shared expenses and settlements`), verified equal to `origin/main` during preparation.
 
@@ -42,10 +42,10 @@ Before Assignment 1, the implementing engineer must:
 | -------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Scope and future architecture approval | Project owner                                 | This approved V3 boundary; separate future approval for platform architecture and feature changes                      |
 | Implementation and database review     | Implementing engineer/technical lead          | Vertical workflows, safe forward migrations, authorization and validation proofs, accurate documentation               |
-| Verification and acceptance evidence   | Implementing engineer                         | Focused Assignment 1 evidence; one complete Assignment 2 verification record with failures, fixes and limits disclosed |
+| Verification and acceptance evidence   | Implementing engineer                         | Focused Assignment 1 evidence; one targeted Assignment 2 verification record with failures, fixes and limits disclosed |
 | Human-only operational configuration   | Owner/operator, only if separately authorized | Historical production checklists remain preserved; no such configuration is required by this plan                      |
 
-Dependency order: **V2 accepted baseline → V3-A → V3-B → Assignment 1 checkpoint → V3-C → V3-D consolidated acceptance**. A establishes the version model before B exposes customization; C consumes stable entries/migrations; D accepts the complete product. These are four internal milestones within two implementation assignments, not four independent full acceptance cycles. The preparation assignment creates documentation only and authorizes none of those implementation steps yet.
+Dependency order: **V2 accepted baseline → V3-A → V3-B → Assignment 1 checkpoint → V3-C → V3-D targeted acceptance**. A establishes the version model before B exposes customization; C consumes stable entries/migrations; D accepts the complete product. These are four internal milestones within two implementation assignments, not four independent full acceptance cycles. The preparation assignment creates documentation only and authorizes none of those implementation steps yet.
 
 ## 4. Persistence and integrity contract
 
@@ -98,7 +98,7 @@ Deliver the following using existing services and design patterns:
 
 **Dependency:** V3-A through V3-C complete. **Owner:** Implementing engineer; owner reviews any separately identified human-only evidence.
 
-Perform the single consolidated phase in Section 7. Record a scenario/evidence index, final schema and migration inventory, implemented decisions, known limitations, actual verification results and reproducible commands. Update affected user/help, export/lifecycle and handoff documentation. Distinguish local acceptance from any unperformed manual or hosted check; preserve historical V1/V2 evidence. Do not claim complete V3 acceptance while a required correctness/security gate is failing.
+Perform the targeted change-impact review in Section 7. Record a scenario/evidence index, final schema and migration inventory, implemented decisions, known limitations, actual verification results and reproducible commands. Update affected user/help, export/lifecycle and handoff documentation. Distinguish local acceptance from any unperformed manual or hosted check; preserve historical V1/V2 evidence. Do not claim complete V3 acceptance while a required correctness/security gate is failing.
 
 **Acceptance:** Applicable V1–V3 regression and acceptance gates pass with unchanged security/integrity assertions; failures have fixes and affected reruns. Document genuinely unavailable human-only evidence explicitly. Commit/push the authorized assignment result and verify the remote SHA. Stop before redesign or platform implementation.
 
@@ -116,22 +116,13 @@ The checkpoint handoff must identify its verified commit, migrations, preset/val
 
 The second future prompt starts from that checkpoint. Review its actual evidence and resolve prerequisite defects, then complete C's reports, Time/notification, experience, portability and lifecycle integration. Run focused checks while implementing and one consolidated full applicable V1–V3 verification phase after the complete implementation is ready. Produce the final acceptance/handoff and verified commit/push result. No additional implementation prompt or full test cycle is required for each internal milestone.
 
-## 7. One consolidated verification phase
+## 7. Approved Assignment 2 verification revision
 
-This is future implementation work in Assignment 2. **None of these application checks is part of this documentation-preparation assignment.** Run heavy checks sequentially with existing bounded workers; preserve assertions, exact-money requirements and established budgets. Inspect current scripts/CI rather than assuming historical test counts or command flags remain current.
+The owner's Assignment 2 request supersedes the original comprehensive verification strategy. Test new V3 behavior and existing functionality materially affected by changed modules, shared services, database contracts and integrations. There is no separate comprehensive final testing phase. Reuse historical acceptance for unchanged V1/V2 behavior.
 
-| Gate                      | Required complete-V3 evidence                                                                                                                                                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Static and schema         | Lint, TypeScript/route types, formatting, schema drift, forward migration review; published migrations intact; fresh and applicable upgrade chains including the accepted V2 baseline, repeat/no-change behavior and restricted-role checks                                                                                                      |
-| Full regression           | Full applicable unit/domain/API/component and real-PostgreSQL integration suites across V1–V3; no exclusion of unchanged Finance/Career/groups/portability/notifications merely because V3 adds trackers                                                                                                                                         |
-| Adversarial integrity     | Cross-workspace/nested-ID access, actual-role RLS/FKs, immutable versions/history, malformed dynamic values, stale previews, concurrent edits/migrations/deletion, rollback, interrupted batches, duplicate commands and notification replay                                                                                                     |
-| Browser and accessibility | Full applicable existing V1/V2 acceptance plus all three presets, custom editing/migration recovery, reports, Calendar/reminders, exports/restore and lifecycle; response-loss recovery, multi-user privacy, light/dark, representative 320–1440px reflow, keyboard/focus/error handling and existing automated/manual accessibility obligations |
-| Build and local runtime   | One final supported production-mode build/artifact and applicable web/worker/backup container checks as local compatibility evidence, using the supported Linux path where required by the V2 handoff; no hosted promotion or web production-readiness claim                                                                                     |
-| Recovery and portability  | Supported tracker export/restore round trips and one consolidated isolated encrypted backup/decrypt/actual restore drill; exact V1/V2 totals, tracker versions/history, RLS, revoked sessions, deletion reapplication and paused/reconciled notification effects                                                                                 |
-| Capacity and security     | Applicable existing household/load budgets plus bounded tracker/report/migration cases at explicitly documented sizes; dependency/security review and no sensitive artifact leakage; no new production performance promise                                                                                                                       |
-| Documentation             | Scenario/evidence index, real pass/failure/blocked status, user-visible scope/limits, operational checklist references, final commit and verified remote SHA                                                                                                                                                                                     |
+Maintain [the change-impact matrix](V3_TARGETED_ACCEPTANCE.md) with changed contracts, potential regressions, selected tests, actual results, exclusions and any required unverified gate. Prioritize real PostgreSQL roles/RLS/FKs, immutable history, migration replay/concurrency, financial/shared evidence at touched restore boundaries, notification consent/generations and lifecycle/recovery. Run affected API/component/integration checks, focused browser/accessibility scenarios, relevant forward/schema checks, static checks and a final supported build where packaging needs proof. Fix failures and rerun only failed or impacted checks; expand coverage only for a concrete dependency or regression.
 
-Use one coordinated phase, with affected reruns after failures/fixes. Repeat a full suite only when new changes or unresolved evidence justify it. Never hide a failed check, lower an assertion/budget or substitute historical evidence for a required current check to meet the two-prompt strategy. Hosted-only or human-only checks remain explicitly distinguished from locally executable acceptance; do not request external provisioning to manufacture web production acceptance.
+Do not automatically run entire V1/V2 suites, every browser scenario, historical benchmarks, container campaigns, the complete historical migration campaign, repeated full builds or full encrypted backup/restore drills. Select a focused real export/restore/recovery drill for the changed graph. Preserve existing assertions, constraints, budgets and automatic CI; report broader CI separately. V3 may be locally accepted only under this targeted scope after all required new and impacted checks pass, with comprehensive/hosted/manual exclusions disclosed.
 
 ## 8. Completion and stop boundaries
 
@@ -139,8 +130,14 @@ For this preparation: check documentation consistency, relative links, Markdown 
 
 For future V3 completion: deliver accepted trackers and consolidated evidence, then stop. The comprehensive redesign, platform architecture planning, Windows/Android development and platform-specific acceptance are separate later assignments. Preserve existing [V2-H](V2_H_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md), [V2-I](V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md) and [V1 operational](V1_OPERATIONS.md) instructions as historical/conditional operational requirements. No real provider keys, cloud storage, email configuration, hosting or infrastructure changes are requested by this documentation assignment.
 
-## 9. Assignment 1 checkpoint
+## 9. Historical Assignment 1 checkpoint
 
 V3-A and V3-B now have a local/test-only, default-off implementation on `feat/v3-a-b-trackers`; see [V3_DEVELOPMENT_HANDOFF.md](V3_DEVELOPMENT_HANDOFF.md) for actual evidence and decisions. The schema contains 125 declarative tables and 202 migrations through `0201`. Migration previews bind current entries and immutable definitions; batches process at most 50 entries. Confirmed and partially cancelled migrations pause ordinary edits/archival until completion. Old revisions survive every transformation, and the active tracker version advances only when all entries are resolved.
 
 Workspace bundle generation/replacement is guarded while tracker data exists, including confirmation of a preview that predates tracker creation. Definition/entry/history portability, reports, internal Calendar/reminders, global onboarding/navigation integration and consolidated acceptance remain Assignment 2 work. Minimal deletion-inventory and portability guards protect the intermediate state; they do not claim V3-C/D completion. No future-platform or production-readiness scope was added.
+
+## 10. Assignment 2 integration
+
+The complete domain adds tracker reports/CSV, source-derived Calendar deadlines, concrete reminder references and generation/cancellation behavior, worker discovery/revalidation, Dashboard summaries, navigation/preferences/onboarding/help and all nine tracker graph tables in export/restore/recovery. The schema remains 125 tables with 206 migrations through `0205`; existing `0000`?`0201` migrations are unchanged. See [workflows](V3_TRACKER_WORKFLOWS.md), [impact evidence](V3_TARGETED_ACCEPTANCE.md) and [manual/deferred gates](V3_MANUAL_ACTIONS_AND_DEFERRED_GATES.md).
+
+The A/B portability guard is removed after real restricted-role graph round trips, exact literal-value remapping, partial migration recovery, original H/I compatibility, notification retirement and shared-evidence deletion checks. Production deployment and future platforms remain excluded. The approved final step is a Conventional Commit, push/verify of the feature branch, safe non-force integration into `main`, and verification/reporting of remote SHA and automatic CI.

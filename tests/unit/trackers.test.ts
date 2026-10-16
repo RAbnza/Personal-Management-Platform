@@ -164,24 +164,21 @@ describe("version-aware private tracker validation", () => {
     ).toBe(false);
   });
 });
-describe("incomplete domain gate", () => {
+describe("completed domain gate", () => {
   const old = { ...process.env };
   afterEach(() => {
     process.env = old;
   });
-  it.each(["staging", "production"])(
-    "rejects %s even with the preview flag",
+  it.each(["test", "staging", "production"])(
+    "enables the completed domain in %s",
     (env) => {
-      process.env.TRACKERS_PREVIEW_ENABLED = "true";
       process.env.PMP_DEPLOYMENT_ENV = env;
-      expect(trackersEnabled()).toBe(false);
+      delete process.env.TRACKERS_ENABLED;
+      expect(trackersEnabled()).toBe(true);
     },
   );
-  it("requires an explicit local/test preview opt-in", () => {
-    process.env.PMP_DEPLOYMENT_ENV = "test";
-    delete process.env.TRACKERS_PREVIEW_ENABLED;
+  it("allows an explicit operational disable", () => {
+    process.env.TRACKERS_ENABLED = "false";
     expect(trackersEnabled()).toBe(false);
-    process.env.TRACKERS_PREVIEW_ENABLED = "true";
-    expect(trackersEnabled()).toBe(true);
   });
 });

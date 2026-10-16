@@ -4,6 +4,11 @@ import { GuideTour } from "@/components/help/guide-tour";
 import { getSettingsBootstrap, SettingsShell } from "../settings/_lib";
 const topics = [
   [
+    "Private trackers and history",
+    "Start with Learning, Books or Personal Tasks. Custom fields publish immutable versions; migrate populated trackers only after reviewing mappings and invalid entries. Reports separate current state, recorded completion transitions and migration activity. Manual completion dates are not recorded transition dates. Archive retains history; hiding navigation leaves Calendar and reminder switches separate.",
+    "/trackers",
+  ],
+  [
     "Money and corrections",
     "Opening balances are not income. Internal transfers and principal repayments are not spending. A later refund uses its actual date and offsets spending; corrections preserve original evidence through reversal and replacement.",
     "/money/transactions",

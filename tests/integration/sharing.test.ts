@@ -1,3 +1,5 @@
+import { recordTrackerCommand } from "@/modules/trackers/services/commands";
+import { presets as trackerPresets } from "@/modules/trackers/domain/presets";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
@@ -2064,6 +2066,40 @@ describe("V2-I focused group and private boundary", () => {
     () =>
       fixture(async (a, b, o, g) => {
         void o;
+        const trackerCommand = (body: Record<string, unknown>) =>
+          recordTrackerCommand(
+            { userId: a.userId, workspaceId: a.workspaceId },
+            { clientCommandId: randomUUID(), ...body },
+          );
+        const tracker = await trackerCommand({
+          operation: "preset",
+          preset: "learning",
+          name: "Purge private tracker",
+        });
+        await trackerCommand({
+          operation: "save_entry",
+          trackerId: tracker.trackerId,
+          entryId: null,
+          expectedRevisionId: null,
+          values: { topic: "Purge immutable history" },
+          reason: "Synthetic",
+        });
+        const definition = structuredClone(trackerPresets.learning);
+        definition.fields[0]!.label = "Renamed topic";
+        const version = await trackerCommand({
+          operation: "publish",
+          templateId: tracker.templateId,
+          expectedVersionId: tracker.versionId,
+          definition,
+          reason: "Purge versioned history",
+        });
+        await trackerCommand({
+          operation: "preview",
+          trackerId: tracker.trackerId,
+          toVersionId: version.versionId,
+          rules: {},
+        });
+
         await invite(a, b, g);
         const event = await bill(a, g),
           preview = await getAdoptionPreview(b, g, event.subjectId);
@@ -2112,6 +2148,25 @@ describe("V2-I focused group and private boundary", () => {
           expect((await purgeDeletionStep(operator, requestId)).state).toBe(
             "completed",
           );
+          for (const table of [
+            "template",
+            "template_version",
+            "field_identity",
+            "field_definition",
+            "field_option",
+            "tracker",
+            "entry",
+            "entry_revision",
+            "template_migration",
+          ])
+            expect(
+              (
+                await c.query(
+                  `SELECT count(*)::int n FROM tracker.${table} WHERE workspace_id=$1`,
+                  [a.workspaceId],
+                )
+              ).rows[0].n,
+            ).toBe(0);
           const preserved = await getGroup(b, g);
           expect(preserved.group.archived).toBe(true);
           expect(

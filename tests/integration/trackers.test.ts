@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import { sql } from "drizzle-orm";
 import { withDomainTransaction } from "@/platform/db";
 import {
@@ -10,6 +10,15 @@ import {
 import { provisionPersonalWorkspace } from "@/modules/core/services/provision-personal-workspace";
 import { recordTrackerCommand as command } from "@/modules/trackers/services/commands";
 import { readTrackers } from "@/modules/trackers/services/reads";
+import { getTrackerReport } from "@/modules/trackers/services/reports";
+import { listAgendaItems } from "@/modules/time/services/list-agenda-items";
+import { getReminder, mutateReminder } from "@/modules/time/services/reminders";
+import {
+  validateWorkspaceGraph,
+  remapForeignGraph,
+  downloadWorkspaceRecovery,
+} from "@/modules/portability/services/workspace-bundles";
+import { previewDigest } from "@/modules/portability/domain/csv-preview";
 import { presets } from "@/modules/trackers/domain/presets";
 import type { Definition } from "@/modules/trackers/domain/tracker";
 import {
@@ -25,9 +34,6 @@ import { readDeletionScope } from "@/modules/core/repositories/lifecycle-reposit
 import { openFinancialAccount } from "@/modules/finance/services/open-financial-account";
 type Owner = { userId: string; workspaceId: string };
 const label = "V3 tracker fixture";
-beforeAll(() => {
-  process.env.TRACKERS_PREVIEW_ENABLED = "true";
-});
 afterAll(closeRuntimeDatabasePools);
 async function fixture(run: (a: Owner, b: Owner) => Promise<void>) {
   const owners: Owner[] = [];
@@ -84,7 +90,7 @@ async function view(
   return readTrackers(o, { view: kind, id: String(id) });
 }
 describe("V3 private versioned tracker boundaries", () => {
-  it("rejects pre-tracker restore previews at confirmation and preserves completed export replay", () =>
+  it("restores a reviewed pre-tracker snapshot and preserves completed export replay", () =>
     fixture(async (a) => {
       const key = randomUUID(),
         exported = await prepareWorkspaceExport(a, key),
@@ -94,22 +100,393 @@ describe("V3 private versioned tracker boundaries", () => {
           bundle,
         });
       const p = await preset(a);
-      await save(a, p.trackerId, { topic: "Must survive" });
-      await expect(
-        restoreWorkspace(a, {
-          clientCommandId: randomUUID(),
-          runId: String(review.runId),
-          previewHash: String(review.previewHash),
-          confirmation: "replace-private-workspace",
-        }),
-      ).rejects.toThrow("TRACKER_PORTABILITY_PENDING");
+      await save(a, p.trackerId, { topic: "Replaced by reviewed snapshot" });
+      await restoreWorkspace(a, {
+        clientCommandId: randomUUID(),
+        runId: String(review.runId),
+        previewHash: String(review.previewHash),
+        confirmation: "replace-private-workspace",
+      });
       expect(await prepareWorkspaceExport(a, key)).toEqual(exported);
-      await expect(prepareWorkspaceExport(a, randomUUID())).rejects.toThrow(
-        "TRACKER_PORTABILITY_PENDING",
+      const overview = await readTrackers(a);
+      if (overview.view !== "overview") throw new Error();
+      expect(overview.trackers).toHaveLength(0);
+    }));
+  it("round-trips immutable tracker graphs, remaps identities without rewriting literal values, and recovers replaced history", () =>
+    fixture(async (a, b) => {
+      const definition = structuredClone(presets.learning);
+      for (const key of ["workspace_id", "user_id"])
+        definition.fields.push({ ...definition.fields[1]!, key, label: key });
+      const published = await run(a, {
+          operation: "publish",
+          templateId: null,
+          expectedVersionId: null,
+          definition,
+          reason: "Literal field names",
+        }),
+        p = await run(a, {
+          operation: "create_tracker",
+          templateId: published.templateId,
+          versionId: published.versionId,
+          name: "Literal values",
+        }),
+        e = await save(a, p.trackerId, {
+          topic: a.workspaceId,
+          workspace_id: a.workspaceId,
+          user_id: a.userId,
+          technology: a.userId,
+          notes: "$owner",
+          due: "2026-10-16",
+        });
+      await save(
+        a,
+        p.trackerId,
+        {
+          topic: a.workspaceId,
+          workspace_id: a.workspaceId,
+          user_id: a.userId,
+          technology: a.userId,
+          notes: "$workspace",
+          due: "2026-10-17",
+        },
+        { entryId: e.entryId, expectedRevisionId: e.revisionId },
       );
-      const tr = await view(a, p.trackerId, "tracker");
-      if (tr.view !== "tracker") throw new Error();
-      expect(tr.entries[0]?.title).toBe("Must survive");
+      definition.fields[0]!.label = "Renamed literal title";
+      const next = await publish(a, published, definition);
+      await run(a, {
+        operation: "preview",
+        trackerId: p.trackerId,
+        toVersionId: next.versionId,
+        rules: {},
+      });
+      const bundle = validateWorkspaceGraph(await exportWorkspace(a));
+      expect(
+        bundle.entities.filter((e) => e.kind.startsWith("tracker.")),
+      ).toHaveLength(9);
+      const previewReceipt = bundle.entities
+        .find((e) => e.kind === "core.command_receipt")!
+        .records.find((r) => r.command_type === "tracker.preview")!;
+      expect(
+        (
+          previewReceipt.result_json as {
+            counts: { samples: { before: Record<string, unknown> }[] };
+          }
+        ).counts.samples[0]!.before.user_id,
+      ).toBe(a.userId);
+      const mapped = remapForeignGraph(bundle, b.workspaceId).bundle;
+      expect(
+        mapped.entities
+          .find((e) => e.kind === "tracker.entry_revision")!
+          .records.map(
+            (r) => (r.values_json as Record<string, unknown>).technology,
+          ),
+      ).toEqual([a.userId, a.userId]);
+      const review = await previewWorkspaceRestore(b, {
+        clientCommandId: randomUUID(),
+        bundle,
+      });
+      await restoreWorkspace(b, {
+        clientCommandId: randomUUID(),
+        runId: String(review.runId),
+        previewHash: String(review.previewHash),
+        confirmation: "replace-private-workspace",
+      });
+      const restored = await exportWorkspace(b),
+        revisions = restored.entities.find(
+          (e) => e.kind === "tracker.entry_revision",
+        )!.records;
+      const restoredReceipt = restored.entities
+        .find((e) => e.kind === "core.command_receipt")!
+        .records.find((r) => r.command_type === "tracker.preview")!;
+      expect(
+        (
+          restoredReceipt.result_json as {
+            counts: { samples: { before: Record<string, unknown> }[] };
+          }
+        ).counts.samples[0]!.before.user_id,
+      ).toBe(a.userId);
+      expect(revisions).toHaveLength(2);
+      for (const r of revisions)
+        expect(r.values_json).toMatchObject({
+          workspace_id: a.workspaceId,
+          user_id: a.userId,
+        });
+      expect(
+        revisions.every(
+          (r) =>
+            (r.values_json as Record<string, unknown>).topic === a.workspaceId,
+        ),
+      ).toBe(true);
+      const own = await previewWorkspaceRestore(a, {
+        clientCommandId: randomUUID(),
+        bundle,
+      });
+      await restoreWorkspace(a, {
+        clientCommandId: randomUUID(),
+        runId: String(own.runId),
+        previewHash: String(own.previewHash),
+        confirmation: "replace-private-workspace",
+      });
+      const recovery = await downloadWorkspaceRecovery(a, String(own.runId));
+      expect(
+        recovery.entities
+          .find((e) => e.kind === "tracker.entry_revision")!
+          .records.every(
+            (r) =>
+              (r.values_json as Record<string, unknown>).technology ===
+              a.userId,
+          ),
+      ).toBe(true);
+      const bad = structuredClone(bundle);
+      bad.entities.find((e) => e.kind === "tracker.entry")!.records[0]!.title =
+        "Fabricated";
+      bad.checksumSha256 = previewDigest({
+        manifest: bad.manifest,
+        entities: bad.entities,
+      });
+      expect(() => validateWorkspaceGraph(bad)).toThrow("inconsistent");
+      await expect(view(b, e.entryId, "entry")).rejects.toThrow("unavailable");
+    }));
+  it("reports recorded completion and reopening separately from manual dates and current archived state", () =>
+    fixture(async (a, b) => {
+      const p = await preset(a),
+        e = await save(a, p.trackerId, {
+          topic: "Report",
+          completed_date: "2000-01-01",
+          due: "2000-01-02",
+        });
+      const complete = await save(
+        a,
+        p.trackerId,
+        { topic: "Report", status: "completed", completed_date: "2000-01-01" },
+        { entryId: e.entryId, expectedRevisionId: e.revisionId },
+      );
+      await save(
+        a,
+        p.trackerId,
+        {
+          topic: "Report",
+          status: "active",
+          completed_date: "2000-01-01",
+          due: "2000-01-02",
+        },
+        { entryId: e.entryId, expectedRevisionId: complete.revisionId },
+      );
+      const latest = await view(a, e.entryId, "entry");
+      if (latest.view !== "entry") throw new Error();
+      await save(
+        a,
+        p.trackerId,
+        { topic: "Report", status: "active", due: "2000-01-02" },
+        {
+          entryId: e.entryId,
+          expectedRevisionId: latest.entry.current_revision_id,
+          reason: "Template migration user-written reason",
+        },
+      );
+      const r = await getTrackerReport(a, { period: "year" });
+      expect(r.counts).toMatchObject({
+        entries: 1,
+        completed: 0,
+        overdue: 1,
+        created: 1,
+        completedTransitions: 1,
+        reopened: 1,
+        edits: 1,
+        migrationRevisions: 0,
+      });
+      expect(r.coverage).toHaveLength(1);
+      expect(r.current[0]!.href).toContain(String(e.entryId));
+      expect(
+        (
+          await getTrackerReport(a, {
+            period: "custom",
+            startDate: "2000-01-01",
+            endDate: "2000-12-31",
+          })
+        ).events,
+      ).toHaveLength(0);
+      await expect(
+        getTrackerReport(b, { trackerId: String(p.trackerId) }),
+      ).rejects.toThrow("unavailable");
+      const data = await view(a, e.entryId, "entry");
+      if (data.view !== "entry") throw new Error();
+      await run(a, {
+        operation: "archive",
+        kind: "entry",
+        id: e.entryId,
+        expectedVersion: data.entry.version,
+        archived: true,
+      });
+      expect((await getTrackerReport(a)).counts.entries).toBe(0);
+      expect(
+        (await getTrackerReport(a, { archived: "archived" })).counts,
+      ).toMatchObject({ entries: 1, overdue: 0 });
+    }));
+  it("projects one date-only source and retires dismissed generations on deadline, completion and archive changes", () =>
+    fixture(async (a, b) => {
+      const p = await preset(a),
+        e = await save(a, p.trackerId, {
+          topic: "Private title",
+          due: "2026-10-16",
+        });
+      const target = {
+        sourceKind: "tracker_entry" as const,
+        sourceId: String(e.entryId),
+      };
+      const agenda = () =>
+        listAgendaItems({
+          ...a,
+          startDate: "2026-10-01",
+          endDate: "2026-10-31",
+        });
+      const first = await agenda();
+      expect(first.items).toHaveLength(1);
+      expect(first.items[0]!.sourceId).toBe(e.entryId);
+      const reminder = await getReminder(a, target);
+      expect(reminder.eligible).toBe(true);
+      expect(reminder.timezone).toBe("Asia/Manila");
+      await mutateReminder(a, {
+        clientCommandId: randomUUID(),
+        target,
+        expectedSnapshot: reminder.snapshot,
+        action: { kind: "dismiss", ruleKey: reminder.rules[0]!.key },
+      });
+      const edit = await save(
+        a,
+        p.trackerId,
+        { topic: "Changed title", due: "2026-10-17" },
+        { entryId: e.entryId, expectedRevisionId: e.revisionId },
+      );
+      const next = await getReminder(a, target);
+      expect(next.sourceGeneration).toBe(reminder.sourceGeneration! + 1);
+      expect(next.rules[0]!.state).toBe("active");
+      expect(next.history.some((h) => h.state === "cancelled")).toBe(true);
+      await mutateReminder(a, {
+        clientCommandId: randomUUID(),
+        target,
+        expectedSnapshot: next.snapshot,
+        action: {
+          kind: "settings",
+          mode: "override",
+          rules: [{ offsetDays: 0, localTime: "10:00" }],
+        },
+      });
+      const overridden = await getReminder(a, target);
+      expect(overridden.mode).toBe("override");
+      await mutateReminder(a, {
+        clientCommandId: randomUUID(),
+        target,
+        expectedSnapshot: overridden.snapshot,
+        action: {
+          kind: "snooze",
+          ruleKey: overridden.rules[0]!.key,
+          snoozedUntil: new Date(Date.now() + 3600000).toISOString(),
+        },
+      });
+      expect((await getReminder(a, target)).rules[0]!.state).toBe("snoozed");
+      const complete = await save(
+        a,
+        p.trackerId,
+        { topic: "Changed title", status: "completed", due: "2026-10-17" },
+        { entryId: e.entryId, expectedRevisionId: edit.revisionId },
+      );
+      expect((await agenda()).items).toHaveLength(0);
+      expect((await getReminder(a, target)).eligible).toBe(false);
+      await save(
+        a,
+        p.trackerId,
+        { topic: "Changed title", due: "2026-10-17" },
+        { entryId: e.entryId, expectedRevisionId: complete.revisionId },
+      );
+      expect((await agenda()).items).toHaveLength(1);
+      await run(a, {
+        operation: "archive",
+        kind: "tracker",
+        id: p.trackerId,
+        expectedVersion: 1,
+        archived: true,
+      });
+      expect((await agenda()).items).toHaveLength(0);
+      await run(a, {
+        operation: "archive",
+        kind: "tracker",
+        id: p.trackerId,
+        expectedVersion: 2,
+        archived: false,
+      });
+      expect((await agenda()).items).toHaveLength(1);
+      await expect(getReminder(b, target)).rejects.toThrow();
+    }));
+  it("removes migration-unmapped deadlines and separates migration activity from compatible custom progress", () =>
+    fixture(async (a) => {
+      const p = await preset(a),
+        e = await save(a, p.trackerId, {
+          topic: "Mapped deadline",
+          due: "2026-10-16",
+        });
+      const before = await getReminder(a, {
+        sourceKind: "tracker_entry",
+        sourceId: String(e.entryId),
+      });
+      const d = structuredClone(presets.learning);
+      d.deadlineKey = null;
+      const next = await publish(a, p, d),
+        preview = await run(a, {
+          operation: "preview",
+          trackerId: p.trackerId,
+          toVersionId: next.versionId,
+          rules: {},
+        });
+      await run(a, {
+        operation: "confirm",
+        migrationId: preview.migrationId,
+        previewHash: preview.previewHash,
+      });
+      await run(a, { operation: "batch", migrationId: preview.migrationId });
+      expect(
+        (
+          await listAgendaItems({
+            ...a,
+            startDate: "2026-10-01",
+            endDate: "2026-10-31",
+          })
+        ).items,
+      ).toHaveLength(0);
+      expect(
+        (
+          await getReminder(a, {
+            sourceKind: "tracker_entry",
+            sourceId: String(e.entryId),
+          })
+        ).eligible,
+      ).toBe(false);
+      expect(before.eligible).toBe(true);
+      const custom = structuredClone(presets.books);
+      custom.completionKey = null;
+      const template = await run(a, {
+        operation: "publish",
+        templateId: null,
+        expectedVersionId: null,
+        definition: custom,
+        reason: "No mapped progress",
+      });
+      const tr = await run(a, {
+        operation: "create_tracker",
+        templateId: template.templateId,
+        versionId: template.versionId,
+        name: "No progress mapping",
+      });
+      await save(a, tr.trackerId, { title: "Custom book", finished: true });
+      const r = await getTrackerReport(a, { period: "year" });
+      expect(r.counts).toMatchObject({
+        entries: 2,
+        completionEligible: 1,
+        completed: 0,
+        created: 2,
+        migrationRevisions: 1,
+      });
+      expect(r.coverage).toHaveLength(3);
     }));
   it("keeps existing financial postings exact and blocks writes after lifecycle transition", () =>
     fixture(async (a, b) => {
@@ -581,6 +958,20 @@ describe("V3 private versioned tracker boundaries", () => {
       await expect(
         save(a, p.trackerId, { topic: "Still blocked" }),
       ).rejects.toThrow("paused");
+      const partialBundle = await exportWorkspace(a),
+        partialReview = await previewWorkspaceRestore(a, {
+          clientCommandId: randomUUID(),
+          bundle: partialBundle,
+        });
+      await restoreWorkspace(a, {
+        clientCommandId: randomUUID(),
+        runId: String(partialReview.runId),
+        previewHash: String(partialReview.previewHash),
+        confirmation: "replace-private-workspace",
+      });
+      await expect(
+        save(a, p.trackerId, { topic: "Still frozen after restore" }),
+      ).rejects.toThrow("paused");
       const partial = await view(a, p.trackerId, "tracker");
       if (partial.view === "tracker")
         expect(partial.tracker.template_version_id).toBe(p.versionId);
@@ -606,6 +997,64 @@ describe("V3 private versioned tracker boundaries", () => {
       );
       expect(totals!.n).toBe(102);
     }));
+  it(
+    "remaps and explicitly resumes an in-flight partial migration in another private workspace",
+    () =>
+      fixture(async (a, b) => {
+        const p = await preset(a);
+        for (let n = 0; n < 51; n++)
+          await save(a, p.trackerId, { topic: `Foreign partial ${n}` });
+        const d = structuredClone(presets.learning);
+        d.fields[0]!.label = "Renamed topic";
+        const version = await publish(a, p, d),
+          review = await run(a, {
+            operation: "preview",
+            trackerId: p.trackerId,
+            toVersionId: version.versionId,
+            rules: {},
+          });
+        await run(a, {
+          operation: "confirm",
+          migrationId: review.migrationId,
+          previewHash: review.previewHash,
+        });
+        await run(a, { operation: "batch", migrationId: review.migrationId });
+        const bundle = await exportWorkspace(a),
+          foreign = await previewWorkspaceRestore(b, {
+            clientCommandId: randomUUID(),
+            bundle,
+          });
+        expect(
+          await restoreWorkspace(b, {
+            clientCommandId: randomUUID(),
+            runId: String(foreign.runId),
+            previewHash: String(foreign.previewHash),
+            confirmation: "replace-private-workspace",
+          }),
+        ).toMatchObject({ restored: true });
+        const ids = remapForeignGraph(bundle, b.workspaceId).map,
+          trackerId = ids.get(String(p.trackerId))!,
+          migrationId = ids.get(String(review.migrationId))!;
+        await expect(
+          save(b, trackerId, { topic: "Frozen foreign partial" }),
+        ).rejects.toThrow("paused");
+        const restored = await view(b, migrationId, "migration");
+        if (restored.view !== "migration") throw new Error();
+        expect(restored.migration.state).toBe("cancelled");
+        await run(b, {
+          operation: "confirm",
+          migrationId,
+          previewHash: review.previewHash,
+        });
+        expect(await run(b, { operation: "batch", migrationId })).toMatchObject(
+          { state: "completed", migrated: 51, remaining: 0 },
+        );
+        expect(
+          (await getTrackerReport(b, { period: "year" })).counts,
+        ).toMatchObject({ entries: 51, created: 51, migrationRevisions: 51 });
+      }),
+    15000,
+  );
   it("refuses simultaneous migration plans and wrong-lineage targets", () =>
     fixture(async (a) => {
       const p = await preset(a),
@@ -648,7 +1097,7 @@ describe("V3 private versioned tracker boundaries", () => {
       expect(results.filter((x) => x.status === "fulfilled")).toHaveLength(1);
       expect(results.filter((x) => x.status === "rejected")).toHaveLength(1);
     }));
-  it("supports search/status/pagination and guards incomplete portability", () =>
+  it("supports search/status/pagination and complete tracker portability", () =>
     fixture(async (a, b) => {
       const p = await preset(a, "tasks");
       await save(a, p.trackerId, {
@@ -664,9 +1113,7 @@ describe("V3 private versioned tracker boundaries", () => {
       });
       if (v.view === "tracker")
         expect(v.entries.map((e) => e.title)).toEqual(["Percent % literal"]);
-      await expect(exportWorkspace(a)).rejects.toThrow(
-        "TRACKER_PORTABILITY_PENDING",
-      );
+      await expect(exportWorkspace(a)).resolves.toHaveProperty("manifest");
       await expect(exportWorkspace(b)).resolves.toHaveProperty("manifest");
     }));
 });

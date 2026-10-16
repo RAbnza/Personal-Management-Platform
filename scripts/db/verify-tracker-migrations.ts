@@ -34,17 +34,14 @@ async function main() {
     const journal = JSON.parse(
       await readFile("src/platform/db/migrations/meta/_journal.json", "utf8"),
     ) as { entries: { tag: string }[] };
-    assert.equal(
-      journal.entries[199]?.tag,
-      "0199_v2_i_sealed_allocation_validation",
-    );
+    assert.equal(journal.entries[201]?.tag, "0201_v3_tracker_security");
     const snapshot = JSON.parse(
       await readFile(
-        "src/platform/db/migrations/meta/0199_snapshot.json",
+        "src/platform/db/migrations/meta/0201_snapshot.json",
         "utf8",
       ),
     ) as { tables: Record<string, unknown> };
-    assert.equal(Object.keys(snapshot.tables).length, 116);
+    assert.equal(Object.keys(snapshot.tables).length, 125);
     const apply = async (start: number, end: number) => {
       for (const f of files.slice(start, end)) {
         await client.query("BEGIN");
@@ -57,11 +54,11 @@ async function main() {
         }
       }
     };
-    await apply(0, 200);
+    await apply(0, 202);
     await client.query(
       "CREATE TABLE public.tracker_upgrade_sentinel(value bigint NOT NULL); INSERT INTO public.tracker_upgrade_sentinel VALUES(9223372036854775807)",
     );
-    await apply(200, files.length);
+    await apply(202, files.length);
     assert.equal(
       (
         await client.query(
@@ -86,7 +83,7 @@ async function main() {
       ).rows,
       [{ condeferrable: true, condeferred: true }],
     );
-    for (const role of ["auth_adapter", "worker_domain", "queue_broker"])
+    for (const role of ["auth_adapter", "queue_broker"])
       assert.equal(
         (
           await client.query(
@@ -112,6 +109,24 @@ async function main() {
       ).rows[0].allowed,
       false,
     );
+    assert.deepEqual(
+      (
+        await client.query(
+          "SELECT c.relname name,has_table_privilege('worker_domain',c.oid,'SELECT') allowed FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='tracker' AND c.relkind='r' ORDER BY c.relname",
+        )
+      ).rows,
+      [
+        "entry",
+        "entry_revision",
+        "field_definition",
+        "field_identity",
+        "field_option",
+        "template",
+        "template_migration",
+        "template_version",
+        "tracker",
+      ].map((name) => ({ name, allowed: ["entry", "tracker"].includes(name) })),
+    );
     // Register the manually applied actual chain and prove no-change migrator replay.
     await client.query(
       "CREATE SCHEMA drizzle; CREATE TABLE drizzle.__drizzle_migrations(id serial PRIMARY KEY,hash text NOT NULL,created_at bigint)",
@@ -133,7 +148,7 @@ async function main() {
       files.length,
     );
     console.log(
-      `Focused tracker schema verification passed: ${files.length} fresh migrations, accepted 116-table/200-migration V2 baseline, bigint sentinel upgrade, no-change replay, nine forced-RLS tables, restricted grants and deferred current-entry FK.`,
+      `Focused tracker schema verification passed: ${files.length} fresh migrations, accepted 125-table/202-migration V3-A/B baseline, bigint sentinel upgrade, no-change replay, nine forced-RLS tables, restricted grants and deferred current-entry FK.`,
     );
   } finally {
     await client.end();

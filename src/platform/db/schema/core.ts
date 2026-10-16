@@ -28,7 +28,12 @@ const bytea = customType<{
   },
 });
 
-export const implementedModuleKeys = ["money", "career", "time"] as const;
+export const implementedModuleKeys = [
+  "money",
+  "career",
+  "time",
+  "trackers",
+] as const;
 
 export type ImplementedModuleKey = (typeof implementedModuleKeys)[number];
 

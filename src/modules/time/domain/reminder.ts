@@ -159,3 +159,15 @@ export class InvalidReminderActionError extends Error {
 export function reminderHref(source: ReminderSource): string {
   return `/calendar/reminders/${source.sourceKind}/${source.sourceId}`;
 }
+
+export function reminderModule(
+  kind: ReminderSource["sourceKind"],
+): "time" | "career" | "money" | "trackers" {
+  return kind === "personal_event"
+    ? "time"
+    : kind === "application_event"
+      ? "career"
+      : kind === "tracker_entry"
+        ? "trackers"
+        : "money";
+}

@@ -18,6 +18,7 @@ const moduleLabels = {
   career: "Career",
   time: "Calendar",
   money: "Money",
+  trackers: "Trackers",
 } as const;
 
 function formatInstant(value: string, timezone: string): string {
@@ -55,6 +56,7 @@ export interface AgendaListProps {
     career: boolean;
     time: boolean;
     money?: boolean;
+    trackers?: boolean;
   };
 }
 

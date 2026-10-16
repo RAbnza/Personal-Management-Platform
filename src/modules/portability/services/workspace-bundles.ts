@@ -14,7 +14,8 @@ import {
 } from "@/modules/core/repositories/command-receipt-repository";
 import { hashCommandPayload } from "@/modules/core/domain/command";
 import { createPrivateRevision } from "@/modules/audit/repositories/private-revision-repository";
-import { graphRegistry } from "../domain/graph-registry";
+import { graphRegistry, legacyV2GraphRegistry } from "../domain/graph-registry";
+import { validateTrackerGraph } from "../domain/validate-trackers";
 import { previewDigest } from "../domain/csv-preview";
 import { FileBoundaryError } from "@/modules/files/domain/supporting-file";
 const schemaFingerprint = previewDigest(graphRegistry);
@@ -24,7 +25,8 @@ const sharedPrivateKinds = new Set([
   "finance.private_group_link_revision",
   "finance.private_group_review",
 ]);
-const legacyHRegistry = graphRegistry.filter(
+const legacyIFingerprint = previewDigest(legacyV2GraphRegistry);
+const legacyHRegistry = legacyV2GraphRegistry.filter(
   (d) => !sharedPrivateKinds.has(d.kind),
 );
 const legacyHFingerprint = previewDigest(legacyHRegistry);
@@ -73,20 +75,43 @@ function ownerValues(
     );
   return value;
 }
-async function assertTrackerPortabilityReady(tx: ScopedTransaction) {
-  // Assignment 1 safety boundary: C owns versioned tracker portability. A
-  // bundle must never advertise completeness while omitting these records.
-  if (
-    (await tx.db.execute(sql`SELECT id FROM tracker.template LIMIT 1`)).rows
-      .length
-  )
-    throw new FileBoundaryError("TRACKER_PORTABILITY_PENDING");
+function trackerEvidenceJson(
+  kind: string,
+  row: Record<string, unknown>,
+  key: string,
+) {
+  return (
+    (kind === "core.command_receipt" &&
+      String(row.command_type).startsWith("tracker.") &&
+      key === "result_json") ||
+    (kind === "audit.private_revision" &&
+      row.subject_kind === "tracker" &&
+      ["before_json", "after_json"].includes(key))
+  );
+}
+function portableRecord(
+  kind: string,
+  row: Record<string, unknown>,
+  a: ScopedDatabaseContext,
+) {
+  if (kind.startsWith("tracker."))
+    return {
+      ...row,
+      workspace_id: "$workspace",
+      recorded_by_user_id: "$owner",
+    };
+  const result = ownerValues(row, a.userId, a.workspaceId) as Record<
+    string,
+    unknown
+  >;
+  for (const key of Object.keys(row))
+    if (trackerEvidenceJson(kind, row, key)) result[key] = row[key];
+  return result;
 }
 export async function captureWorkspaceGraph(
   tx: ScopedTransaction,
   a: ScopedDatabaseContext,
 ) {
-  await assertTrackerPortabilityReady(tx);
   const root = (
     await tx.db.execute<{
       currency: string;
@@ -117,10 +142,7 @@ export async function captureWorkspaceGraph(
       await tx.db.execute<{ row: Record<string, unknown> }>(
         sql`SELECT jsonb_build_object(${sql.join(fields, sql`,`)}) row FROM ${ident(table.kind)} ${table.kind === "core.command_receipt" ? sql`WHERE command_type<>'portability.retire_notification'` : sql``} ORDER BY ctid LIMIT 10001`,
       )
-    ).rows.map(
-      (r) =>
-        ownerValues(r.row, a.userId, a.workspaceId) as Record<string, unknown>,
-    );
+    ).rows.map((r) => portableRecord(table.kind, r.row, a));
     count += rows.length;
     if (count > 10000) throw new FileBoundaryError("PORTABLE_ROW_LIMIT");
     entities.push({ kind: table.kind, records: rows });
@@ -170,6 +192,7 @@ export function validateWorkspaceGraph(raw: unknown) {
           schemaFingerprint: z.union([
             z.literal(schemaFingerprint),
             z.literal(legacyHFingerprint),
+            z.literal(legacyIFingerprint),
           ]),
           sourceWorkspaceId: z.uuid(),
           generatedAt: z.iso.datetime(),
@@ -237,24 +260,28 @@ export function validateWorkspaceGraph(raw: unknown) {
     )
       throw new FileBoundaryError("PORTABLE_GRAPH_COVERAGE");
     basic.entities.push(
-      ...graphRegistry
+      ...legacyV2GraphRegistry
         .filter((d) => sharedPrivateKinds.has(d.kind))
         .map((d) => ({ kind: d.kind, records: [] })),
     );
-    basic.manifest.schemaFingerprint = schemaFingerprint;
+    basic.manifest.schemaFingerprint = legacyIFingerprint;
     basic.checksumSha256 = previewDigest({
       manifest: basic.manifest,
       entities: basic.entities,
     });
   }
+  const expectedRegistry =
+    basic.manifest.schemaFingerprint === schemaFingerprint
+      ? graphRegistry
+      : legacyV2GraphRegistry;
   if (
-    basic.entities.length !== graphRegistry.length ||
-    new Set(basic.entities.map((e) => e.kind)).size !== graphRegistry.length
+    basic.entities.length !== expectedRegistry.length ||
+    new Set(basic.entities.map((e) => e.kind)).size !== expectedRegistry.length
   )
     throw new FileBoundaryError("PORTABLE_GRAPH_COVERAGE");
   let total = 0;
   const indexed = new Map<string, Set<string>>();
-  for (const descriptor of graphRegistry) {
+  for (const descriptor of expectedRegistry) {
     const e = basic.entities.find((e) => e.kind === descriptor.kind);
     if (!e) throw new FileBoundaryError("PORTABLE_GRAPH_COVERAGE");
     total += e.records.length;
@@ -341,7 +368,7 @@ export function validateWorkspaceGraph(raw: unknown) {
   }
   if (total !== basic.manifest.rowCount)
     throw new FileBoundaryError("PORTABLE_COUNT_MISMATCH");
-  for (const descriptor of graphRegistry) {
+  for (const descriptor of expectedRegistry) {
     const e = basic.entities.find((e) => e.kind === descriptor.kind)!;
     for (const row of e.records)
       for (const fk of descriptor.foreignKeys) {
@@ -356,6 +383,7 @@ export function validateWorkspaceGraph(raw: unknown) {
         }
       }
   }
+  validateTrackerGraph(basic.entities);
   return basic as WorkspaceBundle;
 }
 export function remapForeignGraph(
@@ -434,14 +462,49 @@ export function remapForeignGraph(
             const c = descriptor.columns.find((c) => c.name === k)!;
             return [
               k,
-              c.type === "uuid" &&
+              e.kind === "tracker.entry_revision" &&
+              bundle.entities
+                .find((e) => e.kind === "core.command_receipt")!
+                .records.some(
+                  (c) =>
+                    c.id === row.command_receipt_id &&
+                    c.command_type === "tracker.batch",
+                ) &&
+              k === "reason" &&
               typeof v === "string" &&
-              k !== "request_id" &&
-              k !== "client_command_id"
-                ? (map.get(v) ?? v)
-                : c.type === "jsonb"
-                  ? rewrite(v, k)
-                  : v,
+              v.startsWith("Template migration ")
+                ? `Template migration ${map.get(v.slice(19)) ?? v.slice(19)}`
+                : k === "values_json" ||
+                    (e.kind.startsWith("tracker.") &&
+                      [
+                        "default_json",
+                        "validation_json",
+                        "mapping_json",
+                        "completion_json",
+                      ].includes(k))
+                  ? v
+                  : e.kind === "tracker.template_migration" &&
+                      k === "preview_counts_json"
+                    ? rewriteTrackerPreview(v, map)
+                    : c.type === "uuid" &&
+                        typeof v === "string" &&
+                        k !== "request_id" &&
+                        k !== "client_command_id"
+                      ? (map.get(v) ?? v)
+                      : c.type === "jsonb"
+                        ? trackerEvidenceJson(e.kind, row, k) &&
+                          v !== null &&
+                          typeof v === "object" &&
+                          "counts" in v
+                          ? {
+                              ...(rewrite(v, k) as Record<string, unknown>),
+                              counts: rewriteTrackerPreview(
+                                (v as Record<string, unknown>).counts,
+                                map,
+                              ),
+                            }
+                          : rewrite(v, k)
+                        : v,
             ];
           }),
         ),
@@ -553,7 +616,6 @@ export async function prepareWorkspaceExport(
     await tx.db.execute(sql`SELECT id FROM core.workspace FOR UPDATE`);
     const r = await claimCommandReceipt(tx, receiptInput);
     if (r.kind === "replay") return r.result;
-    await assertTrackerPortabilityReady(tx);
     const id = randomUUID();
     await tx.db.execute(
       sql`INSERT INTO ops.export_run(id,workspace_id,export_kind,schema_version,filters_json,requested_by_user_id,command_receipt_id,state,snapshot_financial_revision,generated_at,row_count,coverage_json,bundle_json,expires_at,checksum_sha256) VALUES(${id}::uuid,${a.workspaceId}::uuid,'workspace_bundle',2,'{}'::jsonb,${a.userId}::uuid,${r.receiptId}::uuid,'completed',${bundle.manifest.financialRevision}::bigint,statement_timestamp(),${bundle.manifest.rowCount},${JSON.stringify(bundle.manifest)}::jsonb,${JSON.stringify(bundle)}::jsonb,statement_timestamp()+interval '24 hours',${bundle.checksumSha256})`,
@@ -777,9 +839,13 @@ export async function restoreWorkspace(
       payloadHash: hashCommandPayload(c),
     });
     if (receipt.kind === "replay") return receipt.result;
-    // A restore preview can predate the first tracker. Recheck while holding
-    // the same workspace lock used by tracker creation, before graph replacement.
-    await assertTrackerPortabilityReady(tx);
+    const staged = (
+      await tx.db.execute<{ bundle_json: unknown }>(
+        sql`SELECT bundle_json FROM ops.restore_run WHERE id=${c.runId}::uuid`,
+      )
+    ).rows[0];
+    if (!staged) throw new FileBoundaryError("PORTABLE_RESTORE_UNAVAILABLE");
+    validateWorkspaceGraph(staged.bundle_json);
     const result = (
       await tx.db.execute<{ result: Record<string, unknown> }>(
         sql`SELECT ops.apply_private_restore(${c.runId}::uuid,decode(${c.previewHash},'hex'),${receipt.receiptId}::uuid) result`,
@@ -845,7 +911,7 @@ export async function downloadWorkspaceRecovery(
                     ),
                 )
                 .map((c) => {
-                  let v = row[c.name];
+                  let v = row[c.name] ?? null;
                   if (v !== null) {
                     if (c.type === "bigint" || c.type.startsWith("numeric"))
                       v = String(v);
@@ -854,17 +920,17 @@ export async function downloadWorkspaceRecovery(
                     else if (c.type.startsWith("timestamp"))
                       v = String(v).replace("T", " ");
                   }
-                  return [c.name, ownerValues(v, a.userId, a.workspaceId)];
+                  return [
+                    c.name,
+                    d.kind.startsWith("tracker.") ||
+                    trackerEvidenceJson(d.kind, row, c.name)
+                      ? v
+                      : ownerValues(v, a.userId, a.workspaceId),
+                  ];
                 }),
             ),
           )
-          .map(
-            (row) =>
-              ownerValues(row, a.userId, a.workspaceId) as Record<
-                string,
-                unknown
-              >,
-          ),
+          .map((row) => portableRecord(d.kind, row, a)),
       }));
       const manifest = {
         ...template.manifest,
@@ -889,4 +955,23 @@ export async function downloadWorkspaceRecovery(
       );
     });
   return bundle;
+}
+
+function rewriteTrackerPreview(value: unknown, map: Map<string, string>) {
+  if (value === null || typeof value !== "object") return value;
+  const p = value as Record<string, unknown>;
+  return {
+    ...p,
+    ...Object.fromEntries(
+      ["samples", "issues"].map((key) => [
+        key,
+        Array.isArray(p[key])
+          ? (p[key] as Record<string, unknown>[]).map((row) => ({
+              ...row,
+              entryId: map.get(String(row.entryId)) ?? row.entryId,
+            }))
+          : p[key],
+      ]),
+    ),
+  };
 }

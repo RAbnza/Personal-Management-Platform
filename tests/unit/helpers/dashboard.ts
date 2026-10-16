@@ -73,6 +73,14 @@ export function dashboardFixture(): DashboardResult {
       assessments: 0,
       followUps: 0,
     },
+    trackers: {
+      active: 0,
+      completed: 0,
+      overdue: 0,
+      agendaVisible: true,
+      enabled: true,
+      due: [],
+    },
     attention: [],
     agenda: {
       workspaceTimezone: "Asia/Manila",

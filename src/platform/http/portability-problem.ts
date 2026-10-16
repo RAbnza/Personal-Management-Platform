@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TrackerError } from "@/modules/trackers/domain/tracker";
 import { FileBoundaryError } from "@/modules/files/domain/supporting-file";
 import { CommandReceiptConflictError } from "@/modules/core/domain/command";
 import { createApiProblemResponse } from "./api-v1";
@@ -8,15 +9,12 @@ import {
   createSchemaValidationProblemResponse,
 } from "./api-v1-mutation";
 export function hProblem(e: unknown, id: string) {
-  if (
-    e instanceof FileBoundaryError &&
-    e.code === "TRACKER_PORTABILITY_PENDING"
-  )
+  if (e instanceof TrackerError)
     return createApiProblemResponse({
-      status: 409,
-      code: e.code,
+      status: 422,
+      code: "PORTABLE_TRACKER_GRAPH_INVALID",
       message:
-        "Workspace export and replacement are unavailable while tracker records exist in this preview. Tracker definitions and history must be supported before these operations can proceed.",
+        "The tracker graph contains inconsistent definitions, values or history.",
       requestId: id,
       retryable: false,
     });

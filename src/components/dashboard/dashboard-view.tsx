@@ -17,7 +17,12 @@ export function DashboardView({
   moduleEnabled,
 }: {
   data: DashboardResult;
-  moduleEnabled: { money: boolean; career: boolean; time: boolean };
+  moduleEnabled: {
+    money: boolean;
+    career: boolean;
+    time: boolean;
+    trackers?: boolean;
+  };
 }) {
   const f = data.finance,
     money = (v: string) => formatMoneyMinorUnits(data.currency, v);
@@ -56,6 +61,25 @@ export function DashboardView({
           </Link>
         )}
       </Panel>
+      {moduleEnabled.trackers !== false &&
+        data.trackers?.enabled &&
+        data.filters.source === "all" && (
+          <Panel
+            title="Private tracker progress"
+            description="Current active records; recorded period activity is available in Tracker reports."
+          >
+            <p>
+              {data.trackers.active} open ? {data.trackers.completed} completed
+              ? {data.trackers.overdue} overdue
+            </p>
+            <Link className={linkClass} href="/trackers">
+              Open Trackers
+            </Link>
+            <Link className={linkClass} href="/trackers/reports">
+              Tracker reports
+            </Link>
+          </Panel>
+        )}
       <DashboardFilters
         key={`${data.period.kind}:${data.period.startDate}:${data.filters.source}`}
         period={data.period.kind}

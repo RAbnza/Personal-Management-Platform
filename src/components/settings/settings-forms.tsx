@@ -29,10 +29,12 @@ function useSettingsSave(url: string) {
       });
       if (r.ok) {
         setState("saved");
+        window.dispatchEvent(new Event("pmp-module-preferences-changed"));
         router.refresh();
       } else if (r.status >= 500) setState("uncertain");
       else {
         setState("failed");
+        window.dispatchEvent(new Event("pmp-module-preferences-changed"));
         router.refresh();
       }
     } catch {
@@ -109,7 +111,12 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     </Panel>
   );
 }
-const labels = { money: "Money", career: "Career", time: "Calendar" };
+const labels = {
+  money: "Money",
+  career: "Career",
+  time: "Calendar",
+  trackers: "Trackers",
+};
 export function ModulePreferenceForm({
   module,
 }: {

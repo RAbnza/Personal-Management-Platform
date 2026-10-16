@@ -159,6 +159,14 @@ describe("module preferences", () => {
 
             version: 0,
           },
+
+          {
+            moduleKey: "trackers",
+            enabled: true,
+            agendaVisible: true,
+            remindersEnabled: true,
+            version: 0,
+          },
         ]);
       });
     } finally {

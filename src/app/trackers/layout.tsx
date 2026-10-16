@@ -22,10 +22,9 @@ export default async function TrackerLayout({
     >
       <div className="min-w-0 space-y-6 break-words">
         <p className="rounded-card border border-border p-3 text-sm">
-          Private tracker preview. Tracker reports, Calendar deadlines and
-          reminders are not available yet. Workspace export and replacement are
-          unavailable while tracker records exist; your saved data and history
-          remain retained.
+          Your trackers are private. Entry dates feed Calendar; reminders
+          require your preferences and email consent. Published templates and
+          prior revisions remain available after customization.
         </p>
         <nav aria-label="Trackers" className="flex flex-wrap gap-5">
           <Link
@@ -39,6 +38,12 @@ export default async function TrackerLayout({
             href="/trackers/templates/new"
           >
             Create custom template
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center text-link underline"
+            href="/trackers/reports"
+          >
+            Reports and statistics
           </Link>
         </nav>
         {children}

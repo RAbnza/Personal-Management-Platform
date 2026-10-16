@@ -121,7 +121,9 @@ export async function scanNotificationScopeInTransaction(
             ? "time"
             : (v.target as ReminderSource).sourceKind === "application_event"
               ? "career"
-              : "money";
+              : (v.target as ReminderSource).sourceKind === "tracker_entry"
+                ? "trackers"
+                : "money";
         await tx.db.execute(
           sql`INSERT INTO time.reminder_rule(workspace_id,module_key,offset_days,local_time) VALUES(${actor.workspaceId}::uuid,${m},0,'09:00') ON CONFLICT DO NOTHING`,
         );
@@ -216,7 +218,7 @@ export async function scanNotificationScopeInTransaction(
         }
         const occurrence = (
           await tx.db.execute<{ id: string }>(
-            sql`INSERT INTO time.reminder_occurrence(workspace_id,rule_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,expected_occurrence_id,occurrence_key,source_generation,rule_generation,scheduled_for) VALUES(${actor.workspaceId}::uuid,${r.id}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${c.recurring}::uuid,${v.occurrenceKey},${v.sourceGeneration},${r.generation},${r.scheduledFor}::timestamptz) ON CONFLICT ON CONSTRAINT uq_reminder_occurrence_logical DO NOTHING RETURNING id`,
+            sql`INSERT INTO time.reminder_occurrence(workspace_id,rule_id,personal_event_id,application_event_id,debt_obligation_id,card_statement_id,card_installment_id,expected_occurrence_id,tracker_entry_id,occurrence_key,source_generation,rule_generation,scheduled_for) VALUES(${actor.workspaceId}::uuid,${r.id}::uuid,${c.personal}::uuid,${c.career}::uuid,${c.debt}::uuid,${c.statement}::uuid,${c.installment}::uuid,${c.recurring}::uuid,${c.tracker}::uuid,${v.occurrenceKey},${v.sourceGeneration},${r.generation},${r.scheduledFor}::timestamptz) ON CONFLICT ON CONSTRAINT uq_reminder_occurrence_logical DO NOTHING RETURNING id`,
           )
         ).rows[0];
         const occurrenceId = r.occurrenceId ?? occurrence?.id;
@@ -293,7 +295,7 @@ export async function processNotificationEmail(
     await serialize(tx, actor);
     const row = (
       await tx.db.execute<DeliveryRow>(
-        sql`SELECT d.*,jsonb_build_object('sourceKind',CASE WHEN o.personal_event_id IS NOT NULL THEN 'personal_event' WHEN o.application_event_id IS NOT NULL THEN 'application_event' WHEN o.debt_obligation_id IS NOT NULL THEN 'debt_installment' WHEN o.card_statement_id IS NOT NULL THEN 'card_statement' WHEN o.card_installment_id IS NOT NULL THEN 'card_installment' ELSE 'expected_occurrence' END,'sourceId',COALESCE(o.personal_event_id,o.application_event_id,o.debt_obligation_id,o.card_statement_id,o.card_installment_id,o.expected_occurrence_id)) source,(SELECT count(*)::int FROM time.notification_attempt a WHERE a.delivery_id=d.id) attempts FROM time.notification_delivery d JOIN time.reminder_occurrence o ON o.workspace_id=d.workspace_id AND o.id=d.reminder_occurrence_id WHERE d.id=${deliveryId}::uuid FOR UPDATE OF d`,
+        sql`SELECT d.*,jsonb_build_object('sourceKind',CASE WHEN o.personal_event_id IS NOT NULL THEN 'personal_event' WHEN o.application_event_id IS NOT NULL THEN 'application_event' WHEN o.debt_obligation_id IS NOT NULL THEN 'debt_installment' WHEN o.card_statement_id IS NOT NULL THEN 'card_statement' WHEN o.card_installment_id IS NOT NULL THEN 'card_installment' WHEN o.tracker_entry_id IS NOT NULL THEN 'tracker_entry' ELSE 'expected_occurrence' END,'sourceId',COALESCE(o.personal_event_id,o.application_event_id,o.debt_obligation_id,o.card_statement_id,o.card_installment_id,o.expected_occurrence_id,o.tracker_entry_id)) source,(SELECT count(*)::int FROM time.notification_attempt a WHERE a.delivery_id=d.id) attempts FROM time.notification_delivery d JOIN time.reminder_occurrence o ON o.workspace_id=d.workspace_id AND o.id=d.reminder_occurrence_id WHERE d.id=${deliveryId}::uuid FOR UPDATE OF d`,
       )
     ).rows[0];
     if (

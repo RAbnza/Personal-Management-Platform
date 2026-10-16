@@ -13,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   career: vi.fn(),
   agenda: vi.fn(),
   activity: vi.fn(),
+  trackers: vi.fn(),
+}));
+vi.mock("@/modules/trackers/repositories/summary", () => ({
+  readTrackerSummary: mocks.trackers,
 }));
 vi.mock("@/platform/db", () => ({ withDomainTransaction: mocks.transaction }));
 vi.mock("@/modules/reporting/repositories/report-context-repository", () => ({
@@ -74,6 +78,7 @@ beforeEach(() => {
   mocks.career.mockResolvedValue({ applications: [], events: [] });
   mocks.agenda.mockResolvedValue(d.agenda);
   mocks.activity.mockResolvedValue([]);
+  mocks.trackers.mockResolvedValue(d.trackers);
 });
 describe("Dashboard service contract", () => {
   it("includes exact card liability and card credits in net position without adding liquid funds", async () => {
@@ -119,6 +124,7 @@ describe("Dashboard service contract", () => {
       mocks.career,
       mocks.agenda,
       mocks.activity,
+      mocks.trackers,
     ])
       expect(read.mock.calls.every((call) => call[0] === snapshot)).toBe(true);
     expect(result.financialRevision).toBe("12");

@@ -1,3 +1,9 @@
+import {
+  exportWorkspace,
+  previewWorkspaceRestore,
+  restoreWorkspace,
+} from "@/modules/portability/services/workspace-bundles";
+import { recordTrackerCommand } from "@/modules/trackers/services/commands";
 import { randomUUID, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
@@ -966,3 +972,157 @@ it(
     }),
   15000,
 );
+
+it("schedules tracker deadlines under worker RLS, deduplicates title edits and cancels completion before sending", async () =>
+  fixture(async (actor) => {
+    const run = (body: Record<string, unknown>) =>
+      recordTrackerCommand(actor, { clientCommandId: randomUUID(), ...body });
+    const p = await run({
+      operation: "preset",
+      preset: "tasks",
+      name: "Private tracker",
+    });
+    const date = await withDomainTransaction(
+      actor,
+      async (t) =>
+        (
+          await t.db.execute<{ date: string }>(
+            sql`SELECT ((clock_timestamp() AT TIME ZONE timezone)::date-1)::text date FROM core.workspace`,
+          )
+        ).rows[0]!.date,
+    );
+    const e = await run({
+      operation: "save_entry",
+      trackerId: p.trackerId,
+      entryId: null,
+      expectedRevisionId: null,
+      values: { title: "Private sensitive title", due: date },
+      reason: "Synthetic",
+    });
+    await Promise.all([
+      scanNotificationScope(worker, actor),
+      scanNotificationScope(worker, actor),
+    ]);
+    let ds = (await deliveries(actor)).filter(
+      (d) => d.source_kind === "tracker_entry",
+    );
+    expect(ds).toHaveLength(1);
+    const id = ds[0]!.id;
+    const changed = await run({
+      operation: "save_entry",
+      trackerId: p.trackerId,
+      entryId: e.entryId,
+      expectedRevisionId: e.revisionId,
+      values: { title: "Renamed private title", due: date },
+      reason: "Title only",
+    });
+    await scanNotificationScope(worker, actor);
+    expect(
+      (await deliveries(actor))
+        .filter((d) => d.source_kind === "tracker_entry")
+        .map((d) => d.id),
+    ).toEqual([id]);
+    await run({
+      operation: "save_entry",
+      trackerId: p.trackerId,
+      entryId: e.entryId,
+      expectedRevisionId: changed.revisionId,
+      values: {
+        title: "Renamed private title",
+        due: date,
+        status: "completed",
+      },
+      reason: "Done",
+    });
+    await scanNotificationScope(worker, actor);
+    ds = (await deliveries(actor)).filter(
+      (d) => d.source_kind === "tracker_entry",
+    );
+    expect(ds[0]!.status).toBe("cancelled");
+    const send = vi.fn();
+    await processNotificationEmail(
+      worker,
+      worker,
+      { schemaVersion: 1, deliveryId: id },
+      send,
+    );
+    expect(send).not.toHaveBeenCalled();
+  }));
+
+it("retires accepted tracker delivery evidence across an older graph restore", async () =>
+  fixture(async (actor) => {
+    const run = (body: Record<string, unknown>) =>
+      recordTrackerCommand(actor, { clientCommandId: randomUUID(), ...body });
+    const p = await run({
+      operation: "preset",
+      preset: "tasks",
+      name: "Private tracker",
+    });
+    const date = await withDomainTransaction(
+      actor,
+      async (t) =>
+        (
+          await t.db.execute<{ date: string }>(
+            sql`SELECT ((clock_timestamp() AT TIME ZONE timezone)::date-1)::text date FROM core.workspace`,
+          )
+        ).rows[0]!.date,
+    );
+    await run({
+      operation: "save_entry",
+      trackerId: p.trackerId,
+      entryId: null,
+      expectedRevisionId: null,
+      values: { title: "Never include this private title", due: date },
+      reason: "Synthetic",
+    });
+    await scanNotificationScope(worker, actor);
+    const d = (await deliveries(actor)).find(
+      (d) => d.source_kind === "tracker_entry",
+    )!;
+    expect(d).toBeDefined();
+    const older = await exportWorkspace(actor),
+      send = vi.fn(async () => ({ providerMessageId: randomUUID() }));
+    await processNotificationEmail(
+      worker,
+      worker,
+      { schemaVersion: 1, deliveryId: d.id },
+      send,
+    );
+    expect(send).toHaveBeenCalledOnce();
+    expect(JSON.stringify(send.mock.calls)).not.toContain(
+      "Never include this private title",
+    );
+    const review = await previewWorkspaceRestore(actor, {
+      clientCommandId: randomUUID(),
+      bundle: older,
+    });
+    expect(
+      await restoreWorkspace(actor, {
+        clientCommandId: randomUUID(),
+        runId: String(review.runId),
+        previewHash: String(review.previewHash),
+        confirmation: "replace-private-workspace",
+      }),
+    ).toMatchObject({ restored: true });
+    expect((await deliveries(actor)).find((x) => x.id === d.id)!.status).toBe(
+      "cancelled",
+    );
+    expect(
+      await withDomainTransaction(
+        actor,
+        async (t) =>
+          (
+            await t.db.execute<{ n: number }>(
+              sql`SELECT count(*)::int n FROM core.command_receipt WHERE command_type='portability.retire_notification'`,
+            )
+          ).rows[0]!.n,
+      ),
+    ).toBeGreaterThan(0);
+    await processNotificationEmail(
+      worker,
+      worker,
+      { schemaVersion: 1, deliveryId: d.id },
+      send,
+    );
+    expect(send).toHaveBeenCalledOnce();
+  }));

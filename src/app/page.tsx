@@ -57,6 +57,7 @@ export default async function Home({
     money: modules.some((m) => m.moduleKey === "money" && m.enabled),
     career: modules.some((m) => m.moduleKey === "career" && m.enabled),
     time: modules.some((m) => m.moduleKey === "time" && m.enabled),
+    trackers: modules.some((m) => m.moduleKey === "trackers" && m.enabled),
   };
   let data: DashboardResult | null = null,
     invalid = false;
