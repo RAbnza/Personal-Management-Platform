@@ -27,6 +27,7 @@ const runtimeEnvironment = {
     "pmp-files-test-runtime",
   ),
   FILES_ENABLED: "true",
+  SHARED_EXPENSES_ENABLED: "true",
   FILES_DATABASE_URL: "",
   PMP_DEPLOYMENT_ENV: "local",
   DATABASE_MIGRATION_URL: "",

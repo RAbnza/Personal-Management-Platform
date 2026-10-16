@@ -32,6 +32,7 @@ import {
 import { readCareerReport } from "../repositories/career-report-repository";
 import { readDashboardDebts } from "@/modules/dashboard/repositories/dashboard-repository";
 import type { z } from "zod";
+import { sharingEnabled } from "@/modules/sharing/domain/sharing";
 
 export async function resolveReport(
   t: ScopedTransaction,
@@ -100,6 +101,18 @@ export async function getFinancialReportInTransaction(
   return {
     ...context,
     metrics,
+    sharing: sharingEnabled()
+      ? (
+          await t.db.execute<{
+            groupId: string;
+            receivableMinor: string;
+            payableMinor: string;
+            clearingMinor: string;
+          }>(
+            sql`SELECT b.group_id AS "groupId",coalesce(sum(p.amount_minor::numeric) FILTER(WHERE l.id=b.receivable_ledger_account_id),0)::text AS "receivableMinor",coalesce(sum(p.amount_minor::numeric) FILTER(WHERE l.id=b.payable_ledger_account_id),0)::text AS "payableMinor",coalesce(sum(p.amount_minor::numeric) FILTER(WHERE l.kind='payment_clearing_asset'),0)::text AS "clearingMinor" FROM finance.group_ledger_binding b JOIN finance.ledger_account l ON l.workspace_id=b.workspace_id AND (l.id IN(b.receivable_ledger_account_id,b.payable_ledger_account_id) OR l.code='group:'||b.group_id::text||':clearing') LEFT JOIN finance.posting p ON p.workspace_id=l.workspace_id AND p.ledger_account_id=l.id LEFT JOIN finance.journal j ON j.workspace_id=p.workspace_id AND j.id=p.journal_id WHERE b.workspace_id=${input.workspaceId}::uuid AND (j.id IS NULL OR (j.state='posted' AND j.effective_date<${period.endDateExclusive}::date)) GROUP BY b.group_id ORDER BY b.group_id LIMIT 100`,
+          )
+        ).rows
+      : [],
     savingsGoals: await readSavingsGoals(t, input.workspaceId, {
       pageSize: 10,
     }),

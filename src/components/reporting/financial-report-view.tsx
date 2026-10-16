@@ -64,6 +64,30 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
   ];
   return (
     <div className="space-y-6">
+      {data.sharing?.length > 0 && (
+        <Panel title="Your adopted shared positions at period end">
+          <p>
+            Private coverage includes only your approved group sources. Group
+            totals and pending projections remain separate from spending and
+            from the existing limited tracked-net metric.
+          </p>
+          <ul>
+            {data.sharing.map((g) => (
+              <li key={g.groupId}>
+                <Link
+                  href={`/sharing/${g.groupId}`}
+                  className="text-link underline"
+                >
+                  Shared group report
+                </Link>{" "}
+                · Receivable {money(g.receivableMinor)} · Payable signed balance{" "}
+                {money(g.payableMinor)} · Unresolved clearing{" "}
+                {money(g.clearingMinor)}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       <CardSurfacePanel data={data.cardSurface} currency={data.currency} />
       <Link
         className="inline-flex min-h-11 items-center text-link underline"

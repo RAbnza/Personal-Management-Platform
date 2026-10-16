@@ -45,6 +45,7 @@ export function AppShell({
       <nav aria-label="Skip navigation" className="contents">
         <a
           href={`#${mainContentId}`}
+          style={{ color: "var(--primary-foreground)" }}
           className={[
             "fixed left-4 top-4 z-(--z-notice)",
             "-translate-y-24 rounded-button border border-primary-border",

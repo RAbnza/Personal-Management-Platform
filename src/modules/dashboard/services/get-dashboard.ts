@@ -22,6 +22,7 @@ import {
   readReconciliationAttention,
 } from "../repositories/dashboard-repository";
 import { readReportContext } from "@/modules/reporting/repositories/report-context-repository";
+import { readSharingAttention } from "@/modules/sharing/services/attention";
 
 export type AttentionItem = {
   key: string;
@@ -98,7 +99,7 @@ export async function getDashboardInTransaction(
   const clearingMinor = sum(debts.map((d) => d.clearingMinor));
   const scheduledMinor = sum(debts.map((d) => d.scheduledMinor ?? "0"));
   const upcomingMinor = sum(debts.map((d) => d.upcomingMinor));
-  const attention: AttentionItem[] = [];
+  const attention: AttentionItem[] = await readSharingAttention(t);
   for (const d of debts) {
     const href = `/money/debts/${d.debtId}`;
     if (BigInt(d.overdueMinor) > 0n)

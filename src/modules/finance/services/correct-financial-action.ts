@@ -113,6 +113,16 @@ async function validateSource(
     throw new RangeError(
       "This action is already reversed. Record a new genuine action if needed.",
     );
+  if (
+    (
+      await t.db.execute(
+        sql`SELECT id FROM finance.private_group_link WHERE workspace_id=${a.workspaceId}::uuid AND action_id=${a.actionId}::uuid`,
+      )
+    ).rows.length
+  )
+    throw new RangeError(
+      "This action contains owner-approved group adoption. Review its group source and private reconciliation before changing its immutable accounting.",
+    );
   const planningAvailable = await t.db.execute<{ available: boolean }>(
     sql`SELECT to_regclass('planning.effective_occurrence_link_v') IS NOT NULL AS available`,
   );
@@ -1118,10 +1128,30 @@ export async function getFinancialActionDetailInTransaction(
       dependentClosure =
         "Reverse this transaction's recurring occurrence links first. Then correct or reverse the actual evidence and explicitly relink its supported current revision.";
   }
+  const privateGroupLink = (
+    await t.db.execute<{
+      groupId: string;
+      expenseId: string | null;
+      refundId: string | null;
+      settlementId: string | null;
+      paidMinor: string;
+      shareMinor: string;
+      needsPrivateCorrection: boolean;
+      reviewedDifferenceReason: string | null;
+    }>(
+      sql`SELECT l.group_id AS "groupId",l.expense_id AS "expenseId",l.refund_id AS "refundId",l.settlement_id AS "settlementId",r.paid_minor::text AS "paidMinor",r.share_minor::text AS "shareMinor",((CASE WHEN l.expense_id IS NOT NULL THEN e.current_revision_id IS DISTINCT FROM r.source_expense_revision_id ELSE (finance.group_effect_source(l.group_id,l.participant_id,l.refund_id,l.settlement_id)->>'sourceHash')<>r.accepted_source_hash END) OR current_action.current_revision_id<>r.action_revision_id) AS "needsPrivateCorrection",(SELECT v.reason FROM finance.private_group_review v WHERE v.link_id=l.id AND v.accepted_link_revision_id=l.current_link_revision_id AND v.source_hash=finance.private_group_review_source(l.id)->>'sourceHash' ORDER BY v.created_at DESC,v.id DESC LIMIT 1) AS "reviewedDifferenceReason" FROM finance.private_group_link l JOIN finance.private_group_link_revision r ON r.workspace_id=l.workspace_id AND r.id=l.current_link_revision_id JOIN finance.financial_action current_action ON current_action.workspace_id=l.workspace_id AND current_action.id=l.action_id LEFT JOIN sharing.shared_expense e ON e.group_id=l.group_id AND e.id=l.expense_id WHERE l.workspace_id=${input.workspaceId}::uuid AND l.action_id=${input.actionId}::uuid`,
+    )
+  ).rows[0];
+  if (privateGroupLink) {
+    dependentClosure =
+      "This action contains owner-approved group adoption. Ordinary corrections, reversals and refunds are unavailable until its group and private evidence are explicitly reconciled.";
+    replacement = null;
+  }
   return {
     current,
     history,
-    refundSources,
+    ...(privateGroupLink ? { privateGroupLink } : {}),
+    refundSources: privateGroupLink ? [] : refundSources,
     clearingSources,
     cashEffects: rows.rows.map((r) => r.item),
     replacement,

@@ -387,6 +387,47 @@ it("rebases recognized opening history atomically without changing covered cash 
       revisions: 2,
     });
   }));
+it("upgrades a V2-H portable artifact with exact original provenance and unchanged cash", async () =>
+  fixture(async (a) => {
+    const bundle = await exportWorkspace(a),
+      kinds = new Set([
+        "finance.group_ledger_binding",
+        "finance.private_group_link",
+        "finance.private_group_link_revision",
+        "finance.private_group_review",
+      ]);
+    bundle.entities = bundle.entities.filter((e) => !kinds.has(e.kind));
+    bundle.manifest.schemaFingerprint = previewDigest(
+      graphRegistry.filter((d) => !kinds.has(d.kind)),
+    );
+    const { checksumSha256: ignored, ...unsigned } = bundle;
+    void ignored;
+    bundle.checksumSha256 = previewDigest(unsigned);
+    const preview = (await previewWorkspaceRestore(a, {
+      clientCommandId: randomUUID(),
+      bundle,
+    })) as {
+      runId: string;
+      previewHash: string;
+      preview: {
+        blockers: string[];
+        sourceChecksumSha256: string;
+        sourceSchemaUpgrade: string;
+      };
+    };
+    expect(preview.preview.blockers).toEqual([]);
+    expect(preview.preview.sourceChecksumSha256).toBe(bundle.checksumSha256);
+    expect(preview.preview.sourceSchemaUpgrade).toContain("V2-H");
+    expect(
+      await restoreWorkspace(a, {
+        clientCommandId: randomUUID(),
+        runId: preview.runId,
+        previewHash: preview.previewHash,
+        confirmation: "replace-private-workspace",
+      }),
+    ).toMatchObject({ restored: true });
+    expect(bundleTotals(await exportWorkspace(a)).cashMinor).toBe("100000");
+  }));
 it("exports the private graph and restores it atomically with a retained recovery snapshot and retired command replay", async () =>
   fixture(async (a, account) => {
     const bundle = await exportWorkspace(a);

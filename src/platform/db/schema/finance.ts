@@ -81,6 +81,7 @@ export const ledgerAccount = financeSchema.table(
           'debt_liability',
           'payment_clearing_asset',
           'card_liability'
+          ,'group_receivable_asset','group_payable_liability'
         )
       `,
     ),
@@ -437,6 +438,8 @@ export const actionRevision = financeSchema.table(
           'debt_settlement',
           'debt_payment',
           'payment_reclassification'
+          ,'group_adoption'
+          ,'group_effect'
           ,'balance_adjustment','refund',
           'opening_card',
           'card_purchase',

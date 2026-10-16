@@ -40,6 +40,25 @@ import { runScopedTransactionOnClient } from "../../src/platform/db/scoped-trans
 import { hashCommandPayload } from "../../src/modules/core/domain/command";
 import { readDeletionScope } from "../../src/modules/core/repositories/lifecycle-repository";
 import { requestDeletionInTransaction } from "../../src/modules/core/services/workspace-lifecycle";
+import {
+  recordGroupCommand,
+  type SharingActor,
+} from "../../src/modules/sharing/services/groups";
+import {
+  getGroup,
+  getBill,
+} from "../../src/modules/sharing/services/read-groups";
+import { readGroupLedger } from "../../src/modules/sharing/services/ledger";
+import { invitationCommand } from "../../src/modules/sharing/services/invitations";
+import {
+  getAdoptionPreview,
+  adoptGroupExpense,
+} from "../../src/modules/finance/services/adopt-group-expense";
+import {
+  getGroupEffectPreview,
+  adoptGroupEffect,
+} from "../../src/modules/finance/services/adopt-group-effect";
+import { reviewGroupSource } from "../../src/modules/finance/services/review-group-source";
 
 function containerTool(args: string[], input?: Buffer): Promise<Buffer> {
   const container = process.env.PMP_TEST_POSTGRES_CONTAINER ?? "pmp-postgres";
@@ -84,6 +103,8 @@ async function snapshot(client: Client) {
           "audit",
           "ops",
           "planning",
+          "files",
+          "sharing",
           "drizzle",
           "pgboss",
         ],
@@ -135,6 +156,7 @@ async function main() {
   );
   const bootstrap = parseEnv(await readFile(".env.bootstrap", "utf8"));
   const owners: { userId: string; workspaceId: string }[] = [];
+  let sharedGroupId: string | null = null;
   let created = false;
   async function owner() {
     const userId = randomUUID();
@@ -410,6 +432,203 @@ async function main() {
         earlierOpeningDate: null,
       },
     })) as { batchId: string };
+    stage = "shared_fixture";
+    const sharedActors: SharingActor[] = [];
+    for (const owned of [target, other]) {
+      const sessionId = randomUUID();
+      await getAuthPool().query(
+        "INSERT INTO auth.session(id,user_id,token,updated_at,expires_at) VALUES($1,$2,$3,clock_timestamp(),clock_timestamp()+interval '1 day')",
+        [sessionId, owned.userId, randomUUID()],
+      );
+      await getAuthPool().query(
+        "INSERT INTO auth.session_assurance(session_id,method,verified_at) VALUES($1,'password',clock_timestamp())",
+        [sessionId],
+      );
+      sharedActors.push({ ...owned, sessionId });
+    }
+    const sa = sharedActors[0]!,
+      sb = sharedActors[1]!;
+    const candidateGroupId = randomUUID();
+    await recordGroupCommand(sa, {
+      kind: "create",
+      clientCommandId: randomUUID(),
+      groupId: candidateGroupId,
+      name: "Restore shared fixture",
+      displayName: "Target shared fixture",
+    });
+    sharedGroupId = candidateGroupId;
+    const sharedCommand = async (
+      actor: SharingActor,
+      body: Record<string, unknown>,
+    ) => {
+      const d = await getGroup(actor, sharedGroupId!);
+      return recordGroupCommand(actor, {
+        groupId: sharedGroupId!,
+        expectedVersion: d.group.version,
+        clientCommandId: randomUUID(),
+        ...body,
+      });
+    };
+    const token = randomBytes(32).toString("hex");
+    await sharedCommand(sa, {
+      kind: "invite",
+      email: `${other.userId}@example.test`,
+      token,
+    });
+    const review = (await invitationCommand(sb, { kind: "review", token })) as {
+      version: number;
+    };
+    await invitationCommand(sb, {
+      kind: "accept",
+      token,
+      expectedVersion: review.version,
+      clientCommandId: randomUUID(),
+      consent: true,
+      displayName: "Other shared fixture",
+    });
+    const targetParticipant = (await getGroup(sa, sharedGroupId)).group
+        .participantId,
+      otherParticipant = (await getGroup(sb, sharedGroupId)).group
+        .participantId;
+    const sharedBill = await sharedCommand(sa, {
+        kind: "bill",
+        bill: {
+          description: "Restore shared bill",
+          expenseDate: "2026-10-10",
+          totalMinor: "2000",
+          splitMethod: "equal",
+          contributions: [
+            { participantId: targetParticipant, amountMinor: "2000" },
+          ],
+          shares: [
+            { participantId: targetParticipant },
+            { participantId: otherParticipant },
+          ],
+        },
+      }),
+      privatePreview = await getAdoptionPreview(
+        sb,
+        sharedGroupId,
+        sharedBill.subjectId,
+      );
+    await adoptGroupExpense(sb, {
+      clientCommandId: randomUUID(),
+      groupId: sharedGroupId,
+      expenseId: sharedBill.subjectId,
+      expectedSourceRevisionId: privatePreview.revisionId,
+      expectedSourceHash: privatePreview.sourceHash,
+      expectedFinancialRevision: privatePreview.financialRevision,
+      approved: true,
+      funding: { kind: "none" },
+    });
+    const otherCash = await openFinancialAccount({
+      ...other,
+      clientCommandId: randomUUID(),
+      name: "Shared restore cash",
+      accountType: "cash",
+      openingCutoffDate: "2026-10-01",
+      openingBalanceMinor: "10000",
+    });
+    const sharedPayment = await sharedCommand(sb, {
+        kind: "settlement",
+        recipientId: targetParticipant,
+        mode: "custom",
+        amountMinor: "500",
+        paymentDate: "2026-10-15",
+        allocations: [],
+      }),
+      effectRef = {
+        groupId: sharedGroupId,
+        sourceKind: "settlement",
+        sourceId: sharedPayment.subjectId,
+      },
+      effect = await getGroupEffectPreview(sb, effectRef);
+    await adoptGroupEffect(sb, {
+      ...effectRef,
+      clientCommandId: randomUUID(),
+      expectedSourceHash: effect.sourceHash,
+      expectedFinancialRevision: effect.financialRevision,
+      approved: true,
+      funding: { kind: "cash", accountId: otherCash.accountId },
+    });
+    const confirmed = await sharedCommand(sb, {
+      kind: "settlement",
+      recipientId: targetParticipant,
+      mode: "custom",
+      amountMinor: "200",
+      paymentDate: "2026-10-15",
+      allocations: [],
+    });
+    await sharedCommand(sa, {
+      kind: "settlement_transition",
+      settlementId: confirmed.subjectId,
+      expectedSettlementVersion: 1,
+      operation: "confirm",
+      reason: "Recovery source confirmed receipt",
+    });
+    const currentSharedBill = (
+        await getBill(sa, sharedGroupId, sharedBill.subjectId)
+      )[0]!,
+      refund = await sharedCommand(sa, {
+        kind: "refund",
+        expenseId: sharedBill.subjectId,
+        expectedRevisionId: currentSharedBill.revisionId,
+        totalMinor: "200",
+        refundDate: "2026-10-15",
+        reason: "Recovery shared refund",
+        received: [{ participantId: targetParticipant, amountMinor: "200" }],
+        shareCredits: [
+          { participantId: targetParticipant, amountMinor: "100" },
+          { participantId: otherParticipant, amountMinor: "100" },
+        ],
+      }),
+      refundRef = {
+        groupId: sharedGroupId,
+        sourceKind: "refund",
+        sourceId: refund.subjectId,
+      },
+      refundEffect = await getGroupEffectPreview(sb, refundRef);
+    await adoptGroupEffect(sb, {
+      ...refundRef,
+      clientCommandId: randomUUID(),
+      expectedSourceHash: refundEffect.sourceHash,
+      expectedFinancialRevision: refundEffect.financialRevision,
+      approved: true,
+      funding: { kind: "none" },
+    });
+    await sharedCommand(sa, {
+      kind: "bill",
+      expenseId: sharedBill.subjectId,
+      expectedRevisionId: currentSharedBill.revisionId,
+      reason: "Recovery reviewed difference",
+      bill: {
+        description: currentSharedBill.description,
+        expenseDate: currentSharedBill.expenseDate,
+        totalMinor: "2000",
+        splitMethod: "exact",
+        contributions: currentSharedBill.contributions,
+        shares: [
+          { participantId: targetParticipant, amountMinor: "900" },
+          { participantId: otherParticipant, amountMinor: "1100" },
+        ],
+      },
+    });
+    const retainedPreview = await getAdoptionPreview(
+      sb,
+      sharedGroupId,
+      sharedBill.subjectId,
+    );
+    await reviewGroupSource(sb, {
+      clientCommandId: randomUUID(),
+      groupId: sharedGroupId,
+      linkId: retainedPreview.link!.id,
+      expectedLinkRevisionId: retainedPreview.link!.linkRevisionId,
+      expectedSourceHash: retainedPreview.sourceHash,
+      expectedFinancialRevision: retainedPreview.financialRevision,
+      approved: true,
+      reason: "Keep separately verified private allocation during recovery",
+    });
+    await prepareWorkspaceExport(other, randomUUID());
     await prepareWorkspaceExport(target, randomUUID());
 
     const notificationUrl = new URL(process.env.AUTH_DATABASE_URL!);
@@ -548,6 +767,26 @@ async function main() {
         );
         assert.match(JSON.stringify(report), /1000000/);
         assert.equal(report.metrics.closing_cash, "1190000");
+        const shared = await readGroupLedger(
+          { db: drizzle(domain) } as ScopedTransaction,
+          sharedGroupId!,
+        );
+        assert.equal(
+          shared.positions.find((p) => p.participantId === targetParticipant)!
+            .netMinor,
+          "800",
+        );
+        assert.equal(
+          shared.positions.reduce((n, p) => n + BigInt(p.netMinor), 0n),
+          0n,
+        );
+        assert.equal(shared.settlements.length, 2);
+        assert.equal(shared.refunds.length, 1);
+        assert.equal(
+          (await domain.query("SELECT id FROM finance.private_group_link"))
+            .rowCount,
+          0,
+        );
         const savingsView = await readSavingsGoals(
           { db: drizzle(domain) } as ScopedTransaction,
           target.workspaceId,
@@ -713,6 +952,53 @@ async function main() {
         for (let n = 0; n < 8 && outcome.state !== "completed"; n++)
           outcome = await purgeDeletionStep(operator, saved.requestId);
         assert.equal(outcome.state, "completed");
+        const retainedShared = (
+          await restored.query(
+            "SELECT p.identity_kind,p.registered_user_id,g.archived_at IS NOT NULL archived FROM sharing.participant p JOIN sharing.expense_group g ON g.id=p.group_id WHERE p.group_id=$1 AND p.id=$2",
+            [sharedGroupId, targetParticipant],
+          )
+        ).rows[0];
+        assert.deepEqual(retainedShared, {
+          identity_kind: "deleted",
+          registered_user_id: null,
+          archived: true,
+        });
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM sharing.settlement WHERE group_id=$1",
+              [sharedGroupId],
+            )
+          ).rowCount,
+          2,
+        );
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM finance.private_group_link WHERE workspace_id=$1",
+              [other.workspaceId],
+            )
+          ).rowCount,
+          3,
+        );
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM ops.shared_bundle_proof WHERE workspace_id=$1",
+              [other.workspaceId],
+            )
+          ).rowCount,
+          1,
+        );
+        assert.equal(
+          (
+            await restored.query(
+              "SELECT id FROM finance.private_group_review WHERE workspace_id=$1",
+              [other.workspaceId],
+            )
+          ).rowCount,
+          1,
+        );
         for (const table of [
           "recurring_obligation",
           "recurrence_version",
@@ -804,6 +1090,8 @@ async function main() {
               "encrypted dump/decrypt",
               "actual pg_restore",
               "durable H import staging and private portable artifact recovery",
+              "shared bills/refunds/settlement history, pending private clearing and trusted own-export provenance",
+              "shared identity pseudonymization preserves another participant's private adoption",
               "exact counts/ledger balances",
               "balanced journals",
               "owner-scoped report",
@@ -852,7 +1140,18 @@ async function main() {
         const tables = (
           await admin.query(
             "SELECT c.table_schema,c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.column_name='workspace_id' AND c.table_schema=ANY($1)",
-            [["core", "finance", "career", "time", "audit", "ops", "planning"]],
+            [
+              [
+                "core",
+                "finance",
+                "career",
+                "time",
+                "audit",
+                "ops",
+                "planning",
+                "files",
+              ],
+            ],
           )
         ).rows;
         for (const t of tables)
@@ -881,6 +1180,42 @@ async function main() {
       } catch (error) {
         await admin.query("ROLLBACK");
         throw error;
+      }
+    }
+    if (sharedGroupId) {
+      assert.equal(
+        (
+          await admin.query(
+            "SELECT id FROM sharing.expense_group WHERE id=$1 AND name='Restore shared fixture' AND created_by_user_id=$2",
+            [sharedGroupId, owners[0]!.userId],
+          )
+        ).rowCount,
+        1,
+      );
+      await admin.query("BEGIN");
+      try {
+        await admin.query("SET LOCAL session_replication_role='replica'");
+        const tables = (
+          await admin.query(
+            "SELECT table_name FROM information_schema.columns WHERE table_schema='sharing' AND column_name='group_id'",
+          )
+        ).rows;
+        for (const t of tables)
+          await admin.query(
+            `DELETE FROM sharing.${quote(t.table_name)} WHERE group_id=$1`,
+            [sharedGroupId],
+          );
+        await admin.query(
+          "DELETE FROM audit.group_revision WHERE group_id=$1",
+          [sharedGroupId],
+        );
+        await admin.query("DELETE FROM sharing.expense_group WHERE id=$1", [
+          sharedGroupId,
+        ]);
+        await admin.query("COMMIT");
+      } catch (e) {
+        await admin.query("ROLLBACK");
+        throw e;
       }
     }
     await admin.end();
