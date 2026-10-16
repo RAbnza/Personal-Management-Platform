@@ -1,7 +1,7 @@
 # V3 Development Plan
 
 **Date:** October 16, 2026 (Asia/Manila)\
-**Status:** Approved documentation baseline; V3 implementation has not started.\
+**Status:** V3-A/V3-B implemented as an intermediate feature-branch checkpoint; V3-C/V3-D and comprehensive V3 acceptance remain pending. See the [implementation handoff](V3_DEVELOPMENT_HANDOFF.md).\
 **Repository:** `RAbnza/Personal-Management-Platform`\
 **Accepted starting point:** `main`, `54a08d67c4ef7f5be01f5eaf63ba5c071e708b93` (`feat(sharing): complete V2-I shared expenses and settlements`), verified equal to `origin/main` during preparation.
 
@@ -138,3 +138,9 @@ Use one coordinated phase, with affected reruns after failures/fixes. Repeat a f
 For this preparation: check documentation consistency, relative links, Markdown formatting and diff scope; commit and push only documentation and verify the remote SHA. Do not run application suites, browser tests, Docker builds, database migrations or benchmarks.
 
 For future V3 completion: deliver accepted trackers and consolidated evidence, then stop. The comprehensive redesign, platform architecture planning, Windows/Android development and platform-specific acceptance are separate later assignments. Preserve existing [V2-H](V2_H_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md), [V2-I](V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md) and [V1 operational](V1_OPERATIONS.md) instructions as historical/conditional operational requirements. No real provider keys, cloud storage, email configuration, hosting or infrastructure changes are requested by this documentation assignment.
+
+## 9. Assignment 1 checkpoint
+
+V3-A and V3-B now have a local/test-only, default-off implementation on `feat/v3-a-b-trackers`; see [V3_DEVELOPMENT_HANDOFF.md](V3_DEVELOPMENT_HANDOFF.md) for actual evidence and decisions. The schema contains 125 declarative tables and 202 migrations through `0201`. Migration previews bind current entries and immutable definitions; batches process at most 50 entries. Confirmed and partially cancelled migrations pause ordinary edits/archival until completion. Old revisions survive every transformation, and the active tracker version advances only when all entries are resolved.
+
+Workspace bundle generation/replacement is guarded while tracker data exists, including confirmation of a preview that predates tracker creation. Definition/entry/history portability, reports, internal Calendar/reminders, global onboarding/navigation integration and consolidated acceptance remain Assignment 2 work. Minimal deletion-inventory and portability guards protect the intermediate state; they do not claim V3-C/D completion. No future-platform or production-readiness scope was added.

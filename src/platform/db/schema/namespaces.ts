@@ -22,3 +22,4 @@ export const planningSchema = pgSchema("planning");
 
 export const filesSchema = pgSchema("files");
 export const sharingSchema = pgSchema("sharing");
+export const trackerSchema = pgSchema("tracker");

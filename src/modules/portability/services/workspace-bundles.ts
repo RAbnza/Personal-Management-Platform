@@ -73,10 +73,20 @@ function ownerValues(
     );
   return value;
 }
+async function assertTrackerPortabilityReady(tx: ScopedTransaction) {
+  // Assignment 1 safety boundary: C owns versioned tracker portability. A
+  // bundle must never advertise completeness while omitting these records.
+  if (
+    (await tx.db.execute(sql`SELECT id FROM tracker.template LIMIT 1`)).rows
+      .length
+  )
+    throw new FileBoundaryError("TRACKER_PORTABILITY_PENDING");
+}
 export async function captureWorkspaceGraph(
   tx: ScopedTransaction,
   a: ScopedDatabaseContext,
 ) {
+  await assertTrackerPortabilityReady(tx);
   const root = (
     await tx.db.execute<{
       currency: string;
@@ -540,8 +550,10 @@ export async function prepareWorkspaceExport(
   const bundle = await exportWorkspace(a);
   return withDomainTransaction(a, async (tx) => {
     await lockActivePrivateWorkspace(tx, a);
+    await tx.db.execute(sql`SELECT id FROM core.workspace FOR UPDATE`);
     const r = await claimCommandReceipt(tx, receiptInput);
     if (r.kind === "replay") return r.result;
+    await assertTrackerPortabilityReady(tx);
     const id = randomUUID();
     await tx.db.execute(
       sql`INSERT INTO ops.export_run(id,workspace_id,export_kind,schema_version,filters_json,requested_by_user_id,command_receipt_id,state,snapshot_financial_revision,generated_at,row_count,coverage_json,bundle_json,expires_at,checksum_sha256) VALUES(${id}::uuid,${a.workspaceId}::uuid,'workspace_bundle',2,'{}'::jsonb,${a.userId}::uuid,${r.receiptId}::uuid,'completed',${bundle.manifest.financialRevision}::bigint,statement_timestamp(),${bundle.manifest.rowCount},${JSON.stringify(bundle.manifest)}::jsonb,${JSON.stringify(bundle)}::jsonb,statement_timestamp()+interval '24 hours',${bundle.checksumSha256})`,
@@ -757,6 +769,7 @@ export async function restoreWorkspace(
       sql`SELECT ops.lock_shared_restore_groups(${c.runId}::uuid)`,
     );
     await lockActivePrivateWorkspace(tx, a);
+    await tx.db.execute(sql`SELECT id FROM core.workspace FOR UPDATE`);
     const receipt = await claimCommandReceipt(tx, {
       workspaceId: a.workspaceId,
       clientCommandId: c.clientCommandId,
@@ -764,6 +777,9 @@ export async function restoreWorkspace(
       payloadHash: hashCommandPayload(c),
     });
     if (receipt.kind === "replay") return receipt.result;
+    // A restore preview can predate the first tracker. Recheck while holding
+    // the same workspace lock used by tracker creation, before graph replacement.
+    await assertTrackerPortabilityReady(tx);
     const result = (
       await tx.db.execute<{ result: Record<string, unknown> }>(
         sql`SELECT ops.apply_private_restore(${c.runId}::uuid,decode(${c.previewHash},'hex'),${receipt.receiptId}::uuid) result`,

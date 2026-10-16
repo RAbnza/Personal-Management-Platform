@@ -9,6 +9,18 @@ import {
 } from "./api-v1-mutation";
 export function hProblem(e: unknown, id: string) {
   if (
+    e instanceof FileBoundaryError &&
+    e.code === "TRACKER_PORTABILITY_PENDING"
+  )
+    return createApiProblemResponse({
+      status: 409,
+      code: e.code,
+      message:
+        "Workspace export and replacement are unavailable while tracker records exist in this preview. Tracker definitions and history must be supported before these operations can proceed.",
+      requestId: id,
+      retryable: false,
+    });
+  if (
     e instanceof Error &&
     [
       "BUNDLE_DUPLICATE_JSON_KEY",

@@ -40,7 +40,7 @@ export async function readDeletionScope(
   const tables = (
     await t.db.execute<{ schema: string; table: string }>(sql`
     SELECT n.nspname AS schema,c.relname AS table FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE c.relkind='r' AND n.nspname IN ('core','finance','career','time','audit','ops','planning','files')
+    WHERE c.relkind='r' AND n.nspname IN ('core','finance','career','time','audit','ops','planning','files','tracker')
       AND c.relname NOT IN ('deletion_request','deletion_tombstone')
       AND EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='workspace_id' AND NOT a.attisdropped)
     ORDER BY n.nspname,c.relname`)

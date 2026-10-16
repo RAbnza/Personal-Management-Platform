@@ -17,6 +17,7 @@ const labels = [
   "V2-G notification fixture",
   "V2-H portability fixture",
   "V2-I sharing fixture",
+  "V3 tracker fixture",
 ] as const;
 /** Committed, large synthetic fixture teardown only. Never called by product
  * services. Mirrors established administrator fixture cleanup, with database,
@@ -61,6 +62,7 @@ export async function removeNamedFinancialFixture(
             "ops",
             "planning",
             "files",
+            "tracker",
           ],
         ],
       )
