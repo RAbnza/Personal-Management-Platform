@@ -948,3 +948,11 @@ The historical base palette was derived from the pinned repository implementatio
 Typography favors readable working sizes, tabular financial figures, one font family and system fallbacks. Light/dark semantic pairs and initial chart marks have been calculated for contrast; rendered component states, assistive-technology behavior and the final UI still require implementation testing. No production interface, migrations or accessibility conformance certification is claimed by this design document.
 
 The stable commitments are clarity, privacy, exact meaning, accessible operation and honest feedback. The approved plan governs palette, typography, spacing, geometry, density and layouts; M1 rendered review validates their application. Evolve centrally with evidence while retaining these stable commitments.
+
+## 20. M2–M3 implementation mapping (October 17, 2026)
+
+The production shell now uses the approved M1 dock and a single upward Modules/More panel. `cmdk` searches static, capability-filtered screen/task names, never private records. The existing module snapshot/`/api/v1/me` and deployment sharing flag govern discovery; services still authorize every request. Home keeps three prominent financial metrics with visible coverage warnings and explicit supporting-evidence disclosures.
+
+Money uses native list/detail routes, M1 responsive record patterns, browse/create disclosures and focused financial tasks. Mobile entry/review temporarily replaces the capsule with the task's own controls and safe-area clearance; ordinary browsing keeps bottom-centered navigation. Review and Edit preserve in-memory fields. Existing command validation, preview authority, frozen uncertain commands and identical retries remain required. Input hydration uses the existing `useClientReady` guard. Successful sign-in enters a fresh private document to discard prior client/RSC state; Better Auth and session policies remain authoritative.
+
+Implementation inventory, constraints, actual checks and deferred owner/M6 acceptance are in [the combined handoff](REDESIGN_M2_M3_HANDOFF.md). These implementation choices do not grant visual approval or expand M4/M5 scope.

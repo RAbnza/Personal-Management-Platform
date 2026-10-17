@@ -1,9 +1,9 @@
 # UI/UX Redesign Milestones
 
 **Prepared:** October 16, 2026, Asia/Manila  
-**Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
+**Planning baseline (October 16):** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 implementation is complete on `feat/redesign-m2-m3`; M3 continues under the combined assignment. Owner review and M6 acceptance remain pending; M4–M6 have not started.\
+**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 and M3 implementation is complete on `feat/redesign-m2-m3` from merged M1 `a109b19`. Owner review and M6 acceptance remain pending; M4–M6 have not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -86,6 +86,8 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 **Expected deliverables:** complete frame/navigation, redesigned current access/setup/settings/help/Home screens, route/state evidence and focused regression report.
 
 ## 4. M3 — Money workspaces and reviewed financial tasks
+
+**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M3 implemented in `0187f11` on `feat/redesign-m2-m3`: Money workspaces, existing financial task capabilities, distinct mobile expense entry/review, retained drafts, exact confirmation and original recovery contracts. [Combined inventory, constraints and actual checks](REDESIGN_M2_M3_HANDOFF.md). Targeted component/static checks and an isolated screenshot-free browser smoke passed; owner visual review and consolidated M6 acceptance remain pending. No M4–M6, PR or merge is started.
 
 **Objective:** make daily financial entry and complex debt/card work clear without changing any financial effect.
 
@@ -222,9 +224,9 @@ Use the project's code-output rule when creating or updating code/configuration 
 | --------- | ----------------------------------------- | ----------------------------- |
 | M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
 | M2 | Implemented; owner review/M6 acceptance pending | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
-| M3 | Next under the authorized combined M2 + M3 assignment | [Running handoff](REDESIGN_M2_M3_HANDOFF.md) |
+| M3 | Implemented; owner review/M6 acceptance pending | [Combined inventory and checks](REDESIGN_M2_M3_HANDOFF.md) |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Next step: continue directly from the M2 implementation checkpoint into M3 on `feat/redesign-m2-m3`. Push only after both implementation checkpoints; do not create a PR, merge or start M4–M6. M1 historical approval/evidence is preserved; M2/M3 owner approval and unperformed manual accessibility/device checks are not implied.
+Next step: owner review of the actual M2/M3 implementation on `feat/redesign-m2-m3`. Both implementation/documentation checkpoints are complete. The branch is pushed for review only; no PR, merge or M4–M6 implementation is authorized by this checkpoint. Historical M1 evidence remains intact; no unperformed manual accessibility/device checks or broader acceptance are implied.
