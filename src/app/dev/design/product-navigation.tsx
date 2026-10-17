@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
+import * as Popover from "@radix-ui/react-popover";
 import {
   CalendarDays,
   ChevronDown,
@@ -11,13 +12,20 @@ import {
   ListChecks,
   CircleHelp,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { MagicDock, MagicDockItem } from "@/components/patterns/magic-dock";
-import { Dialog, DialogTrigger, SheetContent } from "@/components/ui/dialog";
 import dock from "@/components/patterns/navigation-dock.module.css";
 import styles from "./proofs.module.css";
 
 type Concept = "dock" | "radix";
+type DockMenuKind = "Modules" | "More";
 const url = (screen: string, concept: Concept) =>
   `/dev/design?screen=${screen}&nav=${concept}`;
 
@@ -66,57 +74,20 @@ function ModuleDestinations({
   );
 }
 
-function Drawer({
-  kind,
-  concept,
-  className,
-  current,
-  children,
-}: {
-  kind: "Modules" | "More";
-  concept: Concept;
-  className: string | undefined;
-  current: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button
-          className={className}
-          aria-current={current ? "true" : undefined}
-        >
-          {children}
-        </button>
-      </DialogTrigger>
-      <SheetContent
-        title={`${kind} · navigation prototype`}
-        description="Synthetic destinations for M1 comparison. Real routing and capability-aware integration remain M2 work."
-      >
-        {kind === "Modules" ? (
-          <ModuleDestinations concept={concept} />
-        ) : (
-          <a className={dock.destination} href={url("states", concept)}>
-            <CircleHelp aria-hidden="true" />
-            <span>
-              Interaction states
-              <small>Inspect shared feedback and controls</small>
-            </span>
-          </a>
-        )}
-      </SheetContent>
-    </Dialog>
-  );
-}
-
 function TouchOrDock({
   screen,
   concept,
   compact = false,
+  menu,
+  panelId,
+  onToggle,
 }: {
   screen: string;
   concept: Concept;
   compact?: boolean;
+  menu: DockMenuKind | null;
+  panelId: string;
+  onToggle: (kind: DockMenuKind, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const moduleActive = ["activity", "expense", "migration"].includes(screen);
   const item = concept === "dock" ? dock.item : dock.railItem;
@@ -141,39 +112,53 @@ function TouchOrDock({
       {icon(<CalendarDays aria-hidden="true" />)}
       <span>Calendar</span>
     </a>,
-    <Drawer
+    <button
       key="modules"
-      kind="Modules"
-      concept={concept}
+      type="button"
       className={item}
-      current={moduleActive}
+      aria-current={moduleActive ? "true" : undefined}
+      aria-haspopup="dialog"
+      aria-expanded={menu === "Modules"}
+      aria-controls={menu === "Modules" ? panelId : undefined}
+      data-dock-menu-trigger=""
+      data-state={menu === "Modules" ? "open" : "closed"}
+      onClick={(event) => onToggle("Modules", event)}
     >
       {icon(<LayoutGrid aria-hidden="true" />)}
       <span>Modules</span>
-    </Drawer>,
-    <Drawer
+    </button>,
+    <button
       key="more"
-      kind="More"
-      concept={concept}
+      type="button"
       className={item}
-      current={screen === "states"}
+      aria-current={screen === "states" ? "true" : undefined}
+      aria-haspopup="dialog"
+      aria-expanded={menu === "More"}
+      aria-controls={menu === "More" ? panelId : undefined}
+      data-dock-menu-trigger=""
+      data-state={menu === "More" ? "open" : "closed"}
+      onClick={(event) => onToggle("More", event)}
     >
       {icon(<MoreHorizontal aria-hidden="true" />)}
       <span>More</span>
-    </Drawer>,
+    </button>,
   ];
-  return concept === "dock" ? (
-    <MagicDock compact={compact}>
-      {items.map((child) => (
-        <MagicDockItem key={child.key} compact={compact}>
-          {child}
-        </MagicDockItem>
-      ))}
-    </MagicDock>
-  ) : (
-    <nav className={dock.rail} aria-label="Product navigation prototype">
-      <div className={dock.railList}>{items}</div>
-    </nav>
+  return (
+    <>
+      {concept === "dock" ? (
+        <MagicDock compact={compact}>
+          {items.map((child) => (
+            <MagicDockItem key={child.key} compact={compact}>
+              {child}
+            </MagicDockItem>
+          ))}
+        </MagicDock>
+      ) : (
+        <nav className={dock.rail} aria-label="Product navigation prototype">
+          <div className={dock.railList}>{items}</div>
+        </nav>
+      )}
+    </>
   );
 }
 
@@ -251,8 +236,37 @@ export function ProductNavigation({
   screen: string;
   concept: Concept;
 }) {
+  const [menu, setMenu] = useState<DockMenuKind | null>(null);
+  const anchorRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreFocus = useRef(true);
+  const panelId = useId();
+  const titleId = useId();
+  const focusDestination = () =>
+    panelRef.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
+  useEffect(() => {
+    if (menu) focusDestination();
+  }, [menu]);
+  const toggleMenu = (
+    kind: DockMenuKind,
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    // One shared panel anchors to the dock that was actually activated.
+    anchorRef.current = event.currentTarget.closest("nav");
+    triggerRef.current = event.currentTarget;
+    restoreFocus.current = true;
+    setMenu((current) => (current === kind ? null : kind));
+  };
+  const menuProps = { menu, panelId, onToggle: toggleMenu };
   return (
-    <>
+    <Popover.Root
+      open={menu !== null}
+      onOpenChange={(open) => {
+        if (!open) setMenu(null);
+      }}
+    >
+      <Popover.Anchor virtualRef={anchorRef} />
       <div className={styles.productFrame}>
         <div className="flex min-w-0 items-center gap-3">
           <span className="rounded-panel bg-accent p-2.5 text-accent-foreground">
@@ -273,12 +287,76 @@ export function ProductNavigation({
       </div>
       {concept === "dock" && (
         <div className={styles.desktopDock}>
-          <TouchOrDock screen={screen} concept={concept} compact />
+          <TouchOrDock
+            screen={screen}
+            concept={concept}
+            compact
+            {...menuProps}
+          />
         </div>
       )}
       <div className={styles.mobileNavigation}>
-        <TouchOrDock screen={screen} concept={concept} />
+        <TouchOrDock screen={screen} concept={concept} {...menuProps} />
       </div>
-    </>
+      <Popover.Portal>
+        <Popover.Content
+          ref={panelRef}
+          id={panelId}
+          aria-labelledby={titleId}
+          className={dock.expansion}
+          side="top"
+          align="center"
+          sideOffset={2}
+          collisionPadding={12}
+          avoidCollisions={false}
+          hideWhenDetached
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            focusDestination();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (restoreFocus.current)
+              triggerRef.current?.focus({ preventScroll: true });
+          }}
+          onInteractOutside={(event) => {
+            if (
+              event.target instanceof Element &&
+              event.target.closest("[data-dock-menu-trigger]")
+            ) {
+              event.preventDefault();
+            } else restoreFocus.current = false;
+          }}
+        >
+          <div className={dock.menuBody}>
+            <div className={dock.menuHeading}>
+              <h2 id={titleId}>{menu} · navigation prototype</h2>
+              <Popover.Close
+                className={dock.menuClose}
+                aria-label={`Close ${menu} menu`}
+              >
+                Close
+              </Popover.Close>
+            </div>
+            {menu === "Modules" ? (
+              <ModuleDestinations concept={concept} />
+            ) : (
+              <a className={dock.destination} href={url("states", concept)}>
+                <CircleHelp aria-hidden="true" />
+                <span>
+                  Interaction states
+                  <small>Inspect shared feedback and controls</small>
+                </span>
+              </a>
+            )}
+          </div>
+          <Popover.Arrow
+            className={dock.expansionArrow}
+            width={12}
+            height={6}
+          />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

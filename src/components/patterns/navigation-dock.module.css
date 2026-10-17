@@ -53,18 +53,20 @@
     transform 140ms ease,
     box-shadow 140ms ease;
 }
+.item[aria-current] {
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
 .item[aria-current] .tile {
-  background: var(--navigation-active);
-  color: var(--navigation-active-foreground);
-  border-color: var(--navigation-active);
-  box-shadow: var(--navigation-glow);
+  border-color: var(--accent-foreground);
 }
 .item[aria-current]::after {
   content: "";
   position: absolute;
-  top: -0.25rem;
+  bottom: 0;
+  left: calc(50% - 0.5rem);
   width: 1rem;
-  height: 0.1875rem;
+  height: 0.125rem;
   border-radius: 1rem;
   background: var(--accent-foreground);
 }
@@ -156,6 +158,69 @@
   margin-top: 0.25rem;
   color: var(--muted-foreground);
 }
+.expansion {
+  z-index: var(--z-popover);
+  width: var(--radix-popover-trigger-width);
+  min-width: min(20rem, calc(100vw - 1.5rem));
+  max-width: calc(100vw - 1.5rem);
+  border: 1px solid var(--navigation-border);
+  border-radius: 1.25rem;
+  background: var(--navigation);
+  color: var(--navigation-foreground);
+  box-shadow: var(--elevation-level-2);
+  transform-origin: bottom center;
+  animation: unfold 180ms ease-out;
+}
+.menuBody {
+  max-height: min(
+    24rem,
+    calc(var(--radix-popover-content-available-height) - 2px)
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: inherit;
+  padding: 0.5rem;
+}
+.menuHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.menuClose {
+  flex-shrink: 0;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  color: var(--accent-foreground);
+  cursor: pointer;
+}
+.menuClose:hover {
+  background: var(--surface-subtle);
+}
+.expansionArrow {
+  fill: var(--navigation);
+}
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .expansion {
+    animation: none;
+  }
+}
 @media (min-width: 768px) {
   .compactDock {
     height: 3.75rem;
@@ -175,7 +240,8 @@
       background-color 180ms ease-out,
       color 180ms ease-out;
   }
-  .compactDock .item:not([aria-current]):is(:hover, :focus-visible) {
+  .compactDock
+    .item:not([aria-current]):is(:hover, :focus-visible, [data-state="open"]) {
     background: var(--surface-subtle);
     color: var(--accent-foreground);
   }
@@ -197,10 +263,6 @@
     height: 1.125rem;
     min-width: 0;
     min-height: 0;
-  }
-  .compactDock .item[aria-current] {
-    background: var(--accent);
-    color: var(--accent-foreground);
   }
   .compactDock .item[aria-current]::after {
     top: auto;

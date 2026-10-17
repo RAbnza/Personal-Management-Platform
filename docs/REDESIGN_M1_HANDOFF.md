@@ -1,8 +1,18 @@
 # M1 implementation handoff
 
-October 17, 2026 (Asia/Manila). **M1 only: overall design, themes, Magic UI Dock, bottom-centered placement, slim desktop proportions, mobile interaction and existing patterns approved; final desktop hover awaits manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
+October 17, 2026 (Asia/Manila). **M1 only: themes, overall visual direction, bottom-centered placement and slim dock proportions approved; refined active state and expanding dock menus await manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
-## Final desktop hover refinement
+## Active state and upward dock menus
+
+Baseline `d85a7314bce07090c966e085f8f286d2afb16d20`. Selected Magic UI Dock destinations now use stronger text, a restrained icon border and a small indicator line, with no large filled active capsule or colored active tile/glow. Desktop dimensions and the static 180ms hover tint remain. Mobile placement, proportions and icon/label layout remain.
+
+Modules and More share one nonmodal Radix Popover anchored to the activated dock on desktop/mobile. The matching-width surface unfolds above the dock with a small connecting arrow and 180ms ease-out entrance; reduced motion disables the entrance. There is no right-edge sheet, backdrop, focus trap or body scroll lock. Only one menu is open at a time; switching menus focuses the first destination. Escape/Close restore the activating button; outside pointer/focus dismisses while preserving the outside target's focus. Buttons expose expanded/control semantics and the panel has a visible accessible title. M2 must inherit these behaviors and retain native destination links and focus outlines.
+
+The panel remains above the dock and scrolls internally within available viewport height, including the existing <=500px document-flow dock fallback. No small-screen side-sheet fallback is used. Existing dock content/safe-area clearance remains. These are synthetic M1 destinations; application routing, capabilities, business logic and the legacy desktop Radix comparison remain outside this correction. No dependencies, screenshots or gallery updates. The owner reviews the current implementation at `http://localhost:3200/dev/design?nav=dock`; no automatic M1 sign-off, merge or M2/M3 start.
+
+Verification: **7/7 directly affected checks passed** (two desktop hover checks plus five active/menu cases across light/dark desktop, 320/390px mobile and 320x500 short height). Assertions cover anchor centering/upward placement, unchanged dock bounds, current-state weight/line, initial/switch/return focus, Escape/Close/outside dismissal and reduced motion. Capture remained off for screenshots, trace and video. Targeted ESLint, `pnpm typecheck`, changed-source Prettier and `git diff --check` passed. Initial focused failures exposed duplicate-anchor positioning, corrected by one shared popover anchored to the activated dock; the short-height outside-click check also needed an actually uncovered point on the summary. No relaxed assertions, CI changes, full browser suite or unrelated checks. Visual acceptance remains manual.
+
+## Desktop hover refinement (historical)
 
 Baseline `d1404f5b91c569f82cb957379a1e81dab32ddf6a`. Compact desktop items now use fixed 5.625rem widths (90px at default text size), without Motion width expansion or CSS icon lift. Unselected hover/keyboard focus uses a subtle surface tint and accent text through a 180ms ease-out color/background transition; the selected destination retains its filled accent, active icon and marker. Reduced-motion and touch presentation disable the transition. Position, resting proportions, spacing, icons, labels, routing and the separate mobile interaction remain unchanged. No dependencies were added.
 

@@ -416,9 +416,11 @@ for (const theme of ["light", "dark"] as const) {
       const home = active.getByRole("link", { name: "Home", exact: true });
       await expect(home).toHaveAttribute("aria-current", "page");
       await expect(home.locator("span").first()).toHaveCSS(
-        "background-color",
-        theme === "light" ? "rgb(107, 70, 156)" : "rgb(216, 196, 250)",
+        "border-top-color",
+        theme === "light" ? "rgb(93, 61, 136)" : "rgb(188, 165, 238)",
       );
+      await expect(home).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(home).toHaveCSS("font-weight", "700");
       for (const name of ["Home", "Calendar"]) {
         const link = active.getByRole("link", { name, exact: true });
         expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(48);
@@ -426,10 +428,10 @@ for (const theme of ["light", "dark"] as const) {
       const modules = active.getByRole("button", { name: /^Modules/ });
       await modules.focus();
       await page.keyboard.press("Enter");
-      const sheet = page.getByRole("dialog", {
+      const panel = page.getByRole("dialog", {
         name: "Modules · navigation prototype",
       });
-      await expect(sheet).toBeVisible();
+      await expect(panel).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(modules).toBeFocused();
       if (width === 320) {
@@ -974,6 +976,86 @@ for (const theme of ["light", "dark"] as const) {
     await expect(tile).toHaveCSS("transform", "none");
     expect(await geometry()).toEqual(initial);
     await expect(home).toHaveAccessibleName("Home");
+  });
+}
+
+for (const { width, height, theme } of [
+  { width: 1440, height: 900, theme: "light" },
+  { width: 1440, height: 900, theme: "dark" },
+  { width: 320, height: 900, theme: "light" },
+  { width: 390, height: 900, theme: "dark" },
+  { width: 320, height: 500, theme: "light" },
+] as const) {
+  test(`Dock expansion stays above its anchor and manages focus · ${theme} · ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await openProof(page, "home", theme);
+    const nav = page
+      .getByRole("navigation", { name: "Product navigation prototype" })
+      .filter({ visible: true });
+    const home = nav.getByRole("link", { name: "Home", exact: true });
+    await expect(home).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(home).toHaveCSS("font-weight", "700");
+    expect(
+      await home.evaluate(
+        (element) => getComputedStyle(element, "::after").height,
+      ),
+    ).toBe("2px");
+    const anchor = (await nav.boundingBox())!;
+    const modules = nav.getByRole("button", { name: "Modules", exact: true });
+    const more = nav.getByRole("button", { name: "More", exact: true });
+    const panel = page.getByRole("dialog", {
+      name: "Modules · navigation prototype",
+    });
+    const money = page.getByRole("link", { name: /Money.*Financial activity/ });
+    await modules.focus();
+    await modules.press("Enter");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-side", "top");
+    await expect(panel).toHaveCSS("transform", "none");
+    await expect(money).toBeFocused();
+    await expect(modules).toHaveAttribute("aria-expanded", "true");
+    expect(await panel.getAttribute("aria-modal")).not.toBe("true");
+    const bounds = (await panel.boundingBox())!;
+    expect(
+      Math.abs(bounds.x + bounds.width / 2 - anchor.x - anchor.width / 2),
+    ).toBeLessThanOrEqual(1);
+    expect(bounds.y).toBeGreaterThanOrEqual(10);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(anchor.y);
+    expect(anchor.y - bounds.y - bounds.height).toBeLessThanOrEqual(10);
+    expect(await nav.boundingBox()).toEqual(anchor);
+    await page.keyboard.press("Escape");
+    await expect(panel).not.toBeVisible();
+    await expect(modules).toBeFocused();
+
+    await more.click();
+    const morePanel = page.getByRole("dialog", {
+      name: "More · navigation prototype",
+    });
+    await expect(
+      page.getByRole("link", { name: /^Interaction states/ }),
+    ).toBeFocused();
+    await modules.click();
+    await expect(morePanel).not.toBeVisible();
+    await expect(panel).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    await expect(money).toBeFocused();
+    await panel.getByRole("button", { name: "Close Modules menu" }).click();
+    await expect(modules).toBeFocused();
+
+    await modules.click();
+    const outside = page.getByTestId("review-tools").locator("summary");
+    // The upward panel can cover the lower part of this summary at short heights.
+    await outside.click({ position: { x: 4, y: 1 } });
+    await expect(panel).not.toBeVisible();
+    await expect(outside).toBeFocused();
+    await outside.click();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await more.click();
+    await expect(morePanel).toHaveCSS("animation-name", "none");
+    await page.keyboard.press("Escape");
+    await expect(more).toBeFocused();
   });
 }
 
