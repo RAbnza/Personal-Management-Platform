@@ -17,11 +17,15 @@ export default async function DesignReviewPage({
   const query = await searchParams;
   const screen = typeof query.screen === "string" ? query.screen : "home";
   const record = typeof query.record === "string" ? query.record : undefined;
-  const treatment = query.treatment === "cream" ? "cream" : "ivory";
+  const treatment = query.treatment === "gallery" ? "gallery" : "porcelain";
+  const navigation = query.nav === "radix" ? "radix" : "dock";
+  const darkTreatment = query.dark === "graphite" ? "graphite" : "midnight";
   const stage = query.stage === "review" ? "review" : "draft";
   return (
     <DesignProofs
       screen={screen}
+      navigation={navigation}
+      darkTreatment={darkTreatment}
       treatment={treatment}
       stage={stage}
       {...(record ? { record } : {})}

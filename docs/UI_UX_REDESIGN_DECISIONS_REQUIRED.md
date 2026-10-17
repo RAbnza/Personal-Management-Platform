@@ -19,9 +19,10 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 | --- | --- | --- | --- |
 | D01 | Overall direction and six-milestone roadmap | **APPROVED**; milestones individually assigned | No |
 | D02 | Working identity / final branding | **Personal workspace APPROVED**; final name, wordmark, logo and native branding deferred | No |
-| D03 | Complete visual identity | **APPROVED**; violet/lavender, warm neutrals, restrained accents, Geist, semantic tokens and accessible light/dark modes | No |
+| D03 | Complete visual identity | **APPROVED** identity/type/accessibility; D06 refines canvases, accent and navigation direction; new renders pending | No |
 | D04 | Balanced information density | **APPROVED**; readable everyday use, rich desktop records and adaptive mobile layouts | No |
-| D05 | M1 owner review refinements | **REQUIRED**; brighter light alternatives, richer accents, floating capsules and separate mobile expense entry/review; revised renders await approval | Final M1 visual sign-off pending |
+| D06 | M1 owner review round 3 | **REQUIRED**; white-based light themes, controlled dark spectrum accents, two proven/library-backed floating-navigation concepts and corrected mobile geometry; final approval pending | Final M1 visual sign-off pending |
+| D05 | Previous M1 owner review refinements | Color/navigation recommendation superseded by D06; record affordances and separate expense entry/review retained | See D06 |
 | F01 | Windows/Android runtime and code reuse | **DEFERRED** to platform architecture planning | No |
 | F02 | Local profile and online identity | **DEFERRED** to platform architecture planning | No |
 | F03 | Device security, encryption and recovery | **DEFERRED** to platform architecture planning | No |
@@ -32,7 +33,15 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 
 ## 2. Approved current redesign direction
 
-### D05 — M1 owner review refinements before M2
+### D06 — M1 owner review round 3
+
+The owner rejected the Round 2 ivory/cream direction and custom capsules at `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`. D06 **supersedes D05's palette/navigation recommendation**. Activity architecture, record readability, separate expense entry/review, migration and shared states remain approved in principle; final visual sign-off is pending.
+
+The current target is white/cool near-white with lavender/blue/pink supporting regions. Dark mode may use controlled violet, blue/cyan and plum, one restrained focal blend and static active-icon glow. No flashing, moving backgrounds or glowing body text. Research mature compatible components and compare two functioning proven/library-backed designs in actual light/dark desktop/mobile compositions. Recommend the adapted MIT Magic UI Dock for owner comparison; Radix floating segments/ink rail remains a real alternative. Neither is owner-approved. See the [library evaluation](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3).
+
+Correct the mobile clipping finding through document flow for browsing, shared header/content scroll, dock/safe-area/focus clearance and verified initial/returned Home action geometry. The dedicated expense task retains its separate body/actions and short-height fallback. Disable the Next development indicator through supported configuration for unobstructed manual review; do not hide application overlaps. M1 remains synthetic-only, M2 owns real routing/permissions/navigation and its production layout contract, and M3 owns real expense create/edit. Review the [new renders](verification/assets/redesign-m1/README.md) before assigning another milestone.
+
+### D05 — Previous M1 review (color/navigation superseded by D06)
 
 The owner partially approved the first M1 proofs at `8f0bab785af69b612901fd3dc868953cf90920de`: overall financial activity layouts, tracker migration, interaction states and broad redesign direction. Final visual approval was **not** granted. This newer feedback refines D01/D03/D04; the earlier light palette and navigation proposal are not immutable.
 
@@ -45,8 +54,8 @@ M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide c
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
 - **Approved decision:** adopt the warm, modern personal-workspace presentation, compact application frame, integrated module switcher rather than a mandatory permanent global sidebar, contextual navigation/actions, adaptive list/detail layouts and user-focused interactions. All six milestones M1–M6 are approved as the roadmap.
 - **Why it matters:** the proposal intentionally replaces the permanent sidebar and repetitive panel composition, changes the light primary-action treatment, and reorganizes access to implemented workflows. These should be deliberate owner choices.
-- **Recommended choice:** adopt [Plan Sections 4–6](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#4-reference-image-analysis): warm neutral surfaces, violet/lavender primary identity, charcoal emphasis, restrained teal/amber accents, one module switcher, local section navigation and contextual detail. Use a labeled mobile bottom bar: Home, Calendar, Modules, More. Preserve all current URLs and business behavior.
-- **Earlier alternatives (not selected):** compact global rail or cooler silver canvas. The approved target is the integrated switcher and warm-neutral visual system; material departures need review rather than silent substitution.
+- **Current refinement:** D06 updates [Plan Sections 4–6](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#4-reference-image-analysis) to white-based light canvases, controlled dark accents and proven-component floating navigation. Keep violet/lavender identity, an integrated module switcher, local navigation and contextual detail. Mobile retains labeled Home, Calendar, Modules, More. Preserve all current URLs and business behavior.
+- **Earlier alternatives:** previous canvas/capsule proposals are historical; D06 records the owner's newer instruction and pending visual choices.
 - **Impact:** approval establishes the proposed visual supersession of the corresponding existing design-guideline roles. Product, architecture, database, financial and privacy authorities remain unchanged. It permits starting only the milestone(s) the owner subsequently assigns.
 - **Implementation boundary:** planning approval is complete. M1 has been individually assigned and implemented; its rendered proofs await owner visual sign-off. No future architecture decision is needed.
 - **Blocks current redesign:** **No**; direction approved. Implementation remains separately assigned.
@@ -74,10 +83,10 @@ M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide c
 ### D03 — Brand connection and color emphasis
 
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
-- **Approved decision:** adopt the complete visual system: violet/lavender primary identity, warm-neutral canvases/surfaces, restrained teal/amber and complementary module accents, Geist, consistent light/dark modes, centralized semantic tokens and the documented accessibility/contrast requirements.
+- **Approved identity, refined by D06:** violet/lavender, Geist, consistent light/dark modes, centralized semantic tokens and accessibility/contrast remain. White-based light canvases and controlled dark spectrum accents replace the previous warm-canvas proposal; rendered acceptance remains pending.
 - **Why it matters:** the previous guidelines explicitly reference that visual family, while the new references introduce warmer and more varied color.
-- **Recommended choice:** retain violet/lavender and Geist; adopt the plan's warm canvas, teal secondary accent and restrained amber/plum/blue chart/module roles. Use strong light-theme violet actions and dark-theme lavender actions. This supplies variety without recoloring every screen.
-- **Earlier alternatives (not selected):** cooler silver canvas or an independent palette. The comprehensive redesign plan governs the approved visual direction; final brand assets remain deferred under D02.
+- **Current choice for review:** retain violet/lavender and Geist; compare Porcelain/Gallery white and Midnight spectrum/Graphite blue under D06. Complementary blue/cyan, teal and plum support content independently of feedback meaning. Strong violet light actions and lavender dark actions remain.
+- **Earlier alternatives:** warm ivory/cream are rejected historical iterations. Final brand assets remain deferred under D02.
 - **Impact:** centralized token changes and representative contrast/layout checks. Do not introduce another icon/font/component system to express a color preference.
 - **Validation:** M1 rendered proofs validate the approved palette and all relevant contrast states before broad screen conversion; token calculations alone do not certify the interface.
 - **Blocks current redesign:** **No**; D01 is approved.

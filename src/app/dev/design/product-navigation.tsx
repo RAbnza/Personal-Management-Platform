@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import * as NavigationMenu from "@radix-ui/react-navigation-menu";
 import {
   CalendarDays,
   ChevronDown,
@@ -10,105 +11,247 @@ import {
   ListChecks,
   CircleHelp,
 } from "lucide-react";
-import {
-  NavigationCapsule,
-  CapsuleLink,
-  capsuleItem,
-} from "@/components/patterns/navigation-capsule";
+import type { ReactNode } from "react";
+import { MagicDock, MagicDockItem } from "@/components/patterns/magic-dock";
 import { Dialog, DialogTrigger, SheetContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import dock from "@/components/patterns/navigation-dock.module.css";
 import styles from "./proofs.module.css";
 
-function Destinations({ screen, mobile }: { screen: string; mobile: boolean }) {
-  const moduleActive = ["activity", "expense", "migration"].includes(screen);
-  const currentModule = screen === "migration" ? "Trackers" : "Money";
+type Concept = "dock" | "radix";
+const url = (screen: string, concept: Concept) =>
+  `/dev/design?screen=${screen}&nav=${concept}`;
+
+function ModuleDestinations({
+  concept,
+  radix = false,
+}: {
+  concept: Concept;
+  radix?: boolean;
+}) {
+  const links = [
+    {
+      screen: "activity",
+      title: "Money",
+      description: "Financial activity and exact effects",
+      Icon: Wallet,
+    },
+    {
+      screen: "migration",
+      title: "Trackers",
+      description: "Templates, entries and migration",
+      Icon: ListChecks,
+    },
+  ];
   return (
-    <>
-      <CapsuleLink
-        href="/dev/design?screen=home"
-        aria-current={screen === "home" ? "page" : undefined}
-      >
-        <House aria-hidden="true" className="size-5" />
-        <span>Home</span>
-      </CapsuleLink>
-      <CapsuleLink
-        href="/dev/design?screen=calendar"
-        aria-current={screen === "calendar" ? "page" : undefined}
-      >
-        <CalendarDays aria-hidden="true" className="size-5" />
-        <span>Calendar</span>
-      </CapsuleLink>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            className={capsuleItem}
-            variant="ghost"
-            aria-current={moduleActive ? "true" : undefined}
-            aria-label={`Modules${moduleActive ? ` · ${currentModule}` : ""}`}
-          >
-            <LayoutGrid aria-hidden="true" className="size-5" />
-            <span>{mobile || !moduleActive ? "Modules" : currentModule}</span>
-            {!mobile ? (
-              <ChevronDown aria-hidden="true" className="size-4" />
-            ) : null}
-          </Button>
-        </DialogTrigger>
-        <SheetContent
-          title="Modules · navigation prototype"
-          description="Representative synthetic destinations only. The complete capability-aware directory belongs to M2."
-        >
-          <div className="space-y-3">
-            <CapsuleLink
-              href="/dev/design?screen=activity"
-              className="justify-start bg-accent text-accent-foreground"
-            >
-              <Wallet aria-hidden="true" className="size-5" />
-              Money · Financial activity
-            </CapsuleLink>
-            <CapsuleLink
-              href="/dev/design?screen=migration"
-              className="justify-start bg-plum-surface text-plum"
-            >
-              <ListChecks aria-hidden="true" className="size-5" />
-              Trackers · Template migration
-            </CapsuleLink>
-          </div>
-        </SheetContent>
-      </Dialog>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            className={capsuleItem}
-            variant="ghost"
-            aria-current={screen === "states" ? "true" : undefined}
-          >
-            <MoreHorizontal aria-hidden="true" className="size-5" />
-            <span>More</span>
-          </Button>
-        </DialogTrigger>
-        <SheetContent
-          title="More · navigation prototype"
-          description="Review-only controls; no real account, preferences or authentication are changed."
-        >
-          <CapsuleLink
-            href="/dev/design?screen=states"
-            className="justify-start bg-accent text-accent-foreground"
-          >
-            <CircleHelp aria-hidden="true" className="size-5" />
-            Interaction states
-          </CapsuleLink>
-        </SheetContent>
-      </Dialog>
-    </>
+    <div>
+      {links.map(({ screen, title, description, Icon }) => {
+        const link = (
+          <a href={url(screen, concept)} className={dock.destination}>
+            <Icon aria-hidden="true" />
+            <span>
+              {title}
+              <small>{description}</small>
+            </span>
+          </a>
+        );
+        return radix ? (
+          <NavigationMenu.Link asChild key={screen}>
+            {link}
+          </NavigationMenu.Link>
+        ) : (
+          <div key={screen}>{link}</div>
+        );
+      })}
+    </div>
   );
 }
 
-export function ProductNavigation({ screen }: { screen: string }) {
+function Drawer({
+  kind,
+  concept,
+  className,
+  current,
+  children,
+}: {
+  kind: "Modules" | "More";
+  concept: Concept;
+  className: string | undefined;
+  current: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          className={className}
+          aria-current={current ? "true" : undefined}
+        >
+          {children}
+        </button>
+      </DialogTrigger>
+      <SheetContent
+        title={`${kind} · navigation prototype`}
+        description="Synthetic destinations for M1 comparison. Real routing and capability-aware integration remain M2 work."
+      >
+        {kind === "Modules" ? (
+          <ModuleDestinations concept={concept} />
+        ) : (
+          <a className={dock.destination} href={url("states", concept)}>
+            <CircleHelp aria-hidden="true" />
+            <span>
+              Interaction states
+              <small>Inspect shared feedback and controls</small>
+            </span>
+          </a>
+        )}
+      </SheetContent>
+    </Dialog>
+  );
+}
+
+function TouchOrDock({
+  screen,
+  concept,
+}: {
+  screen: string;
+  concept: Concept;
+}) {
+  const moduleActive = ["activity", "expense", "migration"].includes(screen);
+  const item = concept === "dock" ? dock.item : dock.railItem;
+  const icon = (node: ReactNode) =>
+    concept === "dock" ? <span className={dock.tile}>{node}</span> : node;
+  const items = [
+    <a
+      key="home"
+      className={item}
+      href={url("home", concept)}
+      aria-current={screen === "home" ? "page" : undefined}
+    >
+      {icon(<House aria-hidden="true" />)}
+      <span>Home</span>
+    </a>,
+    <a
+      key="calendar"
+      className={item}
+      href={url("calendar", concept)}
+      aria-current={screen === "calendar" ? "page" : undefined}
+    >
+      {icon(<CalendarDays aria-hidden="true" />)}
+      <span>Calendar</span>
+    </a>,
+    <Drawer
+      key="modules"
+      kind="Modules"
+      concept={concept}
+      className={item}
+      current={moduleActive}
+    >
+      {icon(<LayoutGrid aria-hidden="true" />)}
+      <span>Modules</span>
+    </Drawer>,
+    <Drawer
+      key="more"
+      kind="More"
+      concept={concept}
+      className={item}
+      current={screen === "states"}
+    >
+      {icon(<MoreHorizontal aria-hidden="true" />)}
+      <span>More</span>
+    </Drawer>,
+  ];
+  return concept === "dock" ? (
+    <MagicDock>
+      {items.map((child) => (
+        <MagicDockItem key={child.key}>{child}</MagicDockItem>
+      ))}
+    </MagicDock>
+  ) : (
+    <nav className={dock.rail} aria-label="Product navigation prototype">
+      <div className={dock.railList}>{items}</div>
+    </nav>
+  );
+}
+
+function RadixRail({ screen }: { screen: string }) {
+  const moduleActive = ["activity", "expense", "migration"].includes(screen);
+  return (
+    <NavigationMenu.Root
+      className={dock.rail}
+      aria-label="Product navigation prototype"
+      delayDuration={150}
+    >
+      <NavigationMenu.List className={dock.railList}>
+        <NavigationMenu.Item>
+          <NavigationMenu.Link asChild active={screen === "home"}>
+            <a href={url("home", "radix")} className={dock.railItem}>
+              <House aria-hidden="true" />
+              Home
+            </a>
+          </NavigationMenu.Link>
+        </NavigationMenu.Item>
+        <NavigationMenu.Item>
+          <NavigationMenu.Link asChild active={screen === "calendar"}>
+            <a href={url("calendar", "radix")} className={dock.railItem}>
+              <CalendarDays aria-hidden="true" />
+              Calendar
+            </a>
+          </NavigationMenu.Link>
+        </NavigationMenu.Item>
+        <NavigationMenu.Item>
+          <NavigationMenu.Trigger
+            className={dock.railItem}
+            aria-current={moduleActive ? "true" : undefined}
+          >
+            <LayoutGrid aria-hidden="true" />
+            {moduleActive
+              ? screen === "migration"
+                ? "Trackers"
+                : "Money"
+              : "Modules"}
+            <ChevronDown aria-hidden="true" />
+          </NavigationMenu.Trigger>
+          <NavigationMenu.Content className={dock.content}>
+            <p className="mb-2 px-3 text-xs font-semibold text-muted-foreground">
+              YOUR MODULES · SYNTHETIC
+            </p>
+            <ModuleDestinations concept="radix" radix />
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+        <NavigationMenu.Item>
+          <NavigationMenu.Trigger
+            className={dock.railItem}
+            aria-current={screen === "states" ? "true" : undefined}
+          >
+            <MoreHorizontal aria-hidden="true" />
+            More
+          </NavigationMenu.Trigger>
+          <NavigationMenu.Content className={dock.content}>
+            <NavigationMenu.Link asChild>
+              <a href={url("states", "radix")} className={dock.destination}>
+                <CircleHelp aria-hidden="true" />
+                Interaction states
+              </a>
+            </NavigationMenu.Link>
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+      </NavigationMenu.List>
+    </NavigationMenu.Root>
+  );
+}
+
+export function ProductNavigation({
+  screen,
+  concept,
+}: {
+  screen: string;
+  concept: Concept;
+}) {
   return (
     <>
       <div className={styles.productFrame}>
         <div className="flex min-w-0 items-center gap-3">
-          <span className="rounded-panel bg-accent p-3 text-accent-foreground">
+          <span className="rounded-panel bg-accent p-2.5 text-accent-foreground">
             <LayoutGrid aria-hidden="true" className="size-5" />
           </span>
           <div>
@@ -119,15 +262,15 @@ export function ProductNavigation({ screen }: { screen: string }) {
           </div>
         </div>
         <div className={styles.desktopNavigation}>
-          <NavigationCapsule aria-label="Product navigation prototype">
-            <Destinations screen={screen} mobile={false} />
-          </NavigationCapsule>
+          {concept === "dock" ? (
+            <TouchOrDock screen={screen} concept={concept} />
+          ) : (
+            <RadixRail screen={screen} />
+          )}
         </div>
       </div>
       <div className={styles.mobileNavigation}>
-        <NavigationCapsule aria-label="Product navigation prototype">
-          <Destinations screen={screen} mobile />
-        </NavigationCapsule>
+        <TouchOrDock screen={screen} concept={concept} />
       </div>
     </>
   );

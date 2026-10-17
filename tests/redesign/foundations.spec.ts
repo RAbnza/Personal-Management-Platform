@@ -33,8 +33,7 @@ async function openProof(
   await page.getByTestId("review-tools").locator("summary").click();
   await expect(page.locator("html")).toHaveClass(new RegExp(theme));
   await page.evaluate(() => document.fonts.ready);
-  // Hide only the development server's own diagnostics badge in review images.
-  await page.addStyleTag({ content: "nextjs-portal { display: none; }" });
+  // next.config disables the development indicator for manual reviews too.
 }
 
 async function checkReflow(page: Page) {
@@ -64,7 +63,7 @@ test.afterAll(() => {
     );
 });
 
-for (const width of [320, 768, 1440]) {
+for (const width of [320, 390, 768, 1440]) {
   for (const theme of ["light", "dark"] as const) {
     for (const screen of Object.keys(names) as (keyof typeof names)[]) {
       test(`${screen} · ${theme} · ${width}px reflow and rendered accessibility`, async ({
@@ -89,7 +88,7 @@ for (const width of [320, 768, 1440]) {
         )
           await page.screenshot({
             path: resolve(evidence, `${screen}-${theme}-${width}.png`),
-            fullPage: true,
+            fullPage: width === 1440,
           });
         if (screen === "activity") {
           expect(await page.getByRole("table").count()).toBe(
@@ -316,23 +315,23 @@ test("migration fixture retains committed batches after cancel and resumes bound
 });
 
 for (const width of [320, 1440]) {
-  test(`ivory and cream use the same rendered proof without a new saved preference · ${width}`, async ({
+  test(`porcelain and gallery white use the same rendered proof without a new saved preference · ${width}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await openProof(page, "home");
     await expect(page.locator(".design-proof")).toHaveCSS(
       "background-color",
-      "rgb(255, 249, 237)",
+      "rgb(247, 248, 252)",
     );
     await page.getByTestId("review-tools").locator("summary").click();
     await page
       .getByLabel("Light background (review only)")
-      .selectOption("cream");
+      .selectOption("gallery");
     await page.getByTestId("review-tools").locator("summary").click();
     await expect(page.locator(".design-proof")).toHaveCSS(
       "background-color",
-      "rgb(247, 237, 217)",
+      "rgb(255, 255, 255)",
     );
     await expect(
       page.getByText("PHP 42,875.50", { exact: true }),
@@ -348,12 +347,12 @@ for (const width of [320, 1440]) {
     expect(
       await page.evaluate(() =>
         Object.keys(localStorage).filter((key) =>
-          /cream|ivory|treatment/.test(key),
+          /gallery|porcelain|treatment|navigation/.test(key),
         ),
       ),
     ).toEqual([]);
     await page.screenshot({
-      path: resolve(evidence, `home-cream-light-${width}.png`),
+      path: resolve(evidence, `home-gallery-light-${width}.png`),
       fullPage: true,
     });
   });
@@ -362,6 +361,11 @@ for (const width of [320, 1440]) {
 test("System theme follows media, reduced motion removes transitions, focus and 400% equivalent reflow remain", async ({
   page,
 }) => {
+  const hydrationErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /hydrat/i.test(message.text()))
+      hydrationErrors.push(message.text());
+  });
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await openProof(page, "states", "dark");
   await page.getByTestId("review-tools").locator("summary").click();
@@ -394,6 +398,7 @@ test("System theme follows media, reduced motion removes transitions, focus and 
   expect(
     await primary.evaluate((element) => getComputedStyle(element).outlineStyle),
   ).toBe("solid");
+  expect(hydrationErrors).toEqual([]);
 });
 
 for (const theme of ["light", "dark"] as const) {
@@ -410,7 +415,10 @@ for (const theme of ["light", "dark"] as const) {
       await expect(active).toHaveCount(1);
       const home = active.getByRole("link", { name: "Home", exact: true });
       await expect(home).toHaveAttribute("aria-current", "page");
-      await expect(home).toHaveCSS("background-color", "rgb(216, 196, 250)");
+      await expect(home.locator("span").first()).toHaveCSS(
+        "background-color",
+        theme === "light" ? "rgb(107, 70, 156)" : "rgb(216, 196, 250)",
+      );
       for (const name of ["Home", "Calendar"]) {
         const link = active.getByRole("link", { name, exact: true });
         expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(48);
@@ -437,9 +445,17 @@ for (const theme of ["light", "dark"] as const) {
         expect(box.x).toBeGreaterThanOrEqual(12);
         expect(900 - box.y - box.height).toBeGreaterThanOrEqual(34);
         expect(
-          (await page.locator("main").boundingBox())!.y +
-            (await page.locator("main").boundingBox())!.height,
-        ).toBeLessThanOrEqual(box.y);
+          await page
+            .locator("main")
+            .evaluate((element) => getComputedStyle(element).overflowY),
+        ).toBe("visible");
+        expect(
+          await page
+            .locator(".design-proof")
+            .evaluate((element) =>
+              parseFloat(getComputedStyle(element).paddingBottom),
+            ),
+        ).toBeGreaterThanOrEqual(146);
         const last = page.getByRole("link", { name: /^Open record:/ }).last();
         await last.focus();
         await last.scrollIntoViewIfNeeded();
@@ -498,7 +514,6 @@ for (const theme of ["light", "dark"] as const) {
         "Review expense",
       );
       await page.evaluate(() => document.fonts.ready);
-      await page.addStyleTag({ content: "nextjs-portal { display: none; }" });
       await page.screenshot({
         path: resolve(evidence, `expense-review-${theme}-${width}.png`),
         fullPage: true,
@@ -715,5 +730,269 @@ for (const theme of ["light", "dark"] as const) {
       return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
     });
     expect(borderContrast).toBeGreaterThanOrEqual(3);
+  });
+}
+
+for (const concept of ["dock", "radix"] as const) {
+  for (const theme of ["light", "dark"] as const) {
+    for (const width of [320, 390, 768, 1440]) {
+      test(`Round 3 ${concept} · ${theme} · ${width}: initial geometry, disclosure and route return`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({
+          width,
+          height: width === 1440 ? 1000 : 820,
+        });
+        await page.goto(`/dev/design?nav=${concept}`);
+        await expect(page.locator("[data-review-ready]")).toHaveAttribute(
+          "data-review-ready",
+          "true",
+        );
+        const tools = page.getByTestId("review-tools");
+        await tools.locator("summary").click();
+        await page.getByLabel("Theme", { exact: true }).selectOption(theme);
+        await tools.locator("summary").click();
+        await page.evaluate(() => document.fonts.ready);
+        await page.mouse.move(0, 0);
+        await checkReflow(page);
+        const home = page.getByRole("heading", { level: 1 });
+        const add = page.getByRole("link", {
+          name: "Add expense",
+          exact: true,
+        });
+        await expect(home).toBeInViewport();
+        await expect(add).toBeInViewport();
+        const geometry = await page.evaluate(() => ({
+          top: document.querySelector("main header")!.getBoundingClientRect()
+            .top,
+          frame: document
+            .querySelector('[class*="productFrame"]')!
+            .getBoundingClientRect().bottom,
+          scroll: document.querySelector("main")!.scrollTop,
+          overflow: getComputedStyle(document.querySelector("main")!).overflowY,
+        }));
+        expect(geometry.top).toBeGreaterThanOrEqual(geometry.frame);
+        expect(geometry.scroll).toBe(0);
+        expect(geometry.overflow).toBe("visible");
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+              .analyze()
+          ).violations,
+        ).toEqual([]);
+        await page.screenshot({
+          path: resolve(evidence, `concept-${concept}-${theme}-${width}.png`),
+          fullPage: width === 1440,
+        });
+        const nav = page
+          .getByRole("navigation", { name: "Product navigation prototype" })
+          .filter({ visible: true });
+        await expect(nav).toHaveCount(1);
+        for (const name of ["Home", "Calendar", "Modules", "More"]) {
+          const target = nav.getByRole(
+            name === "Home" || name === "Calendar" ? "link" : "button",
+            { name, exact: true },
+          );
+          const bounds = (await target.boundingBox())!;
+          expect(bounds.height).toBeGreaterThanOrEqual(48);
+          expect(bounds.width).toBeGreaterThanOrEqual(48);
+          await expect(target).toBeVisible();
+        }
+        const modules = nav.getByRole("button", {
+          name: "Modules",
+          exact: true,
+        });
+        const destination = page.getByRole("link", {
+          name: /Money.*Financial activity/,
+        });
+        if (concept === "radix" && width >= 768) {
+          await modules.hover();
+          await expect(destination).toBeVisible();
+          await page.mouse.move(0, 0);
+          await expect(destination).not.toBeVisible();
+        }
+        await modules.focus();
+        await page.keyboard.press("Enter");
+        await expect(destination).toBeVisible();
+        if (width === 1440)
+          await page.screenshot({
+            path: resolve(evidence, `modules-${concept}-${theme}-1440.png`),
+            fullPage: true,
+          });
+        if (concept === "radix" && width >= 768) {
+          await page.keyboard.press("ArrowDown");
+          await expect(destination).toBeFocused();
+        }
+        await page.keyboard.press("Escape");
+        await expect(modules).toBeFocused();
+        await expect(destination).not.toBeVisible();
+        const more = nav.getByRole("button", { name: "More", exact: true });
+        await more.focus();
+        await more.press("Enter");
+        await expect(
+          page.getByRole("link", { name: /^Interaction states/ }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(more).toBeFocused();
+        await modules.press("Enter");
+        await expect(destination).toBeVisible();
+        await destination.click();
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+          "Financial activity",
+        );
+        await expect(page.locator(".design-proof")).toHaveAttribute(
+          "data-navigation",
+          concept,
+        );
+        await page
+          .getByRole("navigation", { name: "Product navigation prototype" })
+          .filter({ visible: true })
+          .getByRole("link", { name: "Home", exact: true })
+          .click();
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+          "A little clarity for your day.",
+        );
+        await expect(
+          page.getByRole("link", { name: "Add expense", exact: true }),
+        ).toBeInViewport();
+        await expect(page.locator("[data-review-ready]")).toHaveAttribute(
+          "data-review-ready",
+          "true",
+        );
+        expect(await page.evaluate(() => scrollY)).toBe(0);
+        if (width < 768) {
+          const last = page.getByRole("link", {
+            name: /Review template update/,
+          });
+          await last.focus();
+          await last.scrollIntoViewIfNeeded();
+          const bottom = (await last.boundingBox())!;
+          const dockBox = (await nav.boundingBox())!;
+          expect(bottom.y + bottom.height).toBeLessThanOrEqual(dockBox.y);
+          await page.evaluate(() => scrollTo(0, 0));
+          // Review disclosure can grow beyond a short viewport without clipping main.
+          await tools.locator("summary").click();
+          await page
+            .getByLabel("Navigation concept (review only)")
+            .selectOption(concept);
+          await tools.locator("summary").click();
+          await expect(
+            page.getByRole("link", { name: "Add expense", exact: true }),
+          ).toBeInViewport();
+        }
+      });
+    }
+  }
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(`Round 3 alternative palette · ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await openProof(page, "home", theme);
+    const focal = page.locator('section[aria-label="Financial snapshot"]');
+    const originalBlend = await focal.evaluate(
+      (element) => getComputedStyle(element).backgroundImage,
+    );
+    const tools = page.getByTestId("review-tools");
+    await tools.locator("summary").click();
+    await page
+      .getByLabel(
+        theme === "light"
+          ? "Light background (review only)"
+          : "Dark treatment (review only)",
+      )
+      .selectOption(theme === "light" ? "gallery" : "graphite");
+    await tools.locator("summary").click();
+    await expect(focal).not.toHaveCSS("background-image", originalBlend);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await page.screenshot({
+      path: resolve(evidence, `home-alternative-${theme}-1440.png`),
+      fullPage: true,
+    });
+  });
+}
+
+test("Round 3 dock magnification respects pointer and reduced motion", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openProof(page, "home");
+  const item = page
+    .getByRole("navigation", { name: "Product navigation prototype" })
+    .filter({ visible: true })
+    .getByRole("link", { name: "Home", exact: true })
+    .locator("..");
+  await page.mouse.move(0, 0);
+  await expect
+    .poll(async () => Math.round((await item.boundingBox())!.width))
+    .toBe(76);
+  const tile = item.locator("a > span").first();
+  const tileWidth = (await tile.boundingBox())!.width;
+  const dockHeight = (await item.locator("..").boundingBox())!.height;
+  await item.hover();
+  await expect
+    .poll(async () => (await item.boundingBox())!.width)
+    .toBeGreaterThan(80);
+  await expect
+    .poll(async () => (await tile.boundingBox())!.width)
+    .toBeGreaterThan(tileWidth + 4);
+  expect((await item.locator("..").boundingBox())!.height).toBe(dockHeight);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect
+    .poll(async () => Math.round((await item.boundingBox())!.width))
+    .toBe(76);
+  await expect(item.locator("a")).toHaveAccessibleName("Home");
+});
+
+for (const concept of ["dock", "radix"] as const) {
+  test(`Round 3 short viewport and zoom retain Home action · ${concept}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 500 });
+    await page.goto(`/dev/design?nav=${concept}`);
+    await expect(page.locator("[data-review-ready]")).toHaveAttribute(
+      "data-review-ready",
+      "true",
+    );
+    await page.addStyleTag({ content: "html {font-size:200%;}" });
+    await checkReflow(page);
+    const labels = await page
+      .getByRole("navigation", { name: "Product navigation prototype" })
+      .filter({ visible: true })
+      .locator("span")
+      .evaluateAll((elements) =>
+        elements.map((element) => ({
+          width: element.clientWidth,
+          scroll: element.scrollWidth,
+        })),
+      );
+    for (const label of labels)
+      expect(label.scroll).toBeLessThanOrEqual(label.width);
+    const add = page.getByRole("link", { name: "Add expense", exact: true });
+    await add.focus();
+    await add.scrollIntoViewIfNeeded();
+    await expect(add).toBeInViewport();
+    expect(
+      await page.locator("main").evaluate((e) => getComputedStyle(e).overflowY),
+    ).toBe("visible");
+    await add.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Add expense",
+    );
+    await expect(page.locator("[data-review-ready]")).toHaveAttribute(
+      "data-review-ready",
+      "true",
+    );
+    await page.getByRole("link", { name: "Back to activity" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Financial activity",
+    );
   });
 }

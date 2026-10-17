@@ -1,38 +1,52 @@
-# M1 rendered review evidence
+# M1 Round 3 — rendered owner review
 
-**Owner review 2 — pending approval.** The owner partially approved the first activity layouts, migration and state patterns, but withheld final visual approval. These refreshed captures demonstrate the requested refinements. All records are synthetic; nothing calls a private API or persists a financial record.
+**Final visual approval is pending.** D06 replaces the rejected ivory/cream canvases and Round 2 capsules. Activity architecture, separate expense entry/review, migration and shared states are preserved. Everything here is an actual Edge/Chromium browser render with synthetic data.
 
-Captured in Microsoft Edge/Chromium on Windows at 1440×1000 (some comparisons 1440×900) and 320×900 CSS px; tablet checks use 768×900. Mobile screenshots are actual bounded viewport renders: scroll the content area to inspect the rest while the capsule/task actions stay in reserved space. Desktop captures include the complete composition. The development diagnostics badge is hidden only for captures.
+Open the [side-by-side visual comparison](review.html) for paired images, or follow the tables below. Recommend **Porcelain + Midnight spectrum + A, the adapted Magic UI Dock**. The alternatives remain functioning review choices, not saved workspace settings or owner-approved decisions.
+
+## Navigation choices in the same Home composition
+
+| Concept | Light desktop | Dark desktop | Light mobile 390px | Dark mobile 390px |
+| --- | --- | --- | --- | --- |
+| **A — Magic UI Dock, recommended** | [1440px](concept-dock-light-1440.png) | [1440px](concept-dock-dark-1440.png) | [390px](concept-dock-light-390.png) | [390px](concept-dock-dark-390.png) |
+| **B — Radix floating segments / ink rail** | [1440px](concept-radix-light-1440.png) | [1440px](concept-radix-dark-1440.png) | [390px](concept-radix-light-390.png) | [390px](concept-radix-dark-390.png) |
+
+A uses raised icon tiles, persistent labels, a small current marker, desktop proximity springs and a static compact mobile dock. B uses separate desktop segments with an integrated Radix module panel; mobile is a compact dark rail with a filled active destination. These differ in structure, interaction and mobile treatment. A has more character and introduces the Motion runtime; B is quieter and avoids magnification. Both branches share the M1 comparison bundle; a future B-only route cost is not claimed. Both preserve Home / Calendar / Modules / More, native links, focus and current semantics. See the [library evaluation and licenses](../../../REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3) and [measured costs](../../REDESIGN_M1_RESULTS.md).
+
+Module switching: A [light](modules-dock-light-1440.png) / [dark](modules-dock-dark-1440.png) uses the existing accessible sheet; B [light](modules-radix-light-1440.png) / [dark](modules-radix-dark-1440.png) uses an integrated desktop panel. Keyboard, Escape restoration and pointer entry are exercised, including More.
+
+Narrow and tablet comparisons: A [light 320](concept-dock-light-320.png), [dark 320](concept-dock-dark-320.png), [light 768](concept-dock-light-768.png), [dark 768](concept-dock-dark-768.png); B [light 320](concept-radix-light-320.png), [dark 320](concept-radix-dark-320.png), [light 768](concept-radix-light-768.png), [dark 768](concept-radix-dark-768.png).
+
+## Palette alternatives
+
+| Direction | Recommended treatment | Functioning alternative | Difference |
+| --- | --- | --- | --- |
+| White-based light | [Porcelain](home-light-1440.png) | [Gallery white](home-alternative-light-1440.png) | Cool near-white canvas / white surfaces versus white canvas / subtly tinted surfaces and pink-lavender focal blend. |
+| Dark | [Midnight spectrum](home-dark-1440.png) | [Graphite blue](home-alternative-dark-1440.png) | Violet-blue depth, cyan/plum support and static active-icon glow versus a quieter neutral/blue composition without glow. |
+
+Gallery white also appears at [320px](home-gallery-light-320.png). Color stays centralized. Neon influence is controlled: no glowing body text, flashing, animated background or blur layer. Authoritative semantic feedback retains its independent roles.
+
+## Preserved workflows under the revised themes
 
 | Composition | Light desktop | Dark desktop | Light mobile | Dark mobile |
 | --- | --- | --- | --- | --- |
-| Home | [1440px](home-light-1440.png) | [1440px](home-dark-1440.png) | [320px](home-light-320.png) | [320px](home-dark-320.png) |
-| Financial list/detail | [1440px](activity-light-1440.png) | [1440px](activity-dark-1440.png) | [320px](activity-light-320.png) | [320px](activity-dark-320.png) |
-| Expense entry | [1440px](expense-light-1440.png) | [1440px](expense-dark-1440.png) | [320px](expense-light-320.png) | [320px](expense-dark-320.png) |
-| Separate expense review | [1440px](expense-review-light-1440.png) | [1440px](expense-review-dark-1440.png) | [320px](expense-review-light-320.png) | [320px](expense-review-dark-320.png) |
-| Tracker migration | [1440px](migration-light-1440.png) | [1440px](migration-dark-1440.png) | [320px](migration-light-320.png) | [320px](migration-dark-320.png) |
+| Home / initial Add expense | [1440](home-light-1440.png) | [1440](home-dark-1440.png) | [390](home-light-390.png) · [320](home-light-320.png) | [390](home-dark-390.png) · [320](home-dark-320.png) |
+| Financial activity | [1440](activity-light-1440.png) | [1440](activity-dark-1440.png) | [320](activity-light-320.png) | [320](activity-dark-320.png) |
+| Expense entry | [1440](expense-light-1440.png) | [1440](expense-dark-1440.png) | [320](expense-light-320.png) | [320](expense-dark-320.png) |
+| Separate exact review | [1440](expense-review-light-1440.png) | [1440](expense-review-dark-1440.png) | [320](expense-review-light-320.png) | [320](expense-review-dark-320.png) |
+| Tracker migration | [1440](migration-light-1440.png) | [1440](migration-dark-1440.png) | [320](migration-light-320.png) | [320](migration-dark-320.png) |
+| Shared interaction states | [1440](states-light-1440.png) | [1440](states-dark-1440.png) | Tested at 320/390/768 | Tested at 320/390/768 |
 
-Also inspect [entry fields after scrolling](expense-entry-more-light-320.png), [lower review effects/allocation](expense-review-effects-light-320.png), [expense receipt](expense-confirmed-dark-320.png), and interaction states in [light](states-light-1440.png) / [dark](states-dark-1440.png). Fields and consequences remain present; entry and review do not coexist. Edit preserves notes/description. Fixture amount/date are read-only, with exact effects supplied by the fixture. Migration mapping, counts, cancellation and resume semantics remain intact.
+Also inspect [later entry fields](expense-entry-more-light-320.png), [lower exact effects/allocation](expense-review-effects-light-320.png) and [accepted synthetic receipt](expense-confirmed-dark-320.png). No fields, financial consequences, source metadata, migration semantics or command guarantees were removed.
 
-## Two light treatments
+## Clipping and manual review
 
-| Treatment | Desktop | Mobile | Recommendation |
-| --- | --- | --- | --- |
-| Bright warm ivory | [Home](home-light-1440.png) | [Home](home-light-320.png) | **Recommended**: brighter, airy warm canvas with clearer working-surface separation and room for complementary accents. |
-| Soft cream | [Same Home proof](home-cream-light-1440.png) | [Same Home proof](home-cream-light-320.png) | Viable warmer, more enveloping alternative; stronger cream cast behind the same content. |
+Browsing uses document scrolling: review controls, app frame and content move together. Initial/returned Home title and Add expense are checked geometrically; dock/safe-area padding and focus margins keep the last focused destination reachable. Dedicated expense tasks alone retain a bounded body and separate action area, with document flow at short heights. Mobile screenshots show actual viewports, not an artificial full-page mobile canvas; scroll normally to inspect the rest. Fixed navigation enters document flow at short/high-zoom heights. Real software-keyboard, screen-reader and device checks remain outstanding.
 
-These compare the same rendered application fixture, not generated mockups or a new persistent theme setting. Both preserve violet identity, charcoal emphasis and readable semantic states. Teal supports continuation, blue supports Agenda, plum marks Career/Trackers and amber provides restrained secondary emphasis. Module/category hues remain separate from authoritative feedback status.
+The Next development indicator is disabled through the supported config for manual review too. Tests do not hide its portal. Application geometry and overlaps are tested independently.
 
-## Floating navigation and task behavior
+Start `pnpm dev --port 3200`, open `http://localhost:3200/dev/design`, then expand **M1 review controls**. Choose Theme, light/dark treatment and Navigation concept. Direct links: `?nav=dock`, `?nav=radix`, `?treatment=gallery`, `?dark=graphite`, `?screen=expense&stage=review`. The palette controls affect their corresponding theme; use Light/Dark explicitly. No financial data or new workspace preference is persisted.
 
-The desktop Home/activity/migration images demonstrate the opaque floating capsule, icon-plus-label destinations, active pill and integrated module disclosure. Mobile Home/activity/migration show the detached Home / Calendar / Modules / More capsule, safe-area clearance and reserved content viewport. The capsule yields when editable fields receive focus; short/zoomed viewports place it in document flow. The expense task replaces mobile product navigation with Back plus a separate action area, leaving its body scrollable without covering fields/errors. Real device/software-keyboard checks remain outstanding.
+Before/after history: [Round 2 Home](https://github.com/RAbnza/Personal-Management-Platform/blob/2b0a492be6c40b1068c312b49ce2acbfc3cca7f4/docs/verification/assets/redesign-m1/home-light-1440.png) and [Round 2 mobile Home](https://github.com/RAbnza/Personal-Management-Platform/blob/2b0a492be6c40b1068c312b49ce2acbfc3cca7f4/docs/verification/assets/redesign-m1/home-light-320.png) remain in Git history; they are not current recommendations.
 
-Record links now use an icon/chevron title affordance on desktop and outlined Details-plus-chevron targets on compact rows. They remain native, individually named links; rows have no whole-row click handlers or nested interactive targets.
-
-For before/after context, inspect the first M1 [Home](https://github.com/RAbnza/Personal-Management-Platform/blob/8f0bab785af69b612901fd3dc868953cf90920de/docs/verification/assets/redesign-m1/home-light-1440.png), [mobile activity](https://github.com/RAbnza/Personal-Management-Platform/blob/8f0bab785af69b612901fd3dc868953cf90920de/docs/verification/assets/redesign-m1/activity-light-320.png) and [mobile expense review](https://github.com/RAbnza/Personal-Management-Platform/blob/8f0bab785af69b612901fd3dc868953cf90920de/docs/verification/assets/redesign-m1/expense-light-320.png). Original binaries remain in Git history, avoiding duplicate artifacts in the current tree.
-
-Reproduce with `pnpm dev --port 3200`, then open `http://localhost:3200/dev/design`. Expand **M1 review controls** to choose a composition, System/Light/Dark and an ivory/cream comparison. The capsule demonstrates product navigation independently of this review toolbar. Open `?screen=expense&stage=review` for the canonical synthetic review, or `?screen=home&treatment=cream` for the alternative light background. Fixture response controls inside the expense body's disclosure expose submitting/accepted/stale/unknown presentation. These controls do not save workspace preferences or create a new persisted theme.
-
-For automated recapture, stop that development server and run `pnpm exec playwright test --config=playwright.redesign.config.ts`. This starts its own server and rejects every `/api/**` request. The route is gated out of production at the request boundary and in its Server Component.
-
-See [verification/handoff](../../../REDESIGN_M1_HANDOFF.md) and [component contracts](../../../REDESIGN_M1_COMPONENT_GUIDE.md). Owner review should cover hierarchy, everyday density, mobile reading effort, review clarity and migration consequences. Record feedback before assigning M2.
+Recapture with `pnpm exec playwright test --config=playwright.redesign.config.ts` after stopping the review server. See [handoff](../../../REDESIGN_M1_HANDOFF.md) and [results/limits](../../REDESIGN_M1_RESULTS.md). **M2/M3 have not started.**

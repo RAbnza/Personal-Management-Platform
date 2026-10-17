@@ -2,13 +2,19 @@
 
 October 17, 2026 (Asia/Manila). **M1 only: implemented and technically checked; owner visual sign-off pending.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
-## Owner review revision before M2
+## Owner review Round 3 before M2
 
-The owner reviewed `8f0bab785af69b612901fd3dc868953cf90920de` and partially approved overall financial activity layouts, migration, interaction states and broad direction. **Final visual approval was not granted.** This revision implements D05's required refinements on the same branch: bright ivory versus soft cream renders, richer violet/teal/blue/amber/plum roles, floating desktop/mobile capsules, explicit record-link affordances and separate expense entry/review task views with retained notes/description. The latest renders await **another owner review**; partial approval of the earlier structure is not approval of these new visuals.
+Baseline `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`, clean local branch matching fetched origin. The owner rejected ivory/cream and the prior custom capsules. **D06 supersedes those recommendations; final visual approval remains pending.** The overall activity architecture/readability, distinct expense entry/review, migration and shared states are preserved.
 
-Recommend **bright ivory** for a brighter, airy work area and strong separation from content; soft cream is a warmer comparison, not a new persistent theme. All colors remain centralized. No new dependencies, actual shell integration, real expense routes, financial commands/services, schema or CI changes. M2 owns real capsule navigation/capability/authentication/directory behavior. M3 owns dedicated mobile expense create/edit, explicit review, draft retention and authoritative result/recovery through unchanged contracts.
+Recommend **Porcelain + Midnight spectrum + Magic UI Dock (A)** for the next visual review: cool near-white canvas, white working surfaces, lavender/blue/pink regions, and controlled violet/cyan/plum accents in dark mode. A focal blend and static active-icon glow add personality without moving backgrounds. **Gallery white / Graphite blue** and **Radix floating segments/ink rail (B)** are actual functioning alternatives, not owner-approved selections or persisted preferences.
 
-The mobile capsule has reserved viewport space, not content underneath it; task entry/review instead uses a dedicated scroll body and a separate action area. Focused editable controls yield capsule space, and short/high-zoom viewports use document flow. These are tested prototype policies; real software keyboards/safe-area devices and manual assistive technology remain unverified. See the [current review index](verification/assets/redesign-m1/README.md) and [revision verification](verification/REDESIGN_M1_RESULTS.md#owner-review-revision-verification) for actual checks and limitations. The original delivery record below remains historical where marked.
+Researched Aceternity, Magic UI and shadcn/Radix sources before implementing. A retains MIT Magic UI distance/transform/spring mechanics with persistent labels and a static mobile/reduced-motion treatment; B uses Radix Navigation Menu desktop disclosures and existing Radix sheets on mobile. Lucide stays unchanged. Exact additions: `motion` 14.3.0 and `@radix-ui/react-navigation-menu` 1.4.1. Licenses, mobile limitations and reuse contracts are in the [component guide](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3); measured runtime/production costs are in [results](verification/REDESIGN_M1_RESULTS.md).
+
+The clipping investigation found a height-capped main scroller under a stationary review/app frame. A fresh 390x700 baseline initially had no overlap (title top 137px, action 211-259px), so the supplied finding is not generalized as every fresh load failing. Scrolling that main independently crops the top content at the stationary frame; it also leaves a second scroll coordinate for focus/restoration. Browsing now uses **document flow**, moving toolbar, frame and content together, with dock/safe-area bottom clearance and focused-target margins. Tests check initial/returned Home and Add expense geometry, disclosure expansion, 320/390/768px and desktop, short heights and enlarged text. The 320x500 / 200% text check also exposed an actual 404px Home overflow from minimum-content grid sizing. Explicit zero-minimum tracks, responsive focal typography/padding, wrapping attention headers and long-word wrapping fix it without truncating values. Enlarged navigation labels wrap around compact icons. The dedicated expense task alone retains its bounded body/actions and short-height fallback. Its focus effect now reacts only to actual presentation-state changes, avoiding an initial Strict Mode replay scroll during fast Back navigation. M2 must preserve this browsing layout contract and domain-appropriate history restoration.
+
+`devIndicators: false` is the installed Next documented configuration for unobstructed **manual and automated** review; errors still surface. Screenshot-only hiding of the diagnostics portal was removed. This does not suppress any application overlap. Real Android/IME, manual screen-reader and device touch/zoom checks remain unverified.
+
+M1 only: no real shell/routes, permissions, financial calculations, payloads, command/retry semantics, services, schema or CI changes. M2 owns real application navigation and M3 real expense create/edit. Nothing is merged automatically. Review the [actual comparisons](verification/assets/redesign-m1/README.md) before assigning another milestone.
 
 ## Baseline and scope
 
@@ -29,7 +35,7 @@ No changes to `src/modules`, domain services/calculations, database/schema/migra
 
 ## Review the actual renders
 
-Open the [screenshot index](verification/assets/redesign-m1/README.md) for refreshed light/dark desktop/mobile compositions, ivory/cream comparisons, separate expense review and interaction states. All are synthetic browser captures. Mobile images now show the actual bounded viewport with independently scrollable content; desktop images show complete composition. Intermediate 768px views are tested and reproducible.
+Open the [screenshot index](verification/assets/redesign-m1/README.md) for refreshed light/dark desktop/mobile compositions, white-based/dark-spectrum comparisons, separate expense review and interaction states. All are synthetic browser captures. Mobile comparison images show actual viewports with document scrolling for browsing; only expense tasks retain an independent body. Desktop images show complete compositions. Intermediate 768px views are tested and reproducible.
 
 Run `pnpm dev --port 3200`, then visit `http://localhost:3200/dev/design`. Home demonstrates asymmetric snapshot/attention/activity composition; financial activity switches between one desktop table/detail and one compact mobile list with a full detail destination; expense demonstrates draft/review/validation/submitting/accepted/uncertain presentation; migration demonstrates mapping, bounded samples, preserved history, exact committed counts, cancellation and explicit resume.
 
@@ -44,7 +50,8 @@ pnpm exec vitest run tests/unit/button.component.test.tsx tests/unit/panel.compo
 pnpm exec playwright test --config=playwright.redesign.config.ts
 pnpm lint
 pnpm typecheck
-pnpm exec prettier --check src/app/dev/design/page.tsx src/app/dev/design/proofs.tsx src/app/dev/design/expense-proof.tsx src/app/dev/design/product-navigation.tsx src/app/dev/design/proofs.module.css src/components/patterns/navigation-capsule.tsx src/components/patterns/work-area.tsx src/styles/tokens.css tests/redesign/foundations.spec.ts
+pnpm exec prettier --check src/app/dev/design/page.tsx src/app/dev/design/proofs.tsx src/app/dev/design/expense-proof.tsx src/app/dev/design/product-navigation.tsx src/app/dev/design/proofs.module.css src/components/patterns/magic-dock.tsx src/components/patterns/navigation-dock.module.css src/components/patterns/work-area.tsx src/styles/tokens.css tests/redesign/foundations.spec.ts next.config.ts scripts/testing/redesign-m1-bundle.ts
+pnpm exec tsx scripts/testing/redesign-m1-bundle.ts
 pnpm build
 ```
 
@@ -60,7 +67,7 @@ Excluded by impact: complete V1–V3 suites, database/integration/financial serv
 
 The semantic table remains native; no speculative table sorting or second server-state lifecycle was installed. Radix additions are version-aligned to existing Dialog. See [component guide](REDESIGN_M1_COMPONENT_GUIDE.md) for dependencies, tokens and use contracts.
 
-The approved detail split remains at 1280px rather than forcing it at 1024px; this keeps a useful 600px list and 340–400px detail region. Below it, the proof opens a full detail destination. Later domains must preserve their canonical URLs and safe return context; `/dev/design` query parameters are review-only. The collapsed review toolbar is distinct from the product capsule prototype. Its representative module/More disclosures and single Calendar sample do not implement the real M2 directory or M4 Calendar.
+The approved detail split remains at 1280px rather than forcing it at 1024px; this keeps a useful 600px list and 340–400px detail region. Below it, the proof opens a full detail destination. Later domains must preserve their canonical URLs and safe return context; `/dev/design` query parameters are review-only. The collapsed review toolbar is distinct from the two library-backed product navigation prototypes. Its representative module/More disclosures and single Calendar sample do not implement the real M2 directory or M4 Calendar.
 
 Remaining owner checkpoint: inspect hierarchy, warmth, density, narrow-screen reading effort, exact financial review clarity and migration cancellation/resume wording. Record feedback and resolve it before M2. No visual acceptance is inferred from passing tests or screenshots.
 

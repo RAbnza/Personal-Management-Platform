@@ -98,12 +98,16 @@ function useWide() {
 export function DesignProofs({
   screen,
   record,
-  treatment = "ivory",
+  treatment = "porcelain",
+  navigation = "dock",
+  darkTreatment = "midnight",
   stage = "draft",
 }: {
   screen: string;
   record?: string;
-  treatment?: "ivory" | "cream";
+  treatment?: "porcelain" | "gallery";
+  navigation?: "dock" | "radix";
+  darkTreatment?: "midnight" | "graphite";
   stage?: "draft" | "review";
 }) {
   const { theme, setTheme } = useTheme();
@@ -113,16 +117,20 @@ export function DesignProofs({
     () => false,
   );
   const [lightTreatment, setLightTreatment] = useState(treatment);
+  const [navigationConcept, setNavigationConcept] = useState(navigation);
+  const [darkPalette, setDarkPalette] = useState(darkTreatment);
   return (
     <div
       className={cn("design-proof", styles.proof)}
       data-light-treatment={lightTreatment}
+      data-dark-treatment={darkPalette}
+      data-navigation={navigationConcept}
       data-task={screen === "expense"}
       data-review-ready={hydrated}
     >
       <a
         href="#proof-content"
-        className="sr-only fixed top-4 left-4 z-(--z-notice) rounded-button bg-primary p-3 text-primary-foreground focus:not-sr-only"
+        className="sr-only fixed top-4 left-4 z-(--z-notice) max-w-[calc(100vw-2rem)] rounded-button bg-primary p-3 text-primary-foreground focus:not-sr-only"
       >
         Skip to design proof
       </a>
@@ -164,20 +172,47 @@ export function DesignProofs({
               id="proof-treatment"
               value={lightTreatment}
               onChange={(event) =>
-                setLightTreatment(event.target.value as "ivory" | "cream")
+                setLightTreatment(event.target.value as "porcelain" | "gallery")
               }
             >
-              <option value="ivory">Bright ivory - recommended</option>
-              <option value="cream">Soft cream - alternative</option>
+              <option value="porcelain">Porcelain - recommended</option>
+              <option value="gallery">Gallery white - alternative</option>
+            </Select>
+          </FormField>
+          <FormField label="Dark treatment (review only)" htmlFor="proof-dark">
+            <Select
+              id="proof-dark"
+              value={darkPalette}
+              onChange={(event) =>
+                setDarkPalette(event.target.value as "midnight" | "graphite")
+              }
+            >
+              <option value="midnight">Midnight spectrum - recommended</option>
+              <option value="graphite">Graphite blue - alternative</option>
+            </Select>
+          </FormField>
+          <FormField
+            label="Navigation concept (review only)"
+            htmlFor="proof-navigation"
+          >
+            <Select
+              id="proof-navigation"
+              value={navigationConcept}
+              onChange={(event) =>
+                setNavigationConcept(event.target.value as "dock" | "radix")
+              }
+            >
+              <option value="dock">A - Magic UI dock</option>
+              <option value="radix">B - Radix floating rail</option>
             </Select>
           </FormField>
         </div>
         <p>
-          No new workspace preference. The alternatives affect light previews
-          only.
+          Round 3 alternatives - synthetic previews, no saved workspace
+          preference.
         </p>
       </details>
-      <ProductNavigation screen={screen} />
+      <ProductNavigation screen={screen} concept={navigationConcept} />
       <main id="proof-content" tabIndex={-1}>
         {screen === "activity" ? (
           <ActivityProof {...(record ? { record } : {})} />
@@ -308,10 +343,13 @@ function HomeProof() {
           </a>
         }
       />
-      <div className="grid items-stretch gap-6 lg:grid-cols-[1.35fr_1fr]">
+      <div className="grid min-w-0 grid-cols-1 items-stretch gap-6 lg:grid-cols-[1.35fr_1fr]">
         <section
           aria-label="Financial snapshot"
-          className="flex flex-col justify-between rounded-dialog bg-focal-surface p-6 text-focal-foreground sm:p-8"
+          className={cn(
+            styles.snapshot,
+            "flex flex-col justify-between rounded-dialog p-6 text-focal-foreground sm:p-8",
+          )}
         >
           <div>
             <p className="text-sm text-focal-muted">Recorded liquid funds</p>
@@ -352,7 +390,7 @@ function HomeProof() {
           aria-labelledby="attention-heading"
           className="rounded-dialog border border-blue/30 bg-blue-surface p-5 sm:p-6"
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="attention-heading" className="text-section font-semibold">
               Next up
             </h2>
@@ -389,7 +427,7 @@ function HomeProof() {
         Opening cutoffs and uncategorized entries can affect coverage. These
         figures are recorded funds, not a promise of spendable money.
       </CoverageNotice>
-      <div className="grid items-start gap-6 lg:grid-cols-[1.35fr_1fr]">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[1.35fr_1fr]">
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-section font-semibold">Recent activity</h2>

@@ -125,5 +125,127 @@
       "No manual screen-reader or real mobile/IME testing",
       "Existing broad tracing and Windows standalone symlink warnings; no standalone deployment certification"
     ]
+  },
+  "currentReview": "ownerReviewRound3",
+  "ownerReviewRound3": {
+    "baselineCommit": "2b0a492be6c40b1068c312b49ce2acbfc3cca7f4",
+    "status": "Pending owner visual approval; M2/M3 not started; no merge",
+    "directDependencies": {
+      "motion": "14.3.0",
+      "@radix-ui/react-navigation-menu": "1.4.1"
+    },
+    "verification": {
+      "componentTestsPassed": 31,
+      "componentFiles": 7,
+      "browserDistinctChecksPassed": 83,
+      "mainBrowserRun": {
+        "passed": 81,
+        "failed": 2
+      },
+      "affectedRerunPassed": 16,
+      "additionalDockCheckPassed": 1,
+      "finalPaletteChecksPassed": 4,
+      "note": "Failed cases corrected and covered by focused reruns; no retries or relaxed timeout budgets"
+    },
+    "screenshots": {
+      "count": 57,
+      "bytes": 7406968
+    },
+    "reviewIndexCheck": {
+      "allImagesLoaded": 16,
+      "desktopReflow": true,
+      "mobileReflow": true
+    },
+    "runtimeBundleHarness": {
+      "esbuildVersion": "0.28.2",
+      "mode": "standalone ESM browser libraries; React external, CSS omitted; not additive route cost",
+      "bundles": {
+        "previousCapsule": {
+          "minifiedBytes": 28664,
+          "gzipBytes": 9014
+        },
+        "magicDock": {
+          "minifiedBytes": 140027,
+          "gzipBytes": 47493
+        },
+        "bothPrototypes": {
+          "minifiedBytes": 259708,
+          "gzipBytes": 86202
+        }
+      }
+    },
+    "productionProbe": {
+      "browser": "Microsoft Edge (Chromium)",
+      "productionProofStatus": 404,
+      "existingSignIn": [
+        {
+          "width": 320,
+          "theme": "light",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        }
+      ],
+      "buildId": "l-S7tih-a34fQrI-Lz2rd",
+      "gzipClientReferenceBytes": 140626
+    },
+    "signInClosureDifferenceFromRound2Bytes": 0,
+    "layoutBaseline": {
+      "width": 390,
+      "height": 700,
+      "mainScrollTop": 0,
+      "headerTop": 137,
+      "actionTop": 211,
+      "actionBottom": 259,
+      "freshOverlapObserved": false,
+      "finding": "stationary frame plus independent main scroller; browsing changed to document scroll"
+    },
+    "enlargedTextRegression": {
+      "width": 320,
+      "height": 500,
+      "rootFontScale": 2,
+      "beforeDocumentWidth": 404,
+      "afterDocumentWidth": 320,
+      "bothConceptsPass": true
+    },
+    "developmentObservations": {
+      "samples": 8,
+      "screens": [
+        "expense"
+      ],
+      "navigationMedianMs": 744.7000000029802,
+      "scriptResourceBytesRange": [
+        1125961,
+        1125961
+      ],
+      "note": "Final focused expense rerun only; unthrottled local Next development runtime; not production transfer, hydration, CLS or device budget evidence"
+    },
+    "limits": [
+      "Owner visual choice remains pending",
+      "Real Android/IME, manual screen reader, real safe-area/touch and low-end hardware checks unavailable",
+      "Existing broad tracing and Windows standalone EPERM warnings; no standalone deployment certification",
+      "No unrelated V1-V3 backend/database/finance/infrastructure campaign"
+    ]
   }
 }

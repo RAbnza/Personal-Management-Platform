@@ -48,13 +48,13 @@ export function ExpenseProof({
   const header = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const descriptionInput = useRef<HTMLInputElement>(null);
-  const mounted = useRef(false);
+  const previousState = useRef(state);
   const editing = state === "draft" || state === "validation-failure";
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
+    // Focus only real task-state changes. Strict Mode's initial effect replay
+    // must not scroll a newly opened task or interrupt its Back link.
+    if (previousState.current === state) return;
+    previousState.current = state;
     if (body.current) body.current.scrollTop = 0;
     if (state === "validation-failure") descriptionInput.current?.focus();
     else {

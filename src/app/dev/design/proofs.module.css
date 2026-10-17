@@ -1,28 +1,22 @@
 .proof {
-  --navigation-clearance: 6.5rem;
+  --navigation-clearance: 7rem;
   --proof-safe-bottom: env(safe-area-inset-bottom, 0px);
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  overflow: hidden;
   min-height: 100dvh;
   background: var(--background);
   color: var(--foreground);
-  padding-bottom: 0;
+  padding-bottom: calc(var(--navigation-clearance) + var(--proof-safe-bottom));
 }
+/* One document scroll for browsing: header, toolbar and content move together.
+   No stationary frame crops the top of an independently scrolled main. */
 .proof > main {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  margin-bottom: calc(var(--navigation-clearance) + var(--proof-safe-bottom));
-  scroll-padding-block: 1rem;
+  scroll-margin-top: 1rem;
+  overflow-wrap: anywhere;
+}
+:global(html:has(.design-proof)) {
+  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
 }
 .proof > footer {
   display: none;
-}
-.proof > details,
-.proof > div {
-  flex-shrink: 0;
 }
 
 .reviewTools {
@@ -54,7 +48,7 @@
   justify-content: space-between;
   gap: 1rem;
   max-width: var(--layout-content-max);
-  margin: auto;
+  margin: 0 auto;
   padding: 1.25rem 1rem 0;
 }
 .desktopNavigation {
@@ -69,31 +63,20 @@
   width: calc(100% - 1.5rem);
   max-width: 26rem;
 }
-.mobileNavigation a,
-.mobileNavigation button {
-  flex: 1 1 0;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0.125rem;
-  min-height: 3.5rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  overflow-wrap: anywhere;
-}
-.mobileNavigation svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-}
-.mobileNavigation button > span {
-  flex-direction: column;
-  gap: 0.25rem;
-}
 .proof[data-task="true"] {
   --navigation-clearance: 0rem;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  padding-bottom: var(--proof-safe-bottom);
+}
+.proof[data-task="true"] > details {
+  flex-shrink: 0;
 }
 .proof[data-task="true"] > main {
-  margin-bottom: var(--proof-safe-bottom);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 .taskWorkArea {
@@ -154,10 +137,14 @@
 }
 .proof main :is(input, textarea, select, button, a) {
   scroll-margin-block: 1.5rem;
+  scroll-margin-bottom: calc(
+    var(--navigation-clearance) + var(--proof-safe-bottom)
+  );
 }
 
 @media (min-width: 768px) {
-  .proof {
+  .proof,
+  .proof[data-task="true"] {
     --navigation-clearance: 1rem;
     display: block;
     height: auto;
@@ -194,7 +181,8 @@
 /* At short/zoomed viewports, put the capsule in document flow so it cannot
  * consume the useful viewport or obscure a focused control. */
 @media (max-height: 500px) {
-  .proof {
+  .proof,
+  .proof[data-task="true"] {
     display: block;
     height: auto;
     overflow: visible;
@@ -219,4 +207,13 @@
   .taskActions {
     position: static;
   }
+}
+
+.snapshot {
+  background: var(--focal-background);
+  min-width: 0;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+.snapshot :global(.text-focal) {
+  font-size: clamp(1rem, calc(5vw + 0.5rem), 2rem);
 }

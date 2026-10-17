@@ -8,12 +8,12 @@
   --brand-pink: #e6bcd4;
 
   /* Core surfaces and text */
-  --background: #fff9ed;
+  --background: #f7f8fc;
   --foreground: #22252b;
-  --surface: #fffefa;
+  --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --surface-subtle: #f5ebd9;
-  --muted: #f5ebd9;
+  --surface-subtle: #eef0f8;
+  --muted: #eef0f8;
   --muted-foreground: #5e6570;
 
   /* Primary and secondary actions */
@@ -23,7 +23,7 @@
   --primary-pressed: #503474;
   --primary-border: #6b469c;
 
-  --secondary: #f5ebd9;
+  --secondary: #eef0f8;
   --secondary-foreground: #22252b;
 
   /* Selection and links */
@@ -32,12 +32,12 @@
   --link: #6b469c;
 
   /* Structure and controls */
-  --border: #dfd3bf;
-  --input: #887d6d;
+  --border: #d9deeb;
+  --input: #7a8197;
   --ring: #6b469c;
 
   --disabled-foreground: #5e6570;
-  --disabled-border: #dfd3bf;
+  --disabled-border: #d9deeb;
 
   --overlay: rgb(21 24 29 / 0.45);
 
@@ -63,7 +63,7 @@
   --information-surface: #edf4ff;
 
   --neutral: #5e6570;
-  --neutral-surface: #f5ebd9;
+  --neutral-surface: #eef0f8;
 
   /* Data visualization */
   --chart-1: #6b469c;
@@ -82,14 +82,22 @@
   --blue-surface: #e5f1fa;
   --plum: #80456f;
   --plum-surface: #f4e5ee;
-  --navigation: #25272f;
-  --navigation-foreground: #f7f3ec;
-  --navigation-active: #d8c4fa;
-  --navigation-active-foreground: #292033;
-  --navigation-border: #5c5b68;
-  --focal: #22252b;
-  --focal-foreground: #f2f4f5;
-  --focal-muted: #b5bec8;
+  --navigation: #ffffff;
+  --navigation-foreground: #34324c;
+  --navigation-active: #6b469c;
+  --navigation-active-foreground: #ffffff;
+  --navigation-border: #b0b5cb;
+  --focal: #eee8ff;
+  --focal-end: #e1efff;
+  --focal-foreground: #282344;
+  --focal-muted: #585875;
+
+  --focal-background: linear-gradient(125deg, var(--focal), var(--focal-end));
+  --navigation-glow: none;
+  --rail-background: #242038;
+  --rail-foreground: #f5f4ff;
+  --rail-active: #e6dcff;
+  --rail-active-foreground: #352257;
 
   /* Shared dimensional and type roles (4px spacing rhythm). */
   --control-min: 2.75rem;
@@ -134,48 +142,57 @@
 }
 
 .dark {
+  --rail-background: #171e34;
+  --rail-active: #98dff5;
+  --rail-active-foreground: #102838;
   color-scheme: dark;
   --primary: #c8b6f2;
   --primary-foreground: #1b1b22;
   --primary-hover: #bca5ee;
   --primary-pressed: #b09ae0;
-  --teal: #90d5b7;
-  --teal-surface: #173a30;
+  --teal: #a2eadc;
+  --teal-surface: #153531;
   --warm: #f0ca7e;
   --warm-surface: #3a2e16;
-  --blue: #a7d4f7;
-  --blue-surface: #1a3348;
-  --plum: #e7b8dc;
-  --plum-surface: #3d2b40;
-  --navigation: #2b323b;
-  --navigation-foreground: #f2f4f5;
+  --blue: #8bdcff;
+  --blue-surface: #132c45;
+  --plum: #f3b6ef;
+  --plum-surface: #38203f;
+  --navigation: #20253f;
+  --navigation-foreground: #f3f5ff;
   --navigation-active: #d8c4fa;
   --navigation-active-foreground: #292033;
-  --navigation-border: #8994a3;
+  --navigation-border: #929cba;
 
-  --background: #15181d;
-  --foreground: #f2f4f5;
-  --surface: #20252c;
-  --surface-elevated: #2b323b;
-  --surface-subtle: #262d35;
-  --muted: #262d35;
-  --muted-foreground: #b5bec8;
+  --focal: #302153;
+  --focal-end: #142c49;
+  --focal-foreground: #f3f5ff;
+  --focal-muted: #d0cef0;
+  --navigation-glow: 0 0 0 1px #a491ed, 0 0 16px rgb(162 143 242 / 0.18);
+
+  --background: #0d1020;
+  --foreground: #f3f5ff;
+  --surface: #171b31;
+  --surface-elevated: #20253f;
+  --surface-subtle: #202440;
+  --muted: #202440;
+  --muted-foreground: #b7c2de;
 
   --primary-border: #c8b6f2;
 
-  --secondary: #262d35;
-  --secondary-foreground: #f2f4f5;
+  --secondary: #202440;
+  --secondary-foreground: #f3f5ff;
 
-  --accent: #332a45;
+  --accent: #30234f;
   --accent-foreground: #c8b6f2;
   --link: #c8b6f2;
 
-  --border: #3a424c;
-  --input: #8994a3;
+  --border: #343c5d;
+  --input: #929cba;
   --ring: #c8b6f2;
 
-  --disabled-foreground: #b5bec8;
-  --disabled-border: #3a424c;
+  --disabled-foreground: #b7c2de;
+  --disabled-border: #343c5d;
 
   --overlay: rgb(0 0 0 / 0.65);
 
@@ -193,8 +210,8 @@
   --information: #9ac5ff;
   --information-surface: #19283b;
 
-  --neutral: #b5bec8;
-  --neutral-surface: #262d35;
+  --neutral: #b7c2de;
+  --neutral-surface: #202440;
 
   --chart-1: #c8b6f2;
   --chart-2: #79c4d2;
@@ -208,17 +225,23 @@
   --elevation-level-3: 0 16px 48px rgb(0 0 0 / 0.45);
 }
 
-/* Review alternative only: no new persisted theme or workspace preference.
- * Scoped to the development proof wrapper; the default above is bright ivory. */
-.light [data-light-treatment="cream"] {
-  --background: #f7edd9;
-  --surface: #fffbf2;
-  --surface-subtle: #ede0c7;
-  --muted: #ede0c7;
-  --secondary: #ede0c7;
-  --neutral-surface: #ede0c7;
-  --border: #d8c9ae;
-  --disabled-border: #d8c9ae;
+/* Local review alternatives only; never persisted as workspace preferences. */
+.light [data-light-treatment="gallery"] {
+  --background: #ffffff;
+  --surface: #f8f9ff;
+  --surface-subtle: #f1f2fa;
+  --focal: #f4e9f7;
+  --focal-end: #e9efff;
+  --focal-background: linear-gradient(125deg, var(--focal), var(--focal-end));
+}
+.dark [data-dark-treatment="graphite"] {
+  --background: #151821;
+  --surface: #20242f;
+  --surface-elevated: #292f3f;
+  --focal: #252e4f;
+  --focal-end: #25364a;
+  --focal-background: linear-gradient(125deg, var(--focal), var(--focal-end));
+  --navigation-glow: none;
 }
 
 @media (min-width: 64rem) {
