@@ -4,7 +4,7 @@
 **Baseline:** `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner decisions recorded:** October 17, 2026, Asia/Manila\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Current direction and M1–M6 roadmap approved; implementation not started. Each milestone still requires its own assignment.\
+**Status:** Current direction and M1–M6 roadmap approved. M1 implemented and technically checked; owner visual sign-off pending. M2–M6 still require individual assignments.\
 **Related:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Milestones](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. How to use this register
@@ -39,7 +39,7 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 - **Recommended choice:** adopt [Plan Sections 4–6](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#4-reference-image-analysis): warm neutral surfaces, violet/lavender primary identity, charcoal emphasis, restrained teal/amber accents, one module switcher, local section navigation and contextual detail. Use a labeled mobile bottom bar: Home, Calendar, Modules, More. Preserve all current URLs and business behavior.
 - **Earlier alternatives (not selected):** compact global rail or cooler silver canvas. The approved target is the integrated switcher and warm-neutral visual system; material departures need review rather than silent substitution.
 - **Impact:** approval establishes the proposed visual supersession of the corresponding existing design-guideline roles. Product, architecture, database, financial and privacy authorities remain unchanged. It permits starting only the milestone(s) the owner subsequently assigns.
-- **Implementation boundary:** planning approval is complete. M1 waits only for its individual assignment; no future architecture decision is needed.
+- **Implementation boundary:** planning approval is complete. M1 has been individually assigned and implemented; its rendered proofs await owner visual sign-off. No future architecture decision is needed.
 - **Blocks current redesign:** **No**; direction approved. Implementation remains separately assigned.
 - **Only affects future migration:** **No**.
 - **Review evidence:** the complete plan and route inventory now; representative rendered Home, financial review, dense record list and tracker-migration proofs during M1 before broad adoption.
@@ -188,4 +188,4 @@ M6 is final **redesign-wide acceptance**: complete screen/route coverage, cross-
 
 Broaden verification only for changed shared contracts, discovered failures or significant security/financial integrity risks. Preserve existing assertions, mandatory correctness guarantees and unchanged CI. Historical evidence supports unchanged behavior, not newly redesigned interfaces. Record executed tests, actual results, coverage, exclusions and rationale.
 
-**M1 can now be assigned individually.** No further product or architecture decision blocks it. Final branding and F01–F07 remain deferred and non-blocking. This documentation task starts no milestone; stop after committing and pushing the aligned records.
+**M1 implementation checkpoint — October 17, 2026:** individually assigned M1 is implemented and technically checked; see [handoff](REDESIGN_M1_HANDOFF.md). Owner visual review and any feedback remain pending before M2. Final branding and F01–F07 remain deferred and non-blocking. The original planning assignment started no milestone; this checkpoint records the subsequent M1 implementation assignment.

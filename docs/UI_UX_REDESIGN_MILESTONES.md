@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** Approved roadmap; no milestone has started. M1 is next for individual assignment.\
+**Status:** M1 implemented and technically checked; final owner visual sign-off pending. M2–M6 have not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -24,6 +24,8 @@ Sequence: **M1 → M2 → M3 → M4 → M5 → M6**. This is a suggested serial 
 Each milestone uses owner-approved change-impact verification: changed UI, affected shared contracts/workflows and materially affected existing behavior, with relevant responsive/theme/keyboard/accessibility and financial/privacy/authorization/lifecycle checks. M6 is final redesign-wide acceptance, not an automatic complete V1–V3 campaign; essential checks are not postponed to M6. Broaden only for changed shared contracts, discovered failures or significant security/financial integrity risks. Preserve all assertions and unchanged CI. Record executed tests, results, coverage, exclusions and rationale; historical evidence supports unchanged behavior, not new interfaces. Final branding and F01–F07 are **not dependencies**; platform decisions wait until after redesign and before native implementation.
 
 ## 2. M1 — Design foundations and shared interaction patterns
+
+**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M1 foundations, shared patterns and development-only synthetic proofs are implemented and technically checked. **Owner visual sign-off remains pending.** [Implementation handoff](REDESIGN_M1_HANDOFF.md) · [Component contracts](REDESIGN_M1_COMPONENT_GUIDE.md) · [Rendered evidence](verification/assets/redesign-m1/README.md). Resolve owner feedback before individually assigning M2.
 
 **Objective:** establish a tested, recognizable visual and interaction system before broad page conversion.
 
@@ -214,11 +216,11 @@ Use the project's code-output rule when creating or updating code/configuration 
 
 | Milestone | State at planning delivery                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1        | Not started; approved direction, awaiting individual assignment | Approved planning baseline only |
+| M1 | Implemented and technically checked; pending owner visual sign-off | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
 | M2        | Not started                               | No implementation claimed     |
 | M3        | Not started                               | No implementation claimed     |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Recommended next step: assign **M1 only** as the next individual implementation milestone. No further product or architecture decision blocks it. Do not request decisions about local databases, cloud services or native runtimes as prerequisites to that work.
+Next step: owner reviews the M1 rendered proofs and records visual/usability feedback. Resolve that feedback before individually assigning M2. M2–M6 and future platform decisions remain outside this delivery.

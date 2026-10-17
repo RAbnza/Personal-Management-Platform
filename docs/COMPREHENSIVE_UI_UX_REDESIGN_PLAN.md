@@ -5,7 +5,7 @@
 **Inspected baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — D01, D03 and D04 approved; D02 working identity approved and final branding deferred.\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Approved visual/interaction baseline and M1–M6 roadmap. Implementation has not started; M1 remains the next individually assigned milestone.\
+**Status:** Approved visual/interaction baseline and M1–M6 roadmap. M1 is implemented and technically checked, pending owner visual sign-off; M2–M6 have not started. See [M1 handoff](REDESIGN_M1_HANDOFF.md).\
 **Companions:** [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) · [Six-milestone roadmap](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. Purpose, authority, and scope
@@ -817,7 +817,7 @@ No schema-generation/migration rewrite, full infrastructure restore campaign, re
 
 The [roadmap](UI_UX_REDESIGN_MILESTONES.md) assigns each current inventory row to one of six substantial milestones. The [decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) records the approved direction, working identity, visual system and balanced density separately from deferred final branding and platform architecture.
 
-D01, D03 and D04 are approved; D02 establishes **Personal workspace** as the working identity. No further product or architecture decision blocks M1. Roadmap approval does not assign implementation: M1 is the next individually assigned milestone. It produces representative rendered design proofs for usability/accessibility review before broad adoption of the approved treatment. Final branding remains deferred, not an M1–M6 prerequisite.
+D01, D03 and D04 are approved; D02 establishes **Personal workspace** as the working identity. M1 was individually assigned and is implemented with representative rendered proofs; see [handoff](REDESIGN_M1_HANDOFF.md). Owner visual sign-off and any resulting feedback remain the checkpoint before M2. Roadmap approval does not assign subsequent milestones. Final branding remains deferred, not an M1–M6 prerequisite.
 
 At the start of each implementation session: verify repository changes since this baseline, read the assigned milestone and linked sections, preserve unrelated work, implement only its current scope, retain behavioral assertions, and record actual verification. If a required screen is missing from the inventory after new development, add it explicitly and assign ownership before claiming coverage.
 

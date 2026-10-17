@@ -8,9 +8,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...props }, ref) => {
     return (
       <input
+        data-ui-control="input"
         ref={ref}
         className={cn(
-          "min-h-11 w-full rounded-control border border-input",
+          "min-h-11 w-full min-w-0 rounded-control border border-input",
           "bg-surface px-3 py-2 text-base text-foreground",
           "placeholder:text-muted-foreground",
           "transition-colors duration-(--motion-duration-fast) ease-state",

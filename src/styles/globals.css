@@ -35,19 +35,11 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
-  border-color: var(--border);
 }
 
 ::selection {
   background: var(--accent);
   color: var(--accent-foreground);
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
 }
 
 button,
@@ -64,8 +56,23 @@ button,
   touch-action: manipulation;
 }
 
-a {
-  color: inherit;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  a {
+    color: inherit;
+  }
 }
 
 img,
@@ -85,6 +92,47 @@ svg {
 
 .reading-width {
   max-width: 68ch;
+}
+
+.record-progress {
+  appearance: none;
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--geometry-radius-marker);
+  background: var(--muted);
+}
+
+.record-progress::-webkit-progress-bar {
+  background: var(--muted);
+}
+
+.record-progress::-webkit-progress-value {
+  background: var(--primary);
+}
+
+.record-progress::-moz-progress-bar {
+  background: var(--primary);
+}
+
+/* New primitives share touch dimensions without changing domain layout rules. */
+@media (max-width: 599px), (pointer: coarse) {
+  [data-ui-control] {
+    min-height: 3rem;
+    min-width: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (forced-colors: active) {

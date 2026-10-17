@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-17",
+  "timezone": "Asia/Manila",
+  "baselineArtifact": {
+    "buildId": "hfnDTPwspp0o0iBaLAL3M",
+    "gzipClientReferenceBytes": 140267,
+    "sourceCommitProvenance": "not embedded; artifact-only comparison"
+  },
+  "productionProbe": {
+    "browser": "Microsoft Edge (Chromium)",
+    "productionProofStatus": 404,
+    "existingSignIn": [
+      {
+        "width": 320,
+        "theme": "light",
+        "axeViolations": 0,
+        "reflow": true,
+        "invalidFieldFocusAndAssociation": true
+      },
+      {
+        "width": 320,
+        "theme": "dark",
+        "axeViolations": 0,
+        "reflow": true,
+        "invalidFieldFocusAndAssociation": true
+      },
+      {
+        "width": 1440,
+        "theme": "light",
+        "axeViolations": 0,
+        "reflow": true,
+        "invalidFieldFocusAndAssociation": true
+      },
+      {
+        "width": 1440,
+        "theme": "dark",
+        "axeViolations": 0,
+        "reflow": true,
+        "invalidFieldFocusAndAssociation": true
+      }
+    ],
+    "buildId": "MiPN1j7OZHj39ZGVGyUyJ",
+    "gzipClientReferenceBytes": 140626
+  },
+  "signInClosureDifferenceBytes": 359,
+  "signInClosureDifferencePercent": 0.256,
+  "developmentProofObservation": {
+    "samples": 30,
+    "navigationMinMs": 207.6000000089407,
+    "navigationMedianMs": 343.1000000089407,
+    "navigationMaxMs": 6432.20000000298,
+    "scriptResourceBytesRange": [
+      943382,
+      943382
+    ],
+    "throttling": "none; local development runtime and concurrent compilation",
+    "note": "Not a production timing, hydration, transfer, CLS or user-device budget measurement"
+  }
+}

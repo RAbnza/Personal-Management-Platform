@@ -2,7 +2,7 @@
 
 **Project:** Personal workspace — approved neutral working application identity; repository name remains tentative\
 **Version:** 1.1 — approved redesign alignment, October 17, 2026 (original portfolio evidence: October 6, 2026)\
-**Status:** Shared interaction/accessibility guidance aligned with the owner-approved redesign. M1–M6 implementation has not started.
+**Status:** M1 foundations implemented and technically checked; owner visual sign-off pending. M2–M6 have not started. The [M1 component guide](REDESIGN_M1_COMPONENT_GUIDE.md) records current tokens, component contracts and adoption boundaries.
 
 ## 1. Purpose, authority, and flexibility
 
