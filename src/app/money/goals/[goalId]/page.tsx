@@ -86,7 +86,7 @@ export default async function GoalPage({
             <li key={r.id}>
               <Link
                 className="text-link underline"
-                href={`/money/accounts/${r.financial_account_id}`}
+                href={`/money/accounts/${r.financial_account_id}/history`}
               >
                 {r.name}
               </Link>

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -58,7 +59,7 @@ export default async function AllocationPage({
       <Link href={base} className="text-link underline">
         Statement {statement.snapshot.statementDate}
       </Link>
-      <h1 className="text-2xl font-semibold">Statement allocations</h1>
+      <ScreenHeader scope="Money" title="Statement allocations" />
       <p>
         Historical statement balance {money(statement.snapshot.balanceMinor)};
         remaining recorded due {money(r.recordedRemainingDueMinor)}. Confirmed

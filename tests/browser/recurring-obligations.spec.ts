@@ -116,6 +116,10 @@ test("recurrence preview, existing actual entry and lost-link replay recognize s
   expect(bankResponse.status()).toBe(201);
   const bank = await bankResponse.json();
   await page.goto("/money/recurring");
+  await page
+    .locator("summary")
+    .filter({ hasText: "Create recurring plan" })
+    .click();
   await expect(
     page.getByRole("button", { name: "Preview and review recurrence" }),
   ).toBeEnabled();
@@ -172,7 +176,10 @@ test("recurrence preview, existing actual entry and lost-link replay recognize s
   );
   await page.getByLabel("Transaction date", { exact: true }).fill(date);
   await page
-    .getByRole("button", { name: "Save transaction", exact: true })
+    .getByRole("button", { name: "Continue to review", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Confirm and save transaction", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Planned occurrence", exact: true }),

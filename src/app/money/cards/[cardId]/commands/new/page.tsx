@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -42,9 +43,10 @@ export default async function CardCommandPage({
       >
         {setup.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">
-        Record card payment, charge or refund
-      </h1>
+      <ScreenHeader
+        scope="Money"
+        title="Record card payment, charge or refund"
+      />
       <p>
         Record actual posted evidence. Payments move cash without additional
         spending. Refunds offset spending. No future charge or provider

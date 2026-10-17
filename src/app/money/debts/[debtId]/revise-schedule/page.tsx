@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { Panel } from "@/components/ui/panel";
@@ -35,19 +36,19 @@ export default async function ReviseSchedulePage({
   }).format(new Date());
   return (
     <div className="space-y-6">
-      <header>
+      <div>
         <Link
           href={back}
           className="inline-flex min-h-11 items-center text-link underline"
         >
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Revise debt schedule</h1>
+        <ScreenHeader scope="Money" title="Revise debt schedule" />
         <p className="mt-3 text-muted-foreground">
           Review contractual terms, carried payment satisfaction and affected
           Agenda dates. Every finalized version stays in history.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"

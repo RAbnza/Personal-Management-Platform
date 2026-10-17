@@ -9,6 +9,10 @@ import { WorkspaceNavigation } from "./workspace-navigation";
 import { LocalNavigation } from "./local-navigation";
 import type { NavigationModule } from "./navigation-model";
 import styles from "./shell.module.css";
+import {
+  MoneyWorkspace,
+  isMoneyTask,
+} from "@/components/money/money-workspace";
 
 export interface AppShellProps {
   children: ReactNode;
@@ -33,8 +37,9 @@ export function AppShell({
 }: AppShellProps) {
   const mainContentId = `main-content-${useId()}`;
   const path = usePathname() ?? activePath;
+  const focusedTask = task || isMoneyTask(path);
   return (
-    <div className={`${styles.shell} workspace-shell`} data-task={task}>
+    <div className={`${styles.shell} workspace-shell`} data-task={focusedTask}>
       <SessionNoticeListener />
       <nav aria-label="Skip navigation" className="contents">
         <a
@@ -63,6 +68,7 @@ export function AppShell({
           key={`${identity.userEmail}:${modules?.map((m) => `${m.moduleKey}:${m.enabled}`).join(",") ?? "loading"}`}
           {...identity}
           activePath={path}
+          task={focusedTask}
           {...(modules ? { initialModules: modules } : {})}
         />
       </header>
@@ -72,8 +78,12 @@ export function AppShell({
         aria-label={pageTitle}
         className={styles.main}
       >
-        {!task && <LocalNavigation path={path} />}
-        {children}
+        {!focusedTask && <LocalNavigation path={path} />}
+        {path.startsWith("/money/") && !path.startsWith("/money/forecasts") ? (
+          <MoneyWorkspace path={path}>{children}</MoneyWorkspace>
+        ) : (
+          children
+        )}
       </main>
     </div>
   );

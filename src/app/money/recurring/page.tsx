@@ -1,3 +1,8 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
+import {
+  MoneyColumns,
+  MoneyCreation,
+} from "@/components/money/money-workspace";
 import Link from "next/link";
 import { z } from "zod";
 import { Panel } from "@/components/ui/panel";
@@ -48,56 +53,58 @@ export default async function RecurringPage({
   }
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Recurring obligations</h1>
+      <ScreenHeader scope="Money" title="Recurring obligations" />
       <p>
         Plan income, bills and subscriptions. Due dates never post money; actual
         balances and reports use recorded transactions only.
       </p>
-      <Panel title="Recorded definitions">
-        <ul className="divide-y divide-border">
-          {data.items.map((p) => (
-            <li key={p.id} className="py-3">
-              <Link
-                href={`/money/recurring/${p.id}`}
-                className="text-link underline"
-              >
-                {p.name}
-              </Link>
-              <p>
-                {p.kind} · {p.rule.frequency} ·{" "}
-                {formatMoneyMinorUnits("PHP", p.rule.expectedMinor)} expected
-                {p.archived ? " · Archived" : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-        {!data.items.length && <p>No recurring definitions yet.</p>}
-        {data.nextCursor && (
-          <Link
-            href={`/money/recurring?cursor=${data.nextCursor}`}
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
-            Next definitions
-          </Link>
-        )}
-      </Panel>
-      <Panel
-        title="Create recurring plan"
-        description="Preview the next dates, then confirm a bounded schedule."
-      >
-        <RecurringDefinitionForm
-          timezone={workspace.timezone}
-          accounts={accounts.items.map((a) => ({
-            id: a.accountId,
-            name: a.name,
-          }))}
-          categories={categories.items.map((c) => ({
-            id: c.categoryId,
-            name: c.name,
-            kind: c.kind,
-          }))}
-        />
-      </Panel>
+      <MoneyColumns>
+        <Panel title="Recorded definitions">
+          <ul className="divide-y divide-border">
+            {data.items.map((p) => (
+              <li key={p.id} className="py-3">
+                <Link
+                  href={`/money/recurring/${p.id}`}
+                  className="text-link underline"
+                >
+                  {p.name}
+                </Link>
+                <p>
+                  {p.kind} · {p.rule.frequency} ·{" "}
+                  {formatMoneyMinorUnits("PHP", p.rule.expectedMinor)} expected
+                  {p.archived ? " · Archived" : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {!data.items.length && <p>No recurring definitions yet.</p>}
+          {data.nextCursor && (
+            <Link
+              href={`/money/recurring?cursor=${data.nextCursor}`}
+              className="inline-flex min-h-11 items-center text-link underline"
+            >
+              Next definitions
+            </Link>
+          )}
+        </Panel>
+        <MoneyCreation title="Create recurring plan">
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            Preview the next dates, then confirm a bounded schedule.
+          </p>
+          <RecurringDefinitionForm
+            timezone={workspace.timezone}
+            accounts={accounts.items.map((a) => ({
+              id: a.accountId,
+              name: a.name,
+            }))}
+            categories={categories.items.map((c) => ({
+              id: c.categoryId,
+              name: c.name,
+              kind: c.kind,
+            }))}
+          />
+        </MoneyCreation>
+      </MoneyColumns>
     </div>
   );
 }

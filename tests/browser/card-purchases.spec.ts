@@ -23,6 +23,7 @@ test("ordinary Add Expense records a posted card purchase once after a lost resp
   });
   expect(cash.status()).toBe(201);
   await page.goto("/money/cards");
+  await page.getByText("Add credit card", { exact: true }).first().click();
   await page.getByLabel("Card name", { exact: true }).fill("Browser BPI Visa");
   await page.getByLabel("Issuer", { exact: true }).fill("BPI");
   const created = page.waitForResponse(
@@ -43,7 +44,7 @@ test("ordinary Add Expense records a posted card purchase once after a lost resp
     .getByLabel("Description", { exact: true })
     .fill("Browser card groceries");
   await page
-    .getByRole("button", { name: "Save transaction", exact: true })
+    .getByRole("button", { name: "Continue to review", exact: true })
     .click();
   await expect(
     page.getByLabel("Provider posting date", { exact: true }),
@@ -78,7 +79,10 @@ test("ordinary Add Expense records a posted card purchase once after a lost resp
     } else await route.continue();
   });
   await page
-    .getByRole("button", { name: "Save transaction", exact: true })
+    .getByRole("button", { name: "Continue to review", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Confirm and save transaction", exact: true })
     .click();
   await expect(
     page.getByText(/couldn't confirm whether this transaction/),
@@ -118,6 +122,9 @@ test("ordinary Add Expense records a posted card purchase once after a lost resp
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.goto(`/money/actions/${recorded!.actionId}`);
+  await page
+    .getByRole("button", { name: "Correct entry", exact: true })
+    .click();
   await page
     .getByLabel("Provider posting date", { exact: true })
     .fill("2026-10-13");

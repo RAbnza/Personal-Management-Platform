@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -128,7 +129,7 @@ export default async function MoneyTransfersPage() {
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
+        <div>
           <Link
             href="/money/accounts"
             className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -141,18 +142,14 @@ export default async function MoneyTransfersPage() {
             Back to accounts
           </Link>
 
-          <p className="mt-3 text-sm font-medium text-link">Money</p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-            Transfer money
-          </h1>
+          <ScreenHeader scope="Money" title="Transfer money" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
             Record a completed movement between two of your tracked accounts.
             Internal principal is not income or spending, while real transfer
             fees remain separately identifiable expenses.
           </p>
-        </header>
+        </div>
 
         {transferSetup === null ? (
           <Panel

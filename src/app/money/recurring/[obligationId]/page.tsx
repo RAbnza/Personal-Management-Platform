@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -65,7 +66,7 @@ export default async function RecurringDetailPage({
       >
         All recurring obligations
       </Link>
-      <h1 className="text-2xl font-semibold">{data.root.name}</h1>
+      <ScreenHeader scope="Money" title={data.root.name} />
       <p>
         {data.root.kind} ·{" "}
         {formatMoneyMinorUnits("PHP", current.rule.expectedMinor)} expected ·{" "}

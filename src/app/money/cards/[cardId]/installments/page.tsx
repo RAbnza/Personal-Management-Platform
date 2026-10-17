@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { listCardInstallmentPlans } from "@/modules/finance/services/read-card-installments";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -38,7 +39,7 @@ export default async function InstallmentListPage({
       >
         {data.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">Provider installment plans</h1>
+      <ScreenHeader scope="Money" title="Provider installment plans" />
       <p>
         Plans describe expected obligations. The original purchase recognizes
         spending once; only actual recorded payments, interest, fees and refunds

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
 import { getStatementEntrySetup } from "@/modules/finance/services/read-card-statements";
@@ -32,7 +33,7 @@ export default async function NewStatementPage({
       >
         Statements for {data.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">Record verified statement</h1>
+      <ScreenHeader scope="Money" title="Record verified statement" />
       {data.hasMore && (
         <Link
           href={`?candidateOffset=${offset + 100}`}

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
@@ -27,7 +28,7 @@ import { getPrivateSharingSetup } from "@/modules/finance/services/private-shari
 export default async function MoneyTransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recurringOccurrenceId?: string }>;
+  searchParams: Promise<{ recurringOccurrenceId?: string; kind?: string }>;
 }) {
   const bootstrap = await resolvePrivateAppBootstrap(await headers());
 
@@ -62,7 +63,7 @@ export default async function MoneyTransactionsPage({
   }
 
   const { user, workspace, preference, modules } = bootstrap;
-  const { recurringOccurrenceId } = await searchParams;
+  const { recurringOccurrenceId, kind } = await searchParams;
   let planningSuggestion;
   if (recurringOccurrenceId) {
     if (!z.uuid().safeParse(recurringOccurrenceId).success) notFound();
@@ -187,7 +188,7 @@ export default async function MoneyTransactionsPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
+        <div>
           <Link
             href="/money/accounts"
             className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -200,17 +201,13 @@ export default async function MoneyTransactionsPage({
             Back to accounts
           </Link>
 
-          <p className="mt-3 text-sm font-medium text-link">Money</p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-            Record transaction
-          </h1>
+          <ScreenHeader scope="Money" title="Record transaction" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
             Record actual income or a purchase paid from an account or credit
             card.
           </p>
-        </header>
+        </div>
 
         {transactionSetup === null ? (
           <Panel
@@ -266,6 +263,7 @@ export default async function MoneyTransactionsPage({
                 ? `${planningSuggestion.occurrenceId}:${planningSuggestion.occurrenceVersion}`
                 : "ordinary-transaction"
             }
+            initialKind={kind === "income" ? "income" : "expense"}
             currency={workspace.currency}
             accounts={transactionSetup.accounts.items}
             categories={transactionSetup.categories.items}

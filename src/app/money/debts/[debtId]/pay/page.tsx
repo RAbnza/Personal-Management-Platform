@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { DebtPaymentForm } from "@/components/money/debt-payment-form";
@@ -30,21 +31,19 @@ export default async function PayDebtPage({
     : "/money/debts";
   return (
     <div className="space-y-6">
-      <header>
+      <div>
         <Link
           href={back}
           className="inline-flex min-h-11 items-center text-sm font-medium text-link hover:underline"
         >
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-          Record debt payment
-        </h1>
+        <ScreenHeader scope="Money" title="Record debt payment" />
         <p className="mt-3 text-muted-foreground">
           Record an actual payment with explicit accounting and contractual
           allocations.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"

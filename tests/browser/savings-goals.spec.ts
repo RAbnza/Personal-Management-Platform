@@ -156,6 +156,10 @@ test("reviewed goal response-loss retry and real spending preserve cash, reserva
   });
   await page.goto("/money/goals");
   await ready(page, "Savings goals");
+  await page
+    .locator("summary")
+    .filter({ hasText: "Create savings goal" })
+    .click();
   await main(page)
     .getByRole("textbox", { name: "Goal name", exact: true })
     .fill("Emergency");
@@ -182,7 +186,7 @@ test("reviewed goal response-loss retry and real spending preserve cash, reserva
     }),
   ).toBeEnabled();
   await expect(
-    main(page).getByRole("textbox", { name: "Goal name", exact: true }),
+    main(page).getByLabel("Goal name", { exact: true }),
   ).toBeDisabled();
   await main(page)
     .getByRole("button", { name: "Retry identical command", exact: true })
@@ -238,7 +242,7 @@ test("reviewed goal response-loss retry and real spending preserve cash, reserva
     main(page).getByRole("link", { name: "Manage savings goals", exact: true }),
   ).toHaveAttribute("href", "/money/goals");
   await page.goto("/?period=custom&startDate=2026-10-01&endDate=2026-10-31");
-  await ready(page, "Dashboard");
+  await ready(page, "Home");
   await expect(main(page)).toContainText("Savings goals");
 });
 test("explicit reallocation, completion, release, archive/reopen and private isolation retain immutable evidence", async ({

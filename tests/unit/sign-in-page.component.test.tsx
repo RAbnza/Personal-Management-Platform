@@ -7,11 +7,7 @@ import SignInPage from "@/app/auth/sign-in/page";
 const authMocks = vi.hoisted(() => ({
   signInEmail: vi.fn(),
   notifySessionChanged: vi.fn(),
-}));
-
-const routerMocks = vi.hoisted(() => ({
-  replace: vi.fn(),
-  refresh: vi.fn(),
+  enterPrivateWorkspace: vi.fn(),
 }));
 
 vi.mock("@/platform/auth/client", () => ({
@@ -22,11 +18,8 @@ vi.mock("@/platform/auth/client", () => ({
   },
 }));
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: routerMocks.replace,
-    refresh: routerMocks.refresh,
-  }),
+vi.mock("@/components/auth/enter-private-workspace", () => ({
+  enterPrivateWorkspace: authMocks.enterPrivateWorkspace,
 }));
 vi.mock("@/platform/auth/session-notice", () => ({
   notifySessionChanged: authMocks.notifySessionChanged,
@@ -36,8 +29,7 @@ describe("SignInPage", () => {
   beforeEach(() => {
     authMocks.signInEmail.mockReset();
     authMocks.notifySessionChanged.mockReset();
-    routerMocks.replace.mockReset();
-    routerMocks.refresh.mockReset();
+    authMocks.enterPrivateWorkspace.mockReset();
   });
 
   it("submits valid credentials through Better Auth", async () => {
@@ -85,8 +77,7 @@ describe("SignInPage", () => {
       password: "correct horse battery staple",
     });
 
-    expect(routerMocks.replace).toHaveBeenCalledWith("/");
-    expect(routerMocks.refresh).toHaveBeenCalledOnce();
+    expect(authMocks.enterPrivateWorkspace).toHaveBeenCalledOnce();
     expect(authMocks.notifySessionChanged).toHaveBeenCalledOnce();
   });
 
@@ -148,7 +139,7 @@ describe("SignInPage", () => {
       "We couldn't sign you in with those credentials.",
     );
 
-    expect(routerMocks.replace).not.toHaveBeenCalled();
-    expect(routerMocks.refresh).not.toHaveBeenCalled();
+    expect(authMocks.enterPrivateWorkspace).not.toHaveBeenCalled();
+    expect(authMocks.enterPrivateWorkspace).not.toHaveBeenCalled();
   });
 });

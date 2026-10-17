@@ -6,9 +6,6 @@
   background: var(--background);
   color: var(--foreground);
 }
-:global(html:has(.workspace-shell)) {
-  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
-}
 .shell main :is(input, textarea, select, button, a, summary) {
   scroll-margin-block: 1.5rem;
   scroll-margin-bottom: calc(var(--dock-clearance) + var(--shell-safe-bottom));
@@ -160,5 +157,17 @@
     position: static;
     transform: none;
     margin: 1rem auto;
+  }
+}
+
+.shell:has([data-financial-task="true"]) .localNav {
+  display: none;
+}
+@media (max-width: 767px) {
+  .shell:has([data-financial-task="true"]) .dockPosition {
+    display: none;
+  }
+  .shell:has([data-financial-task="true"]) {
+    --dock-clearance: 1rem;
   }
 }

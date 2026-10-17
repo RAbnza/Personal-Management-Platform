@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { listCardStatements } from "@/modules/finance/services/read-card-statements";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -32,7 +33,7 @@ export default async function StatementsPage({
       >
         {data.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">Provider statements</h1>
+      <ScreenHeader scope="Money" title="Provider statements" />
       <p>
         Verified historical evidence. Statements do not change spending, cash or
         card liability.

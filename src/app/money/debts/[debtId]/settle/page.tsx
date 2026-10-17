@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { DebtSettlementForm } from "@/components/money/debt-settlement-form";
@@ -35,19 +36,19 @@ export default async function SettleDebtPage({
   }).format(new Date());
   return (
     <div className="space-y-6">
-      <header>
+      <div>
         <Link
           href={back}
           className="inline-flex min-h-11 items-center text-link underline"
         >
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Settle debt</h1>
+        <ScreenHeader scope="Money" title="Settle debt" />
         <p className="mt-3 text-muted-foreground">
           Record an explicit provider-confirmed payoff and verify accounting
           resolution before closing the debt.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"

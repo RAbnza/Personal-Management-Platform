@@ -1,3 +1,6 @@
+import { MoneyColumns } from "@/components/money/money-workspace";
+import { Panel } from "@/components/ui/panel";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { getCardInstallmentPlan } from "@/modules/finance/services/read-card-installments";
 import { statementIdentifierSchema as id } from "@/modules/finance/domain/card-statement";
@@ -49,50 +52,62 @@ export default async function InstallmentDetailPage({
       >
         Provider installment plans
       </Link>
-      <h1 className="text-2xl font-semibold">Installment plan details</h1>
+      <ScreenHeader scope="Money" title="Installment plan details" />
       <p>
         Revision {d.version} —{" "}
         {d.isCurrent
           ? "Current provider evidence"
           : "Preserved historical evidence"}
       </p>
-      <p>
-        Status: {d.status.kind}. Provider reference:{" "}
-        {d.snapshot.providerReference ?? "Not supplied"}. Verified{" "}
-        {d.snapshot.verifiedDate}: {d.snapshot.verificationSource}.
-      </p>
-      {d.status.kind === "reconciliation required" && (
-        <p role="status">
-          Purchase or linked refund evidence changed. Projections are suspended
-          until the provider arrangement is reconciled. Original schedule
-          history is preserved.
-        </p>
-      )}
-      <p>
-        Remaining scheduled principal: {money(d.totals.remainingPrincipalMinor)}
-      </p>
-      <p>
-        Remaining scheduled interest: {money(d.totals.remainingInterestMinor)};
-        fees: {money(d.totals.remainingFeeMinor)}; total obligations:{" "}
-        {money(d.totals.remainingTotalMinor)}.
-      </p>
-      <p>
-        Unknown provider due dates: {d.totals.unknownDueDateCount}. Unresolved
-        prior applications: {money(d.applications.unresolvedMinor)}. Statement
-        payments and unallocated credits are not automatically applied to
-        installments.
-      </p>
-      <p>
-        Current recorded card outstanding {money(d.card.postedOutstandingMinor)}
-        ; card credit {money(d.card.cardCreditMinor)}. Schedule amounts are
-        projections and do not change these financial balances.
-      </p>
-      <Link
-        className="inline-flex min-h-11 text-link underline"
-        href={`/money/actions/${d.snapshot.purchaseActionId}`}
-      >
-        Original purchase and correction history
-      </Link>
+      <MoneyColumns>
+        <Panel title="Provider schedule and status">
+          <p>
+            Status: {d.status.kind}. Provider reference:{" "}
+            {d.snapshot.providerReference ?? "Not supplied"}. Verified{" "}
+            {d.snapshot.verifiedDate}: {d.snapshot.verificationSource}.
+          </p>
+          {d.status.kind === "reconciliation required" && (
+            <p role="status">
+              Purchase or linked refund evidence changed. Projections are
+              suspended until the provider arrangement is reconciled. Original
+              schedule history is preserved.
+            </p>
+          )}
+          <p>
+            Remaining scheduled principal:{" "}
+            {money(d.totals.remainingPrincipalMinor)}
+          </p>
+          <p>
+            Remaining scheduled interest:{" "}
+            {money(d.totals.remainingInterestMinor)}; fees:{" "}
+            {money(d.totals.remainingFeeMinor)}; total obligations:{" "}
+            {money(d.totals.remainingTotalMinor)}.
+          </p>
+          <p>
+            Unknown provider due dates: {d.totals.unknownDueDateCount}.
+            Unresolved prior applications:{" "}
+            {money(d.applications.unresolvedMinor)}. Statement payments and
+            unallocated credits are not automatically applied to installments.
+          </p>
+        </Panel>
+        <Panel
+          title="Recognized card position"
+          description="Provider schedules do not post an additional purchase, liability or payment."
+        >
+          <p>
+            Current recorded card outstanding{" "}
+            {money(d.card.postedOutstandingMinor)}; card credit{" "}
+            {money(d.card.cardCreditMinor)}. Schedule amounts are projections
+            and do not change these financial balances.
+          </p>
+          <Link
+            className="inline-flex min-h-11 text-link underline"
+            href={`/money/actions/${d.snapshot.purchaseActionId}`}
+          >
+            Original purchase and correction history
+          </Link>
+        </Panel>
+      </MoneyColumns>
       {d.isCurrent && (
         <div className="flex flex-wrap gap-3">
           <Link

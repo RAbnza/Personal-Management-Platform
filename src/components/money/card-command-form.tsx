@@ -74,6 +74,7 @@ export function CardCommandForm({
   return (
     <div className="space-y-5">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           try {
@@ -315,6 +316,7 @@ export function CardAllocationForm({
   return (
     <div className="space-y-5">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           try {

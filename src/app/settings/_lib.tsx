@@ -38,8 +38,12 @@ export function SettingsShell({
       <div className="space-y-6">
         <ScreenHeader
           title={title}
-          scope="Workspace settings"
-          description="Your preferences and account controls. Shared groups retain their separate permissions."
+          scope={path.startsWith("/help") ? "Help" : "Workspace settings"}
+          description={
+            path.startsWith("/help")
+              ? "Task guides, a replayable tour and a support draft you control."
+              : "Your preferences and account controls. Shared groups retain their separate permissions."
+          }
         />
         {children}
       </div>

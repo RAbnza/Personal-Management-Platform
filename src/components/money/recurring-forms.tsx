@@ -128,6 +128,7 @@ export function RecurringDefinitionForm({
   return (
     <div className="space-y-4">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           try {
@@ -575,6 +576,7 @@ export function RecurringOccurrenceForm({
     <div className="space-y-5">
       {editable && (
         <form
+          hidden={command.pending !== null}
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget),
@@ -666,6 +668,7 @@ export function RecurringOccurrenceForm({
             Change this occurrence only
           </summary>
           <form
+            hidden={command.pending !== null}
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
@@ -762,6 +765,7 @@ export function RecurringOccurrenceForm({
         .filter((l) => l.effective)
         .map((l) => (
           <form
+            hidden={command.pending !== null}
             key={l.id}
             onSubmit={(e) => {
               e.preventDefault();

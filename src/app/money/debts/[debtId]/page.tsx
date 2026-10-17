@@ -1,3 +1,5 @@
+import styles from "@/components/money/money-workspace.module.css";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { Attachments } from "@/components/files/attachments";
 import { DebtSettlementHistory } from "@/components/money/debt-settlement-history";
 import Link from "next/link";
@@ -43,7 +45,7 @@ export default async function DebtDetailPage({
 
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Debt unavailable</h1>
+        <ScreenHeader scope="Money" title="Debt unavailable" />
 
         <p className="mt-3">
           This debt could not be found in your private workspace.
@@ -77,7 +79,7 @@ export default async function DebtDetailPage({
 
   return (
     <article className="space-y-6">
-      <header>
+      <div>
         <Link
           href="/money/debts"
           className="inline-flex min-h-11 items-center text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -85,9 +87,7 @@ export default async function DebtDetailPage({
           Back to debts
         </Link>
 
-        <h1 className="mt-2 wrap-break-word text-2xl font-semibold sm:text-3xl">
-          {debt.name}
-        </h1>
+        <ScreenHeader scope="Money" title={debt.name} />
 
         <p className="mt-2 wrap-break-word text-muted-foreground">
           {debt.lenderName}
@@ -122,17 +122,8 @@ export default async function DebtDetailPage({
             Settle debt
           </Link>
         ) : null}
-      </header>
-      <DebtSettlementHistory settlement={settlement} currency={debt.currency} />
-      <DebtScheduleHistory
-        key={`${debt.debtId}:${result.financialRevision}`}
-        debtId={debt.debtId}
-        currency={debt.currency}
-        timezone={workspace.timezone}
-        initial={scheduleHistory}
-      />
-
-      <dl className="grid gap-5 rounded-card border border-border bg-card p-5 sm:grid-cols-2">
+      </div>
+      <dl className={styles.debtMetrics}>
         {[
           ["Recognized liability", money(debt.recognizedLiabilityMinor)],
           ["Outstanding principal", money(debt.outstandingPrincipalMinor)],
@@ -164,7 +155,6 @@ export default async function DebtDetailPage({
           </div>
         ))}
       </dl>
-
       <section className="space-y-2 rounded-card border border-border p-5">
         <h2 className="text-lg font-semibold">
           {importedOpeningDebt
@@ -208,7 +198,6 @@ export default async function DebtDetailPage({
           </p>
         ) : null}
       </section>
-
       <section aria-labelledby="schedule-title" className="space-y-4">
         <h2 id="schedule-title" className="text-lg font-semibold">
           Manual schedule
@@ -314,6 +303,14 @@ export default async function DebtDetailPage({
         initialItems={result.payments}
         initialCursor={result.nextPaymentCursor}
       />
+      <DebtScheduleHistory
+        key={`${debt.debtId}:${result.financialRevision}`}
+        debtId={debt.debtId}
+        currency={debt.currency}
+        timezone={workspace.timezone}
+        initial={scheduleHistory}
+      />
+      <DebtSettlementHistory settlement={settlement} currency={debt.currency} />
       <Attachments sourceKind="debt" sourceId={debt.debtId} />
     </article>
   );

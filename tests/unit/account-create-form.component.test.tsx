@@ -72,6 +72,17 @@ async function fillValidAccountForm() {
   return user;
 }
 
+async function reviewAndConfirm(user: ReturnType<typeof userEvent.setup>) {
+  const calls = fetchMock.mock.calls.length;
+  await user.click(
+    screen.getByRole("button", { name: "Review opening balance" }),
+  );
+  const confirm = screen.queryByRole("button", {
+    name: "Confirm and open account",
+  });
+  expect(fetchMock.mock.calls.length).toBe(calls);
+  if (confirm) await user.click(confirm);
+}
 describe("AccountCreateForm", () => {
   it("creates an account using exact minor units and refreshes authoritative state", async () => {
     fetchMock.mockResolvedValueOnce(
@@ -98,11 +109,7 @@ describe("AccountCreateForm", () => {
 
     const user = await fillValidAccountForm();
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save account",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledOnce();
@@ -172,11 +179,7 @@ describe("AccountCreateForm", () => {
 
     const user = await fillValidAccountForm();
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save account",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     expect(
       await screen.findByText("Save outcome unconfirmed"),
@@ -227,11 +230,7 @@ describe("AccountCreateForm", () => {
 
     const user = await fillValidAccountForm();
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save account",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The account could not be saved.",
@@ -271,11 +270,7 @@ describe("AccountCreateForm", () => {
 
     await user.type(openingBalance, "10.123");
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save account",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     expect(
       await screen.findByText(

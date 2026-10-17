@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -115,7 +116,7 @@ export default async function MoneyAccountHistoryPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
+        <div>
           <Link
             href={moneyEnabled ? "/money/accounts" : "/"}
             className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -125,14 +126,10 @@ export default async function MoneyAccountHistoryPage({
               className="size-4"
               strokeWidth={1.9}
             />
-            {moneyEnabled ? "Back to accounts" : "Back to Dashboard"}
+            {moneyEnabled ? "Back to accounts" : "Back to Home"}
           </Link>
 
-          <p className="mt-3 text-sm font-medium text-link">Money</p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-            Account history
-          </h1>
+          <ScreenHeader scope="Money" title="Account history" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
             Review the finalized ledger activity that changed this account.
@@ -142,10 +139,10 @@ export default async function MoneyAccountHistoryPage({
           {!moneyEnabled && (
             <p className="mt-3 text-sm text-muted-foreground">
               Money module hidden. This owned source history remains available
-              from Dashboard.
+              from Home.
             </p>
           )}
-        </header>
+        </div>
 
         {history ? (
           <AccountHistoryList

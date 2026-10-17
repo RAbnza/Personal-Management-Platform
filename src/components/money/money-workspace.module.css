@@ -1,0 +1,182 @@
+.workspace {
+  min-width: 0;
+}
+.workspace[data-money-task="true"] {
+  max-width: 54rem;
+  margin-inline: auto;
+}
+.workspace [hidden] {
+  display: none !important;
+}
+.workspace h1 {
+  font-size: clamp(1.5rem, 3vw, 2.125rem);
+  letter-spacing: -0.035em;
+}
+.workspace :is(h2, h3, legend) {
+  text-wrap: balance;
+}
+.workspace :is(form, fieldset, section, article) {
+  min-width: 0;
+}
+.workspace :is(input, textarea, select) {
+  max-width: 100%;
+}
+.workspace :is(th, td) {
+  padding: 0.75rem;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.workspace th {
+  color: var(--muted-foreground);
+  font-weight: 600;
+  background: var(--surface-subtle);
+}
+.workspace tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+.workspace dl > div {
+  min-width: 0;
+}
+.workspace :is([role="alert"], [role="status"]) {
+  scroll-margin-block: 2rem;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+.columns > * {
+  min-width: 0;
+}
+.creation {
+  border: 1px solid var(--border);
+  border-radius: var(--geometry-radius-panel);
+  padding: 1.25rem;
+  background: var(--surface);
+}
+.creation > summary {
+  min-height: 2.75rem;
+  padding-block: 0.625rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--link);
+}
+.steps {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-block: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.steps [aria-current] {
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+.task {
+  max-width: 48rem;
+  margin-inline: auto;
+}
+.task [hidden] {
+  display: none !important;
+}
+.task h3:focus {
+  outline-offset: 0.5rem;
+}
+.taskActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.records {
+  display: grid;
+  gap: 0;
+}
+.records > article {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 1.25rem 0;
+}
+.tableScroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+@media (min-width: 1100px) {
+  .columns {
+    grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.8fr);
+  }
+}
+@media (max-width: 767px) {
+  .workspace[data-money-task="true"] > div > header {
+    margin-bottom: 1rem;
+  }
+}
+
+.workspace:has([data-financial-task="true"])
+  > div
+  > :not([data-financial-task="true"]):not(:has([data-financial-task="true"])) {
+  display: none;
+}
+.accountSummary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.accountSummary > div {
+  min-width: 0;
+  border-left: 2px solid var(--border);
+  padding: 1rem;
+}
+.accountSummary > div:first-child {
+  border: 0;
+  border-radius: var(--geometry-radius-panel);
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.accountSummary > div:first-child p {
+  color: inherit;
+}
+@media (min-width: 768px) {
+  .accountSummary {
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  }
+}
+
+.debtMetrics {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.debtMetrics > div {
+  border-left: 2px solid var(--border);
+  padding: 1rem;
+}
+.debtMetrics > div:first-child {
+  border: 0;
+  border-radius: var(--geometry-radius-panel);
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.debtMetrics > div:first-child :is(dt, dd) {
+  color: inherit;
+}
+.debtMetrics > div:first-child dd {
+  font-size: 1.5rem;
+}
+@media (min-width: 768px) {
+  .debtMetrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.workspace:has([data-financial-task="true"]) {
+  max-width: 54rem;
+  margin-inline: auto;
+}

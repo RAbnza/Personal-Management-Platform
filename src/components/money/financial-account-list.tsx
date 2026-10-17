@@ -1,3 +1,4 @@
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import {
   ArrowRightLeft,
@@ -131,7 +132,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
         </div>
       }
     >
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className={styles.records}>
         {accounts.items.map((account) => {
           const type = accountTypeContent[account.accountType];
 
@@ -155,7 +156,12 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="truncate text-sm font-semibold text-foreground">
-                        {account.name}
+                        <Link
+                          className="text-link hover:underline"
+                          href={`/money/accounts/${account.accountId}/history`}
+                        >
+                          {account.name}
+                        </Link>
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">

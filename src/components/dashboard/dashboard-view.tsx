@@ -157,6 +157,28 @@ export function DashboardView({
               .
             </p>
           )}
+          <div className="mb-4 space-y-2 text-sm">
+            <p className="text-muted-foreground">{data.coverage.scope}</p>
+            {data.coverage.incompleteLiabilities && (
+              <p className="font-medium text-warning">
+                Liability information is incomplete. Unknown principal breakdown
+                and unresolved clearing are shown in attention items; this is
+                not a complete net worth.
+              </p>
+            )}
+            {data.coverage.periodBeforeCutoff && (
+              <p className="font-medium text-warning">
+                This period reaches an opening cutoff. Earlier activity is not
+                supplied; spending coverage is incomplete.
+              </p>
+            )}
+            {data.coverage.unknownSchedules > 0 && (
+              <p className="text-warning">
+                {data.coverage.unknownSchedules} debt schedule(s) have unknown
+                dues. Scheduled totals cover supplied evidence only.
+              </p>
+            )}
+          </div>
           <dl className={styles.primaryMetrics}>
             <Metric
               title="Tracked liquid funds"
@@ -223,25 +245,13 @@ export function DashboardView({
                 className="mt-5 space-y-2 rounded-control border border-border bg-muted p-4 text-sm leading-6"
               >
                 <h3 className="font-semibold">Coverage and uncertainty</h3>
-                <p>{data.coverage.scope}</p>
+
                 <p>
                   Excluded payment clearing: {money(f.clearingMinor)}.
                   Recognized debt credit balances:{" "}
                   {money(f.liabilityCreditMinor)}.
                 </p>
-                {data.coverage.incompleteLiabilities && (
-                  <p className="font-medium text-warning">
-                    Liability information is incomplete. Unknown principal
-                    breakdown and unresolved clearing are shown in attention
-                    items; this is not a complete net worth.
-                  </p>
-                )}
-                {data.coverage.periodBeforeCutoff && (
-                  <p className="font-medium text-warning">
-                    This period reaches an opening cutoff. Earlier activity is
-                    not supplied; spending coverage is incomplete.
-                  </p>
-                )}
+
                 {f.spending.baselineMinor !== "0" && (
                   <p>
                     Opening baseline additions in this period:{" "}

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -63,21 +64,19 @@ export default async function ReconcileAccountPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-6">
-        <header>
+        <div>
           <Link
             href="/money/accounts"
             className="inline-flex min-h-11 text-link underline"
           >
             Back to accounts
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold">
-            Account reconciliation
-          </h1>
+          <ScreenHeader scope="Money" title="Account reconciliation" />
           <p className="mt-3 text-muted-foreground">
             Compare an observed balance, investigate differences, and review any
             explicit correction before saving.
           </p>
-        </header>
+        </div>
         {unavailable ? (
           <Panel
             title="Account unavailable"

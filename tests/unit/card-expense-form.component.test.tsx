@@ -52,7 +52,7 @@ describe("card funding in ordinary Add Expense", () => {
     );
     const u = await fill();
     const save = screen.getByRole("button", {
-      name: "Save transaction",
+      name: "Continue to review",
     });
     await u.click(save);
     expect(mocks.fetch).not.toHaveBeenCalled();
@@ -61,6 +61,10 @@ describe("card funding in ordinary Add Expense", () => {
     ).toBeVisible();
     await u.type(screen.getByLabelText("Provider posting date"), "2026-11-02");
     await u.click(save);
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    await u.click(
+      screen.getByRole("button", { name: "Confirm and save transaction" }),
+    );
     await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1));
     expect(JSON.parse(mocks.fetch.mock.calls[0]![1]!.body)).toMatchObject({
       actionKind: "card_purchase",
@@ -101,7 +105,10 @@ describe("card funding in ordinary Add Expense", () => {
     );
     const u = await fill();
     await u.type(screen.getByLabelText("Provider posting date"), "2026-11-02");
-    await u.click(screen.getByRole("button", { name: "Save transaction" }));
+    await u.click(screen.getByRole("button", { name: "Continue to review" }));
+    await u.click(
+      screen.getByRole("button", { name: "Confirm and save transaction" }),
+    );
     await screen.findByText(/couldn't confirm whether/);
     expect(screen.getByLabelText("Paid with")).toBeDisabled();
     await u.click(screen.getByRole("button", { name: /Retry/ }));

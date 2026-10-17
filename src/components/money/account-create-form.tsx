@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ReviewSummary } from "@/components/patterns/review";
+import { TaskStage } from "./task-stage";
+import { formatMoneyMinorUnits } from "@/shared/money-display";
+import { useClientReady } from "@/shared/use-client-ready";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -155,6 +159,11 @@ export interface AccountCreateFormProps {
 
 export function AccountCreateForm({ currency }: AccountCreateFormProps) {
   const router = useRouter();
+  const clientReady = useClientReady();
+  const sending = useRef(false);
+  const [reviewDraft, setReviewDraft] = useState<OpenAccountPayload | null>(
+    null,
+  );
 
   const [pendingCommand, setPendingCommand] =
     useState<PendingFinancialCommand | null>(null);
@@ -181,6 +190,7 @@ export function AccountCreateForm({ currency }: AccountCreateFormProps) {
   });
 
   const fieldsDisabled =
+    !clientReady ||
     saveState === "saving" ||
     saveState === "unconfirmed" ||
     saveState === "saved";
@@ -245,9 +255,7 @@ export function AccountCreateForm({ currency }: AccountCreateFormProps) {
 
     const notes = values.notes.trim();
 
-    const command: PendingFinancialCommand = {
-      clientCommandId: crypto.randomUUID(),
-
+    const command: Omit<PendingFinancialCommand, "clientCommandId"> = {
       payload: {
         name: values.name.trim(),
 
@@ -265,9 +273,21 @@ export function AccountCreateForm({ currency }: AccountCreateFormProps) {
       },
     };
 
+    setReviewDraft(command.payload);
+  }
+  async function confirmAccount() {
+    if (!reviewDraft || sending.current || fieldsDisabled) return;
+    sending.current = true;
+    const command = {
+      clientCommandId: crypto.randomUUID(),
+      payload: reviewDraft,
+    };
     setPendingCommand(command);
-
-    await executeFinancialCommand(command);
+    try {
+      await executeFinancialCommand(command);
+    } finally {
+      sending.current = false;
+    }
   }
 
   async function retryUnconfirmedSave() {
@@ -327,161 +347,207 @@ export function AccountCreateForm({ currency }: AccountCreateFormProps) {
         </p>
       </div>
 
+      <TaskStage reviewing={reviewDraft !== null} />
       <form
         noValidate
         className="mt-6 space-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(event) => {
+          if (reviewDraft) event.preventDefault();
+          else void handleSubmit(onSubmit)(event);
+        }}
       >
-        <div className="grid gap-5 md:grid-cols-2">
-          <FormField
-            htmlFor="financial-account-name"
-            label="Account name"
-            description="Use a name you will recognize later, such as Cash Wallet, GCash, or BDO Savings."
-            descriptionId="financial-account-name-description"
-            error={errors.name?.message}
-            errorId="financial-account-name-error"
-          >
-            <Input
-              {...register("name")}
-              id="financial-account-name"
-              type="text"
-              autoComplete="off"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.name)}
-              aria-describedby={[
-                "financial-account-name-description",
-                nameErrorId,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="financial-account-type"
-            label="Account type"
-            error={errors.accountType?.message}
-            errorId="financial-account-type-error"
-          >
-            <select
-              {...register("accountType")}
-              id="financial-account-type"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.accountType)}
-              aria-describedby={typeErrorId}
-              className={[
-                "min-h-11 w-full rounded-control border border-input",
-                "bg-surface px-3 py-2 text-base text-foreground",
-                "transition-colors duration-(--motion-duration-fast) ease-state",
-                "hover:border-ring",
-                "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                "motion-reduce:transition-none",
-              ].join(" ")}
+        <div hidden={reviewDraft !== null}>
+          <div className="grid gap-5">
+            <FormField
+              htmlFor="financial-account-name"
+              label="Account name"
+              description="Use a name you will recognize later, such as Cash Wallet, GCash, or BDO Savings."
+              descriptionId="financial-account-name-description"
+              error={errors.name?.message}
+              errorId="financial-account-name-error"
             >
-              {accountTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </FormField>
+              <Input
+                {...register("name")}
+                id="financial-account-name"
+                type="text"
+                autoComplete="off"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={[
+                  "financial-account-name-description",
+                  nameErrorId,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+
+            <FormField
+              htmlFor="financial-account-type"
+              label="Account type"
+              error={errors.accountType?.message}
+              errorId="financial-account-type-error"
+            >
+              <select
+                {...register("accountType")}
+                id="financial-account-type"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.accountType)}
+                aria-describedby={typeErrorId}
+                className={[
+                  "min-h-11 w-full rounded-control border border-input",
+                  "bg-surface px-3 py-2 text-base text-foreground",
+                  "transition-colors duration-(--motion-duration-fast) ease-state",
+                  "hover:border-ring",
+                  "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                  "motion-reduce:transition-none",
+                ].join(" ")}
+              >
+                {accountTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            <FormField
+              htmlFor="financial-account-institution"
+              label="Institution"
+              description="Optional. Examples include GCash, Maya, BDO, BPI, or another provider."
+              descriptionId="financial-account-institution-description"
+              error={errors.institutionName?.message}
+              errorId="financial-account-institution-error"
+            >
+              <Input
+                {...register("institutionName")}
+                id="financial-account-institution"
+                type="text"
+                autoComplete="organization"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.institutionName)}
+                aria-describedby={[
+                  "financial-account-institution-description",
+                  institutionErrorId,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+
+            <FormField
+              htmlFor="financial-account-opening-date"
+              label="Opening balance date"
+              description="Choose the date that the opening balance represents. This is a calendar date, not a transaction timestamp."
+              descriptionId="financial-account-opening-date-description"
+              error={errors.openingCutoffDate?.message}
+              errorId="financial-account-opening-date-error"
+            >
+              <Input
+                {...register("openingCutoffDate")}
+                id="financial-account-opening-date"
+                type="date"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.openingCutoffDate)}
+                aria-describedby={[
+                  "financial-account-opening-date-description",
+                  dateErrorId,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+
+            <FormField
+              htmlFor="financial-account-opening-balance"
+              label={`Opening balance (${currency})`}
+              description="Enter the actual balance at the opening balance date. This establishes a baseline and does not count as income."
+              descriptionId="financial-account-opening-balance-description"
+              error={errors.openingBalance?.message}
+              errorId="financial-account-opening-balance-error"
+            >
+              <Input
+                {...register("openingBalance")}
+                id="financial-account-opening-balance"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.openingBalance)}
+                aria-describedby={[
+                  "financial-account-opening-balance-description",
+                  balanceErrorId,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                className="numeric-value"
+              />
+            </FormField>
+          </div>
 
           <FormField
-            htmlFor="financial-account-institution"
-            label="Institution"
-            description="Optional. Examples include GCash, Maya, BDO, BPI, or another provider."
-            descriptionId="financial-account-institution-description"
-            error={errors.institutionName?.message}
-            errorId="financial-account-institution-error"
+            htmlFor="financial-account-notes"
+            label="Notes"
+            description="Optional context about the account. Do not store passwords, PINs, recovery codes, or other secrets here."
+            descriptionId="financial-account-notes-description"
+            error={errors.notes?.message}
+            errorId="financial-account-notes-error"
           >
-            <Input
-              {...register("institutionName")}
-              id="financial-account-institution"
-              type="text"
-              autoComplete="organization"
+            <Textarea
+              {...register("notes")}
+              id="financial-account-notes"
               disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.institutionName)}
+              aria-invalid={Boolean(errors.notes)}
               aria-describedby={[
-                "financial-account-institution-description",
-                institutionErrorId,
+                "financial-account-notes-description",
+                notesErrorId,
               ]
                 .filter(Boolean)
                 .join(" ")}
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="financial-account-opening-date"
-            label="Opening balance date"
-            description="Choose the date that the opening balance represents. This is a calendar date, not a transaction timestamp."
-            descriptionId="financial-account-opening-date-description"
-            error={errors.openingCutoffDate?.message}
-            errorId="financial-account-opening-date-error"
-          >
-            <Input
-              {...register("openingCutoffDate")}
-              id="financial-account-opening-date"
-              type="date"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.openingCutoffDate)}
-              aria-describedby={[
-                "financial-account-opening-date-description",
-                dateErrorId,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="financial-account-opening-balance"
-            label={`Opening balance (${currency})`}
-            description="Enter the actual balance at the opening balance date. This establishes a baseline and does not count as income."
-            descriptionId="financial-account-opening-balance-description"
-            error={errors.openingBalance?.message}
-            errorId="financial-account-opening-balance-error"
-          >
-            <Input
-              {...register("openingBalance")}
-              id="financial-account-opening-balance"
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.openingBalance)}
-              aria-describedby={[
-                "financial-account-opening-balance-description",
-                balanceErrorId,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              className="numeric-value"
             />
           </FormField>
         </div>
-
-        <FormField
-          htmlFor="financial-account-notes"
-          label="Notes"
-          description="Optional context about the account. Do not store passwords, PINs, recovery codes, or other secrets here."
-          descriptionId="financial-account-notes-description"
-          error={errors.notes?.message}
-          errorId="financial-account-notes-error"
-        >
-          <Textarea
-            {...register("notes")}
-            id="financial-account-notes"
-            disabled={fieldsDisabled}
-            aria-invalid={Boolean(errors.notes)}
-            aria-describedby={[
-              "financial-account-notes-description",
-              notesErrorId,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          />
-        </FormField>
-
+        {reviewDraft && (
+          <ReviewSummary
+            title="Review opening account"
+            rows={[
+              { key: "name", label: "Account", value: reviewDraft.name },
+              {
+                key: "type",
+                label: "Type",
+                value: reviewDraft.accountType.replaceAll("_", " "),
+              },
+              {
+                key: "provider",
+                label: "Institution",
+                value: reviewDraft.institutionName ?? "None",
+              },
+              {
+                key: "date",
+                label: "Opening balance date",
+                value: reviewDraft.openingCutoffDate,
+              },
+              {
+                key: "balance",
+                label: "Opening baseline",
+                value: formatMoneyMinorUnits(
+                  currency,
+                  reviewDraft.openingBalanceMinor,
+                ),
+              },
+              {
+                key: "notes",
+                label: "Notes",
+                value: reviewDraft.notes ?? "None",
+              },
+            ]}
+          >
+            <p className="text-sm text-muted-foreground">
+              This establishes a starting balance, not income. Actual
+              transactions must occur after this opening cutoff.
+            </p>
+          </ReviewSummary>
+        )}
         {saveState === "unconfirmed" ? (
           <div
             role="alert"
@@ -537,13 +603,32 @@ export function AccountCreateForm({ currency }: AccountCreateFormProps) {
             </Button>
           ) : null}
 
+          {reviewDraft && saveState === "idle" && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setReviewDraft(null);
+                setSaveError(null);
+              }}
+            >
+              Edit details
+            </Button>
+          )}
           <Button
-            type="submit"
+            type={reviewDraft ? "button" : "submit"}
+            onClick={reviewDraft ? () => void confirmAccount() : undefined}
             loading={saveState === "saving"}
             loadingLabel="Saving account…"
-            disabled={saveState === "unconfirmed" || saveState === "saved"}
+            disabled={
+              !clientReady ||
+              saveState === "unconfirmed" ||
+              saveState === "saved"
+            }
           >
-            Save account
+            {reviewDraft
+              ? "Confirm and open account"
+              : "Review opening balance"}
           </Button>
         </div>
       </form>

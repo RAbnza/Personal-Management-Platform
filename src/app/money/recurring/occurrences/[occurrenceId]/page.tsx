@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -57,9 +58,10 @@ export default async function OccurrencePage({
       >
         Back to {data.root.name}
       </Link>
-      <h1 className="text-2xl font-semibold">
-        {data.root.name} · {o.due_date}
-      </h1>
+      <ScreenHeader
+        scope="Money / Recurring"
+        title={`${data.root.name} · ${o.due_date}`}
+      />
       <Panel
         title="Planned occurrence"
         description="Expected evidence does not move money."

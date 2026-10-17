@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { getCardInstallmentPlan } from "@/modules/finance/services/read-card-installments";
@@ -43,9 +44,7 @@ export default async function InstallmentApplicationsPage({
       >
         Provider installment plan
       </Link>
-      <h1 className="text-2xl font-semibold">
-        Confirm installment applications
-      </h1>
+      <ScreenHeader scope="Money" title="Confirm installment applications" />
       {!d.status.eligible && (
         <p role="status">
           This plan requires reconciliation or is cancelled. New applications

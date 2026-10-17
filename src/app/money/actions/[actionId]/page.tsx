@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { z } from "zod";
@@ -81,7 +82,7 @@ export default async function FinancialActionPage({
       <Link href="/money/actions" className="text-link underline">
         Financial activity
       </Link>
-      <h1 className="text-2xl font-semibold">{detail.current.description}</h1>
+      <ScreenHeader scope="Money" title={detail.current.description} />
       <Panel
         title="Current logical action"
         description="One business action with its current revision and complete correction history."

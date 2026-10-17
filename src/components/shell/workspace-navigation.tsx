@@ -43,6 +43,7 @@ import styles from "./shell.module.css";
 type Menu = "Modules" | "More";
 export interface WorkspaceNavigationProps {
   activePath: string;
+  task?: boolean;
   userName: string;
   userEmail: string;
   initialModules?: readonly NavigationModule[];
@@ -156,6 +157,7 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
     activePath.startsWith(path),
   );
   const addExpense =
+    !props.task &&
     preferences?.some((item) => item.moduleKey === "money" && item.enabled) &&
     (activePath === "/" || activePath.startsWith("/money"));
   const renderDestinations = (items: readonly Destination[]) =>

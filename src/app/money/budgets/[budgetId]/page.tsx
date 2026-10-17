@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -45,7 +46,7 @@ export default async function BudgetPage({
     if (e instanceof BudgetUnavailableError) notFound();
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Budget unavailable</h1>
+        <ScreenHeader scope="Money" title="Budget unavailable" />
         <Link
           href={`/money/budgets/${budgetId}`}
           className="text-link underline"

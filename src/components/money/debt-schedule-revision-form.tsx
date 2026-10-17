@@ -372,6 +372,7 @@ export function DebtScheduleRevisionForm({
       ) : null}
       <form onSubmit={form.handleSubmit(review)} className="space-y-6">
         <fieldset
+          hidden={stage !== "editing"}
           disabled={locked || stale || !hydrated}
           onChange={(e) => {
             const target = e.target;
@@ -748,8 +749,8 @@ export function DebtScheduleRevisionForm({
             Schedule frequency: {reviewSetup.frequency} â†’ {pending.frequency}.
           </p>
           <p>
-            {pending.revisionKind.replaceAll("_", " ")} Â· effective{" "}
-            {pending.effectiveDate} Â· {pending.reason}
+            {pending.revisionKind.replaceAll("_", " ")} · effective{" "}
+            {pending.effectiveDate} · {pending.reason}
           </p>
           <div
             className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-ring"
@@ -757,83 +758,90 @@ export function DebtScheduleRevisionForm({
             role="region"
             aria-label="Old versus new schedule comparison table"
           >
-            <table className="w-full text-left text-sm">
-              <caption className="mb-3 text-left font-semibold">
-                Old versus new schedule and Agenda projection
-              </caption>
-              <thead>
-                <tr>
-                  {[
-                    "Obligation",
-                    "Old date / amount / remaining",
-                    "New date / amount",
-                    "Carried opening / payments",
-                    "New remaining / Agenda",
-                  ].map((h) => (
-                    <th key={h} className="p-2">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {preview.entries.map((e, index) => {
-                  const old = e.obligationId
-                    ? reviewSetup.detail.installments.find(
-                        (i) => i.obligationId === e.obligationId,
-                      )
-                    : undefined;
-                  return (
-                    <tr key={e.entryKey}>
-                      <td className="p-2">
-                        Installment {index + 1} Â·{" "}
-                        {old ? "survives" : "new identity"}
-                      </td>
-                      <td className="p-2">
-                        {old
-                          ? `${old.dueDate} / ${money(old.contractualMinor)} / ${money(old.remainingMinor)}`
-                          : "New obligation"}
-                      </td>
-                      <td className="p-2">
-                        {e.dueDate} / {money(e.contractualMinor)}
-                      </td>
-                      <td className="p-2">
-                        {money(e.openingSatisfiedMinor)} /{" "}
-                        {money(e.paymentSatisfiedMinor)}
-                      </td>
-                      <td className="p-2">
-                        {money(e.remainingMinor)} Â·{" "}
-                        {e.disposition === "cancelled"
-                          ? `cancelled: ${e.cancellationReason}`
-                          : e.remainingMinor === "0"
-                            ? "satisfied; no due reminder"
-                            : `due ${e.dueDate}`}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {reviewSetup.detail.installments
-                  .filter(
-                    (i) =>
-                      !pending.entries.some(
-                        (e) => e.obligationId === i.obligationId,
-                      ),
-                  )
-                  .map((i) => (
-                    <tr key={i.obligationId}>
-                      <td className="p-2">Old installment {i.sequenceNo}</td>
-                      <td className="p-2">
-                        {i.dueDate} / {money(i.contractualMinor)} /{" "}
-                        {money(i.remainingMinor)}
-                      </td>
-                      <td colSpan={3} className="p-2">
-                        Replaced; old schedule remains in history. Previous
-                        Agenda occurrence is removed.
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+            <div
+              role="region"
+              aria-label="Financial evidence table"
+              tabIndex={0}
+              className="max-w-full overflow-x-auto rounded-panel border border-border"
+            >
+              <table className="w-full text-left text-sm">
+                <caption className="mb-3 text-left font-semibold">
+                  Old versus new schedule and Agenda projection
+                </caption>
+                <thead>
+                  <tr>
+                    {[
+                      "Obligation",
+                      "Old date / amount / remaining",
+                      "New date / amount",
+                      "Carried opening / payments",
+                      "New remaining / Agenda",
+                    ].map((h) => (
+                      <th key={h} className="p-2">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.entries.map((e, index) => {
+                    const old = e.obligationId
+                      ? reviewSetup.detail.installments.find(
+                          (i) => i.obligationId === e.obligationId,
+                        )
+                      : undefined;
+                    return (
+                      <tr key={e.entryKey}>
+                        <td className="p-2">
+                          Installment {index + 1} ·{" "}
+                          {old ? "survives" : "new identity"}
+                        </td>
+                        <td className="p-2">
+                          {old
+                            ? `${old.dueDate} / ${money(old.contractualMinor)} / ${money(old.remainingMinor)}`
+                            : "New obligation"}
+                        </td>
+                        <td className="p-2">
+                          {e.dueDate} / {money(e.contractualMinor)}
+                        </td>
+                        <td className="p-2">
+                          {money(e.openingSatisfiedMinor)} /{" "}
+                          {money(e.paymentSatisfiedMinor)}
+                        </td>
+                        <td className="p-2">
+                          {money(e.remainingMinor)} ·{" "}
+                          {e.disposition === "cancelled"
+                            ? `cancelled: ${e.cancellationReason}`
+                            : e.remainingMinor === "0"
+                              ? "satisfied; no due reminder"
+                              : `due ${e.dueDate}`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {reviewSetup.detail.installments
+                    .filter(
+                      (i) =>
+                        !pending.entries.some(
+                          (e) => e.obligationId === i.obligationId,
+                        ),
+                    )
+                    .map((i) => (
+                      <tr key={i.obligationId}>
+                        <td className="p-2">Old installment {i.sequenceNo}</td>
+                        <td className="p-2">
+                          {i.dueDate} / {money(i.contractualMinor)} /{" "}
+                          {money(i.remainingMinor)}
+                        </td>
+                        <td colSpan={3} className="p-2">
+                          Replaced; old schedule remains in history. Previous
+                          Agenda occurrence is removed.
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <section aria-label="Confirmed allocation mapping">
             <h3 className="font-semibold">Exact payment mapping</h3>
@@ -922,7 +930,7 @@ export function DebtScheduleRevisionForm({
             </div>
           ) : null}
           {stage === "saving" ? (
-            <p role="status">Saving schedule revisionâ€¦</p>
+            <p role="status">Saving schedule revision…</p>
           ) : null}
           {stage === "unconfirmed" ? (
             <Button onClick={save}>Retry same revision</Button>

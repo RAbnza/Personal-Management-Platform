@@ -56,6 +56,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 async function review() {
   const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Correct entry" }));
   await user.type(screen.getByLabelText("Required reason"), "Wrong amount");
   await user.click(
     screen.getByRole("checkbox", { name: /explicitly acknowledge/i }),
@@ -216,4 +217,27 @@ describe("financial action review", () => {
     );
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+});
+
+it("opens a titled correction task and returns keyboard focus to its source action", async () => {
+  const user = userEvent.setup();
+  render(
+    <FinancialActionReviewForm
+      detail={setup()}
+      accounts={[account]}
+      categories={[]}
+      today="2026-10-09"
+    />,
+  );
+  const trigger = screen.getByRole("button", { name: "Correct entry" });
+  await user.click(trigger);
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Purchase" }),
+  ).toBeVisible();
+  expect(screen.getByLabelText("Step 1 of 2: Enter details")).toHaveFocus();
+  await user.click(
+    screen.getByRole("button", { name: "Back to action details" }),
+  );
+  await waitFor(() => expect(trigger).toHaveFocus());
+  expect(fetchMock).not.toHaveBeenCalled();
 });

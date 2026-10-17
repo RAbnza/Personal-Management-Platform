@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { CardCreateForm } from "@/components/money/card-create-form";
 import Link from "next/link";
@@ -46,7 +47,7 @@ export default async function CardPage({
       <Link href="/money/cards" className="text-link underline">
         Credit cards
       </Link>
-      <h1 className="text-2xl font-semibold">{data.card.name}</h1>
+      <ScreenHeader scope="Money" title={data.card.name} />
       <p>
         {data.card.issuerName} · Posted outstanding{" "}
         {money(data.card.postedOutstandingMinor)} · Card credit{" "}
@@ -70,7 +71,41 @@ export default async function CardPage({
       >
         Provider statements and reconciliation
       </Link>
-      <CardSurfacePanel data={data.cardSurface} currency={data.card.currency} />
+      <nav
+        aria-label="Card views"
+        className="flex flex-wrap gap-2 border-b border-border pb-3 text-sm font-semibold text-link"
+      >
+        <a
+          href="#card-overview"
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Overview
+        </a>
+        <a
+          href="#card-activity"
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Activity
+        </a>
+        <Link
+          href={`/money/cards/${id.data}/statements`}
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Statements
+        </Link>
+        <Link
+          href={`/money/cards/${id.data}/installments`}
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Installments
+        </Link>
+      </nav>
+      <div id="card-overview">
+        <CardSurfacePanel
+          data={data.cardSurface}
+          currency={data.card.currency}
+        />
+      </div>
       <Panel
         title="Installment details"
         description="Optional provider schedules for already recognized purchases."
@@ -110,6 +145,7 @@ export default async function CardPage({
         </details>
       </Panel>
       <Panel
+        id="card-activity"
         title="Card activity history"
         description="Every preserved purchase, payment, fee, interest and refund revision. Transaction dates determine reporting periods; provider posting dates retain evidence. Liability changes include reversals and replacements."
       >

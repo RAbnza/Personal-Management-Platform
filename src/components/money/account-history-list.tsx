@@ -1,3 +1,4 @@
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import {
   ArrowDownLeft,
@@ -127,8 +128,8 @@ export function AccountHistoryList({
         title={account.name}
         description="Current balance and account identity are derived from the same ledger-backed history projection."
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+        <div className={styles.accountSummary}>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Current balance
             </p>
@@ -141,7 +142,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Account type
             </p>
@@ -159,7 +160,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Opening balance date
             </p>
@@ -171,7 +172,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Status</p>
 
             <p className="mt-1 text-sm font-semibold text-foreground">

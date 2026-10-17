@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { statementIdentifierSchema as id } from "@/modules/finance/domain/card-statement";
@@ -40,9 +41,7 @@ export default async function NewInstallmentPage({
       <Link className="text-link underline" href={base}>
         Provider installment plans
       </Link>
-      <h1 className="text-2xl font-semibold">
-        Record provider installment plan
-      </h1>
+      <ScreenHeader scope="Money" title="Record provider installment plan" />
       {parsed?.success ? (
         <CardInstallmentPlanForm
           key={setup.purchases[0]!.actionRevisionId}

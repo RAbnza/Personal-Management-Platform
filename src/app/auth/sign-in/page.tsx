@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/platform/auth/client";
+import { enterPrivateWorkspace } from "@/components/auth/enter-private-workspace";
 import { notifySessionChanged } from "@/platform/auth/session-notice";
 
 const signInSchema = z.object({
@@ -29,7 +29,6 @@ const SIGN_IN_ERROR_MESSAGE =
   "We couldn't sign you in with those credentials. If your email still needs verification, check your inbox for the verification message.";
 
 export default function SignInPage() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const [authenticationError, setAuthenticationError] = useState<string | null>(
@@ -63,8 +62,7 @@ export default function SignInPage() {
       }
 
       notifySessionChanged();
-      router.replace("/");
-      router.refresh();
+      enterPrivateWorkspace();
     } catch {
       setAuthenticationError(
         "A temporary problem prevented sign-in. Please try again.",

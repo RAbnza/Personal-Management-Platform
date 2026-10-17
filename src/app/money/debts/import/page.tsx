@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { DebtImportForm } from "@/components/money/debt-import-form";
 import { debtWorkspace } from "../_workspace";
 
@@ -5,9 +6,7 @@ export default async function ImportDebtPage() {
   const { workspace } = await debtWorkspace();
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold sm:text-3xl">
-        Existing debt setup
-      </h1>
+      <ScreenHeader scope="Money" title="Existing debt setup" />
       <DebtImportForm currency={workspace.currency} />
     </div>
   );

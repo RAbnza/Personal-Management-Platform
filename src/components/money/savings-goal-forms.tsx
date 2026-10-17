@@ -37,6 +37,7 @@ export function SavingsGoalForm({ initial }: { initial?: GoalEvidence }) {
   return (
     <div className="space-y-4">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (frozen) return;
@@ -158,6 +159,7 @@ export function SavingsReservationForm({
         active goal.
       </p>
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (frozen) return;
@@ -269,6 +271,7 @@ export function SavingsReallocationForm({
         does not move money; the destination must have supported cash.
       </p>
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (frozen) return;
@@ -394,6 +397,7 @@ export function SavingsLifecycleForm({
             : "Reopen the recorded goal while preserving its history and existing reservations."}
       </p>
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (frozen) return;

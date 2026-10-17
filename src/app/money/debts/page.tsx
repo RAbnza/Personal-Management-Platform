@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 
 import { debtReadQuerySchema } from "@/modules/finance/domain/debt";
@@ -17,7 +18,7 @@ export default async function DebtsPage({
   if (!query.success) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Invalid debt list filter</h1>
+        <ScreenHeader scope="Money" title="Invalid debt list filter" />
 
         <Link href="/money/debts" className="text-link underline">
           Reset filters
@@ -34,8 +35,8 @@ export default async function DebtsPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold sm:text-3xl">Debts</h1>
+      <div>
+        <ScreenHeader scope="Money" title="Debts" />
 
         <p className="mt-3 max-w-[68ch] text-muted-foreground">
           Track new borrowing and existing provider-confirmed liabilities.
@@ -72,7 +73,7 @@ export default async function DebtsPage({
             Import existing debt
           </Link>
         </div>
-      </header>
+      </div>
 
       {result.items.length === 0 ? (
         <p className="rounded-card border border-border bg-card p-6">
@@ -81,11 +82,11 @@ export default async function DebtsPage({
             : "No debts yet. Record a new borrowing when money is received now, or import an existing provider-confirmed liability that began before your tracked history."}
         </p>
       ) : (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul className="divide-y divide-border border-y border-border">
           {result.items.map((debt) => (
             <li
               key={debt.debtId}
-              className="min-w-0 rounded-card border border-border bg-card p-5"
+              className="grid min-w-0 gap-x-6 gap-y-2 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
             >
               <h2 className="wrap-break-word text-lg font-semibold">
                 <Link
@@ -100,7 +101,7 @@ export default async function DebtsPage({
                 {debt.lenderName} · {debt.lifecycle.replaceAll("_", " ")}
               </p>
 
-              <dl className="mt-4 space-y-3 text-sm">
+              <dl className="grid gap-4 text-sm sm:grid-cols-3 lg:col-start-2 lg:row-span-3 lg:row-start-1">
                 <div>
                   <dt>Recognized liability</dt>
 

@@ -1,3 +1,8 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
+import {
+  MoneyColumns,
+  MoneyCreation,
+} from "@/components/money/money-workspace";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { BudgetDefinitionForm } from "@/components/money/budget-forms";
@@ -20,7 +25,7 @@ export default async function BudgetsPage({
   if (!q.success)
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Check budget filters</h1>
+        <ScreenHeader scope="Money" title="Check budget filters" />
         <Link href="/money/budgets" className="text-link underline">
           Return to budgets
         </Link>
@@ -33,7 +38,7 @@ export default async function BudgetsPage({
   } catch {
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Budgets unavailable</h1>
+        <ScreenHeader scope="Money" title="Budgets unavailable" />
         <Link href="/money/budgets" className="text-link underline">
           Retry private budgets
         </Link>
@@ -45,74 +50,79 @@ export default async function BudgetsPage({
   );
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Category budgets</h1>
+      <ScreenHeader scope="Money" title="Category budgets" />
       <p>
         Spending limits compare with posted financial evidence. Expected
         recurring plans never enter actual spending.
       </p>
-      <Panel
-        title="Recorded budgets"
-        description="Every comparison covers its own full labelled period, including actual-period offsets."
-      >
-        <div className="space-y-5">
-          {data.items.map((b) => (
-            <section
-              key={b.id}
-              className="space-y-3 border-b border-border pb-4"
-            >
-              <h2 className="text-xl font-semibold">
-                <Link
-                  href={`/money/budgets/${b.id}`}
-                  aria-label={`${b.categoryName} budget ${b.start_date} through ${b.end_date_exclusive} exclusive`}
-                  className="text-link underline"
-                >
-                  {b.categoryName}
-                </Link>
-              </h2>
-              <BudgetComparison budget={b} />
-            </section>
-          ))}
-          {!data.items.length && (
-            <p>No matching budgets. Create an explicit category limit below.</p>
-          )}
-          {data.nextCursor && (
+      <MoneyColumns>
+        <Panel
+          title="Recorded budgets"
+          description="Every comparison covers its own full labelled period, including actual-period offsets."
+        >
+          <div className="space-y-5">
+            {data.items.map((b) => (
+              <section
+                key={b.id}
+                className="space-y-3 border-b border-border pb-4"
+              >
+                <h2 className="text-xl font-semibold">
+                  <Link
+                    href={`/money/budgets/${b.id}`}
+                    aria-label={`${b.categoryName} budget ${b.start_date} through ${b.end_date_exclusive} exclusive`}
+                    className="text-link underline"
+                  >
+                    {b.categoryName}
+                  </Link>
+                </h2>
+                <BudgetComparison budget={b} />
+              </section>
+            ))}
+            {!data.items.length && (
+              <p>
+                No matching budgets. Create an explicit category limit below.
+              </p>
+            )}
+            {data.nextCursor && (
+              <Link
+                href={`/money/budgets?${new URLSearchParams({ ...Object.fromEntries(pageParams), cursor: data.nextCursor })}`}
+                className="inline-flex min-h-11 items-center text-link underline"
+              >
+                Next budgets
+              </Link>
+            )}
             <Link
-              href={`/money/budgets?${new URLSearchParams({ ...Object.fromEntries(pageParams), cursor: data.nextCursor })}`}
+              href={
+                q.data.includeArchived === "true"
+                  ? "/money/budgets"
+                  : "/money/budgets?includeArchived=true"
+              }
               className="inline-flex min-h-11 items-center text-link underline"
             >
-              Next budgets
+              {q.data.includeArchived === "true"
+                ? "Show active budgets"
+                : "Include archived budgets"}
             </Link>
+          </div>
+        </Panel>
+        <MoneyCreation title="Create category budget">
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            Review the category, dates and exact amount before confirming.
+            Overlapping category periods are rejected.
+          </p>
+          <BudgetDefinitionForm
+            categories={categories.items.map((c) => ({
+              id: c.categoryId,
+              name: c.name,
+              archived: c.archived,
+            }))}
+            today={data.today}
+          />
+          {!categories.items.length && (
+            <p>No active expense category is available for a new budget.</p>
           )}
-          <Link
-            href={
-              q.data.includeArchived === "true"
-                ? "/money/budgets"
-                : "/money/budgets?includeArchived=true"
-            }
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
-            {q.data.includeArchived === "true"
-              ? "Show active budgets"
-              : "Include archived budgets"}
-          </Link>
-        </div>
-      </Panel>
-      <Panel
-        title="Create category budget"
-        description="Review the category, dates and exact amount before confirming. Overlapping category periods are rejected."
-      >
-        <BudgetDefinitionForm
-          categories={categories.items.map((c) => ({
-            id: c.categoryId,
-            name: c.name,
-            archived: c.archived,
-          }))}
-          today={data.today}
-        />
-        {!categories.items.length && (
-          <p>No active expense category is available for a new budget.</p>
-        )}
-      </Panel>
+        </MoneyCreation>
+      </MoneyColumns>
       <p className="text-xs text-muted-foreground">
         Generated {data.generatedAt} · revision {data.financialRevision} ·{" "}
         {data.definitionVersion} · {data.financialDefinitionVersion}

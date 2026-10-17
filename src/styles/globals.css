@@ -152,3 +152,8 @@ svg {
     color: #000000;
   }
 }
+
+/* Document scrolling reserves the production dock's focus/content clearance. */
+html:has(.workspace-shell) {
+  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+}

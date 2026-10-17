@@ -1,3 +1,8 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
+import {
+  MoneyColumns,
+  MoneyCreation,
+} from "@/components/money/money-workspace";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -64,7 +69,7 @@ export default async function MoneyAccountsPage() {
         gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
       >
         <div className="space-y-8">
-          <header>
+          <div>
             <Link
               href="/"
               className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -74,13 +79,11 @@ export default async function MoneyAccountsPage() {
                 className="size-4"
                 strokeWidth={1.9}
               />
-              Back to dashboard
+              Back to Home
             </Link>
 
-            <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-              Money
-            </h1>
-          </header>
+            <ScreenHeader scope="Money" title="Money" />
+          </div>
 
           <Panel
             title="Money is currently disabled"
@@ -127,7 +130,7 @@ export default async function MoneyAccountsPage() {
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
+        <div>
           <Link
             href="/"
             className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
@@ -137,14 +140,10 @@ export default async function MoneyAccountsPage() {
               className="size-4"
               strokeWidth={1.9}
             />
-            Back to dashboard
+            Back to Home
           </Link>
 
-          <p className="mt-3 text-sm font-medium text-link">Money</p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-            Accounts
-          </h1>
+          <ScreenHeader scope="Money" title="Accounts" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
             Track the places where your actual money is held. Balances are
@@ -157,53 +156,21 @@ export default async function MoneyAccountsPage() {
               {workspace.currency}
             </span>
           </p>
-          <Link
-            href="/money/debts"
-            className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
-            View debts and manual schedules
-          </Link>
-          <Link
-            href="/money/cards"
-            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
-            Credit cards
-          </Link>
-          <Link
-            href="/money/recurring"
-            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
-            Recurring obligations
-          </Link>
-          <Link
-            href="/money/budgets"
-            className="ml-4 mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
-            Budgets
-          </Link>
-          <Link
-            href="/money/goals"
-            className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline"
-          >
-            Savings goals
-          </Link>
-          <Link
-            href="/money/forecasts"
-            className="inline-flex min-h-11 items-center"
-          >
-            Forecasts
-          </Link>
-        </header>
+        </div>
 
         {accounts ? (
-          <>
+          <MoneyColumns>
             <FinancialAccountList accounts={accounts} />
-
-            <AccountCreateForm
-              key={accounts.financialRevision}
-              currency={workspace.currency}
-            />
-          </>
+            <MoneyCreation
+              title="Add financial account"
+              open={accounts.items.length === 0}
+            >
+              <AccountCreateForm
+                key={accounts.financialRevision}
+                currency={workspace.currency}
+              />
+            </MoneyCreation>
+          </MoneyColumns>
         ) : (
           <Panel
             title="Accounts temporarily unavailable"

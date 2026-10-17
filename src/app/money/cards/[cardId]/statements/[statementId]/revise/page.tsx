@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
 import {
@@ -46,7 +47,7 @@ export default async function ReviseStatementPage({
       >
         Statement history
       </Link>
-      <h1 className="text-2xl font-semibold">Correct statement evidence</h1>
+      <ScreenHeader scope="Money" title="Correct statement evidence" />
       <p>
         Revision {data.snapshot.version} will remain preserved. Review provider
         changes and supply a reason for the next revision.
