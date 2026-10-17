@@ -153,7 +153,9 @@ Rejected directions: a uniform wall of rounded metric cards; a giant marketing g
 
 ### 5.1 Color system
 
-Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The values below are the approved replacement specification for corresponding visual roles (D01/D03); M1 must verify rendered states and contrast before broad adoption.
+**M1 owner-review refinement (D05):** the first renders received partial approval, not final visual acceptance. The owner requires brighter, warmer light backgrounds and richer complementary color in both themes. The current recommendation is **bright ivory** (`#FFF9ED` canvas, `#FFFEFA` working surface, `#F5EBD9` subtle surface); **soft cream** (`#F7EDD9`, `#FFFBF2`, `#EDE0C7`) is a development-only comparison, not a persisted theme. Violet remains primary; teal, blue, amber and plum identify modules/supporting content independently of feedback status. Current token contracts and actual rendered evidence are in the [M1 guide](REDESIGN_M1_COMPONENT_GUIDE.md) and [review index](verification/assets/redesign-m1/README.md). The earlier palette below is the first approved proposal, refined by this owner instruction; final approval of the new renders remains pending.
+
+Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The table below preserves the first approved proposal (D01/D03); D05 and the current M1 component guide refine its light roles and add complementary/capsule pairs. Verify the current rendered states and contrast before broad adoption.
 
 | Semantic role              | Light                  | Dark                  | Intended use                                         |
 | -------------------------- | ---------------------- | --------------------- | ---------------------------------------------------- |
@@ -204,6 +206,8 @@ Use System/Light/Dark with the current workspace preference/version contract. Pr
 ## 6. Application frame, navigation and shared interaction contracts
 
 ### 6.1 Navigation model
+
+**Mandatory refinement from M1 owner review:** use an opaque, elevated **floating navigation capsule**, with icon-and-label destinations and a distinct active marker. Desktop integrates the module switcher in the capsule; mobile floats Home / Calendar / Modules / More away from the edges, reserves safe-area/content space and yields to full-screen tasks and editing/keyboard space. At short/high-zoom viewports it may enter document flow so every control remains reachable. This requirement supersedes any reading of earlier guidance that would make floating navigation optional. M1 prototypes it only; M2 implements the real capability-aware shell/directory/routing. Avoid decorative blur-heavy glass, not the required floating geometry.
 
 Use a **module switcher inside the application work area**, not a permanent global sidebar. A compact utility frame provides Home, the current module switcher, Find a screen, contextual Add, and Account. The module's title, local sections and actions live directly above its content. A secondary panel is appropriate for selected-record detail or Settings categories; removing the global sidebar is not a ban on useful local navigation.
 
@@ -363,6 +367,8 @@ Account detail has a compact balance header and Activity/Reconciliation history 
 Reconciliation is three steps in one task: enter observed balance/date → compare with recorded balance → choose the existing explicit adjustment/review action if needed. Display observed, recorded and difference in aligned columns, then relevant transactions. A match shows “Matches”; a mismatch never triggers an automatic adjustment. Preserve exact equity classification and historical evidence. Mobile stacks the three labeled values above the transaction list.
 
 ### 7.4 Income, expense and transfer entry — MO4, MO5
+
+**M1 owner-review requirement for M3:** mobile expense create/edit is a dedicated full-screen task, followed by a **distinct review view** of exact effects. Do not show an extensive review summary beside/below the entire editable form. Edit returns to the same in-memory draft, including optional notes; required fields, splits, fees, acknowledgements, dates and consequences remain available. Task actions have reserved space and must not compete with the capsule or software keyboard. Confirmation, submitting, accepted, validation, stale and unknown-outcome behavior retain the existing command identity/payload/retry contracts. M1 supplies synthetic compositions only; actual create/edit routes and financial workflows are M3 work.
 
 Use a task title and source context rather than a generic “Add” modal. The form's essential fields come first: amount, date, funding/destination and description. Income and expense remain distinct intents; a receipt is not automatically income. Preserve all existing sender/source, merchant, reference, notes and classification fields in meaningful groups.
 

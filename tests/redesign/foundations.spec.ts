@@ -8,7 +8,7 @@ mkdirSync(evidence, { recursive: true });
 const names = {
   home: "A little clarity for your day.",
   activity: "Financial activity",
-  expense: "Review expense",
+  expense: "Add expense",
   migration: "Review template migration",
   states: "Shared interaction states",
 };
@@ -20,10 +20,17 @@ async function openProof(
   theme: "light" | "dark" = "light",
 ) {
   await page.goto(`/dev/design?screen=${screen}`);
+  // Native details can toggle before hydration and then replay the click.
+  await expect(page.locator("[data-review-ready]")).toHaveAttribute(
+    "data-review-ready",
+    "true",
+  );
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     names[screen],
   );
+  await page.getByTestId("review-tools").locator("summary").click();
   await page.getByLabel("Theme", { exact: true }).selectOption(theme);
+  await page.getByTestId("review-tools").locator("summary").click();
   await expect(page.locator("html")).toHaveClass(new RegExp(theme));
   await page.evaluate(() => document.fonts.ready);
   // Hide only the development server's own diagnostics badge in review images.
@@ -34,8 +41,11 @@ async function checkReflow(page: Page) {
   const sizes = await page.evaluate(() => ({
     viewport: innerWidth,
     document: document.documentElement.scrollWidth,
+    main: document.querySelector("main")!.scrollWidth,
+    mainWidth: document.querySelector("main")!.clientWidth,
   }));
   expect(sizes.document).toBeLessThanOrEqual(sizes.viewport);
+  expect(sizes.main).toBeLessThanOrEqual(sizes.mainWidth);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -73,7 +83,10 @@ for (const width of [320, 768, 1440]) {
           .analyze();
         expect(result.violations).toEqual([]);
         expect(errors).toEqual([]);
-        if (screen !== "states" && width !== 768)
+        if (
+          (screen !== "states" && width !== 768) ||
+          (screen === "states" && width === 1440)
+        )
           await page.screenshot({
             path: resolve(evidence, `${screen}-${theme}-${width}.png`),
             fullPage: true,
@@ -175,7 +188,9 @@ test("confirmation starts on Cancel; menu arrows skip disabled items; help resto
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(help).toBeFocused();
-  const disclosure = page.locator("summary");
+  const disclosure = page
+    .locator("summary")
+    .filter({ hasText: "Definitions and source context" });
   await disclosure.focus();
   await page.keyboard.press("Enter");
   await expect(
@@ -197,7 +212,7 @@ test("mobile financial selection opens one full detail and filters use explicit 
   await page.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(page.getByRole("listitem")).toHaveCount(8);
   await page
-    .getByRole("link", { name: "View record", exact: true })
+    .getByRole("link", { name: /^Open record:/ })
     .first()
     .click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -218,7 +233,9 @@ test("expense fixture distinguishes review, submitting, receipt and unresolved o
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await openProof(page, "expense", "dark");
-  await page.getByRole("button", { name: "Edit entry" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Exact effects" }),
+  ).toHaveCount(0);
   await page.getByLabel("Description (required)", { exact: true }).fill("");
   await page
     .getByRole("button", { name: "Review expense", exact: true })
@@ -256,6 +273,7 @@ test("expense fixture distinguishes review, submitting, receipt and unresolved o
     path: resolve(evidence, "expense-confirmed-dark-320.png"),
     fullPage: true,
   });
+  await page.getByText("Fixture response controls", { exact: true }).click();
   await page
     .getByLabel("Inspect response presentation")
     .selectOption("unknown-outcome");
@@ -297,14 +315,62 @@ test("migration fixture retains committed batches after cancel and resumes bound
   ).toBeVisible();
 });
 
+for (const width of [320, 1440]) {
+  test(`ivory and cream use the same rendered proof without a new saved preference · ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openProof(page, "home");
+    await expect(page.locator(".design-proof")).toHaveCSS(
+      "background-color",
+      "rgb(255, 249, 237)",
+    );
+    await page.getByTestId("review-tools").locator("summary").click();
+    await page
+      .getByLabel("Light background (review only)")
+      .selectOption("cream");
+    await page.getByTestId("review-tools").locator("summary").click();
+    await expect(page.locator(".design-proof")).toHaveCSS(
+      "background-color",
+      "rgb(247, 237, 217)",
+    );
+    await expect(
+      page.getByText("PHP 42,875.50", { exact: true }),
+    ).toBeVisible();
+    await checkReflow(page);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    expect(
+      await page.evaluate(() =>
+        Object.keys(localStorage).filter((key) =>
+          /cream|ivory|treatment/.test(key),
+        ),
+      ),
+    ).toEqual([]);
+    await page.screenshot({
+      path: resolve(evidence, `home-cream-light-${width}.png`),
+      fullPage: true,
+    });
+  });
+}
+
 test("System theme follows media, reduced motion removes transitions, focus and 400% equivalent reflow remain", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await openProof(page, "states", "dark");
+  await page.getByTestId("review-tools").locator("summary").click();
   await page.getByLabel("Theme", { exact: true }).selectOption("system");
+  await page.getByTestId("review-tools").locator("summary").click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   const primary = page.getByRole("button", { name: "Primary action" });
+  // Establish actual keyboard modality after closing the native review toolbar.
+  await page.keyboard.press("Tab");
   await primary.focus();
   const style = await primary.evaluate((element) => {
     const computed = getComputedStyle(element);
@@ -331,6 +397,207 @@ test("System theme follows media, reduced motion removes transitions, focus and 
 });
 
 for (const theme of ["light", "dark"] as const) {
+  for (const width of [320, 1440]) {
+    test(`floating capsule destinations, focus and clear content space · ${theme} · ${width}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openProof(page, "home", theme);
+      const navigation = page.getByRole("navigation", {
+        name: "Product navigation prototype",
+      });
+      const active = navigation.filter({ visible: true });
+      await expect(active).toHaveCount(1);
+      const home = active.getByRole("link", { name: "Home", exact: true });
+      await expect(home).toHaveAttribute("aria-current", "page");
+      await expect(home).toHaveCSS("background-color", "rgb(216, 196, 250)");
+      for (const name of ["Home", "Calendar"]) {
+        const link = active.getByRole("link", { name, exact: true });
+        expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+      }
+      const modules = active.getByRole("button", { name: /^Modules/ });
+      await modules.focus();
+      await page.keyboard.press("Enter");
+      const sheet = page.getByRole("dialog", {
+        name: "Modules · navigation prototype",
+      });
+      await expect(sheet).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(modules).toBeFocused();
+      if (width === 320) {
+        await page
+          .locator(".design-proof")
+          .evaluate((element) =>
+            (element as HTMLElement).style.setProperty(
+              "--proof-safe-bottom",
+              "34px",
+            ),
+          );
+        const box = (await active.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(12);
+        expect(900 - box.y - box.height).toBeGreaterThanOrEqual(34);
+        expect(
+          (await page.locator("main").boundingBox())!.y +
+            (await page.locator("main").boundingBox())!.height,
+        ).toBeLessThanOrEqual(box.y);
+        const last = page.getByRole("link", { name: /^Open record:/ }).last();
+        await last.focus();
+        await last.scrollIntoViewIfNeeded();
+        const item = (await last.boundingBox())!;
+        expect(item.y + item.height).toBeLessThanOrEqual(box.y);
+      }
+      await active.getByRole("link", { name: "Calendar", exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        "Today, at a glance",
+      );
+      await expect(
+        page
+          .getByRole("navigation", { name: "Product navigation prototype" })
+          .filter({ visible: true })
+          .getByRole("link", { name: "Calendar" }),
+      ).toHaveAttribute("aria-current", "page");
+    });
+
+    test(`separate expense entry/review retains draft and leaves actions clear · ${theme} · ${width}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openProof(page, "expense", theme);
+      await expect(
+        page.getByRole("heading", { name: "Exact effects" }),
+      ).toHaveCount(0);
+      await page
+        .getByLabel("Notes", { exact: true })
+        .fill("Keep this synthetic draft note.");
+      if (width === 320 && theme === "light")
+        await page.screenshot({
+          path: resolve(evidence, "expense-entry-more-light-320.png"),
+          fullPage: true,
+        });
+      await page
+        .getByRole("button", { name: "Review expense", exact: true })
+        .click();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        "Review expense",
+      );
+      await expect(page.getByRole("textbox")).toHaveCount(0);
+      await expect(
+        page.getByText("Keep this synthetic draft note.", { exact: true }),
+      ).toBeAttached();
+      await checkReflow(page);
+      expect(
+        (
+          await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+            .analyze()
+        ).violations,
+      ).toEqual([]);
+      // Capture the canonical synthetic review as well as the edited-draft check.
+      await page.goto("/dev/design?screen=expense&stage=review");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        "Review expense",
+      );
+      await page.evaluate(() => document.fonts.ready);
+      await page.addStyleTag({ content: "nextjs-portal { display: none; }" });
+      await page.screenshot({
+        path: resolve(evidence, `expense-review-${theme}-${width}.png`),
+        fullPage: true,
+      });
+      if (width === 320) {
+        await expect(
+          page
+            .getByRole("navigation", { name: "Product navigation prototype" })
+            .filter({ visible: true }),
+        ).toHaveCount(0);
+        const actions = page.getByLabel("Expense task actions");
+        const body = page.getByTestId("expense-task-body");
+        expect(
+          (await body.boundingBox())!.y + (await body.boundingBox())!.height,
+        ).toBeLessThanOrEqual((await actions.boundingBox())!.y);
+        await body.evaluate((element) => {
+          element.scrollTop = element.scrollHeight;
+        });
+        await expect(
+          page.getByText("Remaining to allocate", { exact: true }),
+        ).toBeInViewport();
+        if (theme === "light")
+          await page.screenshot({
+            path: resolve(evidence, "expense-review-effects-light-320.png"),
+            fullPage: true,
+          });
+      }
+      await page.getByRole("button", { name: "Edit entry" }).click();
+      await page
+        .getByLabel("Notes", { exact: true })
+        .fill("Retained after review");
+      await page
+        .getByRole("button", { name: "Review expense", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Edit entry" }).click();
+      await expect(page.getByLabel("Notes", { exact: true })).toHaveValue(
+        "Retained after review",
+      );
+      if (width === 320) {
+        const field = page.getByLabel("Description (required)");
+        await field.focus();
+        await field.scrollIntoViewIfNeeded();
+        expect(
+          (await field.boundingBox())!.y + (await field.boundingBox())!.height,
+        ).toBeLessThanOrEqual(
+          (await page.getByLabel("Expense task actions").boundingBox())!.y,
+        );
+      }
+    });
+  }
+
+  test(`keyboard-space policy and short viewport fallback · ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await openProof(page, "activity", theme);
+    await page.getByLabel("Funding source").focus();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Product navigation prototype" })
+        .filter({ visible: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Apply filters" }).focus();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Product navigation prototype" })
+        .filter({ visible: true }),
+    ).toHaveCount(1);
+    await page.setViewportSize({ width: 320, height: 400 });
+    await checkReflow(page);
+    const nav = page
+      .getByRole("navigation", { name: "Product navigation prototype" })
+      .filter({ visible: true });
+    await nav.getByRole("link", { name: "Home", exact: true }).focus();
+    await expect(
+      nav.getByRole("link", { name: "Home", exact: true }),
+    ).toBeFocused();
+    await page.goto("/dev/design?screen=expense");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Add expense",
+    );
+    await page.addStyleTag({ content: "html { font-size: 200%; }" });
+    await checkReflow(page);
+    await page.getByLabel("Notes", { exact: true }).fill("Large-text fixture");
+    const review = page.getByRole("button", {
+      name: "Review expense",
+      exact: true,
+    });
+    await review.scrollIntoViewIfNeeded();
+    await expect(review).toBeInViewport();
+    await review.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Review expense",
+    );
+    await expect(
+      page.getByRole("button", { name: "Confirm expense (fixture)" }),
+    ).toBeEnabled();
+  });
+
   test(`mobile overlays stay in the viewport and retain accessible content · ${theme}`, async ({
     page,
   }) => {

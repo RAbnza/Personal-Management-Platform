@@ -2,6 +2,14 @@
 
 October 17, 2026 (Asia/Manila). **M1 only: implemented and technically checked; owner visual sign-off pending.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
+## Owner review revision before M2
+
+The owner reviewed `8f0bab785af69b612901fd3dc868953cf90920de` and partially approved overall financial activity layouts, migration, interaction states and broad direction. **Final visual approval was not granted.** This revision implements D05's required refinements on the same branch: bright ivory versus soft cream renders, richer violet/teal/blue/amber/plum roles, floating desktop/mobile capsules, explicit record-link affordances and separate expense entry/review task views with retained notes/description. The latest renders await **another owner review**; partial approval of the earlier structure is not approval of these new visuals.
+
+Recommend **bright ivory** for a brighter, airy work area and strong separation from content; soft cream is a warmer comparison, not a new persistent theme. All colors remain centralized. No new dependencies, actual shell integration, real expense routes, financial commands/services, schema or CI changes. M2 owns real capsule navigation/capability/authentication/directory behavior. M3 owns dedicated mobile expense create/edit, explicit review, draft retention and authoritative result/recovery through unchanged contracts.
+
+The mobile capsule has reserved viewport space, not content underneath it; task entry/review instead uses a dedicated scroll body and a separate action area. Focused editable controls yield capsule space, and short/high-zoom viewports use document flow. These are tested prototype policies; real software keyboards/safe-area devices and manual assistive technology remain unverified. See the [current review index](verification/assets/redesign-m1/README.md) and [revision verification](verification/REDESIGN_M1_RESULTS.md#owner-review-revision-verification) for actual checks and limitations. The original delivery record below remains historical where marked.
+
 ## Baseline and scope
 
 Started with a clean `main` at the approved planning commit `265c3f2f64e1539e2b4279f3e245282358841d3c`; fetched origin and confirmed the same remote baseline. Implementation branch: `feat/redesign-m1-foundations`. The pushed commit is the commit containing this handoff (resolve with `git rev-parse HEAD` and `git ls-remote origin refs/heads/feat/redesign-m1-foundations`); the completion report records its exact SHA. No automatic merge.
@@ -21,7 +29,7 @@ No changes to `src/modules`, domain services/calculations, database/schema/migra
 
 ## Review the actual renders
 
-Open the [screenshot index](verification/assets/redesign-m1/README.md): 16 light/dark desktop/mobile compositions and one expense receipt, about 2.4 MB total. All are synthetic browser captures. Intermediate 768px views are tested and reproducible without retaining another binary set.
+Open the [screenshot index](verification/assets/redesign-m1/README.md) for refreshed light/dark desktop/mobile compositions, ivory/cream comparisons, separate expense review and interaction states. All are synthetic browser captures. Mobile images now show the actual bounded viewport with independently scrollable content; desktop images show complete composition. Intermediate 768px views are tested and reproducible.
 
 Run `pnpm dev --port 3200`, then visit `http://localhost:3200/dev/design`. Home demonstrates asymmetric snapshot/attention/activity composition; financial activity switches between one desktop table/detail and one compact mobile list with a full detail destination; expense demonstrates draft/review/validation/submitting/accepted/uncertain presentation; migration demonstrates mapping, bounded samples, preserved history, exact committed counts, cancellation and explicit resume.
 
@@ -32,11 +40,11 @@ Proof actions are clearly labeled fixtures. Expense confirmation requires an exp
 Final executed checks and cost observations are recorded in [verification results](verification/REDESIGN_M1_RESULTS.md). Reproduce with:
 
 ```powershell
-pnpm exec vitest run tests/unit/button.component.test.tsx tests/unit/panel.component.test.tsx tests/unit/theme-select.component.test.tsx tests/unit/workspace-theme-select.component.test.tsx tests/unit/app-shell.component.test.tsx tests/unit/transaction-create-form.component.test.tsx tests/unit/financial-action-review-form.component.test.tsx tests/unit/trackers.component.test.tsx tests/unit/redesign-patterns.component.test.tsx tests/unit/design-proof-gate.test.ts --maxWorkers=1
+pnpm exec vitest run tests/unit/button.component.test.tsx tests/unit/panel.component.test.tsx tests/unit/theme-select.component.test.tsx tests/unit/workspace-theme-select.component.test.tsx tests/unit/app-shell.component.test.tsx tests/unit/redesign-patterns.component.test.tsx tests/unit/design-proof-gate.test.ts --maxWorkers=1
 pnpm exec playwright test --config=playwright.redesign.config.ts
 pnpm lint
 pnpm typecheck
-pnpm format:check
+pnpm exec prettier --check src/app/dev/design/page.tsx src/app/dev/design/proofs.tsx src/app/dev/design/expense-proof.tsx src/app/dev/design/product-navigation.tsx src/app/dev/design/proofs.module.css src/components/patterns/navigation-capsule.tsx src/components/patterns/work-area.tsx src/styles/tokens.css tests/redesign/foundations.spec.ts
 pnpm build
 ```
 
@@ -44,7 +52,7 @@ The isolated browser config starts its own dev server, needs no database/worker/
 
 Verified browser behavior includes text contrast in real normal/hover/pressed/disabled controls, readable labels, error associations, unknown versus zero, visible focus, modal containment/restoration, safe initial confirmation focus, menu enabled-item navigation, native disclosures, selected-row cues, one active responsive list, explicit filters, 320px reflow, 200% text, 400%-equivalent CSS viewport, forced-color focus, System theme and reduced motion. Axe was run against every proof/theme/width combination. Visual inspection additionally caught a compressed mobile select and a hidden focal amount that automated token calculations alone would have missed.
 
-Existing financial form tests verify exact payloads, review/confirmation and retry behavior across the changed primitive boundary. Initial concurrent build/test execution caused unit test timeouts; affected files were rerun with one worker without changing assertions or time budgets. An initial matcher test used the documented but absent Next test export; corrected to the installed API. All corrected checks must pass before commit.
+The original M1 financial form checks verified exact payloads, review/confirmation and retry behavior across its changed primitive boundary; the revision does not modify those forms or primitives and reruns the 31 affected foundation/component checks above. Initial concurrent build/test execution caused unit test timeouts; affected files were rerun with one worker without changing assertions or time budgets. An initial matcher test used the documented but absent Next test export; corrected to the installed API. All corrected checks must pass before commit.
 
 Excluded by impact: complete V1–V3 suites, database/integration/financial service reacceptance, containers, backups/recovery, notification workers and full household performance campaign. None of those implementations changed. No new production/CI or full-app accessibility certification is claimed.
 
@@ -52,7 +60,7 @@ Excluded by impact: complete V1–V3 suites, database/integration/financial serv
 
 The semantic table remains native; no speculative table sorting or second server-state lifecycle was installed. Radix additions are version-aligned to existing Dialog. See [component guide](REDESIGN_M1_COMPONENT_GUIDE.md) for dependencies, tokens and use contracts.
 
-The detail split uses 1280px rather than forcing it at 1024px; this keeps a useful 600px list and 340–400px detail region. Below it, the proof opens a full detail destination. Later domains must preserve their canonical URLs and safe return context; the proof's `/dev/design` query parameters are not a proposed app navigation contract. Development proof navigation is a review toolbar, not the M2 module switcher or mobile dock.
+The approved detail split remains at 1280px rather than forcing it at 1024px; this keeps a useful 600px list and 340–400px detail region. Below it, the proof opens a full detail destination. Later domains must preserve their canonical URLs and safe return context; `/dev/design` query parameters are review-only. The collapsed review toolbar is distinct from the product capsule prototype. Its representative module/More disclosures and single Calendar sample do not implement the real M2 directory or M4 Calendar.
 
 Remaining owner checkpoint: inspect hierarchy, warmth, density, narrow-screen reading effort, exact financial review clarity and migration cancellation/resume wording. Record feedback and resolve it before M2. No visual acceptance is inferred from passing tests or screenshots.
 

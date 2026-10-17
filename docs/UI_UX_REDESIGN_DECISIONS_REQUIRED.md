@@ -21,6 +21,7 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 | D02 | Working identity / final branding | **Personal workspace APPROVED**; final name, wordmark, logo and native branding deferred | No |
 | D03 | Complete visual identity | **APPROVED**; violet/lavender, warm neutrals, restrained accents, Geist, semantic tokens and accessible light/dark modes | No |
 | D04 | Balanced information density | **APPROVED**; readable everyday use, rich desktop records and adaptive mobile layouts | No |
+| D05 | M1 owner review refinements | **REQUIRED**; brighter light alternatives, richer accents, floating capsules and separate mobile expense entry/review; revised renders await approval | Final M1 visual sign-off pending |
 | F01 | Windows/Android runtime and code reuse | **DEFERRED** to platform architecture planning | No |
 | F02 | Local profile and online identity | **DEFERRED** to platform architecture planning | No |
 | F03 | Device security, encryption and recovery | **DEFERRED** to platform architecture planning | No |
@@ -30,6 +31,14 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 | F07 | Native reminders, permissions and lifecycle | **DEFERRED** to platform architecture planning | No |
 
 ## 2. Approved current redesign direction
+
+### D05 — M1 owner review refinements before M2
+
+The owner partially approved the first M1 proofs at `8f0bab785af69b612901fd3dc868953cf90920de`: overall financial activity layouts, tracker migration, interaction states and broad redesign direction. Final visual approval was **not** granted. This newer feedback refines D01/D03/D04; the earlier light palette and navigation proposal are not immutable.
+
+Required refinements: compare bright warm ivory with soft cream in real renders and recommend one; increase purposeful violet, teal, blue, amber and plum variation in both themes; replace text-only record affordances with recognizable native links; and demonstrate **floating capsule navigation as a mandatory product pattern**. Desktop uses an elevated compact icon-and-label capsule with integrated module switching. Mobile uses detached Home / Calendar / Modules / More with safe-area space, readable labels, focus and keyboard/zoom fallback. Opaque floating navigation is required; decorative glass and wallpaper remain discouraged.
+
+M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide capsule navigation, capability-aware routing, authentication and directory integration. **M3** owns dedicated full-screen mobile expense create/edit, a separate explicit review, draft-preserving Edit, confirmation and authoritative recovery states. No real financial routes, payloads, command identities or services change in this revision. Revised visuals remain **pending owner re-review**, with no automatic merge or next-milestone start. See [review evidence](verification/assets/redesign-m1/README.md).
 
 ### D01 — Approved redesign direction and implementation boundary
 

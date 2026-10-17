@@ -55,5 +55,75 @@
     ],
     "throttling": "none; local development runtime and concurrent compilation",
     "note": "Not a production timing, hydration, transfer, CLS or user-device budget measurement"
+  },
+  "ownerReviewRevision": {
+    "baselineCommit": "8f0bab785af69b612901fd3dc868953cf90920de",
+    "status": "Pending owner visual approval; M2 and M3 not started",
+    "unitTests": {
+      "passed": 31,
+      "files": 7
+    },
+    "browserTests": {
+      "passed": 52,
+      "finalRunMinutes": 2.2
+    },
+    "screenshots": {
+      "count": 27,
+      "totalBytes": 2753936
+    },
+    "productionProbe": {
+      "browser": "Microsoft Edge (Chromium)",
+      "productionProofStatus": 404,
+      "existingSignIn": [
+        {
+          "width": 320,
+          "theme": "light",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "axeViolations": 0,
+          "reflow": true,
+          "invalidFieldFocusAndAssociation": true
+        }
+      ],
+      "buildId": "obYrcJrfW0hskpF_AR_es",
+      "gzipClientReferenceBytes": 140626
+    },
+    "signInClosureDifferenceFromOriginalM1Bytes": 0,
+    "developmentProofObservation": {
+      "samples": 30,
+      "navigationMinMs": 576.1000000089407,
+      "navigationMedianMs": 712.6500000059605,
+      "navigationMaxMs": 10384.90000000596,
+      "scriptResourceBytesRange": [
+        950792,
+        950792
+      ],
+      "throttling": "none; local development runtime and concurrent lint work",
+      "note": "Not a production timing, hydration, transfer, CLS or user-device budget measurement"
+    },
+    "limitations": [
+      "Owner re-review pending",
+      "No manual screen-reader or real mobile/IME testing",
+      "Existing broad tracing and Windows standalone symlink warnings; no standalone deployment certification"
+    ]
   }
 }

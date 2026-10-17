@@ -2,22 +2,32 @@
 
 Implementation date: October 17, 2026 (Asia/Manila). Authority: approved plan sections 5, 6, 9, 11 and 12. These foundations are implemented; owner visual acceptance remains pending. See [handoff and verification](REDESIGN_M1_HANDOFF.md) before starting M2.
 
+**Owner review revision (D05):** overall activity layouts, migration and state patterns received partial approval; final approval was withheld. The revised palette, floating capsules, record affordances and separate expense task/review now require another owner review. These are M1 foundations/prototypes, not an M2 shell or M3 route conversion.
+
 ## Tokens and styling
 
 `src/styles/tokens.css` remains the single semantic theme source, exposed through Tailwind 4's `@theme inline`. Existing aliases remain compatible. Do not add a parallel palette, per-screen hex colors, opacity-reduced body copy or another styling system.
 
 | Role | Light | Dark |
 | --- | --- | --- |
-| Canvas / working surface | `#F6F5F2` / `#FFFFFF` | `#15181D` / `#20252C` |
-| Elevated / subtle | `#FFFFFF` / `#EFEDE8` | `#2B323B` / `#262D35` |
+| Canvas / working surface | `#FFF9ED` / `#FFFEFA` | `#15181D` / `#20252C` |
+| Elevated / subtle | `#FFFFFF` / `#F5EBD9` | `#2B323B` / `#262D35` |
 | Text / secondary text | `#22252B` / `#5E6570` | `#F2F4F5` / `#B5BEC8` |
 | Primary / label | `#6B469C` / white | `#C8B6F2` / `#1B1B22` |
 | Hover / pressed | `#5D3D88` / `#503474` | `#BCA5EE` / `#B09AE0` |
-| Selection / selection text | `#EEEAF5` / violet | `#332A45` / lavender |
-| Control border / focus | `#7D8490` / violet | `#8994A3` / lavender |
-| Decorative divider | `#DDDAD4` | `#3A424C` |
+| Selection / selection text | `#EDE3FA` / violet | `#332A45` / lavender |
+| Control border / focus | `#887D6D` / violet | `#8994A3` / lavender |
+| Decorative divider | `#DFD3BF` | `#3A424C` |
 | Teal / tint | `#226851` / `#E7F2ED` | `#90D5B7` / `#173A30` |
 | Warm / tint | `#946119` / `#FFF2D7` | `#F0CA7E` / `#3A2E16` |
+| Blue / tint | `#245E87` / `#E5F1FA` | `#A7D4F7` / `#1A3348` |
+| Plum / tint | `#80456F` / `#F4E5EE` | `#E7B8DC` / `#3D2B40` |
+| Capsule / label | `#25272F` / `#F7F3EC` | `#2B323B` / `#F2F4F5` |
+| Capsule active / label | `#D8C4FA` / `#292033` | `#D8C4FA` / `#292033` |
+
+**Recommend bright ivory:** it is warm and visibly distinct from working surfaces while leaving more visual air around dense records. **Soft cream** (`#F7EDD9` canvas, `#FFFBF2` surface, `#EDE0C7` subtle) is a viable, richer alternative for owner comparison. Both are real renders of the same fixture. The alternative is scoped by `data-light-treatment="cream"` in this same token file and selected only in the development review controls/query; it creates no persisted theme or workspace setting. Dark treatment is unchanged by that selector.
+
+Use blue for Agenda support, teal for tracker continuation, plum for Career/module context and amber for selected supporting metrics. Category icon containers distinguish record types without assigning success/failure to their hue. Feedback retains its separate authoritative roles. No gradients, illustrations, glass dependency or new library were added.
 
 Feedback uses the existing success, warning, danger, information and neutral role pairs. Accent identity is independent of success/failure. Focal surfaces are charcoal with explicitly paired light text in both themes; `bg-focal-surface` and `text-focal` have distinct names to avoid a color/type utility collision. Chart colors remain categorical, separate from status.
 
@@ -52,6 +62,7 @@ These are owned Radix-backed, shadcn-style recipes within the existing component
 | Pattern | Caller responsibility |
 | --- | --- |
 | `WorkArea`, `ScreenHeader` | One main landmark in the page/shell; one page heading, scope, actions, local navigation and description. Do not wrap every section in a Panel. Editor variant bounds complex reviews. |
+| `NavigationCapsule`, `CapsuleLink`, `capsuleItem` | Opaque pill geometry, paired readable colors, elevation, 48px actions, icon-plus-label children and explicit `aria-current="page"`/`"true"` active styling. Native anchors remain navigation; Radix triggers remain actions. Geometry owns no route registry, authorization or preference. Used only by the M1 product-navigation prototype; M2 owns real integration. |
 | `DetailLayout` | Supply only the active detail presentation. Split begins at 1280px so the list retains at least 600px. Below that, navigate to the canonical detail route; do not retain an active duplicate mobile/desktop view. The domain adapter owns return URL, safe filters, scroll/focus restoration and authorization. |
 | `RecordTable<T>` | Stable `rowKey`, domain columns, already ordered bounded records, exact strings, empty content and optional selected key. Native headers/caption; numeric alignment; contained, labeled, keyboard-reachable horizontal region. Selected row has weight and background cues. No implied search, sorting, filtering or selection across pages. |
 | `CompactRecordList` | Title, exact value/status, date, source/account/scope metadata and an explicit detail link. Choose a single accessible representation at a breakpoint. |
@@ -62,6 +73,10 @@ These are owned Radix-backed, shadcn-style recipes within the existing component
 | `CommandStatus` | Explicit draft, review, submitting, confirmed, validation-failure, stale-revision, unknown-outcome and partial-completion states. Workflow supplies consequences and supported recovery actions. Confirmed requires accepted evidence; unknown remains inline. The workflow owns input preservation, summary/invalid-field focus, command IDs, revision checks and exact retry semantics. |
 
 Cursor examples in the current application are account history, Career and trackers. Card lists/statements use offset plus server `hasMore`. Financial activity itself remains a fixed latest-100 list; the proof deliberately does not invent pagination for it. Do not infer a global total from loaded records.
+
+The prototype demonstrates a floating desktop capsule with module disclosure and a detached bottom Home / Calendar / Modules / More capsule. Mobile content has an independent scroll area ending **above** the capsule; safe-area clearance is explicit. Focused editable controls hide the mobile capsule, and short/zoomed viewports place it in document flow. The dedicated expense task replaces mobile product navigation with Back and a reserved action area: entry and exact review never coexist. Its scrollable body and actions do not overlap; description and notes remain in component state across Edit/Review. Fixture amount/date are read-only and labeled; no domain calculations or commands are created. Real keyboard/device behavior still needs device checks in M2/M3.
+
+Record navigation retains exact metadata and source destinations, with an icon container/chevron in desktop title links and an outlined Details-plus-chevron link on compact records. Accessible names identify the record; there is no whole-row click handler or nested interactive target.
 
 ## Dependency choices
 

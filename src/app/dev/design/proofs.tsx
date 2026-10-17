@@ -1,10 +1,15 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/cn";
 import {
   ArrowDownLeft,
+  House,
+  Wallet,
+  ListChecks,
+  ReceiptText,
+  ChevronRight,
   ArrowRight,
   CalendarDays,
   Check,
@@ -51,17 +56,17 @@ import {
   cursorPage,
 } from "@/components/patterns/list-controls";
 import { Metric, CoverageNotice } from "@/components/patterns/metric";
-import {
-  ReviewSummary,
-  CommandStatus,
-  type CommandState,
-} from "@/components/patterns/review";
-import { activity, money, reviewRows, type ActivityRecord } from "./fixtures";
+import { ReviewSummary, CommandStatus } from "@/components/patterns/review";
+import { activity, money, type ActivityRecord } from "./fixtures";
+import { ExpenseProof } from "./expense-proof";
+import { ProductNavigation } from "./product-navigation";
+import styles from "./proofs.module.css";
 
 const proofUrl = (screen: string, record?: string) =>
   `/dev/design?screen=${screen}${record ? `&record=${record}` : ""}`;
 const link =
   "inline-flex min-h-12 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline";
+const subscribeHydration = () => () => {};
 function ProofLink({
   screen,
   children,
@@ -93,87 +98,199 @@ function useWide() {
 export function DesignProofs({
   screen,
   record,
+  treatment = "ivory",
+  stage = "draft",
 }: {
   screen: string;
   record?: string;
+  treatment?: "ivory" | "cream";
+  stage?: "draft" | "review";
 }) {
   const { theme, setTheme } = useTheme();
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false,
+  );
+  const [lightTreatment, setLightTreatment] = useState(treatment);
   return (
-    <div className="min-h-screen">
+    <div
+      className={cn("design-proof", styles.proof)}
+      data-light-treatment={lightTreatment}
+      data-task={screen === "expense"}
+      data-review-ready={hydrated}
+    >
       <a
         href="#proof-content"
         className="sr-only fixed top-4 left-4 z-(--z-notice) rounded-button bg-primary p-3 text-primary-foreground focus:not-sr-only"
       >
         Skip to design proof
       </a>
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-(--layout-content-max) flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 2xl:px-8">
-          <div>
-            <p className="font-semibold">Personal workspace</p>
-            <p className="text-xs text-muted-foreground">
-              M1 design review · synthetic data
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="proof-theme" className="text-sm">
-              Theme
-            </label>
+      <details className={styles.reviewTools} data-testid="review-tools">
+        <summary>M1 review controls - synthetic previews</summary>
+        <div className={styles.reviewFields}>
+          <FormField label="Design proof" htmlFor="proof-screen">
+            <Select
+              id="proof-screen"
+              value={screen}
+              onChange={(event) =>
+                window.location.assign(proofUrl(event.target.value))
+              }
+            >
+              <option value="home">Home</option>
+              <option value="activity">Financial activity</option>
+              <option value="expense">Expense entry</option>
+              <option value="migration">Tracker migration</option>
+              <option value="states">Interaction states</option>
+              <option value="calendar">Calendar navigation sample</option>
+            </Select>
+          </FormField>
+          <FormField label="Theme" htmlFor="proof-theme">
             <Select
               id="proof-theme"
               value={theme ?? "system"}
-              onChange={(e) => setTheme(e.target.value)}
-              className="w-auto"
+              onChange={(event) => setTheme(event.target.value)}
             >
               <option value="system">System</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </Select>
-          </div>
-        </div>
-      </header>
-      <nav
-        aria-label="Design proofs"
-        className="mx-auto flex max-w-(--layout-content-max) flex-wrap gap-2 px-4 pt-5 sm:px-6 2xl:px-8"
-      >
-        {[
-          ["home", "Home"],
-          ["activity", "Financial activity"],
-          ["expense", "Expense review"],
-          ["migration", "Tracker migration"],
-          ["states", "Interaction states"],
-        ].map(([key, label]) => (
-          <a
-            key={key}
-            href={proofUrl(key!)}
-            aria-current={screen === key ? "page" : undefined}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              screen === key &&
-                "border-primary bg-accent text-accent-foreground",
-            )}
+          </FormField>
+          <FormField
+            label="Light background (review only)"
+            htmlFor="proof-treatment"
           >
-            {label}
-          </a>
-        ))}
-      </nav>
+            <Select
+              id="proof-treatment"
+              value={lightTreatment}
+              onChange={(event) =>
+                setLightTreatment(event.target.value as "ivory" | "cream")
+              }
+            >
+              <option value="ivory">Bright ivory - recommended</option>
+              <option value="cream">Soft cream - alternative</option>
+            </Select>
+          </FormField>
+        </div>
+        <p>
+          No new workspace preference. The alternatives affect light previews
+          only.
+        </p>
+      </details>
+      <ProductNavigation screen={screen} />
       <main id="proof-content" tabIndex={-1}>
         {screen === "activity" ? (
           <ActivityProof {...(record ? { record } : {})} />
         ) : screen === "expense" ? (
-          <ExpenseProof />
+          <ExpenseProof initialStage={stage} />
         ) : screen === "migration" ? (
           <MigrationProof />
         ) : screen === "states" ? (
           <StateProof />
+        ) : screen === "calendar" ? (
+          <CalendarProof />
         ) : (
           <HomeProof />
         )}
       </main>
       <footer className="mx-auto max-w-(--layout-content-max) px-4 py-6 text-xs text-muted-foreground sm:px-6">
-        Development proof · no records are read or written · owner visual
-        sign-off pending
+        Development proof - synthetic data only - revised M1 awaiting owner
+        visual approval
       </footer>
     </div>
+  );
+}
+
+function CalendarProof() {
+  return (
+    <WorkArea>
+      <ScreenHeader
+        title="Today, at a glance"
+        scope="Calendar - navigation prototype"
+        marker={<ModuleMarker module="calendar" />}
+        description="A bounded synthetic destination for judging the floating navigation. Real Calendar integration remains outside M1."
+      />
+      <div className="max-w-xl rounded-dialog bg-blue-surface p-6 text-blue">
+        <h2 className="text-section font-semibold">Portfolio review</h2>
+        <p className="mt-3">17 October 2026 - 14:00 Asia/Manila</p>
+        <p className="mt-2 text-sm">Career source - synthetic event</p>
+      </div>
+    </WorkArea>
+  );
+}
+
+function ModuleMarker({
+  module,
+}: {
+  module: "money" | "calendar" | "trackers" | "home";
+}) {
+  const Icon =
+    module === "money"
+      ? Wallet
+      : module === "calendar"
+        ? CalendarDays
+        : module === "trackers"
+          ? ListChecks
+          : House;
+  const tone =
+    module === "money" || module === "home"
+      ? "bg-accent text-accent-foreground"
+      : module === "calendar"
+        ? "bg-blue-surface text-blue"
+        : "bg-plum-surface text-plum";
+  return (
+    <span className={cn("shrink-0 rounded-panel p-3", tone)}>
+      <Icon aria-hidden="true" className="size-5" />
+    </span>
+  );
+}
+
+function RecordLink({
+  row,
+  compact = false,
+  selected = false,
+}: {
+  row: ActivityRecord;
+  compact?: boolean;
+  selected?: boolean;
+}) {
+  return (
+    <a
+      href={proofUrl("activity", row.id)}
+      aria-label={`Open record: ${row.title}`}
+      aria-current={selected ? "true" : undefined}
+      className={cn(
+        "group inline-flex items-center gap-2 rounded-control font-medium text-link hover:bg-accent focus-visible:outline-ring",
+        compact
+          ? "min-h-12 border border-input bg-surface-subtle px-3 text-sm"
+          : "min-h-8 px-1 text-sm pointer-coarse:min-h-12",
+      )}
+    >
+      {compact ? (
+        <span>Details</span>
+      ) : (
+        <>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "rounded-marker p-1",
+              row.kind === "Transfer"
+                ? "bg-blue-surface text-blue"
+                : row.kind === "Income"
+                  ? "bg-teal-surface text-teal"
+                  : row.kind === "Refund"
+                    ? "bg-plum-surface text-plum"
+                    : "bg-accent text-accent-foreground",
+            )}
+          >
+            <ReceiptText className="size-4" />
+          </span>
+          <span>{row.title}</span>
+        </>
+      )}
+      <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+      {selected ? <span className="sr-only">Selected record</span> : null}
+    </a>
   );
 }
 
@@ -182,6 +299,7 @@ function HomeProof() {
     <WorkArea>
       <ScreenHeader
         title="A little clarity for your day."
+        marker={<ModuleMarker module="home" />}
         scope="Home · Saturday, 17 October 2026"
         action={
           <a href={proofUrl("expense")} className={buttonVariants()}>
@@ -232,7 +350,7 @@ function HomeProof() {
         </section>
         <section
           aria-labelledby="attention-heading"
-          className="rounded-panel border border-border bg-surface p-5 sm:p-6"
+          className="rounded-dialog border border-blue/30 bg-blue-surface p-5 sm:p-6"
         >
           <div className="flex items-center justify-between gap-3">
             <h2 id="attention-heading" className="text-section font-semibold">
@@ -285,11 +403,7 @@ function HomeProof() {
               value: money(row.minor),
               metadata: `${row.date} · ${row.account}`,
               status: <StatusBadge>{row.kind}</StatusBadge>,
-              action: (
-                <a href={proofUrl("activity", row.id)} className={link}>
-                  View record
-                </a>
-              ),
+              action: <RecordLink row={row} compact />,
             }))}
           />
         </section>
@@ -303,17 +417,21 @@ function HomeProof() {
             </p>
             <ProofLink screen="migration">Review template update</ProofLink>
           </div>
-          <div className="grid grid-cols-2 gap-4 border-t border-border pt-5">
-            <Metric
-              label="Career follow-ups"
-              value="3"
-              context="Due in the next 7 days"
-            />
-            <Metric
-              label="Reading entries"
-              value="120"
-              context="Including archived entries"
-            />
+          <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+            <div className="rounded-panel bg-plum-surface p-4 text-plum">
+              <Metric
+                label="Career follow-ups"
+                value="3"
+                context="Due in the next 7 days"
+              />
+            </div>
+            <div className="rounded-panel bg-warm-surface p-4 text-warm">
+              <Metric
+                label="Reading entries"
+                value="120"
+                context="Including archived entries"
+              />
+            </div>
           </div>
         </section>
       </div>
@@ -368,12 +486,7 @@ function ActivityProof({ record }: { record?: string }) {
       label: "Record",
       cell: (row) => (
         <>
-          <a
-            href={proofUrl("activity", row.id)}
-            className="inline-flex min-h-8 items-center text-sm text-link underline-offset-4 hover:underline pointer-coarse:min-h-12"
-          >
-            {row.title}
-          </a>
+          <RecordLink row={row} selected={row.id === selected.id} />
           <p className="text-xs font-normal text-muted-foreground">
             {row.kind} · {row.state}
           </p>
@@ -409,6 +522,7 @@ function ActivityProof({ record }: { record?: string }) {
       <ScreenHeader
         title="Financial activity"
         scope="Money · Private workspace"
+        marker={<ModuleMarker module="money" />}
         description="Exact account movements, with their original meaning and history."
         action={
           <a href={proofUrl("expense")} className={buttonVariants()}>
@@ -417,7 +531,7 @@ function ActivityProof({ record }: { record?: string }) {
           </a>
         }
       />
-      <div className="flex flex-wrap gap-x-12 gap-y-6 border-y border-border py-5">
+      <div className="flex flex-wrap gap-x-12 gap-y-6 rounded-dialog border border-accent-foreground/20 bg-accent px-5 py-5">
         <Metric
           label="Recorded spending"
           value={money("1262450")}
@@ -491,11 +605,7 @@ function ActivityProof({ record }: { record?: string }) {
                     {row.kind} · {row.state}
                   </StatusBadge>
                 ),
-                action: (
-                  <a href={proofUrl("activity", row.id)} className={link}>
-                    View record
-                  </a>
-                ),
+                action: <RecordLink row={row} compact />,
               }))}
             />
           )}
@@ -515,205 +625,6 @@ function ActivityProof({ record }: { record?: string }) {
   );
 }
 
-function ExpenseProof() {
-  const [state, setState] = useState<CommandState>("review");
-  const [description, setDescription] = useState("Weekly groceries");
-  const heading = useRef<HTMLDivElement>(null);
-  const rows = reviewRows.map((row) =>
-    row.key === "description" ? { ...row, value: description } : row,
-  );
-  const messages: Record<CommandState, string> = {
-    draft:
-      "In-memory fixture. No record exists until an accepted command result.",
-    review:
-      "Check the account, effective date and exact effects before confirming.",
-    submitting:
-      "The submitted summary remains visible. Duplicate confirmation is disabled.",
-    confirmed:
-      "A synthetic accepted receipt is shown. No transaction was sent or persisted.",
-    "validation-failure":
-      "The entered description needs attention. The draft remains available.",
-    "stale-revision":
-      "Reload authoritative context and review again. Keep your input for comparison.",
-    "unknown-outcome":
-      "Keep the original command and payload. Check its status before a safe retry; do not create a second transaction.",
-    "partial-completion":
-      "Use the workflow's confirmed counts and supported resume action.",
-  };
-  return (
-    <WorkArea variant="editor">
-      <ScreenHeader
-        title={
-          state === "confirmed" ? "Expense confirmation" : "Review expense"
-        }
-        scope="Money · Add expense · Synthetic workflow"
-        description="A deliberate review, with cash movement and spending kept distinct."
-      />
-      <div ref={heading} tabIndex={-1}>
-        <CommandStatus state={state}>{messages[state]}</CommandStatus>
-      </div>
-      <div className="grid items-start gap-6 md:grid-cols-[1fr_0.9fr]">
-        <section className="space-y-4">
-          <h2 className="text-section font-semibold">
-            {state === "draft" ? "Expense details" : "Your entry"}
-          </h2>
-          {state === "draft" || state === "validation-failure" ? (
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setState(description.trim() ? "review" : "validation-failure");
-                heading.current?.focus();
-              }}
-              noValidate
-            >
-              <FormField
-                label="Description"
-                htmlFor="expense-description"
-                required
-                error={
-                  state === "validation-failure"
-                    ? "Enter a description."
-                    : undefined
-                }
-              >
-                <Input
-                  id="expense-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </FormField>
-              <FormField
-                label="Amount (fixture)"
-                htmlFor="expense-amount"
-                description="Exact amounts are supplied by the existing domain preview."
-              >
-                <Input
-                  id="expense-amount"
-                  value="1245.30"
-                  readOnly
-                  inputMode="decimal"
-                />
-              </FormField>
-              <FormField label="Paying account" htmlFor="expense-account">
-                <Select id="expense-account">
-                  <option>Everyday wallet</option>
-                </Select>
-              </FormField>
-              <FormField label="Notes" htmlFor="expense-notes">
-                <Textarea id="expense-notes" placeholder="Optional context" />
-              </FormField>
-              <Button type="submit">Review expense</Button>
-            </form>
-          ) : (
-            <>
-              <div className="rounded-panel bg-surface-subtle p-5">
-                <p className="text-sm text-muted-foreground">Purchase amount</p>
-                <p className="numeric-value mt-2 text-focal font-bold">
-                  {money("124530")}
-                </p>
-                <p className="mt-3 font-medium">{description}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  2026-10-17 · Everyday wallet
-                </p>
-              </div>
-              <ReviewSummary
-                title="Category allocation"
-                rows={[
-                  {
-                    key: "groceries",
-                    label: "Groceries",
-                    value: money("124530"),
-                  },
-                  {
-                    key: "remaining",
-                    label: "Remaining to allocate",
-                    value: money("0"),
-                  },
-                ]}
-              />
-            </>
-          )}
-          <Disclosure title="What happens when this is saved?">
-            <p>
-              The existing transaction workflow validates ownership, exact
-              allocations and the workspace revision. An unknown response
-              retains the same command identity. This preview only illustrates
-              its presentation.
-            </p>
-          </Disclosure>
-        </section>
-        <ReviewSummary title="Exact effects" rows={rows}>
-          <p className="text-sm text-muted-foreground">
-            No additional cash deduction for category portions. No liability is
-            created by this cash expense.
-          </p>
-        </ReviewSummary>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
-        <Button
-          variant="secondary"
-          disabled={state === "submitting"}
-          onClick={() => setState("draft")}
-        >
-          Edit entry
-        </Button>
-        {state === "review" ? (
-          <ConfirmationDialog
-            trigger={<Button>Confirm expense (fixture)</Button>}
-            title="Record this expense?"
-            description="Review the exact effects. This synthetic proof will show a submitting state and a fixture receipt."
-            action={
-              <Button onClick={() => setState("submitting")}>
-                Record expense (fixture)
-              </Button>
-            }
-          >
-            <p className="numeric-value mt-4 font-semibold">
-              {money("124530")} from Everyday wallet
-            </p>
-          </ConfirmationDialog>
-        ) : state === "submitting" ? (
-          <>
-            <Button loading loadingLabel="Recording expense…">
-              Record expense (fixture)
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setState("confirmed");
-                heading.current?.focus();
-              }}
-            >
-              Receive accepted fixture
-            </Button>
-          </>
-        ) : state === "confirmed" ? (
-          <ProofLink screen="activity">View fixture record</ProofLink>
-        ) : null}
-      </div>
-      <div className="max-w-sm">
-        <FormField
-          label="Inspect response presentation"
-          htmlFor="command-state"
-        >
-          <Select
-            id="command-state"
-            value={state}
-            onChange={(e) => setState(e.target.value as CommandState)}
-          >
-            {Object.keys(messages).map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
-    </WorkArea>
-  );
-}
-
 function MigrationProof() {
   const [processed, setProcessed] = useState(50);
   const [confirmed, setConfirmed] = useState(false);
@@ -723,6 +634,7 @@ function MigrationProof() {
       <ScreenHeader
         title="Review template migration"
         scope="Trackers · Reading log · Version 2 → 3"
+        marker={<ModuleMarker module="trackers" />}
         description="Move entries deliberately. Every prior definition and entry revision remains available."
         action={
           <Popover

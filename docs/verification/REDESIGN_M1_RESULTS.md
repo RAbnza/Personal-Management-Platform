@@ -2,6 +2,32 @@
 
 October 17, 2026 (Asia/Manila). Scope: design foundations, shared UI and synthetic proofs. Owner visual approval remains pending. See [handoff](../REDESIGN_M1_HANDOFF.md), [contracts](../REDESIGN_M1_COMPONENT_GUIDE.md) and [screenshot index](assets/redesign-m1/README.md).
 
+## Owner review revision verification
+
+Baseline: `8f0bab785af69b612901fd3dc868953cf90920de`, clean local/remote M1 branch. The owner partially approved the activity architecture, migration and interaction patterns, and required warmer/richer palettes, capsule navigation, record affordances and distinct mobile expense task/review. **New renders are pending owner re-review.** M2/M3 implementation remains unstarted.
+
+Focused component/theme/gate checks: **31 passed in 7 files** (redesign-patterns, design-proof-gate, Button, Panel, ThemeSelect, WorkspaceThemeSelect and AppShell). Actual domain form/command code did not change; its previous acceptance evidence below is historical and was not rerun speculatively. The revised browser suite preserves existing assertions for exact values, uncertainty, source links, native controls and migration semantics, and adds palette alternatives, capsule active destinations, safe-area clearance, module focus restoration, draft-preserving separate entry/review and keyboard-space checks. The final browser run passed **52/52 (2.2 minutes)**. Repository-wide ESLint, TypeScript and targeted changed-source Prettier checks passed. The existing full-format baseline remains 139 unchanged files; documentation/lockfile are excluded by the repository prettierignore.
+
+**Current revision results:**
+
+| Check | Actual result |
+| --- | --- |
+| Component/theme/production-gate tests | 31 passed across 7 files; one worker. |
+| Browser proofs and interactions | 52 passed; all 30 screen/theme/width scans, ivory/cream comparisons, capsule navigation and separate expense tasks. Zero axe violations in selected WCAG A/AA tags. |
+| Static checks | Repository-wide lint and typecheck passed; all 9 changed source/test paths pass Prettier; `git diff --check` and local evidence-document link audit pass. |
+| Rendered evidence | 27 PNGs, approximately 2.75 MB; actual synthetic browser renders, manually inspected representative desktop/mobile/theme/task comparisons. |
+| Production build and read-only boundary probe | `pnpm build` passed. Build `obYrcJrfW0hskpF_AR_es`: proof HTTP 404; all four sign-in width/theme cases pass axe, reflow and local invalid-field focus/association. Sign-in client-reference closure **140,626 gzip bytes**, unchanged from original M1. No credential submission. |
+
+Build warnings remain the existing broad tracing patterns in `src/platform/files/local-test-adapters.ts` and Windows standalone EPERM symlink-copy warnings. The local `next start` probe is not standalone packaging/deployment certification. [Measurements](assets/redesign-m1/measurements.json) preserve the original delivery and add an `ownerReviewRevision` record with this build and 30 development observations; no new full performance campaign is claimed.
+
+The capsule tests inject **34px** safe-area clearance and check content/last-record bounds against navigation, 48px targets, native links and keyboard access in both themes. Short viewport and editable-focus behavior simulate keyboard-space pressure; they are not real Android/IME certification. No new persisted background preference, private cache, dependency, real navigation registry or financial command was introduced.
+
+Initial revision browser run: **50/52 passed**. Failures were a formerly unique summary selector matching the new review toolbar too, and a keyboard-focus assertion after native mouse interaction. The selector was scoped and actual keyboard modality established; assertions were preserved. A lint-driven local-variable rename briefly missed one JSX reference and broke prototype rendering; that reference was corrected before the final passing run. A subsequent run passed 51/52 with a pre-hydration native disclosure click timing out; the browser helper now waits for an explicit hydration signal before operating the review toolbar. Final verification reran all 52 checks, including the 200% text/short-viewport task case, without retries or relaxed assertions. An intermediate build was interrupted before completion; only the completed revision build above is verification evidence. Revised screenshots replace the prior files; before/after links point to the original commit rather than duplicating binary artifacts.
+
+## Original M1 delivery evidence (historical)
+
+The following results/costs describe the first delivery at `8f0bab7`; they do not certify the owner-review revision.
+
 | Check | Actual result |
 | --- | --- |
 | Affected existing and new unit/component tests | **49 passed across 10 files**, using `--maxWorkers=1`; existing financial assertions retained. |

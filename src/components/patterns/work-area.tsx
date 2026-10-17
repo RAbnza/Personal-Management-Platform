@@ -31,24 +31,29 @@ export function ScreenHeader({
   description,
   action,
   navigation,
+  marker,
 }: {
   title: string;
   scope: string;
   description?: string;
   action?: ReactNode;
   navigation?: ReactNode;
+  marker?: ReactNode;
 }) {
   return (
     <header className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="mb-2 text-sm text-muted-foreground">{scope}</p>
-          <h1 className="text-page font-semibold tracking-tight">{title}</h1>
-          {description ? (
-            <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
-              {description}
-            </p>
-          ) : null}
+        <div className="flex min-w-0 items-start gap-3">
+          {marker}
+          <div className="min-w-0">
+            <p className="mb-2 text-sm text-muted-foreground">{scope}</p>
+            <h1 className="text-page font-semibold tracking-tight">{title}</h1>
+            {description ? (
+              <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            ) : null}
+          </div>
         </div>
         {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
       </div>

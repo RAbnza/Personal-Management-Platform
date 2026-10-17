@@ -8,12 +8,12 @@
   --brand-pink: #e6bcd4;
 
   /* Core surfaces and text */
-  --background: #f6f5f2;
+  --background: #fff9ed;
   --foreground: #22252b;
-  --surface: #ffffff;
+  --surface: #fffefa;
   --surface-elevated: #ffffff;
-  --surface-subtle: #efede8;
-  --muted: #efede8;
+  --surface-subtle: #f5ebd9;
+  --muted: #f5ebd9;
   --muted-foreground: #5e6570;
 
   /* Primary and secondary actions */
@@ -23,21 +23,21 @@
   --primary-pressed: #503474;
   --primary-border: #6b469c;
 
-  --secondary: #efede8;
+  --secondary: #f5ebd9;
   --secondary-foreground: #22252b;
 
   /* Selection and links */
-  --accent: #eeeaf5;
+  --accent: #ede3fa;
   --accent-foreground: #6b469c;
   --link: #6b469c;
 
   /* Structure and controls */
-  --border: #dddad4;
-  --input: #7d8490;
+  --border: #dfd3bf;
+  --input: #887d6d;
   --ring: #6b469c;
 
   --disabled-foreground: #5e6570;
-  --disabled-border: #dddad4;
+  --disabled-border: #dfd3bf;
 
   --overlay: rgb(21 24 29 / 0.45);
 
@@ -63,7 +63,7 @@
   --information-surface: #edf4ff;
 
   --neutral: #5e6570;
-  --neutral-surface: #efede8;
+  --neutral-surface: #f5ebd9;
 
   /* Data visualization */
   --chart-1: #6b469c;
@@ -78,6 +78,15 @@
   --teal-surface: #e7f2ed;
   --warm: #946119;
   --warm-surface: #fff2d7;
+  --blue: #245e87;
+  --blue-surface: #e5f1fa;
+  --plum: #80456f;
+  --plum-surface: #f4e5ee;
+  --navigation: #25272f;
+  --navigation-foreground: #f7f3ec;
+  --navigation-active: #d8c4fa;
+  --navigation-active-foreground: #292033;
+  --navigation-border: #5c5b68;
   --focal: #22252b;
   --focal-foreground: #f2f4f5;
   --focal-muted: #b5bec8;
@@ -134,6 +143,15 @@
   --teal-surface: #173a30;
   --warm: #f0ca7e;
   --warm-surface: #3a2e16;
+  --blue: #a7d4f7;
+  --blue-surface: #1a3348;
+  --plum: #e7b8dc;
+  --plum-surface: #3d2b40;
+  --navigation: #2b323b;
+  --navigation-foreground: #f2f4f5;
+  --navigation-active: #d8c4fa;
+  --navigation-active-foreground: #292033;
+  --navigation-border: #8994a3;
 
   --background: #15181d;
   --foreground: #f2f4f5;
@@ -190,6 +208,19 @@
   --elevation-level-3: 0 16px 48px rgb(0 0 0 / 0.45);
 }
 
+/* Review alternative only: no new persisted theme or workspace preference.
+ * Scoped to the development proof wrapper; the default above is bright ivory. */
+.light [data-light-treatment="cream"] {
+  --background: #f7edd9;
+  --surface: #fffbf2;
+  --surface-subtle: #ede0c7;
+  --muted: #ede0c7;
+  --secondary: #ede0c7;
+  --neutral-surface: #ede0c7;
+  --border: #d8c9ae;
+  --disabled-border: #d8c9ae;
+}
+
 @media (min-width: 64rem) {
   :root {
     --type-page: 1.75rem;
@@ -200,6 +231,15 @@
 }
 
 @theme inline {
+  --color-blue: var(--blue);
+  --color-blue-surface: var(--blue-surface);
+  --color-plum: var(--plum);
+  --color-plum-surface: var(--plum-surface);
+  --color-navigation: var(--navigation);
+  --color-navigation-foreground: var(--navigation-foreground);
+  --color-navigation-active: var(--navigation-active);
+  --color-navigation-active-foreground: var(--navigation-active-foreground);
+  --color-navigation-border: var(--navigation-border);
   --text-section: 1.125rem;
   --text-section--line-height: 1.625rem;
   --text-page: var(--type-page);

@@ -4,6 +4,8 @@
 **Version:** 1.1 — approved redesign alignment, October 17, 2026 (original portfolio evidence: October 6, 2026)\
 **Status:** M1 foundations implemented and technically checked; owner visual sign-off pending. M2–M6 have not started. The [M1 component guide](REDESIGN_M1_COMPONENT_GUIDE.md) records current tokens, component contracts and adoption boundaries.
 
+**Owner review refinement:** the activity architecture, migration and state patterns received partial approval; new renders still require final approval. [D05](UI_UX_REDESIGN_DECISIONS_REQUIRED.md#d05--m1-owner-review-refinements-before-m2) requires bright ivory/soft cream comparison, richer complementary accents, **mandatory opaque floating navigation capsules** and distinct full-screen mobile expense entry/review. These refinements supersede the first M1 palette and any interpretation that discourages floating navigation. M1 prototypes only; M2 implements real navigation and M3 implements expense routes/commands through existing contracts.
+
 ## 1. Purpose, authority, and flexibility
 
 Build a warm, modern, precise personal workspace with violet/lavender identity, warm-neutral surfaces, restrained teal/amber module accents and Geist typography. Dense financial records, job applications and upcoming commitments should remain easy to scan, compare and act on over long sessions.
@@ -82,7 +84,7 @@ These exact source values preserve the October 6 provenance and original adaptat
 
 Retain restrained violet/lavender recognition, simple line icons and clear boundaries. Adopt the approved warm-neutral canvases, violet light-theme actions and lavender dark-theme actions. Use the plan’s type/geometry roles and balanced density: readable everyday text, aligned information-rich desktop records, efficient keyboard/mouse access and adaptive mobile forms/touch targets. M1 rendered proofs remain subject to usability/accessibility review.
 
-Keep data surfaces opaque. Use lavender/pink gradients only as optional, low-contrast decoration on a welcome/help area outside important text. A small branded accent is sufficient on the normal dashboard. Avoid startup intros, scroll-scrubbed content, parallax, moving backgrounds, floating glass panels and headings that wait for animation before appearing. A user returning to record an expense should reach the form immediately.
+Keep data surfaces opaque. Use lavender/pink gradients only as optional, low-contrast decoration outside important text. Use purposeful module/category tints rather than restricting normal screens to one small accent. Avoid startup intros, scroll-scrubbed content, parallax, moving backgrounds, blur-heavy glass and headings that wait for animation before appearing. **Opaque floating capsules are required navigation**, with accessible labels and reserved space; this is distinct from decorative glass panels. A user returning to record an expense should reach the dedicated task immediately.
 
 Do not copy the personal initials/logo or person-specific copy into the product by default. Final naming and an independent mark remain deferred under D02; the approved working identity is **Personal workspace**. Visual connection comes from the palette, typography and craft, not an implication that every user is the portfolio owner.
 
