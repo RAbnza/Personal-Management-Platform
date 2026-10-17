@@ -1,8 +1,21 @@
 # M1 targeted verification results
 
-October 17, 2026 (Asia/Manila). Scope: design foundations, shared UI and synthetic proofs. Owner visual approval remains pending. See [handoff](../REDESIGN_M1_HANDOFF.md), [contracts](../REDESIGN_M1_COMPONENT_GUIDE.md) and [screenshot index](assets/redesign-m1/README.md).
+October 17, 2026 (Asia/Manila). Scope: design foundations, shared UI and synthetic proofs. Porcelain, Midnight Spectrum, Magic UI Dock A, mobile design and existing workflows are owner-approved; the final desktop correction awaits manual owner review. See [handoff](../REDESIGN_M1_HANDOFF.md), [contracts](../REDESIGN_M1_COMPONENT_GUIDE.md) and [historical screenshot index](assets/redesign-m1/README.md).
 
-## Owner review Round 3 verification
+## Final desktop dock refinement
+
+Baseline `764ac233f3acfd68e6c3fcf94b33b86c9c1656b9`, on `feat/redesign-m1-foundations`. Scope: bottom-centered desktop A, compact horizontal items, restrained magnification and desktop safe-area/content clearance. The mobile path, selected themes, dependencies and business behavior are unchanged.
+
+| Check | Actual result |
+| --- | --- |
+| Targeted ESLint | Passed for `magic-dock.tsx`, `product-navigation.tsx` and the affected `foundations.spec.ts`. |
+| TypeScript | `pnpm typecheck` passed (`next typegen && tsc --noEmit`). |
+| Formatting / patch | Prettier passed for all five changed source/test files; `git diff --check` passed. |
+| Existing dock assertions | Updated compact desktop resting/reduced-motion width to 90px and hover threshold to >94px; retained tile-growth, fixed-height and accessible-name assertions. Browser test not executed for this correction. |
+
+No screenshots were generated or recaptured; gallery files are unchanged and predate these desktop proportions. No M1 browser suite, V1–V3 regression campaign, database checks, production build/probe or performance benchmarks were rerun. Appearance, placement, scrolling, proportions and device/assistive-technology acceptance remain the owner's manual browser review. No merge or M2 work.
+
+## Owner review Round 3 verification (historical)
 
 Baseline `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`, clean and matching fetched origin. D06 rejects warm ivory/cream and the prior capsules. Current white-based/dark-spectrum renders and two proven navigation concepts remain **pending owner approval**. No M2/M3 implementation.
 

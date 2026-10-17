@@ -112,9 +112,11 @@ function Drawer({
 function TouchOrDock({
   screen,
   concept,
+  compact = false,
 }: {
   screen: string;
   concept: Concept;
+  compact?: boolean;
 }) {
   const moduleActive = ["activity", "expense", "migration"].includes(screen);
   const item = concept === "dock" ? dock.item : dock.railItem;
@@ -161,9 +163,11 @@ function TouchOrDock({
     </Drawer>,
   ];
   return concept === "dock" ? (
-    <MagicDock>
+    <MagicDock compact={compact}>
       {items.map((child) => (
-        <MagicDockItem key={child.key}>{child}</MagicDockItem>
+        <MagicDockItem key={child.key} compact={compact}>
+          {child}
+        </MagicDockItem>
       ))}
     </MagicDock>
   ) : (
@@ -261,14 +265,17 @@ export function ProductNavigation({
             </p>
           </div>
         </div>
-        <div className={styles.desktopNavigation}>
-          {concept === "dock" ? (
-            <TouchOrDock screen={screen} concept={concept} />
-          ) : (
+        {concept === "radix" && (
+          <div className={styles.desktopNavigation}>
             <RadixRail screen={screen} />
-          )}
-        </div>
+          </div>
+        )}
       </div>
+      {concept === "dock" && (
+        <div className={styles.desktopDock}>
+          <TouchOrDock screen={screen} concept={concept} compact />
+        </div>
+      )}
       <div className={styles.mobileNavigation}>
         <TouchOrDock screen={screen} concept={concept} />
       </div>

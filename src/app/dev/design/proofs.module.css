@@ -51,7 +51,8 @@
   margin: 0 auto;
   padding: 1.25rem 1rem 0;
 }
-.desktopNavigation {
+.desktopNavigation,
+.desktopDock {
   display: none;
 }
 .mobileNavigation {
@@ -150,6 +151,12 @@
     height: auto;
     overflow: visible;
   }
+  .proof[data-navigation="dock"] {
+    --navigation-clearance: 6.5rem;
+    padding-bottom: calc(
+      var(--navigation-clearance) + var(--proof-safe-bottom)
+    );
+  }
   .proof > main,
   .proof[data-task="true"] > main {
     overflow: visible;
@@ -169,6 +176,14 @@
     padding: 1.5rem 1.5rem 0.5rem;
   }
   .desktopNavigation {
+    display: block;
+  }
+  .desktopDock {
+    position: fixed;
+    z-index: var(--z-shell);
+    bottom: calc(1rem + var(--proof-safe-bottom));
+    left: 50%;
+    transform: translateX(-50%);
     display: block;
   }
   .mobileNavigation {
@@ -202,6 +217,12 @@
   .mobileNavigation {
     position: static;
     transform: none;
+    margin: 1rem auto;
+  }
+  .desktopDock {
+    position: static;
+    transform: none;
+    width: max-content;
     margin: 1rem auto;
   }
   .taskActions {

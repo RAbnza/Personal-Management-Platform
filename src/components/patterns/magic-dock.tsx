@@ -19,13 +19,19 @@ import styles from "./navigation-dock.module.css";
 
 const DockContext = createContext<MotionValue<number> | null>(null);
 
-export function MagicDock({ children }: { children: ReactNode }) {
+export function MagicDock({
+  children,
+  compact = false,
+}: {
+  children: ReactNode;
+  compact?: boolean;
+}) {
   const mouseX = useMotionValue(Infinity);
   return (
     <DockContext.Provider value={mouseX}>
       <nav
         aria-label="Product navigation prototype"
-        className={styles.dock}
+        className={`${styles.dock} ${compact ? styles.compactDock : ""}`}
         onPointerMove={(event) => {
           if (event.pointerType === "mouse") mouseX.set(event.clientX);
         }}
@@ -37,7 +43,13 @@ export function MagicDock({ children }: { children: ReactNode }) {
   );
 }
 
-export function MagicDockItem({ children }: { children: ReactNode }) {
+export function MagicDockItem({
+  children,
+  compact = false,
+}: {
+  children: ReactNode;
+  compact?: boolean;
+}) {
   const mouseX = useContext(DockContext);
   const ref = useRef<HTMLDivElement>(null);
   const defaultMouseX = useMotionValue(Infinity);
@@ -46,12 +58,21 @@ export function MagicDockItem({ children }: { children: ReactNode }) {
     const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
     return value - bounds.x - bounds.width / 2;
   });
-  const size = useTransform(distance, [-140, 0, 140], [76, 88, 76]);
+  const baseSize = compact ? 90 : 76;
+  const size = useTransform(
+    distance,
+    [-140, 0, 140],
+    [baseSize, compact ? 96 : 88, baseSize],
+  );
   const width = useSpring(size, { mass: 0.1, stiffness: 150, damping: 12 });
+  // Desktop dimensions scale with text size; the approved mobile path is unchanged.
+  const renderedWidth = useTransform(width, (value) =>
+    compact ? `${value / 16}rem` : `${value}px`,
+  );
   return (
     <motion.div
       ref={ref}
-      style={{ width: reduce ? 76 : width }}
+      style={{ width: reduce ? (compact ? "5.625rem" : 76) : renderedWidth }}
       className={styles.dockItem}
     >
       {children}

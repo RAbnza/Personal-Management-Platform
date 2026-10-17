@@ -4,7 +4,7 @@
 **Baseline:** `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner decisions recorded:** October 17, 2026, Asia/Manila\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Current direction and M1–M6 roadmap approved. M1 implemented and technically checked; owner visual sign-off pending. M2–M6 still require individual assignments.\
+**Status:** Current direction and M1–M6 roadmap approved. M1 themes, Magic UI Dock A, mobile dock and existing workflows approved; final desktop dock refinement awaits manual owner review. M2–M6 still require individual assignments.\
 **Related:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Milestones](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. How to use this register
@@ -19,9 +19,9 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 | --- | --- | --- | --- |
 | D01 | Overall direction and six-milestone roadmap | **APPROVED**; milestones individually assigned | No |
 | D02 | Working identity / final branding | **Personal workspace APPROVED**; final name, wordmark, logo and native branding deferred | No |
-| D03 | Complete visual identity | **APPROVED** identity/type/accessibility; D06 refines canvases, accent and navigation direction; new renders pending | No |
+| D03 | Complete visual identity | **APPROVED** identity/type/accessibility; D06 records approved Porcelain / Midnight Spectrum and Magic UI Dock A | No |
 | D04 | Balanced information density | **APPROVED**; readable everyday use, rich desktop records and adaptive mobile layouts | No |
-| D06 | M1 owner review round 3 | **REQUIRED**; white-based light themes, controlled dark spectrum accents, two proven/library-backed floating-navigation concepts and corrected mobile geometry; final approval pending | Final M1 visual sign-off pending |
+| D06 | M1 owner review round 3 and final refinement | **APPROVED** Porcelain, Midnight Spectrum, Magic UI Dock A, mobile design and existing workflows; slim bottom-centered desktop correction required | Desktop correction awaits manual owner review |
 | D05 | Previous M1 owner review refinements | Color/navigation recommendation superseded by D06; record affordances and separate expense entry/review retained | See D06 |
 | F01 | Windows/Android runtime and code reuse | **DEFERRED** to platform architecture planning | No |
 | F02 | Local profile and online identity | **DEFERRED** to platform architecture planning | No |
@@ -35,11 +35,13 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 
 ### D06 — M1 owner review round 3
 
-The owner rejected the Round 2 ivory/cream direction and custom capsules at `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`. D06 **supersedes D05's palette/navigation recommendation**. Activity architecture, record readability, separate expense entry/review, migration and shared states remain approved in principle; final visual sign-off is pending.
+The owner rejected the Round 2 ivory/cream direction and custom capsules at `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`. D06 **supersedes D05's palette/navigation recommendation**. After reviewing `764ac233f3acfd68e6c3fcf94b33b86c9c1656b9`, the owner approved **Porcelain**, **Midnight Spectrum**, **Magic UI Dock (Concept A)**, the existing mobile dock, financial activity, expense review, tracker migration and interaction patterns.
 
-The current target is white/cool near-white with lavender/blue/pink supporting regions. Dark mode may use controlled violet, blue/cyan and plum, one restrained focal blend and static active-icon glow. No flashing, moving backgrounds or glowing body text. Research mature compatible components and compare two functioning proven/library-backed designs in actual light/dark desktop/mobile compositions. Recommend the adapted MIT Magic UI Dock for owner comparison; Radix floating segments/ink rail remains a real alternative. Neither is owner-approved. See the [library evaluation](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3).
+The selected themes retain white/cool near-white with lavender/blue/pink supporting regions and controlled dark violet/cyan/plum, one restrained focal blend and static active-icon glow. No flashing, moving backgrounds or glowing body text. Gallery white / Graphite blue and Radix Concept B remain historical comparison options. See the [library evaluation](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3).
 
-Correct the mobile clipping finding through document flow for browsing, shared header/content scroll, dock/safe-area/focus clearance and verified initial/returned Home action geometry. The dedicated expense task retains its separate body/actions and short-height fallback. Disable the Next development indicator through supported configuration for unobstructed manual review; do not hide application overlaps. M1 remains synthetic-only, M2 owns real routing/permissions/navigation and its production layout contract, and M3 owns real expense create/edit. Review the [new renders](verification/assets/redesign-m1/README.md) before assigning another milestone.
+**Final desktop correction:** desktop and mobile use bottom-centered floating navigation. Preserve the approved mobile dock. Desktop A uses a slimmer horizontal icon-and-label pill (approximately 56–68px high and 320–420px wide at default text size), restrained magnification, safe-area/content/focus clearance and the existing short-viewport fallback. Keep application identity at the top without an empty navigation holder. This focused revision requires only relevant static/component checks; no new screenshots, gallery updates or broad regression campaign. Appearance, placement, scrolling and proportions await the owner's manual browser review. Do not merge or begin M2.
+
+The Round 3 mobile clipping correction uses document flow for browsing, shared header/content scroll, dock/safe-area/focus clearance and verified initial/returned Home action geometry. The dedicated expense task retains its separate body/actions and short-height fallback. The supported Next development indicator configuration keeps manual review unobstructed; do not hide application overlaps. M1 remains synthetic-only, M2 owns real routing/permissions/navigation and its production layout contract, and M3 owns real expense create/edit. Review the current desktop correction in the local browser before assigning another milestone; the [earlier renders](verification/assets/redesign-m1/README.md) remain historical evidence.
 
 ### D05 — Previous M1 review (color/navigation superseded by D06)
 
@@ -85,7 +87,7 @@ M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide c
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
 - **Approved identity, refined by D06:** violet/lavender, Geist, consistent light/dark modes, centralized semantic tokens and accessibility/contrast remain. White-based light canvases and controlled dark spectrum accents replace the previous warm-canvas proposal; rendered acceptance remains pending.
 - **Why it matters:** the previous guidelines explicitly reference that visual family, while the new references introduce warmer and more varied color.
-- **Current choice for review:** retain violet/lavender and Geist; compare Porcelain/Gallery white and Midnight spectrum/Graphite blue under D06. Complementary blue/cyan, teal and plum support content independently of feedback meaning. Strong violet light actions and lavender dark actions remain.
+- **Approved choice:** retain violet/lavender and Geist with Porcelain / Midnight Spectrum under D06. Complementary blue/cyan, teal and plum support content independently of feedback meaning. Strong violet light actions and lavender dark actions remain.
 - **Earlier alternatives:** warm ivory/cream are rejected historical iterations. Final brand assets remain deferred under D02.
 - **Impact:** centralized token changes and representative contrast/layout checks. Do not introduce another icon/font/component system to express a color preference.
 - **Validation:** M1 rendered proofs validate the approved palette and all relevant contrast states before broad screen conversion; token calculations alone do not certify the interface.

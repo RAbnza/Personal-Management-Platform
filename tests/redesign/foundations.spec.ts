@@ -932,14 +932,14 @@ test("Round 3 dock magnification respects pointer and reduced motion", async ({
   await page.mouse.move(0, 0);
   await expect
     .poll(async () => Math.round((await item.boundingBox())!.width))
-    .toBe(76);
+    .toBe(90);
   const tile = item.locator("a > span").first();
   const tileWidth = (await tile.boundingBox())!.width;
   const dockHeight = (await item.locator("..").boundingBox())!.height;
   await item.hover();
   await expect
     .poll(async () => (await item.boundingBox())!.width)
-    .toBeGreaterThan(80);
+    .toBeGreaterThan(94);
   await expect
     .poll(async () => (await tile.boundingBox())!.width)
     .toBeGreaterThan(tileWidth + 4);
@@ -947,7 +947,7 @@ test("Round 3 dock magnification respects pointer and reduced motion", async ({
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect
     .poll(async () => Math.round((await item.boundingBox())!.width))
-    .toBe(76);
+    .toBe(90);
   await expect(item.locator("a")).toHaveAccessibleName("Home");
 });
 

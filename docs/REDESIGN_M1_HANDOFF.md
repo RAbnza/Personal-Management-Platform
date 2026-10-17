@@ -1,8 +1,16 @@
 # M1 implementation handoff
 
-October 17, 2026 (Asia/Manila). **M1 only: implemented and technically checked; owner visual sign-off pending.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
+October 17, 2026 (Asia/Manila). **M1 only: themes, Magic UI Dock A, mobile dock and existing workflows approved; final desktop correction awaits manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
-## Owner review Round 3 before M2
+## Final desktop dock refinement
+
+Baseline `764ac233f3acfd68e6c3fcf94b33b86c9c1656b9`. The owner selected **Porcelain + Midnight Spectrum + Magic UI Dock (Concept A)** and approved the existing mobile design, financial activity, expense review, migration and interaction patterns. Desktop A now floats at bottom center with horizontal icon/label items, a 60px pill and approximately 384px resting width at default text size. Hover expansion is restrained to 90–96px per item, with smaller icon tiles, subtle elevation and a clear current destination. Application identity remains at the top. No new dependencies.
+
+Desktop reserves 6.5rem plus safe-area bottom clearance for final records, controls and expense actions; focused-target margins and document scroll-padding remain. It rests 1rem plus safe-area above the viewport bottom, stays fixed during ordinary scrolling and uses the existing short-height document-flow fallback at 500px or less. Text-relative desktop dimensions preserve scaling; touch/reduced-motion presentation is static. The separate mobile path and its design/placement are unchanged. Radix B remains a historical comparison.
+
+Only focused lint/type/format validation is required for this correction; execution is recorded in [results](verification/REDESIGN_M1_RESULTS.md#final-desktop-dock-refinement). The existing magnification test retains its assertions with updated compact desktop width expectations. No screenshots were generated, recaptured or changed, and the gallery still shows the earlier desktop proportions. Review the current implementation at `http://localhost:3200/dev/design?nav=dock`. Appearance, placement, scrolling and proportions require the owner's manual browser review. Do not merge or start M2.
+
+## Owner review Round 3 before M2 (historical)
 
 Baseline `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`, clean local branch matching fetched origin. The owner rejected ivory/cream and the prior custom capsules. **D06 supersedes those recommendations; final visual approval remains pending.** The overall activity architecture/readability, distinct expense entry/review, migration and shared states are preserved.
 
@@ -41,7 +49,7 @@ Run `pnpm dev --port 3200`, then visit `http://localhost:3200/dev/design`. Home 
 
 Proof actions are clearly labeled fixtures. Expense confirmation requires an explicit synthetic accepted response; it does not fabricate server success after a timer. Migration consumes fixture snapshots in manual batches of at most 50. Real workflows and their source contracts remain in their existing domain components for later milestones.
 
-## Focused verification
+## Round 3 verification (historical; not rerun for the final desktop correction)
 
 Final executed checks and cost observations are recorded in [verification results](verification/REDESIGN_M1_RESULTS.md). Reproduce with:
 
