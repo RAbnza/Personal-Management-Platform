@@ -12,6 +12,7 @@ export default async function BudgetLayout({
     <AppShell
       pageTitle="Budgets"
       activePath="/money/budgets"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

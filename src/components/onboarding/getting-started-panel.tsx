@@ -94,11 +94,13 @@ const stateContent: Record<
 export interface GettingStartedPanelProps {
   progress: ListOnboardingProgressResult;
   showGuideLink?: boolean;
+  compact?: boolean;
 }
 
 export function GettingStartedPanel({
   progress,
   showGuideLink = true,
+  compact = false,
 }: GettingStartedPanelProps) {
   const applicableSteps = progress.steps.filter((step) => step.applicable);
 
@@ -111,6 +113,37 @@ export function GettingStartedPanel({
             100,
         );
 
+  if (compact) {
+    const next = applicableSteps.find((step) => step.state === "pending");
+    return (
+      <section
+        aria-label="Getting started"
+        className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-border bg-accent p-4"
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-accent-foreground">
+            {progress.complete
+              ? "Getting started complete"
+              : "Your next useful step"}
+          </p>
+          <p className="mt-1 text-sm">
+            {next ? stepContent[next.stepKey].title : "Review your setup guide"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {progress.resolvedApplicableStepCount} of{" "}
+            {progress.applicableStepCount} applicable steps resolved · Skip or
+            resume in the guide.
+          </p>
+        </div>
+        <Link
+          href="/onboarding"
+          className="inline-flex min-h-11 items-center rounded-button border border-input bg-surface px-4 text-sm font-semibold text-link"
+        >
+          {progress.complete ? "Review guide" : "Continue setup"}
+        </Link>
+      </section>
+    );
+  }
   return (
     <Panel
       title={progress.complete ? "Getting started complete" : "Getting started"}

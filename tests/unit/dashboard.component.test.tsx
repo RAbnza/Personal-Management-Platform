@@ -135,7 +135,7 @@ describe("Dashboard critical states and navigation", () => {
     render(<DashboardError reset={reset} />);
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Retry Dashboard" }));
+      .click(screen.getByRole("button", { name: "Retry Home" }));
     expect(reset).toHaveBeenCalledOnce();
   });
   it("does not replace a failed server snapshot with zero totals", async () => {
@@ -147,9 +147,10 @@ describe("Dashboard critical states and navigation", () => {
     expect(
       screen.queryByText("Net recognized spending"),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Retry Dashboard" }),
-    ).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Retry Home" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
   it("rejects invalid filters before reading and redirects unauthenticated users", async () => {
     render(

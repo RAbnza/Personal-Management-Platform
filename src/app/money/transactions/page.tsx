@@ -100,6 +100,7 @@ export default async function MoneyTransactionsPage({
       <AppShell
         pageTitle="Transactions"
         activePath="/money/transactions"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -178,6 +179,7 @@ export default async function MoneyTransactionsPage({
     <AppShell
       pageTitle="Transactions"
       activePath="/money/transactions"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

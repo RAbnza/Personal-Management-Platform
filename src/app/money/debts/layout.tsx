@@ -13,6 +13,7 @@ export default async function DebtLayout({
     <AppShell
       pageTitle="Debts"
       activePath="/money/debts"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

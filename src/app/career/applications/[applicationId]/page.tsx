@@ -204,6 +204,7 @@ export default async function JobApplicationDetailPage({
       <AppShell
         pageTitle="Application"
         activePath="/career/applications"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -245,6 +246,7 @@ export default async function JobApplicationDetailPage({
     <AppShell
       pageTitle={application.roleTitle}
       activePath="/career/applications"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

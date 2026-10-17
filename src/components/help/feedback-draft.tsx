@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 export function FeedbackDraft({ email }: { email: string | null }) {
   const [topic, setTopic] = useState(""),
     [details, setDetails] = useState(""),
     [message, setMessage] = useState("");
-  const body = `Topic: ${topic}\n\nWhat happened / expected behavior:\n${details}\n\nProduct: Personal Management Platform V1`;
+  const body = `Topic: ${topic}\n\nWhat happened / expected behavior:\n${details}\n\nProduct: Personal workspace`;
   return (
     <Panel
       title="Prepare feedback"
@@ -26,7 +27,7 @@ export function FeedbackDraft({ email }: { email: string | null }) {
         <label htmlFor="feedback-details" className="block font-medium">
           Details
         </label>
-        <textarea
+        <Textarea
           id="feedback-details"
           rows={6}
           maxLength={5000}
@@ -34,6 +35,18 @@ export function FeedbackDraft({ email }: { email: string | null }) {
           onChange={(e) => setDetails(e.target.value)}
           className="w-full rounded-control border border-input bg-background p-3"
         />
+        <details className="rounded-control border border-border p-3">
+          <summary className="min-h-11 cursor-pointer content-center font-semibold">
+            Review exactly what will be shared
+          </summary>
+          <pre className="whitespace-pre-wrap break-words text-sm leading-6">
+            {body}
+          </pre>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Only this text enters the draft. No records, device diagnostics or
+            credentials are attached.
+          </p>
+        </details>
         <div className="flex flex-wrap gap-4">
           <Button
             disabled={!topic.trim() || !details.trim()}

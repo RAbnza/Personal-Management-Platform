@@ -126,6 +126,7 @@ export default async function PersonalEventDetailPage({
       <AppShell
         pageTitle="Personal event"
         activePath="/calendar"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -163,6 +164,7 @@ export default async function PersonalEventDetailPage({
     <AppShell
       pageTitle={event.title}
       activePath="/calendar"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

@@ -76,8 +76,9 @@ export default async function Home({
   }
   return (
     <AppShell
-      pageTitle="Dashboard"
+      pageTitle="Home"
       activePath="/"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}
@@ -88,20 +89,21 @@ export default async function Home({
         <header>
           <p className="text-sm font-medium text-link">Private workspace</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-            Dashboard
+            Home
           </h1>
           <p className="mt-3 text-muted-foreground">
             Your tracked records, commitments and next actions.
           </p>
         </header>
+        {onboarding !== null &&
+          !onboarding.complete &&
+          preference.gettingStartedDismissedAt === null && (
+            <GettingStartedPanel progress={onboarding} compact />
+          )}
         {data ? (
           <DashboardView data={data} moduleEnabled={moduleEnabled} />
         ) : (
-          <Panel
-            title={
-              invalid ? "Check Dashboard filters" : "Dashboard unavailable"
-            }
-          >
+          <Panel title={invalid ? "Check Home filters" : "Home unavailable"}>
             <p role="alert" className="mb-4">
               {invalid
                 ? "Choose a supported period with valid ordered dates, at most 366 days. Balances have not been shown for invalid filters."
@@ -114,16 +116,11 @@ export default async function Home({
                 className="inline-flex min-h-11 items-center text-link underline"
                 href="/"
               >
-                Retry Dashboard
+                Retry Home
               </Link>
             )}
           </Panel>
         )}
-        {onboarding !== null &&
-          !onboarding.complete &&
-          preference.gettingStartedDismissedAt === null && (
-            <GettingStartedPanel progress={onboarding} />
-          )}
       </div>
     </AppShell>
   );

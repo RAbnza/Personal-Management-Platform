@@ -52,6 +52,7 @@ export default async function NewJobApplicationPage() {
       <AppShell
         pageTitle="Add application"
         activePath="/career/applications"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -97,6 +98,7 @@ export default async function NewJobApplicationPage() {
     <AppShell
       pageTitle="Add application"
       activePath="/career/applications"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

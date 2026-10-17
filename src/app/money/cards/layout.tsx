@@ -13,6 +13,7 @@ export default async function CardsLayout({
     <AppShell
       pageTitle="Credit cards"
       activePath="/money/cards"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

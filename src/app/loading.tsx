@@ -6,7 +6,7 @@ export default function DashboardLoading() {
       aria-busy="true"
       className="space-y-5 p-6"
     >
-      <p className="font-semibold">Loading your Dashboard source records…</p>
+      <p className="font-semibold">Loading your Home source records…</p>
       <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2">
         {[1, 2, 3, 4].map((n) => (
           <div

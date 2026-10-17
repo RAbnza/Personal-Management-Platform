@@ -13,7 +13,7 @@ const steps = [
   ],
   [
     "Review what needs attention",
-    "Dashboard and mixed Agenda use source records. Due dates are edited at their source. Dismissing or snoozing a reminder never pays a debt or completes an interview.",
+    "Home and mixed Agenda use source records. Due dates are edited at their source. Dismissing or snoozing a reminder never pays a debt or completes an interview.",
   ],
   [
     "Inspect the evidence",

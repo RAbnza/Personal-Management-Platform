@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/shell/app-shell";
 
@@ -12,7 +12,39 @@ vi.mock("@/components/auth/sign-out-button", () => ({
   SignOutButton: () => <button type="button">Sign out</button>,
 }));
 
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => null,
+  useRouter: () => ({ push: navigation.push }),
+}));
+beforeAll(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
+});
+// JSDOM has no layout; give the floating panel a visible dock reference.
+beforeEach(() => {
+  vi.spyOn(document.documentElement, "clientWidth", "get").mockReturnValue(
+    1024,
+  );
+  vi.spyOn(document.documentElement, "clientHeight", "get").mockReturnValue(
+    768,
+  );
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(100, 500, 384, 60),
+  );
+});
 const shellProps = {
+  modules: ["money", "career", "time", "trackers"].map((moduleKey) => ({
+    moduleKey,
+    enabled: true,
+  })),
   pageTitle: "Dashboard",
   activePath: "/",
 
@@ -25,7 +57,7 @@ const shellProps = {
 };
 
 describe("AppShell", () => {
-  it("provides primary navigation, identity, and a main-content skip target", () => {
+  it("provides primary navigation, identity, and a main-content skip target", async () => {
     render(
       <AppShell {...shellProps}>
         <h1>Dashboard content</h1>
@@ -40,6 +72,7 @@ describe("AppShell", () => {
 
     expect(screen.getByRole("main").id).toMatch(/^main-content-/);
 
+    await userEvent.setup().click(screen.getByRole("button", { name: "More" }));
     expect(screen.getByText("Jane Example")).toBeInTheDocument();
 
     expect(screen.getByText("jane@example.com")).toBeInTheDocument();
@@ -49,7 +82,7 @@ describe("AppShell", () => {
     });
 
     const dashboardLink = within(primaryNavigation).getByRole("link", {
-      name: "Dashboard",
+      name: "Home",
     });
 
     expect(dashboardLink).toHaveAttribute("href", "/");
@@ -82,85 +115,76 @@ describe("AppShell", () => {
     expect(currentMain).toHaveAttribute("tabindex", "-1");
   });
 
-  it("opens and closes the mobile navigation dialog accessibly", async () => {
+  it("opens Modules, focuses its first destination, switches to More and restores trigger focus", async () => {
     const user = userEvent.setup();
-
-    render(
-      <AppShell {...shellProps}>
-        <h1>Dashboard content</h1>
-      </AppShell>,
-    );
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Menu",
-      }),
-    );
-
-    const dialog = screen.getByRole("dialog", {
-      name: "Navigation",
+    render(<AppShell {...shellProps}>Content</AppShell>);
+    const trigger = screen.getByRole("button", { name: "Modules" });
+    await user.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "Your modules" });
+    expect(
+      within(dialog).getByRole("link", { name: /Money Activity/ }),
+    ).toHaveFocus();
+    expect(
+      within(dialog).getByRole("link", { name: /Trackers Private/ }),
+    ).toHaveAttribute("href", "/trackers");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    await user.click(trigger);
+    await user.click(screen.getByRole("button", { name: "More" }));
+    const more = await screen.findByRole("dialog", {
+      name: "Workspace and account",
     });
-
-    expect(dialog).toBeInTheDocument();
-
+    expect(within(more).getByText("jane@example.com")).toBeInTheDocument();
     expect(
-      within(dialog).getByRole("navigation", {
-        name: "Primary",
-      }),
+      within(more).getByText("Workspace theme control"),
     ).toBeInTheDocument();
-
-    expect(within(dialog).getByText("Jane Example")).toBeInTheDocument();
-
-    expect(within(dialog).getByText("jane@example.com")).toBeInTheDocument();
-
     expect(
-      within(dialog).getByRole("link", {
-        name: "Dashboard",
-      }),
-    ).toHaveAttribute("aria-current", "page");
-
+      within(more).getByRole("button", { name: "Sign out" }),
+    ).toBeInTheDocument();
     await user.click(
-      within(dialog).getByRole("button", {
-        name: "Close navigation",
-      }),
+      within(more).getByRole("button", { name: "Close More menu" }),
     );
-
-    expect(
-      screen.queryByRole("dialog", {
-        name: "Navigation",
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
   });
 
-  it("closes mobile navigation after choosing a destination", async () => {
+  it("keeps unavailable modules out of discovery and closes after native navigation", async () => {
     const user = userEvent.setup();
-
     render(
-      <AppShell {...shellProps}>
-        <h1>Dashboard content</h1>
+      <AppShell
+        {...shellProps}
+        modules={[{ moduleKey: "money", enabled: false }]}
+      >
+        Content
       </AppShell>,
     );
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Menu",
-      }),
-    );
-
-    const dialog = screen.getByRole("dialog", {
-      name: "Navigation",
-    });
-
-    await user.click(
-      within(dialog).getByRole("link", {
-        name: "Dashboard",
-      }),
-    );
-
+    await user.click(screen.getByRole("button", { name: "Modules" }));
+    const dialog = await screen.findByRole("dialog", { name: "Your modules" });
     expect(
-      screen.queryByRole("dialog", {
-        name: "Navigation",
-      }),
+      within(dialog).queryByRole("link", { name: /Money Activity/ }),
     ).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("link", { name: /Shared expenses/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("link", { name: /Manage modules/ }),
+    ).toHaveAttribute("href", "/settings?section=modules");
+    await user.click(
+      within(dialog).getByRole("link", { name: /Reports Financial/ }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("searches static task names and navigates without issuing a financial command", async () => {
+    const user = userEvent.setup();
+    render(<AppShell {...shellProps}>Content</AppShell>);
+    await user.click(screen.getByRole("button", { name: /Find a screen/ }));
+    const dialog = screen.getByRole("dialog", { name: "Find a screen" });
+    await user.type(within(dialog).getByRole("combobox"), "repay");
+    await user.click(within(dialog).getByRole("option", { name: /Debts/ }));
+    expect(navigation.push).toHaveBeenLastCalledWith("/money/debts");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Find a screen/ })).toHaveFocus();
   });
 });

@@ -107,6 +107,7 @@ export default async function MoneyAccountHistoryPage({
     <AppShell
       pageTitle="Account history"
       activePath="/money/accounts"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

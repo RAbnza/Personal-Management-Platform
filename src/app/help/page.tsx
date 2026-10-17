@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Panel } from "@/components/ui/panel";
+import { ArrowUpRight } from "lucide-react";
 import { GuideTour } from "@/components/help/guide-tour";
 import { getSettingsBootstrap, SettingsShell } from "../settings/_lib";
 const topics = [
@@ -39,18 +39,33 @@ export default async function HelpPage() {
   return (
     <SettingsShell bootstrap={b} title="Help and guides" path="/help">
       <GuideTour />
-      <div className="grid gap-5 md:grid-cols-2">
-        {topics.map(([title, description, href]) => (
-          <Panel key={title} title={title!} description={description!}>
-            <Link
-              className="inline-flex min-h-11 items-center text-link underline"
-              href={href!}
+      <section
+        aria-label="Task guides"
+        className="rounded-panel border border-border bg-surface px-4 sm:px-6"
+      >
+        <ul className="divide-y divide-border">
+          {topics.map(([title, description, href]) => (
+            <li
+              key={title}
+              className="grid gap-3 py-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]"
             >
-              Open supporting workflow
-            </Link>
-          </Panel>
-        ))}
-      </div>
+              <Link
+                href={href!}
+                className="inline-flex min-h-11 items-start gap-2 py-2 font-semibold text-link underline-offset-4 hover:underline"
+              >
+                {title}
+                <ArrowUpRight
+                  className="mt-1 size-4 shrink-0"
+                  aria-hidden="true"
+                />
+              </Link>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
       <div className="flex flex-wrap gap-5">
         <Link href="/onboarding" className="text-link underline">
           Resume Getting Started

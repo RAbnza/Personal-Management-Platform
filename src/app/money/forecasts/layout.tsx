@@ -12,6 +12,7 @@ export default async function ForecastLayout({
     <AppShell
       pageTitle="Forecasts"
       activePath="/money/forecasts"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

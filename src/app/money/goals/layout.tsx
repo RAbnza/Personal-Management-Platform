@@ -12,6 +12,7 @@ export default async function SavingsGoalLayout({
     <AppShell
       pageTitle="Savings goals"
       activePath="/money/goals"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

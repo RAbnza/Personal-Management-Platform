@@ -60,6 +60,7 @@ export default async function MoneyTransfersPage() {
       <AppShell
         pageTitle="Transfer money"
         activePath="/money/transfers"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -119,6 +120,7 @@ export default async function MoneyTransfersPage() {
     <AppShell
       pageTitle="Transfer money"
       activePath="/money/transfers"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

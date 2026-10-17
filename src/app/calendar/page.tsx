@@ -290,6 +290,7 @@ export default async function CalendarPage({
     <AppShell
       pageTitle="Calendar"
       activePath="/calendar"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}

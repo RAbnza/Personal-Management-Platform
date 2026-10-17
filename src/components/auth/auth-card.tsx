@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { LockKeyhole } from "lucide-react";
+import { useId, type ReactNode } from "react";
+import { LayoutGrid, LockKeyhole } from "lucide-react";
 
 import { ThemeSelect } from "@/components/theme/theme-select";
 
@@ -18,16 +18,24 @@ export function AuthCard({
   children,
   footer,
 }: AuthCardProps) {
+  const titleId = useId();
   return (
-    <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 sm:py-12">
-      <div className="mx-auto w-full max-w-md">
-        <div className="mb-6 ml-auto w-full max-w-40">
+    <main className="min-h-dvh bg-background px-4 py-5 text-foreground sm:px-6 sm:py-8">
+      <header className="mx-auto mb-8 flex max-w-5xl flex-wrap items-center justify-between gap-4 sm:mb-12">
+        <div className="flex items-center gap-3">
+          <span className="rounded-panel bg-accent p-2.5 text-accent-foreground">
+            <LayoutGrid className="size-5" aria-hidden="true" />
+          </span>
+          <p className="text-sm font-semibold">Personal workspace</p>
+        </div>
+        <div className="w-36">
           <ThemeSelect />
         </div>
-
+      </header>
+      <div className="mx-auto w-full max-w-[440px]">
         <section
-          aria-labelledby="auth-page-title"
-          className="rounded-card border border-border bg-card p-5 text-card-foreground sm:p-7"
+          aria-labelledby={titleId}
+          className="rounded-card border border-border bg-card p-5 text-card-foreground shadow-level-1 sm:p-7"
         >
           <div className="flex size-11 items-center justify-center rounded-control bg-accent text-accent-foreground">
             <LockKeyhole
@@ -40,7 +48,7 @@ export function AuthCard({
           <p className="mt-5 text-sm font-medium text-link">{eyebrow}</p>
 
           <h1
-            id="auth-page-title"
+            id={titleId}
             className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-foreground"
           >
             {title}
@@ -59,6 +67,11 @@ export function AuthCard({
           ) : null}
         </section>
       </div>
+      <p className="mx-auto mt-6 flex max-w-[440px] items-start gap-2 text-xs leading-5 text-muted-foreground">
+        <LockKeyhole className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        Secure account access. Your personal workspace and shared group records
+        keep separate permissions.
+      </p>
     </main>
   );
 }

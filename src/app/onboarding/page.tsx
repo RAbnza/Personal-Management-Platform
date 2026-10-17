@@ -80,6 +80,7 @@ export default async function OnboardingPage() {
     <AppShell
       pageTitle="Getting started"
       activePath="/onboarding"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}
@@ -97,7 +98,7 @@ export default async function OnboardingPage() {
               className="size-4"
               strokeWidth={1.9}
             />
-            Back to dashboard
+            Back to Home
           </Link>
 
           <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
@@ -112,134 +113,137 @@ export default async function OnboardingPage() {
         </header>
 
         {progress ? (
-          <>
-            <GettingStartedPanel progress={progress} showGuideLink={false} />
+          <div className="grid items-start gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+            <aside aria-label="Setup progress">
+              <GettingStartedPanel progress={progress} showGuideLink={false} />
+            </aside>
+            <div className="min-w-0 space-y-6">
+              {chooseGoalStep ? (
+                <StartingGoalForm
+                  key={[
+                    ...modules.map(
+                      (module) =>
+                        `${module.moduleKey}:${module.version}:${module.enabled}`,
+                    ),
+                    chooseGoalStep.state,
+                  ].join("|")}
+                  modules={modules}
+                  stepState={chooseGoalStep.state}
+                />
+              ) : null}
 
-            {chooseGoalStep ? (
-              <StartingGoalForm
-                key={[
-                  ...modules.map(
-                    (module) =>
-                      `${module.moduleKey}:${module.version}:${module.enabled}`,
-                  ),
-                  chooseGoalStep.state,
-                ].join("|")}
-                modules={modules}
-                stepState={chooseGoalStep.state}
-              />
-            ) : null}
+              {confirmPreferencesStep ? (
+                <WorkspacePreferencesForm
+                  key={[
+                    workspace.version,
+                    workspace.currency,
+                    workspace.timezone,
+                    workspace.weekStart,
+                    workspace.currencyChangeAllowed,
+                    ...modules.map(
+                      (module) =>
+                        `${module.moduleKey}:${module.version}:${module.remindersEnabled}:${module.enabled}`,
+                    ),
+                    confirmPreferencesStep.state,
+                  ].join("|")}
+                  workspace={{
+                    currency: workspace.currency,
+                    timezone: workspace.timezone,
+                    weekStart: workspace.weekStart,
+                    version: workspace.version,
+                    currencyChangeAllowed: workspace.currencyChangeAllowed,
+                  }}
+                  modules={modules}
+                  stepState={confirmPreferencesStep.state}
+                />
+              ) : null}
 
-            {confirmPreferencesStep ? (
-              <WorkspacePreferencesForm
-                key={[
-                  workspace.version,
-                  workspace.currency,
-                  workspace.timezone,
-                  workspace.weekStart,
-                  workspace.currencyChangeAllowed,
-                  ...modules.map(
-                    (module) =>
-                      `${module.moduleKey}:${module.version}:${module.remindersEnabled}:${module.enabled}`,
-                  ),
-                  confirmPreferencesStep.state,
-                ].join("|")}
-                workspace={{
-                  currency: workspace.currency,
-                  timezone: workspace.timezone,
-                  weekStart: workspace.weekStart,
-                  version: workspace.version,
-                  currencyChangeAllowed: workspace.currencyChangeAllowed,
-                }}
-                modules={modules}
-                stepState={confirmPreferencesStep.state}
-              />
-            ) : null}
-
-            {addFirstAccountStep?.applicable &&
-            addFirstAccountStep.state !== "completed" ? (
-              <Panel
-                title="Next: add your first account"
-                description="Money setup now has a real account workflow. Add the place where your current funds are held and establish its opening balance."
-              >
-                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  The opening balance is a baseline, not income. You will choose
-                  the date that the balance represents before anything is
-                  written to the financial ledger.
-                </p>
-
-                <Link
-                  href="/money/accounts"
-                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              {addFirstAccountStep?.applicable &&
+              addFirstAccountStep.state !== "completed" ? (
+                <Panel
+                  title="Next: add your first account"
+                  description="Money setup now has a real account workflow. Add the place where your current funds are held and establish its opening balance."
                 >
-                  Add your first account
-                </Link>
-              </Panel>
-            ) : null}
+                  <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    The opening balance is a baseline, not income. You will
+                    choose the date that the balance represents before anything
+                    is written to the financial ledger.
+                  </p>
 
-            {recordFirstTransactionStep?.applicable &&
-            addFirstAccountStep?.state === "completed" &&
-            recordFirstTransactionStep.state !== "completed" ? (
-              <Panel
-                title="Next: record a real transaction"
-                description="Record actual income or spending and then inspect the updated account balance."
-              >
-                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Planned income or bills do not change balances. Use this step
-                  only for a transaction that really happened.
-                </p>
+                  <Link
+                    href="/money/accounts"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Add your first account
+                  </Link>
+                </Panel>
+              ) : null}
 
-                <Link
-                  href="/money/transactions"
-                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              {recordFirstTransactionStep?.applicable &&
+              addFirstAccountStep?.state === "completed" &&
+              recordFirstTransactionStep.state !== "completed" ? (
+                <Panel
+                  title="Next: record a real transaction"
+                  description="Record actual income or spending and then inspect the updated account balance."
                 >
-                  Record transaction
-                </Link>
-              </Panel>
-            ) : null}
+                  <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    Planned income or bills do not change balances. Use this
+                    step only for a transaction that really happened.
+                  </p>
 
-            {addJobApplicationStep?.applicable &&
-            addJobApplicationStep.state !== "completed" ? (
-              <Panel
-                title="Next: add a job application"
-                description="Start the Career workflow with a real saved opportunity or application attempt."
-              >
-                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Record the company, role, real application stage, and dates
-                  now. This guide step also expects a real next action such as
-                  an interview, assessment, or follow-up, so it will remain open
-                  until that Career event is scheduled.
-                </p>
+                  <Link
+                    href="/money/transactions"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Record transaction
+                  </Link>
+                </Panel>
+              ) : null}
 
-                <Link
-                  href="/career/applications/new"
-                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              {addJobApplicationStep?.applicable &&
+              addJobApplicationStep.state !== "completed" ? (
+                <Panel
+                  title="Next: add a job application"
+                  description="Start the Career workflow with a real saved opportunity or application attempt."
                 >
-                  Add job application
-                </Link>
-              </Panel>
-            ) : null}
+                  <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    Record the company, role, real application stage, and dates
+                    now. This guide step also expects a real next action such as
+                    an interview, assessment, or follow-up, so it will remain
+                    open until that Career event is scheduled.
+                  </p>
 
-            {reviewAgendaStep?.applicable &&
-            reviewAgendaStep.state !== "completed" ? (
-              <Panel
-                title="Next: review your Agenda"
-                description="See how upcoming commitments are projected from their authoritative source records."
-              >
-                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Career activities and manual personal events appear together
-                  without becoming duplicate editable records. Open Calendar,
-                  review the Agenda, then explicitly confirm the lesson there.
-                </p>
+                  <Link
+                    href="/career/applications/new"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Add job application
+                  </Link>
+                </Panel>
+              ) : null}
 
-                <Link
-                  href="/calendar"
-                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              {reviewAgendaStep?.applicable &&
+              reviewAgendaStep.state !== "completed" ? (
+                <Panel
+                  title="Next: review your Agenda"
+                  description="See how upcoming commitments are projected from their authoritative source records."
                 >
-                  Review Agenda
-                </Link>
-              </Panel>
-            ) : null}
-          </>
+                  <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    Career activities and manual personal events appear together
+                    without becoming duplicate editable records. Open Calendar,
+                    review the Agenda, then explicitly confirm the lesson there.
+                  </p>
+
+                  <Link
+                    href="/calendar"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Review Agenda
+                  </Link>
+                </Panel>
+              ) : null}
+            </div>
+          </div>
         ) : (
           <section
             aria-labelledby="onboarding-unavailable-title"

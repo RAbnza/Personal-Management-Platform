@@ -1,0 +1,75 @@
+.homeGrid {
+  display: grid;
+  min-width: 0;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "attention" "actions" "agenda" "filters" "finance" "progress" "activity" "provenance";
+}
+.homeGrid > * {
+  min-width: 0;
+}
+.attention {
+  grid-area: attention;
+}
+.actions {
+  grid-area: actions;
+}
+.agenda {
+  grid-area: agenda;
+}
+.filters {
+  grid-area: filters;
+}
+.finance {
+  grid-area: finance;
+}
+.snapshot {
+  min-width: 0;
+}
+.progress {
+  grid-area: progress;
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+.activity {
+  grid-area: activity;
+}
+.provenance {
+  grid-area: provenance;
+}
+.primaryMetrics {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+.primaryMetrics > div:first-child {
+  padding: 1.25rem;
+  border: 0;
+  border-radius: var(--geometry-radius-panel);
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.primaryMetrics > div:first-child :is(dt, p) {
+  color: var(--focal-muted);
+}
+.primaryMetrics > div:first-child a {
+  color: var(--focal-foreground);
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+@media (min-width: 768px) {
+  .primaryMetrics {
+    grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  }
+  .progress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .homeGrid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-areas: "attention agenda" "actions agenda" "filters filters" "finance finance" "progress progress" "activity activity" "provenance provenance";
+    align-items: start;
+  }
+}
