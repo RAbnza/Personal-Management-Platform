@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { listCardInstallmentPlans } from "@/modules/finance/services/read-card-installments";
@@ -33,6 +34,10 @@ export default async function InstallmentListPage({
   const base = `/money/cards/${scope.cardId}/installments`;
   return (
     <div className="space-y-6 break-words">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments`}
+        labels={{ [`/money/cards/${scope.cardId}`]: data.card.name }}
+      />
       <Link className="action-link" href={`/money/cards/${scope.cardId}`}>
         {data.card.name}
       </Link>

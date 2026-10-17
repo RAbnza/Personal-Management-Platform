@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sharingActor } from "../_actor";
@@ -25,6 +26,10 @@ export default async function GroupPage({
     { group } = data;
   return (
     <div className="min-w-0 space-y-6 break-words">
+      <BreadcrumbRecords
+        path={`/sharing/${groupId}`}
+        labels={{ [`/sharing/${groupId}`]: group.name }}
+      />
       <h1 className="text-2xl font-semibold">
         {group.name}
         {group.archived ? " · Archived" : ""}

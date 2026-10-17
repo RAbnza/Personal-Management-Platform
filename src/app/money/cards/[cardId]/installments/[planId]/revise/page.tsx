@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { getCardInstallmentPlan } from "@/modules/finance/services/read-card-installments";
@@ -42,6 +43,14 @@ export default async function ReviseInstallmentPage({
       >
         Current provider plan
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/${scope.planId}/revise`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: d.card.name,
+          [`/money/cards/${scope.cardId}/installments/${scope.planId}`]:
+            d.currentPurchase?.description ?? "Installment plan",
+        }}
+      />
       <ScreenHeader scope="Money" title="Revise or cancel provider schedule" />
       <p>
         This command creates a new immutable provider revision. Existing

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -41,6 +42,10 @@ export default async function NewInstallmentPage({
       <Link className="action-link" href={base}>
         Provider installment plans
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/new`}
+        labels={{ [`/money/cards/${scope.cardId}`]: setup.card.name }}
+      />
       <ScreenHeader scope="Money" title="Record provider installment plan" />
       {parsed?.success ? (
         <CardInstallmentPlanForm

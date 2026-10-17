@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -59,6 +60,13 @@ export default async function AllocationPage({
       <Link href={base} className="action-link">
         Statement {statement.snapshot.statementDate}
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/${scope.statementId}/allocations`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: statement.card.name,
+          [`/money/cards/${scope.cardId}/statements/${scope.statementId}`]: `Statement ${statement.snapshot.statementDate}`,
+        }}
+      />
       <ScreenHeader scope="Money" title="Statement allocations" />
       <p>
         Historical statement balance {money(statement.snapshot.balanceMinor)};

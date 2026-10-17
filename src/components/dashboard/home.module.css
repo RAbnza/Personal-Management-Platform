@@ -706,3 +706,15 @@
     display: none;
   }
 }
+
+.planItem {
+  display: flex;
+  flex-direction: column;
+}
+.planItem > a {
+  min-height: 3.75rem;
+}
+.planItem > small {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}

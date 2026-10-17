@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -65,6 +66,15 @@ export default async function ReconcileAccountPage({
           <Link href="/money/accounts" className="action-link">
             Back to accounts
           </Link>
+          {setup && (
+            <BreadcrumbRecords
+              path={`/money/accounts/${setup.account.financialAccountId}/reconcile`}
+              labels={{
+                [`/money/accounts/${setup.account.financialAccountId}`]:
+                  setup.account.name,
+              }}
+            />
+          )}
           <ScreenHeader scope="Money" title="Account reconciliation" />
           <p className="mt-3 text-muted-foreground">
             Compare an observed balance, investigate differences, and review any

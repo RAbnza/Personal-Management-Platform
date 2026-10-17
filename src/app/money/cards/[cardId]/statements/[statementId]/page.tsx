@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { MoneyColumns } from "@/components/money/money-workspace";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
@@ -45,6 +46,13 @@ export default async function StatementPage({
     money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-6 break-words">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/${scope.statementId}`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: data.card.name,
+          [`/money/cards/${scope.cardId}/statements/${scope.statementId}`]: `Statement ${data.snapshot.statementDate}`,
+        }}
+      />
       <Link href={base} className="action-link">
         Statements for {data.card.name}
       </Link>

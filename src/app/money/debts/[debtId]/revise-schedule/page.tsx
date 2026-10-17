@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
@@ -40,6 +41,12 @@ export default async function ReviseSchedulePage({
         <Link href={back} className="action-link">
           Back to debt
         </Link>
+        {setup && (
+          <BreadcrumbRecords
+            path={`${back}/revise-schedule`}
+            labels={{ [back]: setup.detail.debt.name }}
+          />
+        )}
         <ScreenHeader scope="Money" title="Revise debt schedule" />
         <p className="mt-3 text-muted-foreground">
           Review contractual terms, carried payment satisfaction and affected

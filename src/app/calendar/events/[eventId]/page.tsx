@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -185,6 +186,10 @@ export default async function PersonalEventDetailPage({
             Back to Calendar
           </Link>
 
+          <BreadcrumbRecords
+            path={`/calendar/events/${eventId}`}
+            labels={{ [`/calendar/events/${eventId}`]: event.title }}
+          />
           <p className="mt-3 text-sm font-medium text-link">Calendar</p>
 
           <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">

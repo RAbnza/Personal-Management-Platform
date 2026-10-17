@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { CardCreateForm } from "@/components/money/card-create-form";
@@ -47,6 +48,10 @@ export default async function CardPage({
       <Link href="/money/cards" className="action-link">
         Credit cards
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${id.data}`}
+        labels={{ [`/money/cards/${id.data}`]: data.card.name }}
+      />
       <ScreenHeader scope="Money" title={data.card.name} />
       <p>
         {data.card.issuerName} · Posted outstanding{" "}

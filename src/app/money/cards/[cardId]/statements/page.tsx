@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { listCardStatements } from "@/modules/finance/services/read-card-statements";
@@ -27,6 +28,10 @@ export default async function StatementsPage({
     money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-5 break-words">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements`}
+        labels={{ [`/money/cards/${scope.cardId}`]: data.card.name }}
+      />
       <Link href={`/money/cards/${scope.cardId}`} className="action-link">
         {data.card.name}
       </Link>

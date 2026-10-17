@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
@@ -47,6 +48,13 @@ export default async function ReviseStatementPage({
       >
         Statement history
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/${scope.statementId}/revise`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: data.card.name,
+          [`/money/cards/${scope.cardId}/statements/${scope.statementId}`]: `Statement ${data.snapshot.statementDate}`,
+        }}
+      />
       <ScreenHeader scope="Money" title="Correct statement evidence" />
       <p>
         Revision {data.snapshot.version} will remain preserved. Review provider

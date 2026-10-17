@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useClientReady } from "@/shared/use-client-ready";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -19,6 +20,8 @@ import {
   MoreHorizontal,
   Search,
   Settings,
+  Plus,
+  ChevronDown,
 } from "lucide-react";
 import { MagicDock, MagicDockItem } from "@/components/patterns/magic-dock";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -33,6 +36,7 @@ import {
   screens,
   utilities,
   availableDestinations,
+  activeModule,
   isDestinationCurrent,
   type Destination,
   type NavigationModule,
@@ -54,6 +58,7 @@ export interface WorkspaceNavigationProps {
 
 export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
   const { activePath, userEmail, initialModules } = props;
+  const ready = useClientReady();
   const { sharing } = useNavigationCapabilities();
   const router = useRouter();
   const [preferences, setPreferences] = useState<
@@ -61,6 +66,7 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
   >(initialModules ?? null);
   const [unavailable, setUnavailable] = useState(false);
   const [menu, setMenu] = useState<Menu | null>(null);
+  const [fromHeader, setFromHeader] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const anchorRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -122,20 +128,27 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
   }, []);
-  const focusDestination = useCallback(
-    () =>
-      panelRef.current
-        ?.querySelector<HTMLElement>("a[href],button:not([data-close-menu])")
-        ?.focus(),
-    [],
-  );
+  const focusDestination = useCallback(() => {
+    const targets = Array.from(
+      panelRef.current?.querySelectorAll<HTMLElement>(
+        "a[href],button:not([data-close-menu])",
+      ) ?? [],
+    );
+    (
+      targets.find((target) => target.getClientRects().length > 0) ?? targets[0]
+    )?.focus();
+  }, []);
   useEffect(() => {
     if (menu) focusDestination();
   }, [menu, focusDestination]);
 
   const toggle = (event: MouseEvent<HTMLButtonElement>) => {
     const kind = event.currentTarget.dataset.menu as Menu;
-    anchorRef.current = event.currentTarget.closest("nav");
+    const header = event.currentTarget.dataset.header === "true";
+    setFromHeader(header);
+    anchorRef.current = header
+      ? event.currentTarget
+      : event.currentTarget.closest("nav");
     triggerRef.current = event.currentTarget;
     restoreFocus.current = true;
     setMenu((current) => (current === kind ? null : kind));
@@ -145,6 +158,9 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
     setMenu(null);
   };
   const moduleLinks = availableDestinations(modules, preferences, sharing);
+  const desktopLinks = moduleLinks.filter(
+    (item) => !["/calendar", "/sharing"].includes(item.href),
+  );
   const commandLinks = availableDestinations(screens, preferences, sharing);
   const moduleActive = [
     "/money",
@@ -168,7 +184,10 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
         className={dock.destination}
         onClick={closeForNavigation}
         aria-current={
-          isDestinationCurrent(activePath, href) ? "page" : undefined
+          isDestinationCurrent(activePath, href) ||
+          activeModule(activePath)?.href === href
+            ? "page"
+            : undefined
         }
       >
         <Icon aria-hidden="true" />
@@ -217,6 +236,7 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
           aria-controls={menu === kind ? panelId : undefined}
           data-dock-menu-trigger=""
           data-state={menu === kind ? "open" : "closed"}
+          disabled={!ready}
           data-menu={kind}
           onClick={toggle}
         >
@@ -230,29 +250,48 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
   ];
   return (
     <>
-      <button
-        ref={commandTrigger}
-        type="button"
-        className={styles.findButton}
-        onClick={() => {
-          setMenu(null);
-          setCommandOpen(true);
-        }}
-      >
-        <Search aria-hidden="true" className="size-4" />
-        <span>Find a screen</span>
-        <kbd className="hidden text-xs text-muted-foreground sm:inline">
-          Ctrl K
-        </kbd>
-      </button>
-      {addExpense && (
-        <Link
-          href="/money/transactions?kind=expense"
-          className="inline-flex min-h-11 items-center rounded-button bg-primary px-4 text-sm font-semibold text-primary-foreground"
+      <div className={styles.headerTools}>
+        <button
+          ref={commandTrigger}
+          aria-label="Find a screen"
+          disabled={!ready}
+          type="button"
+          className={styles.findButton}
+          onClick={() => {
+            setMenu(null);
+            setCommandOpen(true);
+          }}
         >
-          Add expense
-        </Link>
-      )}
+          <Search aria-hidden="true" className="size-4" />
+          <span>Find a screen</span>
+          <kbd className="hidden text-xs text-muted-foreground sm:inline">
+            Ctrl K
+          </kbd>
+        </button>
+        {addExpense && (
+          <Link
+            href="/money/transactions?kind=expense"
+            className={styles.quickAction}
+          >
+            <Plus size={17} aria-hidden="true" /> Add expense
+          </Link>
+        )}
+        <button
+          type="button"
+          className={styles.accountTrigger}
+          aria-label="Your account"
+          disabled={!ready}
+          data-menu="More"
+          data-header="true"
+          data-dock-menu-trigger=""
+          aria-haspopup="dialog"
+          aria-expanded={menu === "More" && fromHeader}
+          onClick={toggle}
+        >
+          <span>{props.userName.trim().slice(0, 1).toUpperCase() || "P"}</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
+      </div>
       <Popover.Root
         open={menu !== null}
         onOpenChange={(open) => {
@@ -262,11 +301,50 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
         <Popover.Anchor virtualRef={anchorRef} />
         <div className={styles.dockPosition}>
           <MagicDock compact label="Primary">
-            {items.map((item) => (
+            {items.slice(0, 2).map((item) => (
               <MagicDockItem key={item.key} compact>
                 {item}
               </MagicDockItem>
             ))}
+            <div className={styles.mobileDockItems}>
+              {items.slice(2).map((item) => (
+                <MagicDockItem key={item.key} compact>
+                  {item}
+                </MagicDockItem>
+              ))}
+            </div>
+            <div className={styles.desktopDockItems}>
+              <span className={styles.dockDivider} aria-hidden="true" />
+              {desktopLinks.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={styles.desktopDestination}
+                  aria-current={
+                    activeModule(activePath)?.href === href ? "page" : undefined
+                  }
+                >
+                  <Icon size={19} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              ))}
+              <button
+                type="button"
+                className={styles.desktopDestination}
+                aria-current={
+                  activeModule(activePath)?.sharing ? "true" : undefined
+                }
+                disabled={!ready}
+                data-menu="Modules"
+                data-dock-menu-trigger=""
+                aria-haspopup="dialog"
+                aria-expanded={menu === "Modules"}
+                onClick={toggle}
+              >
+                <LayoutGrid size={19} aria-hidden="true" />
+                <span>Explore</span>
+              </button>
+            </div>
           </MagicDock>
         </div>
         <Popover.Portal>
@@ -275,11 +353,11 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
             id={panelId}
             aria-labelledby={titleId}
             className={dock.expansion}
-            side="top"
-            align="center"
+            side={fromHeader ? "bottom" : "top"}
+            align={fromHeader ? "end" : "center"}
             sideOffset={2}
             collisionPadding={12}
-            avoidCollisions={false}
+            avoidCollisions={fromHeader}
             hideWhenDetached
             onOpenAutoFocus={(event) => {
               event.preventDefault();
@@ -326,7 +404,17 @@ export function WorkspaceNavigation(props: WorkspaceNavigationProps) {
                         : "Loading enabled modules…"}
                     </p>
                   )}
-                  {renderDestinations(moduleLinks)}
+                  <div className={styles.mobileModuleLinks}>
+                    {renderDestinations(moduleLinks)}
+                  </div>
+                  <div className={styles.desktopModuleLinks}>
+                    {renderDestinations(
+                      moduleLinks.filter((item) => item.sharing),
+                    )}
+                    <p className="px-3 py-2 text-sm text-muted-foreground">
+                      Your enabled modules are available directly in the dock.
+                    </p>
+                  </div>
                   <Link
                     href="/settings?section=modules"
                     className={dock.destination}

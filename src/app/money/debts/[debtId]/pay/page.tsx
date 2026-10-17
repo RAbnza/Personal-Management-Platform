@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
@@ -35,6 +36,12 @@ export default async function PayDebtPage({
         <Link href={back} className="action-link">
           Back to debt
         </Link>
+        {setup && (
+          <BreadcrumbRecords
+            path={`${back}/pay`}
+            labels={{ [back]: setup.detail.debt.name }}
+          />
+        )}
         <ScreenHeader scope="Money" title="Record debt payment" />
         <p className="mt-3 text-muted-foreground">
           Record an actual payment with explicit accounting and contractual

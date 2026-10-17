@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -55,6 +56,18 @@ export default async function OccurrencePage({
       <Link href={`/money/recurring/${data.root.id}`} className="action-link">
         Back to {data.root.name}
       </Link>
+      <BreadcrumbRecords
+        path={`/money/recurring/occurrences/${occurrenceId}`}
+        labels={{
+          [`/money/recurring/occurrences/${occurrenceId}`]: o.due_date,
+        }}
+        parents={[
+          { label: "Home", href: "/" },
+          { label: "Money", href: "/money/actions" },
+          { label: "Recurring", href: "/money/recurring" },
+          { label: data.root.name, href: `/money/recurring/${data.root.id}` },
+        ]}
+      />
       <ScreenHeader
         scope="Money / Recurring"
         title={`${data.root.name} · ${o.due_date}`}

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
@@ -27,6 +28,10 @@ export default async function NewStatementPage({
   }
   return (
     <div className="space-y-5">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/new`}
+        labels={{ [`/money/cards/${scope.cardId}`]: data.card.name }}
+      />
       <Link
         href={`/money/cards/${scope.cardId}/statements`}
         className="action-link"

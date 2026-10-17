@@ -6,6 +6,8 @@ import { LayoutGrid, LockKeyhole } from "lucide-react";
 import { SessionNoticeListener } from "@/components/auth/session-notice-listener";
 import type { WorkspaceThemeName } from "@/components/theme/workspace-theme-select";
 import { WorkspaceNavigation } from "./workspace-navigation";
+import { PageLocationProvider } from "./breadcrumbs";
+import { activeModule } from "./navigation-model";
 import { LocalNavigation } from "./local-navigation";
 import type { NavigationModule } from "./navigation-model";
 import styles from "./shell.module.css";
@@ -51,11 +53,12 @@ export function AppShell({
       </nav>
       <header className={styles.frame}>
         <div className={styles.identity}>
-          <span className="rounded-panel bg-accent p-2.5 text-accent-foreground">
+          <span className={styles.brandMark}>
             <LayoutGrid className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="font-semibold">Personal workspace</p>
+            <p className={styles.brandEyebrow}>A LITTLE MORE IN ORDER</p>
+            <p className={styles.brandTitle}>Personal workspace</p>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <LockKeyhole className="size-3" aria-hidden="true" />
               {path.startsWith("/sharing")
@@ -65,7 +68,7 @@ export function AppShell({
           </div>
         </div>
         <WorkspaceNavigation
-          key={`${identity.userEmail}:${modules?.map((m) => `${m.moduleKey}:${m.enabled}`).join(",") ?? "loading"}`}
+          key={`${path}:${identity.userEmail}:${modules?.map((m) => `${m.moduleKey}:${m.enabled}`).join(",") ?? "loading"}`}
           {...identity}
           activePath={path}
           task={focusedTask}
@@ -78,12 +81,21 @@ export function AppShell({
         aria-label={pageTitle}
         className={styles.main}
       >
-        {!focusedTask && <LocalNavigation path={path} />}
-        {path.startsWith("/money/") && !path.startsWith("/money/forecasts") ? (
-          <MoneyWorkspace path={path}>{children}</MoneyWorkspace>
-        ) : (
-          children
-        )}
+        <PageLocationProvider key={identity.userEmail} path={path}>
+          <div className={styles.locationBar}>
+            <span className={styles.moduleBadge}>
+              {activeModule(path)?.label ??
+                (path === "/" ? "Overview" : "Workspace")}
+            </span>
+            {!focusedTask && <LocalNavigation path={path} />}
+          </div>
+          {path.startsWith("/money/") &&
+          !path.startsWith("/money/forecasts") ? (
+            <MoneyWorkspace path={path}>{children}</MoneyWorkspace>
+          ) : (
+            children
+          )}
+        </PageLocationProvider>
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
@@ -79,6 +80,10 @@ export default async function FinancialActionPage({
       <Link href="/money/actions" className="action-link">
         Financial activity
       </Link>
+      <BreadcrumbRecords
+        path={`/money/actions/${id.data}`}
+        labels={{ [`/money/actions/${id.data}`]: detail.current.description }}
+      />
       <ScreenHeader scope="Money" title={detail.current.description} />
       <Panel
         title="Current logical action"

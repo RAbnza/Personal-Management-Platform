@@ -11,14 +11,19 @@
   scroll-margin-bottom: calc(var(--dock-clearance) + var(--shell-safe-bottom));
 }
 .frame {
-  max-width: var(--layout-content-max);
-  margin: auto;
+  max-width: calc(var(--layout-content-max) - 2rem);
+  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 1.5rem 1.5rem;
 }
 .main {
   min-width: 0;
@@ -33,9 +38,8 @@
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
-  margin: 0 0 1.5rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.75rem;
+  margin: 0;
+  min-width: 0;
   font-size: 0.875rem;
 }
 .localNav a,
@@ -124,7 +128,7 @@
 }
 @media (min-width: 768px) {
   .frame {
-    padding: 1.5rem 1.5rem 0.5rem;
+    padding: 1.25rem 1.5rem;
   }
   .main {
     padding: 1rem 1.5rem 2rem;
@@ -169,5 +173,305 @@
   }
   .shell:has([data-financial-task="true"]) {
     --dock-clearance: 1rem;
+  }
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--elevation-level-1);
+}
+.brandEyebrow {
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.2rem;
+  color: var(--focal-muted);
+}
+.brandTitle {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+.headerTools {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.findButton {
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  border-color: var(--border);
+  color: var(--foreground);
+  font-size: 0.8rem;
+}
+.findButton kbd {
+  margin-left: 1.5rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+}
+.quickAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.quickAction:hover {
+  background: var(--primary-hover);
+}
+.accountTrigger {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  border-radius: 2rem;
+}
+.accountTrigger > span {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  background: var(--surface);
+  color: var(--accent-foreground);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-weight: 650;
+}
+.mobileDockItems {
+  display: contents;
+}
+.desktopDockItems,
+.desktopModuleLinks {
+  display: none;
+}
+.locationBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.moduleBadge {
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-foreground);
+  border-left: 3px solid var(--primary);
+  padding: 0.4rem 0.7rem;
+}
+.localNav {
+  font-size: 0.8rem;
+}
+.localNav details {
+  display: flex;
+  flex-wrap: wrap;
+}
+.localNav details > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.localNav details[open] {
+  border-radius: 0.75rem;
+  background: var(--surface-subtle);
+}
+.localNav summary {
+  list-style: none;
+}
+.localNav summary::after {
+  content: "+";
+  margin-left: 0.5rem;
+}
+.localNav details[open] summary::after {
+  content: "\2212";
+}
+.breadcrumbs {
+  min-height: 2.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.breadcrumbs li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+.breadcrumbs a,
+.breadcrumbs span {
+  display: block;
+  padding: 0.6rem 0.45rem;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 0.5rem;
+}
+.breadcrumbs a:hover {
+  color: var(--accent-foreground);
+  background: var(--accent);
+}
+.breadcrumbs [aria-current] {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.crumbSeparator {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.crumbBack {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .accountTrigger {
+    display: inline-flex;
+  }
+  .dockPosition {
+    max-width: calc(100vw - 3rem);
+  }
+  .dockPosition > nav {
+    padding: 0.5rem 0.65rem;
+    gap: 0.25rem;
+    height: auto;
+    min-height: 4.25rem;
+    border-radius: 1.35rem;
+    box-shadow: var(--elevation-level-3);
+    align-items: center;
+  }
+  .mobileDockItems,
+  .mobileModuleLinks {
+    display: none;
+  }
+  .desktopDockItems {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .desktopModuleLinks {
+    display: block;
+  }
+  .dockDivider {
+    height: 2rem;
+    width: 1px;
+    background: var(--border);
+    margin-inline: 0.5rem;
+  }
+  .desktopDestination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 3rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 140ms,
+      color 140ms;
+    cursor: pointer;
+  }
+  .desktopDestination:hover {
+    background: var(--surface-subtle);
+  }
+  .desktopDestination[aria-current] {
+    background: var(--navigation-active);
+    color: var(--navigation-active-foreground);
+    box-shadow: var(--elevation-level-1);
+  }
+}
+@media (max-width: 767px) {
+  .frame {
+    margin-inline: 0.75rem;
+    padding: 0.9rem;
+    gap: 0.8rem;
+  }
+  .identity {
+    width: 100%;
+  }
+  .headerTools {
+    width: 100%;
+  }
+  .findButton {
+    flex: 1;
+    justify-content: flex-start;
+  }
+  .brandTitle {
+    font-size: 1rem;
+  }
+  .brandMark {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+  .breadcrumbs ol {
+    flex-wrap: nowrap;
+  }
+  .breadcrumbs li {
+    display: none;
+  }
+  .breadcrumbs li[data-parent="true"],
+  .breadcrumbs li[data-current="true"] {
+    display: flex;
+    flex: 1 1 0;
+  }
+  .breadcrumbs li[data-parent="true"] > .crumbSeparator {
+    display: none;
+  }
+  .breadcrumbs a {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .breadcrumbs a,
+  .breadcrumbs span {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .crumbBack {
+    display: inline;
+    flex-shrink: 0;
+  }
+  .moduleBadge {
+    display: none;
+  }
+  .locationBar:has(.moduleBadge:only-child) {
+    display: none;
+  }
+  .localNav {
+    gap: 0;
+    width: 100%;
+  }
+  .localNav a,
+  .localNav summary {
+    padding: 0.5rem 0.6rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktopDestination {
+    transition: none;
   }
 }

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -60,6 +61,10 @@ export default async function RecurringDetailPage({
       <Link href="/money/recurring" className="action-link">
         All recurring obligations
       </Link>
+      <BreadcrumbRecords
+        path={`/money/recurring/${obligationId}`}
+        labels={{ [`/money/recurring/${obligationId}`]: data.root.name }}
+      />
       <ScreenHeader scope="Money" title={data.root.name} />
       <p>
         {data.root.kind} ·{" "}

@@ -57,6 +57,17 @@ const shellProps = {
 };
 
 describe("AppShell", () => {
+  it("opens the account controls from the header and restores its trigger", async () => {
+    const user = userEvent.setup();
+    render(<AppShell {...shellProps}>Content</AppShell>);
+    const account = screen.getByRole("button", { name: "Your account" });
+    await user.click(account);
+    expect(
+      await screen.findByRole("dialog", { name: "Workspace and account" }),
+    ).toBeVisible();
+    await user.keyboard("{Escape}");
+    expect(account).toHaveFocus();
+  });
   it("provides primary navigation, identity, and a main-content skip target", async () => {
     render(
       <AppShell {...shellProps}>

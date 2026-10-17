@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
@@ -59,6 +60,10 @@ export default async function BudgetPage({
       `${base}?${new URLSearchParams(Object.entries({ ...q.data, ...extra }).filter((entry): entry is [string, string] => entry[1] !== undefined))}`;
   return (
     <div className="space-y-6">
+      <BreadcrumbRecords
+        path={`/money/budgets/${budgetId}`}
+        labels={{ [`/money/budgets/${budgetId}`]: b.categoryName }}
+      />
       <Link href="/money/budgets" className="action-link">
         All budgets
       </Link>

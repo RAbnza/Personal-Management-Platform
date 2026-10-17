@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -56,6 +57,15 @@ export default async function ReminderPage({
         >
           Back to Calendar
         </Link>
+        {view && (
+          <BreadcrumbRecords
+            path={`/calendar/reminders/${source.data.sourceKind}/${source.data.sourceId}`}
+            labels={{
+              [`/calendar/reminders/${source.data.sourceKind}/${source.data.sourceId}`]:
+                view.title,
+            }}
+          />
+        )}
         <h1 className="text-2xl font-semibold">
           {view?.title ?? "Reminder controls"}
         </h1>

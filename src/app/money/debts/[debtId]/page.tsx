@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import styles from "@/components/money/money-workspace.module.css";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import { Attachments } from "@/components/files/attachments";
@@ -81,6 +82,10 @@ export default async function DebtDetailPage({
           Back to debts
         </Link>
 
+        <BreadcrumbRecords
+          path={`/money/debts/${debt.debtId}`}
+          labels={{ [`/money/debts/${debt.debtId}`]: debt.name }}
+        />
         <ScreenHeader scope="Money" title={debt.name} />
 
         <p className="mt-2 wrap-break-word text-muted-foreground">

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -37,6 +38,10 @@ export default async function CardCommandPage({
   const base = `/money/cards/${scope.cardId}/commands/new`;
   return (
     <div className="space-y-6 break-words">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/commands/new`}
+        labels={{ [`/money/cards/${scope.cardId}`]: setup.card.name }}
+      />
       <Link href={`/money/cards/${scope.cardId}`} className="action-link">
         {setup.card.name}
       </Link>

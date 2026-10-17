@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -51,6 +52,10 @@ export default async function GoalPage({
     money = (v: string) => formatMoneyMinorUnits("PHP", v);
   return (
     <div className="space-y-6">
+      <BreadcrumbRecords
+        path={`/money/goals/${goalId}`}
+        labels={{ [`/money/goals/${goalId}`]: g.name }}
+      />
       <Link className="action-link" href="/money/goals">
         All savings goals
       </Link>

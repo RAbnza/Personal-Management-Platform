@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sharingActor } from "../../../_actor";
@@ -35,6 +36,13 @@ export default async function BillPage({
     "Historical participant";
   return (
     <div className="min-w-0 space-y-6 break-words">
+      <BreadcrumbRecords
+        path={`/sharing/${groupId}/expenses/${expenseId}`}
+        labels={{
+          [`/sharing/${groupId}`]: data.group.name,
+          [`/sharing/${groupId}/expenses/${expenseId}`]: current.description,
+        }}
+      />
       <h1 className="text-2xl font-semibold">{current.description}</h1>
       <Link href={`/sharing/${groupId}`} className="text-link underline">
         Back to group

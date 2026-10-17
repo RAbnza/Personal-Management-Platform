@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -191,6 +192,10 @@ export default async function TrackersPage({
   if (data.view === "template")
     return (
       <div className="space-y-8">
+        <BreadcrumbRecords
+          path={"/trackers/" + path.join("/")}
+          labels={{ ["/trackers/" + path.join("/")]: data.template.name }}
+        />
         <h1 className="text-2xl font-semibold">{data.template.name}</h1>
         <ArchiveButton
           kind="template"
@@ -258,6 +263,10 @@ export default async function TrackersPage({
   if (data.view === "entry")
     return (
       <div className="space-y-8">
+        <BreadcrumbRecords
+          path={"/trackers/" + path.join("/")}
+          labels={{ ["/trackers/" + path.join("/")]: data.entry.title }}
+        />
         <h1 className="text-2xl font-semibold">{data.entry.title}</h1>
         <Link className={link} href={`/trackers/${data.tracker.id}`}>
           Return to {data.tracker.name}
@@ -426,6 +435,10 @@ export default async function TrackersPage({
     );
   return (
     <div className="space-y-8">
+      <BreadcrumbRecords
+        path={"/trackers/" + path.join("/")}
+        labels={{ ["/trackers/" + path.join("/")]: data.tracker.name }}
+      />
       <h1 className="text-2xl font-semibold">{data.tracker.name}</h1>
       <Link
         className={link}

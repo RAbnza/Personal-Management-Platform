@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -129,6 +130,14 @@ export default async function MoneyAccountHistoryPage({
             {moneyEnabled ? "Back to accounts" : "Back to Home"}
           </Link>
 
+          {history && (
+            <BreadcrumbRecords
+              path={`/money/accounts/${accountId}/history`}
+              labels={{
+                [`/money/accounts/${accountId}`]: history.account.name,
+              }}
+            />
+          )}
           <ScreenHeader scope="Money" title="Account history" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">

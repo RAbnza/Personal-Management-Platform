@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { MoneyColumns } from "@/components/money/money-workspace";
 import { Panel } from "@/components/ui/panel";
 import { ScreenHeader } from "@/components/patterns/work-area";
@@ -52,6 +53,14 @@ export default async function InstallmentDetailPage({
       >
         Provider installment plans
       </Link>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/${scope.planId}`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: d.card.name,
+          [`/money/cards/${scope.cardId}/installments/${scope.planId}`]:
+            d.currentPurchase?.description ?? "Installment plan",
+        }}
+      />
       <ScreenHeader scope="Money" title="Installment plan details" />
       <p>
         Revision {d.version} —{" "}

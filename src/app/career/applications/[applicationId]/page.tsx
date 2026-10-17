@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -276,6 +277,12 @@ export default async function JobApplicationDetailPage({
             Back to applications
           </Link>
 
+          <BreadcrumbRecords
+            path={`/career/applications/${application.applicationId}`}
+            labels={{
+              [`/career/applications/${application.applicationId}`]: `${application.roleTitle} at ${application.companyName}`,
+            }}
+          />
           <p className="mt-3 text-sm font-medium text-link">Career</p>
 
           <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">

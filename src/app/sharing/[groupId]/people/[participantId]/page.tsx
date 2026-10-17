@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sharingActor } from "../../../_actor";
@@ -21,6 +22,13 @@ export default async function PersonPage({
     .slice(0, 100);
   return (
     <div className="space-y-5">
+      <BreadcrumbRecords
+        path={`/sharing/${groupId}/people/${participantId}`}
+        labels={{
+          [`/sharing/${groupId}`]: data.group.name,
+          [`/sharing/${groupId}/people/${participantId}`]: person.displayName,
+        }}
+      />
       <h1 className="text-2xl font-semibold">{person.displayName}</h1>
       <Link href={`/sharing/${groupId}`} className="text-link underline">
         Back to group

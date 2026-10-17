@@ -53,7 +53,7 @@ export default async function CardsPage() {
                   <CreditCard size={25} />
                   <small>
                     {c.issuerName}
-                    {c.archived ? " ? Archived" : ""}
+                    {c.archived ? " \u00b7 Archived" : ""}
                   </small>
                 </div>
                 <div>
