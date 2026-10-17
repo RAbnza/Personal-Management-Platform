@@ -4,12 +4,12 @@
 **Baseline:** `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner decisions recorded:** October 17, 2026, Asia/Manila\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Current direction and M1–M6 roadmap approved. M1 themes, Magic UI Dock A, mobile dock and existing workflows approved; final desktop dock refinement awaits manual owner review. M2–M6 still require individual assignments.\
+**Status:** Current direction and M1–M6 roadmap approved. M1 completed with explicit final owner visual approval October 17, 2026 (Asia/Manila), including the final dock active state and upward menus. M2 is ready for separate assignment. M2–M6 still require individual assignments.\
 **Related:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Milestones](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. How to use this register
 
-The owner's explicit October 17, 2026 approvals resolve D01, D03 and D04. D02 approves **Personal workspace** as the neutral working application identity and defers final branding. No further product or architecture decision blocks M1; its next prerequisite is an individual implementation assignment. Approval of the six-milestone roadmap does not start implementation. Future decisions F01–F07 remain deferred and do not block M1–M6.
+The owner's explicit October 17, 2026 approvals resolve D01, D03 and D04. D02 approves **Personal workspace** as the neutral working application identity and defers final branding. M1 has been individually assigned, implemented and finally owner-approved. No further visual decision blocks M2’s separate assignment. Approval of the six-milestone roadmap does not start implementation. Future decisions F01–F07 remain deferred and do not block M1–M6.
 
 The requested plan does not select a desktop runtime, Android framework, local database, encryption scheme, cloud provider or synchronization protocol. It preserves the current V3 architecture and all implemented behavior. Approval of a visual proposal is not approval of future architecture or of feature removal.
 
@@ -21,7 +21,7 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 | D02 | Working identity / final branding | **Personal workspace APPROVED**; final name, wordmark, logo and native branding deferred | No |
 | D03 | Complete visual identity | **APPROVED** identity/type/accessibility; D06 records approved Porcelain / Midnight Spectrum and Magic UI Dock A | No |
 | D04 | Balanced information density | **APPROVED**; readable everyday use, rich desktop records and adaptive mobile layouts | No |
-| D06 | M1 owner review round 3 and final refinement | **APPROVED** Porcelain, Midnight Spectrum, Magic UI Dock A, mobile design and existing workflows; slim bottom-centered desktop correction required | Desktop correction awaits manual owner review |
+| D06 | M1 owner review round 3 and final refinement | **FINAL M1 VISUAL APPROVAL GRANTED** October 17, 2026 (Asia/Manila), through `03950ab`; all dock refinements included | No; M1 complete |
 | D05 | Previous M1 owner review refinements | Color/navigation recommendation superseded by D06; record affordances and separate expense entry/review retained | See D06 |
 | F01 | Windows/Android runtime and code reuse | **DEFERRED** to platform architecture planning | No |
 | F02 | Local profile and online identity | **DEFERRED** to platform architecture planning | No |
@@ -37,9 +37,9 @@ Classification terms follow [Plan Section 1](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.m
 
 The owner rejected the Round 2 ivory/cream direction and custom capsules at `2b0a492be6c40b1068c312b49ce2acbfc3cca7f4`. D06 **supersedes D05's palette/navigation recommendation**. After reviewing `764ac233f3acfd68e6c3fcf94b33b86c9c1656b9`, the owner approved **Porcelain**, **Midnight Spectrum**, **Magic UI Dock (Concept A)**, the existing mobile dock, financial activity, expense review, tracker migration and interaction patterns.
 
-The selected themes retain white/cool near-white with lavender/blue/pink supporting regions and controlled dark violet/cyan/plum, one restrained focal blend and static active-icon glow. No flashing, moving backgrounds or glowing body text. Gallery white / Graphite blue and Radix Concept B remain historical comparison options. See the [library evaluation](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3).
+The selected themes retain white/cool near-white with lavender/blue/pink supporting regions and controlled dark violet/cyan/plum, one restrained focal blend and the final active icon/border/line treatment. No flashing, moving backgrounds or glowing body text. Gallery white / Graphite blue and Radix Concept B remain historical comparison options. See the [library evaluation](REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3).
 
-**Latest M1 refinement:** bottom-centered placement, slim proportions and themes are approved. Keep desktop widths static and retain safe-area/content/focus clearance and short-viewport fallback. Replace the rejected large filled active capsule with stronger text, a restrained icon border and small indicator line. Modules and More must expand upward in a dock-centered, connected nonmodal panel on desktop/mobile, with Escape/outside dismissal, appropriate entry/return focus, a single open menu and reduced-motion support. Do not use the previous right sidebar. This synthetic-only refinement awaits manual owner review; no screenshots, gallery updates, broad regression campaign, automatic merge or M2/M3 implementation.
+**Latest M1 refinement:** bottom-centered placement, slim proportions and themes are approved. Keep desktop widths static and retain safe-area/content/focus clearance and short-viewport fallback. Replace the rejected large filled active capsule with stronger text, a restrained icon border and small indicator line. Modules and More must expand upward in a dock-centered, connected nonmodal panel on desktop/mobile, with Escape/outside dismissal, appropriate entry/return focus, a single open menu and reduced-motion support. Do not use the previous right sidebar. The owner explicitly approved this final implementation through `03950aba227cf68ecd00bea9c623be3dcd052536` on October 17, 2026 (Asia/Manila) and authorized M1 integration into `main`. M1 is completed; M2 is ready for a separate assignment. This approval adds no screenshots, gallery changes or broad local regression campaign and does not implement M2/M3 or certify unperformed manual accessibility/real-device checks.
 
 The Round 3 mobile clipping correction uses document flow for browsing, shared header/content scroll, dock/safe-area/focus clearance and verified initial/returned Home action geometry. The dedicated expense task retains its separate body/actions and short-height fallback. The supported Next development indicator configuration keeps manual review unobstructed; do not hide application overlaps. M1 remains synthetic-only, M2 owns real routing/permissions/navigation and its production layout contract, and M3 owns real expense create/edit. Review the current desktop correction in the local browser before assigning another milestone; the [earlier renders](verification/assets/redesign-m1/README.md) remain historical evidence.
 
@@ -57,14 +57,14 @@ M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide c
 - **Approved decision:** adopt the warm, modern personal-workspace presentation, compact application frame, integrated module switcher rather than a mandatory permanent global sidebar, contextual navigation/actions, adaptive list/detail layouts and user-focused interactions. All six milestones M1–M6 are approved as the roadmap.
 - **Why it matters:** the proposal intentionally replaces the permanent sidebar and repetitive panel composition, changes the light primary-action treatment, and reorganizes access to implemented workflows. These should be deliberate owner choices.
 - **Current refinement:** D06 updates [Plan Sections 4–6](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#4-reference-image-analysis) to white-based light canvases, controlled dark accents and proven-component floating navigation. Keep violet/lavender identity, an integrated module switcher, local navigation and contextual detail. Mobile retains labeled Home, Calendar, Modules, More. Preserve all current URLs and business behavior.
-- **Earlier alternatives:** previous canvas/capsule proposals are historical; D06 records the owner's newer instruction and pending visual choices.
+- **Earlier alternatives:** previous canvas/capsule proposals are historical; D06 records the owner's final approved choices.
 - **Impact:** approval establishes the proposed visual supersession of the corresponding existing design-guideline roles. Product, architecture, database, financial and privacy authorities remain unchanged. It permits starting only the milestone(s) the owner subsequently assigns.
-- **Implementation boundary:** planning approval is complete. M1 has been individually assigned and implemented; its rendered proofs await owner visual sign-off. No future architecture decision is needed.
+- **Implementation boundary:** planning approval is complete. M1 has been individually assigned, implemented and explicitly granted final owner visual approval October 17, 2026 (Asia/Manila). No future architecture decision is needed.
 - **Blocks current redesign:** **No**; direction approved. Implementation remains separately assigned.
 - **Only affects future migration:** **No**.
 - **Review evidence:** the complete plan and route inventory now; representative rendered Home, financial review, dense record list and tracker-migration proofs during M1 before broad adoption.
 
-**Owner's final decision: APPROVED — October 17, 2026 (Asia/Manila).** Preserve every V1–V3 capability, financial rule, privacy/security/authorization guarantee and historical behavior. Approval authorizes the direction and roadmap, not automatic implementation. M1 representative rendered layouts remain subject to usability/accessibility review before broad adoption.
+**Owner's final decision: APPROVED — October 17, 2026 (Asia/Manila).** Preserve every V1–V3 capability, financial rule, privacy/security/authorization guarantee and historical behavior. Approval authorizes the direction and roadmap, not automatic implementation. M1 representative layouts now have final owner visual approval. Unperformed manual accessibility and real-device checks remain follow-up verification, not claimed results.
 
 ## 3. Approved current identity, visual system and density
 
@@ -85,7 +85,7 @@ M1 demonstrates synthetic prototypes only. **M2** owns actual application-wide c
 ### D03 — Brand connection and color emphasis
 
 - **Class:** CURRENT REDESIGN + FUTURE-READY FOUNDATION.
-- **Approved identity, refined by D06:** violet/lavender, Geist, consistent light/dark modes, centralized semantic tokens and accessibility/contrast remain. White-based light canvases and controlled dark spectrum accents replace the previous warm-canvas proposal; rendered acceptance remains pending.
+- **Approved identity, refined by D06:** violet/lavender, Geist, consistent light/dark modes, centralized semantic tokens and accessibility/contrast remain. White-based light canvases and controlled dark spectrum accents replace the previous warm-canvas proposal; final M1 visual approval was granted October 17, 2026 (Asia/Manila).
 - **Why it matters:** the previous guidelines explicitly reference that visual family, while the new references introduce warmer and more varied color.
 - **Approved choice:** retain violet/lavender and Geist with Porcelain / Midnight Spectrum under D06. Complementary blue/cyan, teal and plum support content independently of feedback meaning. Strong violet light actions and lavender dark actions remain.
 - **Earlier alternatives:** warm ivory/cream are rejected historical iterations. Final brand assets remain deferred under D02.
@@ -208,4 +208,4 @@ M6 is final **redesign-wide acceptance**: complete screen/route coverage, cross-
 
 Broaden verification only for changed shared contracts, discovered failures or significant security/financial integrity risks. Preserve existing assertions, mandatory correctness guarantees and unchanged CI. Historical evidence supports unchanged behavior, not newly redesigned interfaces. Record executed tests, actual results, coverage, exclusions and rationale.
 
-**M1 implementation checkpoint — October 17, 2026:** individually assigned M1 is implemented and technically checked; see [handoff](REDESIGN_M1_HANDOFF.md). Owner visual review and any feedback remain pending before M2. Final branding and F01–F07 remain deferred and non-blocking. The original planning assignment started no milestone; this checkpoint records the subsequent M1 implementation assignment.
+**M1 completion checkpoint — October 17, 2026 (Asia/Manila):** individually assigned M1 is completed and finally owner-approved; see [handoff](REDESIGN_M1_HANDOFF.md). Final visual approval includes every dock revision through `03950ab`. M2 is ready for separate assignment after M1 integration; M2 has not started. Final branding and F01–F07 remain deferred and non-blocking. The original planning assignment started no milestone; this checkpoint records the subsequent M1 implementation assignment.

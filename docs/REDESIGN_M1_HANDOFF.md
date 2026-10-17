@@ -1,8 +1,18 @@
 # M1 implementation handoff
 
-October 17, 2026 (Asia/Manila). **M1 only: themes, overall visual direction, bottom-centered placement and slim dock proportions approved; refined active state and expanding dock menus await manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
+October 17, 2026 (Asia/Manila). **M1 completed and explicitly granted final owner visual approval**, including all final dock revisions. M2 is ready for its separate assignment; M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
-## Active state and upward dock menus
+## Final owner approval and integration
+
+The project owner explicitly granted final visual approval on **October 17, 2026 (Asia/Manila)** for **M1 — Design Foundations and Shared Interaction Patterns**, through implementation commit `03950aba227cf68ecd00bea9c623be3dcd052536`. Approval includes Porcelain, Midnight Spectrum, bottom-centered desktop/mobile Magic UI Dock, slim proportions, static desktop hover, refined active state, upward-expanding Modules/More menus and all other M1 shared components/patterns. The owner authorized recording approval and integrating the feature branch into `main`; this is not an inferred approval from automated checks.
+
+M2 must start from the verified remote `main` commit produced by this M1 integration, not the pre-M1 `265c3f2` baseline. The integration completion report records the immutable merged SHA and CI outcome. Approval documentation is committed on `feat/redesign-m1-foundations` first; merge without rewriting the six implementation commits or changing CI. The baseline's existing CI failure was traced to `README.md` table formatting; its materially stale current-phase row and formatting are corrected in this documentation-only approval change. Integration/CI status is reported separately from the owner's visual decision.
+
+Historical review findings, captures and executed testing evidence below remain as recorded. Final visual approval does **not** mean NVDA/Narrator/TalkBack, real Android/IME/touch, low-end hardware or production/deployment checks were newly performed; their documented limitations remain. No screenshots, local application suites, builds, database checks or benchmarks are rerun for this approval. M2 is ready for a separate assignment after integration; no M2 implementation is included.
+
+Approval-only checks: all ten changed paths are documentation, UTF-8 and 33 changed local link targets/anchors pass, README passes targeted Prettier, `git diff --check` passes, the screenshot gallery is unchanged, and the fetched `main` is an ancestor of the feature tip. Existing GitHub Actions remains unchanged; automatic PR/main runs are separate integration evidence reported with the resulting merge.
+
+## Active state and upward dock menus (historical review checkpoint)
 
 Baseline `d85a7314bce07090c966e085f8f286d2afb16d20`. Selected Magic UI Dock destinations now use stronger text, a restrained icon border and a small indicator line, with no large filled active capsule or colored active tile/glow. Desktop dimensions and the static 180ms hover tint remain. Mobile placement, proportions and icon/label layout remain.
 
@@ -93,8 +103,8 @@ The semantic table remains native; no speculative table sorting or second server
 
 The approved detail split remains at 1280px rather than forcing it at 1024px; this keeps a useful 600px list and 340–400px detail region. Below it, the proof opens a full detail destination. Later domains must preserve their canonical URLs and safe return context; `/dev/design` query parameters are review-only. The collapsed review toolbar is distinct from the two library-backed product navigation prototypes. Its representative module/More disclosures and single Calendar sample do not implement the real M2 directory or M4 Calendar.
 
-Remaining owner checkpoint: inspect hierarchy, warmth, density, narrow-screen reading effort, exact financial review clarity and migration cancellation/resume wording. Record feedback and resolve it before M2. No visual acceptance is inferred from passing tests or screenshots.
+The earlier owner checkpoint covering hierarchy, warmth, density, narrow-screen reading effort, exact financial review clarity and migration cancellation/resume wording is resolved by the explicit final visual approval above. Historical findings remain preserved; no visual acceptance is inferred from passing tests or screenshots.
 
 Manual NVDA/Narrator speech, TalkBack, real Android/software keyboard, real-device touch and low-end hardware checks were not available in this session. These remain explicit follow-up verification, not claimed results. Production standalone packaging warnings and limits of the available before/after performance artifact are recorded with the measurements.
 
-The milestone/decision/plan headers, design guidelines and blueprint/system architecture status notes link this checkpoint. Architecture/product definitions and future F01–F07 decisions remain unchanged. Subsequent work begins only after owner review and a separate milestone assignment.
+The milestone/decision/plan headers, design guidelines and blueprint/system architecture status notes link this completed checkpoint. Architecture/product definitions and future F01–F07 decisions remain unchanged. Final owner visual review is complete; subsequent work still requires a separate milestone assignment.

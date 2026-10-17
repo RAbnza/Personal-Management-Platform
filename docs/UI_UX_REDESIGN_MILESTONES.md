@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1 implemented and technically checked; final owner visual sign-off pending. M2–M6 have not started.\
+**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 is ready for separate assignment; M2–M6 have not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -25,9 +25,9 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 ## 2. M1 — Design foundations and shared interaction patterns
 
-**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M1 foundations, shared patterns and development-only synthetic proofs are implemented and technically checked. **Owner visual sign-off remains pending.** [Implementation handoff](REDESIGN_M1_HANDOFF.md) · [Component contracts](REDESIGN_M1_COMPONENT_GUIDE.md) · [Rendered evidence](verification/assets/redesign-m1/README.md). Resolve owner feedback before individually assigning M2.
+**Completion checkpoint — October 17, 2026 (Asia/Manila):** M1 foundations, shared patterns and development-only synthetic proofs are complete. **The owner explicitly granted final visual approval**, including all revisions through `03950aba227cf68ecd00bea9c623be3dcd052536` (refined dock active state and upward-expanding menus). [Implementation handoff](REDESIGN_M1_HANDOFF.md) · [Component contracts](REDESIGN_M1_COMPONENT_GUIDE.md) · [Rendered evidence](verification/assets/redesign-m1/README.md). M2 is ready for its separate assignment; it is not started by this approval. Historical evidence and unperformed real-device/manual accessibility checks remain documented.
 
-**Latest owner decision and final M1 refinement:** **Porcelain**, **Midnight Spectrum**, **Magic UI Dock (Concept A)**, the existing mobile dock and activity/expense review/migration/interaction patterns are approved. Both desktop and mobile use bottom-centered floating navigation; desktop must be slimmer with horizontal icon/label items, restrained magnification and safe-area/content/focus clearance. Preserve mobile. Only the desktop correction awaits manual browser review, with minimal relevant static/component checks and no new screenshots, gallery changes or broad regression campaign. M1 supplies synthetic foundations only; M2/M3 have not started. See [D06](UI_UX_REDESIGN_DECISIONS_REQUIRED.md#d06--m1-owner-review-round-3) and [handoff](REDESIGN_M1_HANDOFF.md#final-desktop-dock-refinement).
+**Approved final M1 design:** **Porcelain**, **Midnight Spectrum**, **Magic UI Dock (Concept A)**, the existing mobile dock and activity/expense review/migration/interaction patterns are approved. Desktop/mobile bottom-centered placement, slim horizontal desktop proportions, static desktop widths with subtle hover, the refined active line/icon border and dock-connected upward Modules/More menus are approved. Safe-area/content/focus clearance and reduced-motion behavior remain required. No new screenshots or broad regression campaign accompany this approval. M1 supplies synthetic foundations only; M2/M3 have not started. See [D06](UI_UX_REDESIGN_DECISIONS_REQUIRED.md#d06--m1-owner-review-round-3) and [handoff](REDESIGN_M1_HANDOFF.md#final-owner-approval-and-integration).
 
 **Objective:** establish a tested, recognizable visual and interaction system before broad page conversion.
 
@@ -45,7 +45,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Required components/libraries:** retain Tailwind/CVA/clsx/tailwind-merge, RHF/Zod, Lucide, themes and existing tests; expand Radix-backed components; staged TanStack Table/Query adoption. Sonner only if a shared transient-feedback need is demonstrated. No motion/calendar/grid package by default.
 
-**Dependencies:** D01 approval **satisfied October 17, 2026**; explicit M1 assignment and current stack/docs remain required. Final name/logo, F01–F07 and real external services are not required.
+**Dependencies:** D01 approval, explicit M1 assignment, implementation and final owner visual approval **satisfied October 17, 2026**. Final name/logo, F01–F07 and real external services are not required.
 
 **Functionality preservation:** existing primitive public behavior, form field semantics, no private persisted cache, identity/theme cleanup, exact money strings and authoritative validation. No new generic command abstraction may change existing business payloads.
 
@@ -216,13 +216,13 @@ For each assigned milestone, record: baseline/changed paths, inventory IDs compl
 
 Use the project's code-output rule when creating or updating code/configuration files in future implementation sessions. No code/configuration file is created or changed by this planning assignment.
 
-| Milestone | State at planning delivery                | Evidence                      |
+| Milestone | Current state                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1 | Implemented and technically checked; pending owner visual sign-off | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
-| M2        | Not started                               | No implementation claimed     |
+| M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
+| M2        | Ready for separate assignment; not started                               | No implementation claimed     |
 | M3        | Not started                               | No implementation claimed     |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Next step: owner reviews the final desktop dock in the local browser for appearance, placement, scrolling and proportions. Approved themes, Dock A, mobile presentation and existing workflows remain settled. Resolve any desktop feedback before individually assigning M2. M2–M6 and future platform decisions remain outside this delivery.
+Next step: finish the authorized M1 integration into `main`, verify its remote SHA and CI status, then assign M2 separately from that merged baseline. M1 visual sign-off is complete; no unperformed accessibility/device checks are implied. M2–M6 and future platform decisions remain outside this delivery.
