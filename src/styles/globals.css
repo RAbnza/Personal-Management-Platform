@@ -153,7 +153,8 @@ svg {
   }
 }
 
-/* Document scrolling reserves the production dock's focus/content clearance. */
-html:has(.workspace-shell) {
+/* Document scrolling reserves dock clearance in the app and design proofs. */
+html:has(.workspace-shell),
+html:has(.design-proof) {
   scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
 }
