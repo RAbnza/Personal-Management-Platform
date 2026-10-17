@@ -12,6 +12,8 @@ Historical review findings, captures and executed testing evidence below remain 
 
 Approval-only checks: all ten changed paths are documentation, UTF-8 and 33 changed local link targets/anchors pass, README passes targeted Prettier, `git diff --check` passes, the screenshot gallery is unchanged, and the fetched `main` is an ancestor of the feature tip. Existing GitHub Actions remains unchanged; automatic PR/main runs are separate integration evidence reported with the resulting merge.
 
+**Owner-requested CI limit:** the owner subsequently requested stopping the lengthy CI run. PR #2 run `39024671962` had actually passed `pnpm check`, unit/component tests and `pnpm test:integration` before cancellation took effect; the remaining workflow was stopped during migration-upgrade verification. This is partial passed evidence plus canceled/unperformed later checks, not a fully passed acceptance run. The approval follow-up and merge use `[skip ci]` to avoid another expensive run for this owner-authorized integration; CI configuration and assertions remain unchanged. This explicit limit does not imply completed build/browser/container/restore/audit or manual accessibility/device checks. M2 remains ready for separate assignment from the verified merged baseline under this recorded limit.
+
 ## Active state and upward dock menus (historical review checkpoint)
 
 Baseline `d85a7314bce07090c966e085f8f286d2afb16d20`. Selected Magic UI Dock destinations now use stronger text, a restrained icon border and a small indicator line, with no large filled active capsule or colored active tile/glow. Desktop dimensions and the static 180ms hover tint remain. Mobile placement, proportions and icon/label layout remain.
