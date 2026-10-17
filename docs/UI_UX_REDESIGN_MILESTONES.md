@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 is ready for separate assignment; M2–M6 have not started.\
+**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 implementation is complete on `feat/redesign-m2-m3`; M3 continues under the combined assignment. Owner review and M6 acceptance remain pending; M4–M6 have not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -56,6 +56,8 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 **Expected deliverables:** token/component changes, representative reviewed proofs/screenshots, updated component guidance and focused test evidence. These artifacts are created only during the future authorized milestone, not by the planning assignment.
 
 ## 3. M2 — Application frame, navigation and first-use experience
+
+**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M2 implemented on `feat/redesign-m2-m3`, following merged M1 `a109b19`. Production dock/discovery/command navigation, Home, current access/setup/settings/security/help surfaces and targeted verification are recorded in [combined handoff](REDESIGN_M2_M3_HANDOFF.md). Owner review and consolidated acceptance remain pending. Continue directly into M3.
 
 **Objective:** make every current module discoverable and give the application a coherent, native-oriented work area.
 
@@ -219,10 +221,10 @@ Use the project's code-output rule when creating or updating code/configuration 
 | Milestone | Current state                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
 | M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
-| M2        | Ready for separate assignment; not started                               | No implementation claimed     |
-| M3        | Not started                               | No implementation claimed     |
+| M2 | Implemented; owner review/M6 acceptance pending | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
+| M3 | Next under the authorized combined M2 + M3 assignment | [Running handoff](REDESIGN_M2_M3_HANDOFF.md) |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Next step: finish the authorized M1 integration into `main`, verify its remote SHA and CI status, then assign M2 separately from that merged baseline. M1 visual sign-off is complete; no unperformed accessibility/device checks are implied. M2–M6 and future platform decisions remain outside this delivery.
+Next step: continue directly from the M2 implementation checkpoint into M3 on `feat/redesign-m2-m3`. Push only after both implementation checkpoints; do not create a PR, merge or start M4–M6. M1 historical approval/evidence is preserved; M2/M3 owner approval and unperformed manual accessibility/device checks are not implied.
