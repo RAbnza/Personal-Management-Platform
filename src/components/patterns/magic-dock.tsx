@@ -4,7 +4,8 @@
  * Source: https://magicui.design/r/dock.json (retrieved 2026-10-17).
  * See magic-dock.LICENSE. Retains upstream distance/transform/spring mechanics.
  * Changes: native nav, clientX coordinates, explicit item context, persistent
- * labels supplied by callers, and static touch/reduced-motion presentation.
+ * labels supplied by callers, static compact desktop items, and static
+ * touch/reduced-motion presentation.
  */
 import { createContext, useContext, useRef, type ReactNode } from "react";
 import {
@@ -33,7 +34,8 @@ export function MagicDock({
         aria-label="Product navigation prototype"
         className={`${styles.dock} ${compact ? styles.compactDock : ""}`}
         onPointerMove={(event) => {
-          if (event.pointerType === "mouse") mouseX.set(event.clientX);
+          if (!compact && event.pointerType === "mouse")
+            mouseX.set(event.clientX);
         }}
         onPointerLeave={() => mouseX.set(Infinity)}
       >
@@ -50,6 +52,18 @@ export function MagicDockItem({
   children: ReactNode;
   compact?: boolean;
 }) {
+  // The approved desktop capsule stays fixed; only its CSS hover tint changes.
+  if (compact) {
+    return (
+      <div className={styles.dockItem} style={{ width: "5.625rem" }}>
+        {children}
+      </div>
+    );
+  }
+  return <MagnifyingDockItem>{children}</MagnifyingDockItem>;
+}
+
+function MagnifyingDockItem({ children }: { children: ReactNode }) {
   const mouseX = useContext(DockContext);
   const ref = useRef<HTMLDivElement>(null);
   const defaultMouseX = useMotionValue(Infinity);
@@ -58,21 +72,12 @@ export function MagicDockItem({
     const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
     return value - bounds.x - bounds.width / 2;
   });
-  const baseSize = compact ? 90 : 76;
-  const size = useTransform(
-    distance,
-    [-140, 0, 140],
-    [baseSize, compact ? 96 : 88, baseSize],
-  );
+  const size = useTransform(distance, [-140, 0, 140], [76, 88, 76]);
   const width = useSpring(size, { mass: 0.1, stiffness: 150, damping: 12 });
-  // Desktop dimensions scale with text size; the approved mobile path is unchanged.
-  const renderedWidth = useTransform(width, (value) =>
-    compact ? `${value / 16}rem` : `${value}px`,
-  );
   return (
     <motion.div
       ref={ref}
-      style={{ width: reduce ? (compact ? "5.625rem" : 76) : renderedWidth }}
+      style={{ width: reduce ? 76 : width }}
       className={styles.dockItem}
     >
       {children}

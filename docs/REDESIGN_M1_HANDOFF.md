@@ -1,8 +1,14 @@
 # M1 implementation handoff
 
-October 17, 2026 (Asia/Manila). **M1 only: themes, Magic UI Dock A, mobile dock and existing workflows approved; final desktop correction awaits manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
+October 17, 2026 (Asia/Manila). **M1 only: overall design, themes, Magic UI Dock, bottom-centered placement, slim desktop proportions, mobile interaction and existing patterns approved; final desktop hover awaits manual owner review.** M2–M6, native architecture, offline behavior and production deployment have not started. The complete application has not been redesigned.
 
-## Final desktop dock refinement
+## Final desktop hover refinement
+
+Baseline `d1404f5b91c569f82cb957379a1e81dab32ddf6a`. Compact desktop items now use fixed 5.625rem widths (90px at default text size), without Motion width expansion or CSS icon lift. Unselected hover/keyboard focus uses a subtle surface tint and accent text through a 180ms ease-out color/background transition; the selected destination retains its filled accent, active icon and marker. Reduced-motion and touch presentation disable the transition. Position, resting proportions, spacing, icons, labels, routing and the separate mobile interaction remain unchanged. No dependencies were added.
+
+The affected dock check now asserts stable dock/item/icon geometry, selected-versus-hover state, keyboard focus and reduced-motion behavior in both themes. **2/2 targeted hover checks passed**, using an ignored temporary config with screenshot/trace/video capture disabled and the existing review server. Targeted ESLint (`magic-dock.tsx`, `foundations.spec.ts`), `pnpm typecheck`, changed-source Prettier and `git diff --check` passed. No screenshots, gallery updates, full browser suite or unrelated checks. The owner will review the hover feel at `http://localhost:3200/dev/design?nav=dock` and provide final M1 sign-off. No merge or M2 work.
+
+## Desktop dock placement refinement (historical)
 
 Baseline `764ac233f3acfd68e6c3fcf94b33b86c9c1656b9`. The owner selected **Porcelain + Midnight Spectrum + Magic UI Dock (Concept A)** and approved the existing mobile design, financial activity, expense review, migration and interaction patterns. Desktop A now floats at bottom center with horizontal icon/label items, a 60px pill and approximately 384px resting width at default text size. Hover expansion is restrained to 90–96px per item, with smaller icon tiles, subtle elevation and a clear current destination. Application identity remains at the top. No new dependencies.
 

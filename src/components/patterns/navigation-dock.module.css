@@ -171,6 +171,13 @@
     gap: 0.25rem;
     padding: 0.125rem;
     border-radius: 999px;
+    transition:
+      background-color 180ms ease-out,
+      color 180ms ease-out;
+  }
+  .compactDock .item:not([aria-current]):is(:hover, :focus-visible) {
+    background: var(--surface-subtle);
+    color: var(--accent-foreground);
   }
   .compactDock .item > span:last-child {
     min-width: 0;
@@ -180,6 +187,10 @@
     width: calc(100% - 3.875rem);
     min-width: 1.5rem;
     border-radius: 0.5rem;
+    transition: none;
+  }
+  .compactDock .item:is(:hover, :focus-visible) .tile {
+    transform: none;
   }
   .compactDock .tile svg {
     width: 1.125rem;
@@ -260,6 +271,9 @@
   @media (min-width: 768px) {
     .compactDock .dockItem {
       width: 5.625rem !important;
+    }
+    .compactDock .item {
+      transition: none;
     }
   }
 }

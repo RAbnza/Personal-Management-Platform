@@ -919,37 +919,63 @@ for (const theme of ["light", "dark"] as const) {
   });
 }
 
-test("Round 3 dock magnification respects pointer and reduced motion", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await openProof(page, "home");
-  const item = page
-    .getByRole("navigation", { name: "Product navigation prototype" })
-    .filter({ visible: true })
-    .getByRole("link", { name: "Home", exact: true })
-    .locator("..");
-  await page.mouse.move(0, 0);
-  await expect
-    .poll(async () => Math.round((await item.boundingBox())!.width))
-    .toBe(90);
-  const tile = item.locator("a > span").first();
-  const tileWidth = (await tile.boundingBox())!.width;
-  const dockHeight = (await item.locator("..").boundingBox())!.height;
-  await item.hover();
-  await expect
-    .poll(async () => (await item.boundingBox())!.width)
-    .toBeGreaterThan(94);
-  await expect
-    .poll(async () => (await tile.boundingBox())!.width)
-    .toBeGreaterThan(tileWidth + 4);
-  expect((await item.locator("..").boundingBox())!.height).toBe(dockHeight);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect
-    .poll(async () => Math.round((await item.boundingBox())!.width))
-    .toBe(90);
-  await expect(item.locator("a")).toHaveAccessibleName("Home");
-});
+for (const theme of ["light", "dark"] as const) {
+  test(`Desktop dock hover preserves geometry and keyboard focus · ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await openProof(page, "home", theme);
+    const nav = page
+      .getByRole("navigation", { name: "Product navigation prototype" })
+      .filter({ visible: true });
+    const home = nav.getByRole("link", { name: "Home", exact: true });
+    const calendar = nav.getByRole("link", { name: "Calendar", exact: true });
+    const tile = calendar.locator("span").first();
+    const geometry = () =>
+      nav.evaluate((element) =>
+        [
+          element,
+          ...element.querySelectorAll(
+            "a, button, a > span:first-child, button > span:first-child",
+          ),
+        ].map((target) => {
+          const { x, y, width, height } = target.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      );
+    await page.mouse.move(0, 0);
+    const initial = await geometry();
+    expect(initial[1]!.width).toBe(90);
+    const idleBackground = await calendar.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    const hoverBackground = await tile.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    await calendar.hover();
+    await expect(calendar).toHaveCSS("transition-duration", "0.18s, 0.18s");
+    await expect(calendar).toHaveCSS("background-color", hoverBackground);
+    await expect(tile).toHaveCSS("transform", "none");
+    expect(await geometry()).toEqual(initial);
+    await expect(home).toHaveAttribute("aria-current", "page");
+    await expect(home).not.toHaveCSS("background-color", hoverBackground);
+    await page.mouse.move(0, 0);
+    await expect(calendar).toHaveCSS("background-color", idleBackground);
+    expect(await geometry()).toEqual(initial);
+
+    await home.focus();
+    await page.keyboard.press("Tab");
+    await expect(calendar).toBeFocused();
+    await expect(calendar).toHaveCSS("outline-style", "solid");
+    await expect(calendar).toHaveCSS("outline-width", "2px");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(calendar).toHaveCSS("transition-duration", "0s");
+    await calendar.hover();
+    await expect(tile).toHaveCSS("transform", "none");
+    expect(await geometry()).toEqual(initial);
+    await expect(home).toHaveAccessibleName("Home");
+  });
+}
 
 for (const concept of ["dock", "radix"] as const) {
   test(`Round 3 short viewport and zoom retain Home action · ${concept}`, async ({
