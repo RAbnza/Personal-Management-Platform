@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** Approved roadmap; no milestone has started. M1 is next for individual assignment.\
+**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 is ready for separate assignment; M2–M6 have not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -25,6 +25,10 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 ## 2. M1 — Design foundations and shared interaction patterns
 
+**Completion checkpoint — October 17, 2026 (Asia/Manila):** M1 foundations, shared patterns and development-only synthetic proofs are complete. **The owner explicitly granted final visual approval**, including all revisions through `03950aba227cf68ecd00bea9c623be3dcd052536` (refined dock active state and upward-expanding menus). [Implementation handoff](REDESIGN_M1_HANDOFF.md) · [Component contracts](REDESIGN_M1_COMPONENT_GUIDE.md) · [Rendered evidence](verification/assets/redesign-m1/README.md). M2 is ready for its separate assignment; it is not started by this approval. Historical evidence and unperformed real-device/manual accessibility checks remain documented.
+
+**Approved final M1 design:** **Porcelain**, **Midnight Spectrum**, **Magic UI Dock (Concept A)**, the existing mobile dock and activity/expense review/migration/interaction patterns are approved. Desktop/mobile bottom-centered placement, slim horizontal desktop proportions, static desktop widths with subtle hover, the refined active line/icon border and dock-connected upward Modules/More menus are approved. Safe-area/content/focus clearance and reduced-motion behavior remain required. No new screenshots or broad regression campaign accompany this approval. M1 supplies synthetic foundations only; M2/M3 have not started. See [D06](UI_UX_REDESIGN_DECISIONS_REQUIRED.md#d06--m1-owner-review-round-3) and [handoff](REDESIGN_M1_HANDOFF.md#final-owner-approval-and-integration).
+
 **Objective:** establish a tested, recognizable visual and interaction system before broad page conversion.
 
 **Scope and affected areas:** `src/styles/tokens.css`, existing global styles, `src/components/ui`, layout compositions, theme behavior, shared list/filter/review/state adapters and representative proof compositions. No domain calculation/service rewrite. Follow Plan Sections 5, 6, 9, 11 and 12.
@@ -41,7 +45,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Required components/libraries:** retain Tailwind/CVA/clsx/tailwind-merge, RHF/Zod, Lucide, themes and existing tests; expand Radix-backed components; staged TanStack Table/Query adoption. Sonner only if a shared transient-feedback need is demonstrated. No motion/calendar/grid package by default.
 
-**Dependencies:** D01 approval **satisfied October 17, 2026**; explicit M1 assignment and current stack/docs remain required. Final name/logo, F01–F07 and real external services are not required.
+**Dependencies:** D01 approval, explicit M1 assignment, implementation and final owner visual approval **satisfied October 17, 2026**. Final name/logo, F01–F07 and real external services are not required.
 
 **Functionality preservation:** existing primitive public behavior, form field semantics, no private persisted cache, identity/theme cleanup, exact money strings and authoritative validation. No new generic command abstraction may change existing business payloads.
 
@@ -59,8 +63,8 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Specific tasks:**
 
-1. Replace the permanent global sidebar with the integrated module switcher, compact utility frame, local navigation and complete module directory. Respect existing module and deployment flags.
-2. Implement labeled mobile Home/Calendar/Modules/More navigation, reserved safe-area space, desktop keyboard access and a screen/action command menu. Do not add record-wide search or persistent navigation preferences.
+1. Replace the permanent global sidebar with the approved **Magic UI Dock (Concept A)**: bottom-centered floating navigation on desktop and mobile, with slim horizontal desktop items and the approved mobile presentation. Include integrated module switching, compact utility frame, local navigation and complete module directory. M2 owns real application-wide implementation and capability/authentication integration; M1 supplies prototypes only. Respect existing module and deployment flags.
+2. Implement the **touch-first floating mobile Home/Calendar/Modules/More navigation**, icon-and-label active destinations, reserved safe-area/content space, keyboard/focus/zoom fallbacks and a screen/action command menu. Use document scrolling for browsing, reset fresh-view top geometry, reserve dock/focus space, and keep software keyboards, inputs, errors and task actions unobscured. Test 320/390/768px, shorter heights, route transitions and zoom. Do not add record-wide search or persistent navigation preferences.
 3. Establish canonical detail-route behavior, Back/focus restoration and safe single-active-page semantics; preserve all existing paths/bookmarks.
 4. Recompose Home into attention/actions/upcoming/snapshot/progress/activity, using current payloads. Keep every existing metric, coverage detail and supporting record reachable. M5 does not own a second Home redesign.
 5. Redesign sign-in/up/verification/recovery while preserving actual authentication, generic responses, token and session rules.
@@ -75,7 +79,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Testing/verification:** affected shell/auth/onboarding/preference component/API tests; `onboarding`, `dashboard`, `settings-lifecycle`, `accessibility` browser selections and private-access checks. Verify keyboard traps/return, route refresh, Back, account switching, 320px, both themes and restricted deletion entry.
 
-**Acceptance criteria:** each module is reachable within two activations; common starts are easy to find; no icon-only primary navigation; no shell duplication in the accessibility tree; Home retains every current capability and scope distinction; existing access/recovery/setup tests still assert the same behavior.
+**Acceptance criteria:** desktop and mobile use the required floating capsule language with active icon-and-label destinations, safe-area/content clearance and keyboard/zoom/task fallbacks; each module is reachable within two activations; common starts are easy to find; no icon-only primary navigation; no shell duplication in the accessibility tree; Home retains every current capability and scope distinction; existing access/recovery/setup tests still assert the same behavior.
 
 **Expected deliverables:** complete frame/navigation, redesigned current access/setup/settings/help/Home screens, route/state evidence and focused regression report.
 
@@ -89,7 +93,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 1. Build Money local navigation: Activity, Accounts, Debts, Cards and Plans. Plans exposes Recurring, Budgets, Savings goals and the existing Forecast destination.
 2. Redesign activity/account tables and mobile rows, account creation/history/reconciliation and source navigation. Correct verified broken contextual account links to the existing history route.
-3. Recompose income/expense/transfer into focused entry and review tasks, preserving cash/card funding, all fields, splits, fees, warnings and recurring links.
+3. Recompose income/expense/transfer into focused entry and review tasks. **Mandatory M3 mobile expense create/edit pattern:** dedicated full-screen entry, separate explicit review of exact effects, Edit without losing the draft, then authoritative confirmation/failure/recovery. Do not combine a lengthy form and extensive review summary. Preserve cash/card funding, all fields/notes, dates, splits, fees, acknowledgements, warnings and recurring links, and coordinate task controls with keyboard/capsule space. M1 remains synthetic-only.
 4. Preserve integrated shared-expense entry through its existing components/contract. M3 owns the outer transaction form and context handoff; M5 owns the internal group/payer/share presentation. Neither milestone duplicates command logic.
 5. Rework action detail, corrections, reversal, linked refunds and clearing resolution with exact before/after effects, current revision and retained evidence.
 6. Implement debt list/detail/import/borrow/pay/schedule revision/settlement compositions with explicit liability-versus-schedule and accounting-versus-due-allocation distinctions.
@@ -104,7 +108,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Testing/verification:** affected financial component/domain/API tests; relevant integration files for borrowing, debt payments/schedules/settlement, reconciliation/corrections, cards, recurring, budgets and goals. Browser financial/card/planning suites plus integrated shared expense smoke. Test stale/unknown responses, maximum values/labels, both themes, 320px and keyboard review.
 
-**Acceptance criteria:** every owned route supports browse, action, review, history and appropriate failure states; all prior business effects and payload contracts remain exact; planned values/reservations never appear as actual cash; no ordinary or advanced financial capability is hidden or omitted.
+**Acceptance criteria:** every owned route supports browse, action, review, history and appropriate failure states; mobile expense create/edit and exact review are distinct task views with draft-preserving Edit and unobscured task controls; all prior business effects, command identities, retry rules and payload contracts remain exact; planned values/reservations never appear as actual cash; no ordinary or advanced financial capability is hidden or omitted.
 
 **Expected deliverables:** complete Money redesign excluding Forecast/report-specific work, evidence of preserved financial behaviors, route-link fixes and bounded regression results.
 
@@ -212,13 +216,13 @@ For each assigned milestone, record: baseline/changed paths, inventory IDs compl
 
 Use the project's code-output rule when creating or updating code/configuration files in future implementation sessions. No code/configuration file is created or changed by this planning assignment.
 
-| Milestone | State at planning delivery                | Evidence                      |
+| Milestone | Current state                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1        | Not started; approved direction, awaiting individual assignment | Approved planning baseline only |
-| M2        | Not started                               | No implementation claimed     |
+| M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
+| M2        | Ready for separate assignment; not started                               | No implementation claimed     |
 | M3        | Not started                               | No implementation claimed     |
 | M4        | Not started                               | No implementation claimed     |
 | M5        | Not started                               | No implementation claimed     |
 | M6        | Not started                               | No acceptance results claimed |
 
-Recommended next step: assign **M1 only** as the next individual implementation milestone. No further product or architecture decision blocks it. Do not request decisions about local databases, cloud services or native runtimes as prerequisites to that work.
+Next step: finish the authorized M1 integration into `main`, verify its remote SHA and CI status, then assign M2 separately from that merged baseline. M1 visual sign-off is complete; no unperformed accessibility/device checks are implied. M2–M6 and future platform decisions remain outside this delivery.

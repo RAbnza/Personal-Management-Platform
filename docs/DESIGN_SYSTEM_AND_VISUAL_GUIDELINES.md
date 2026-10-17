@@ -1,12 +1,14 @@
 # Design System and Visual Guidelines
 
 **Project:** Personal workspace — approved neutral working application identity; repository name remains tentative\
-**Version:** 1.1 — approved redesign alignment, October 17, 2026 (original portfolio evidence: October 6, 2026)\
-**Status:** Shared interaction/accessibility guidance aligned with the owner-approved redesign. M1–M6 implementation has not started.
+**Version:** 1.2 — approved redesign alignment, October 17, 2026 (original portfolio evidence: October 6, 2026)\
+**Status:** M1 foundations completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 is ready for separate assignment. M2–M6 have not started. The [M1 component guide](REDESIGN_M1_COMPONENT_GUIDE.md) records current tokens, component contracts and adoption boundaries.
+
+**Owner decision and final refinement (D06):** **Porcelain**, **Midnight Spectrum** and **Magic UI Dock (Concept A)** are approved, including the existing mobile dock and workflows. Preserve the selected canvases, controlled supporting accents, restrained focal gradient and refined active indicator; no glow on text, flashing or animated backgrounds. Desktop and mobile use bottom-centered floating navigation. Desktop has a slim horizontal icon-and-label dock, fixed hover dimensions, subtle border/elevation and reserved safe-area/content/focus clearance; preserve the approved mobile design and short-height fallback. Final owner visual approval includes desktop appearance/placement/proportions, the refined active text/border/line and dock-connected upward Modules/More menus; no new screenshots or gallery changes are required. Browsing retains document scroll. M1 remains synthetic-only; M2 owns real navigation and M3 real expense workflows.
 
 ## 1. Purpose, authority, and flexibility
 
-Build a warm, modern, precise personal workspace with violet/lavender identity, warm-neutral surfaces, restrained teal/amber module accents and Geist typography. Dense financial records, job applications and upcoming commitments should remain easy to scan, compare and act on over long sessions.
+Build a clean, modern, precise personal workspace with violet/lavender identity, white-based light surfaces, controlled dark spectrum accents and Geist typography. Dense financial records, job applications and upcoming commitments should remain easy to scan, compare and act on over long sessions.
 
 This document defines shared foundations and reusable interaction contracts. It does not prescribe every screen, approve unreleased features, change accounting rules or replace the source documents:
 
@@ -56,7 +58,7 @@ The reference is the actual source on `main` at the pinned commit above, inspect
 
 ### 2.2 Historical extracted palette versus adaptation
 
-These exact source values preserve the October 6 provenance and original adaptation rationale. Their application-interpretation column is historical. They do not override the approved warm-neutral tokens and theme-specific action roles in [Plan Section 5](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#5-visual-identity-and-design-tokens).
+These exact source values preserve the October 6 provenance and original adaptation rationale. Their application-interpretation column is historical. They do not override the current D06 tokens and theme-specific action roles in [Plan Section 5](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md#5-visual-identity-and-design-tokens).
 
 | Portfolio primitive | Exact value | Application interpretation |
 | --- | --- | --- |
@@ -80,9 +82,9 @@ These exact source values preserve the October 6 provenance and original adaptat
 
 ### 2.3 Retain, adapt, and leave in the portfolio
 
-Retain restrained violet/lavender recognition, simple line icons and clear boundaries. Adopt the approved warm-neutral canvases, violet light-theme actions and lavender dark-theme actions. Use the plan’s type/geometry roles and balanced density: readable everyday text, aligned information-rich desktop records, efficient keyboard/mouse access and adaptive mobile forms/touch targets. M1 rendered proofs remain subject to usability/accessibility review.
+Retain restrained violet/lavender recognition, simple line icons and clear boundaries. Adopt D06's white-based light and controlled dark canvases, violet light-theme actions and lavender dark-theme actions. Use the plan’s type/geometry roles and balanced density: readable everyday text, aligned information-rich desktop records, efficient keyboard/mouse access and adaptive mobile forms/touch targets. M1 rendered proofs remain subject to usability/accessibility review.
 
-Keep data surfaces opaque. Use lavender/pink gradients only as optional, low-contrast decoration on a welcome/help area outside important text. A small branded accent is sufficient on the normal dashboard. Avoid startup intros, scroll-scrubbed content, parallax, moving backgrounds, floating glass panels and headings that wait for animation before appearing. A user returning to record an expense should reach the form immediately.
+Keep data surfaces opaque. Use lavender/pink gradients only as optional, low-contrast decoration outside important text. Use purposeful module/category tints rather than restricting normal screens to one small accent. Avoid startup intros, scroll-scrubbed content, parallax, moving backgrounds, blur-heavy glass and headings that wait for animation before appearing. **Opaque floating capsules are required navigation**, with accessible labels and reserved space; this is distinct from decorative glass panels. A user returning to record an expense should reach the dedicated task immediately.
 
 Do not copy the personal initials/logo or person-specific copy into the product by default. Final naming and an independent mark remain deferred under D02; the approved working identity is **Personal workspace**. Visual connection comes from the palette, typography and craft, not an implication that every user is the portfolio owner.
 
@@ -120,7 +122,7 @@ The approved token values live in [Plan Section 5.1](COMPREHENSIVE_UI_UX_REDESIG
 
 | Existing semantic aliases | Approved role / implementation guidance |
 | --- | --- |
-| `background`, `surface` / `card`, `popover`, `muted`, `foreground`, `muted-foreground` | Use the plan's warm-neutral canvas/surface/elevation and text pairs in each theme. |
+| `background`, `surface` / `card`, `popover`, `muted`, `foreground`, `muted-foreground` | Use the plan's current white-based light and controlled dark canvas/surface/elevation and text pairs in each theme. |
 | `primary`, `primary-foreground`, hover/pressed | Violet with white label in light mode; lavender with charcoal label in dark mode. Secondary actions remain neutral. |
 | `accent`, selection, `link`, `ring` | Explicit role mappings; selected state also needs marker/check/weight. Focus has a distinct offset outline. |
 | `border`, `input` / `control-border`, disabled roles | Distinguish decorative dividers from required control boundaries. Keep disabled labels readable and read-only values active/readable. |
@@ -153,7 +155,7 @@ Use semantic foreground-on-subtle badges and callouts by default. For a filled f
 | `chart-5` | `#395EB2` | `#A9BCFF` | Cross/short dash; added blue. |
 | `chart-6` | `#59616F` | `#B9B9C6` | Plus/alternate dash; neutral companion. |
 
-The original palette calculations met 3:1 on the original theme surfaces. Revalidate all six against the approved warm-neutral surfaces during M1; the old result does **not** certify new surfaces, adjacent-series contrast or color-blind distinguishability. Use labels, point shapes, line patterns, separators or small multiples as appropriate. Start with at most four concurrent series; six is a supported palette limit, not a recommendation to fill every chart. Category-to-series mapping stays stable while filtering a report. Do not imply that chart pink means danger or teal means success.
+The original palette calculations met 3:1 on the original theme surfaces. Revalidate all six against the current D06 surfaces during M1; the old result does **not** certify new surfaces, adjacent-series contrast or color-blind distinguishability. Use labels, point shapes, line patterns, separators or small multiples as appropriate. Start with at most four concurrent series; six is a supported palette limit, not a recommendation to fill every chart. Category-to-series mapping stays stable while filtering a report. Do not imply that chart pink means danger or teal means success.
 
 ### 4.5 Contrast evidence and limits
 
@@ -941,7 +943,7 @@ Experiments use synthetic or properly authorized data and record their hypothesi
 
 ### 19.2 Portfolio, readability and evidence review
 
-The historical base palette was derived from the pinned repository implementation: its exact silver/night surfaces, foregrounds, lavender, violet, pink, dividers and control borders are recorded in section 2. New status hues, deeper light chart companions, pressed state and application elevation roles are explicitly labeled as adaptations/additions. That provenance remains historical; the approved warm-neutral redesign supersedes corresponding palette/layout roles without importing Astro, personal branding or narrative motion.
+The historical base palette was derived from the pinned repository implementation: its exact silver/night surfaces, foregrounds, lavender, violet, pink, dividers and control borders are recorded in section 2. New status hues, deeper light chart companions, pressed state and application elevation roles are explicitly labeled as adaptations/additions. That provenance remains historical; the D06 white-based/dark-spectrum refinement supersedes corresponding palette/layout roles without importing Astro, personal branding or narrative motion.
 
 Typography favors readable working sizes, tabular financial figures, one font family and system fallbacks. Light/dark semantic pairs and initial chart marks have been calculated for contrast; rendered component states, assistive-technology behavior and the final UI still require implementation testing. No production interface, migrations or accessibility conformance certification is claimed by this design document.
 

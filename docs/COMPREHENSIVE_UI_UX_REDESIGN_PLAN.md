@@ -5,7 +5,7 @@
 **Inspected baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — D01, D03 and D04 approved; D02 working identity approved and final branding deferred.\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Approved visual/interaction baseline and M1–M6 roadmap. Implementation has not started; M1 remains the next individually assigned milestone.\
+**Status:** Approved visual/interaction baseline and M1–M6 roadmap. M1 is completed and explicitly owner-approved October 17, 2026 (Asia/Manila); M2 is ready for separate assignment and M2–M6 have not started. See [M1 handoff](REDESIGN_M1_HANDOFF.md).\
 **Companions:** [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) · [Six-milestone roadmap](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. Purpose, authority, and scope
@@ -153,7 +153,9 @@ Rejected directions: a uniform wall of rounded metric cards; a giant marketing g
 
 ### 5.1 Color system
 
-Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The values below are the approved replacement specification for corresponding visual roles (D01/D03); M1 must verify rendered states and contrast before broad adoption.
+**Approved M1 selection (D06):** **Porcelain** (`#F7F8FC` canvas, white working surfaces) with lavender/blue supporting regions and dark **Midnight Spectrum** (`#0D1020` canvas) with controlled violet/blue/cyan/plum accents, one focal gradient and a restrained active indicator. Gallery white / Graphite blue remain historical comparisons, not saved preferences. No flashing, glow on body text or GPU-heavy backgrounds. Current tokens are in the [M1 guide](REDESIGN_M1_COMPONENT_GUIDE.md); D06 supersedes the earlier warm-canvas recommendation. Final owner visual approval October 17, 2026 (Asia/Manila) covers M1 through `03950ab`, including every dock/menu revision; M2 is ready for separate assignment.
+
+Three layers remain: primitives → semantic roles → component aliases. Reconcile these roles into the existing `src/styles/tokens.css`; do not introduce a parallel theme file or scattered hex utilities. The table below preserves the first approved proposal (D01/D03); D06 and the current M1 component guide replace its canvas roles and add complementary/capsule pairs. Verify the current rendered states and contrast before broad adoption.
 
 | Semantic role              | Light                  | Dark                  | Intended use                                         |
 | -------------------------- | ---------------------- | --------------------- | ---------------------------------------------------- |
@@ -204,6 +206,8 @@ Use System/Light/Dark with the current workspace preference/version contract. Pr
 ## 6. Application frame, navigation and shared interaction contracts
 
 ### 6.1 Navigation model
+
+**Approved navigation and final desktop refinement (D06):** use **Magic UI Dock (Concept A)**. Desktop and mobile float at bottom center; desktop uses a slimmer horizontal icon-and-label capsule (approximately 56–68px high / 320–420px wide at default text size), smaller tiles, fixed hover dimensions, subtle border/elevation and an active text/border/line treatment without a filled capsule. Modules/More expand upward in one nonmodal dock-connected panel with entry/return focus, Escape/outside dismissal, internal height-bounded scrolling and reduced-motion support. Preserve the approved mobile design, Home / Calendar / Modules / More, keyboard focus and static touch/reduced-motion behavior. Keep identity at the top without an empty navigation container. Browsing uses one document scroll with header/content moving together, reserved bottom/safe-area space, focused-target clearance and top-of-view geometry on fresh navigation. Short/high-zoom views put the dock in flow. M2 owns real capability-aware shell/directory/routing and must preserve this layout contract. Dedicated expense task controls take priority over mobile navigation. Avoid decorative blur-heavy glass and excessive motion. The owner explicitly granted final M1 visual approval October 17, 2026 (Asia/Manila); this approval requires no screenshot/gallery updates or broad local regression campaign. Unperformed manual accessibility and real-device checks remain documented limitations.
 
 Use a **module switcher inside the application work area**, not a permanent global sidebar. A compact utility frame provides Home, the current module switcher, Find a screen, contextual Add, and Account. The module's title, local sections and actions live directly above its content. A secondary panel is appropriate for selected-record detail or Settings categories; removing the global sidebar is not a ban on useful local navigation.
 
@@ -363,6 +367,8 @@ Account detail has a compact balance header and Activity/Reconciliation history 
 Reconciliation is three steps in one task: enter observed balance/date → compare with recorded balance → choose the existing explicit adjustment/review action if needed. Display observed, recorded and difference in aligned columns, then relevant transactions. A match shows “Matches”; a mismatch never triggers an automatic adjustment. Preserve exact equity classification and historical evidence. Mobile stacks the three labeled values above the transaction list.
 
 ### 7.4 Income, expense and transfer entry — MO4, MO5
+
+**M1 owner-review requirement for M3:** mobile expense create/edit is a dedicated full-screen task, followed by a **distinct review view** of exact effects. Do not show an extensive review summary beside/below the entire editable form. Edit returns to the same in-memory draft, including optional notes; required fields, splits, fees, acknowledgements, dates and consequences remain available. Task actions have reserved space and must not compete with the capsule or software keyboard. Confirmation, submitting, accepted, validation, stale and unknown-outcome behavior retain the existing command identity/payload/retry contracts. M1 supplies synthetic compositions only; actual create/edit routes and financial workflows are M3 work.
 
 Use a task title and source context rather than a generic “Add” modal. The form's essential fields come first: amount, date, funding/destination and description. Income and expense remain distinct intents; a receipt is not automatically income. Preserve all existing sender/source, merchant, reference, notes and classification fields in meaningful groups.
 
@@ -817,7 +823,7 @@ No schema-generation/migration rewrite, full infrastructure restore campaign, re
 
 The [roadmap](UI_UX_REDESIGN_MILESTONES.md) assigns each current inventory row to one of six substantial milestones. The [decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) records the approved direction, working identity, visual system and balanced density separately from deferred final branding and platform architecture.
 
-D01, D03 and D04 are approved; D02 establishes **Personal workspace** as the working identity. No further product or architecture decision blocks M1. Roadmap approval does not assign implementation: M1 is the next individually assigned milestone. It produces representative rendered design proofs for usability/accessibility review before broad adoption of the approved treatment. Final branding remains deferred, not an M1–M6 prerequisite.
+D01, D03 and D04 are approved; D02 establishes **Personal workspace** as the working identity. M1 was individually assigned and is implemented with representative rendered proofs; see [handoff](REDESIGN_M1_HANDOFF.md). Owner visual sign-off and any resulting feedback remain the checkpoint before M2. Roadmap approval does not assign subsequent milestones. Final branding remains deferred, not an M1–M6 prerequisite.
 
 At the start of each implementation session: verify repository changes since this baseline, read the assigned milestone and linked sections, preserve unrelated work, implement only its current scope, retain behavioral assertions, and record actual verification. If a required screen is missing from the inventory after new development, add it explicitly and assign ownership before claiming coverage.
 
