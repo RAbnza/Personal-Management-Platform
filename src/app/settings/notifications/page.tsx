@@ -68,7 +68,7 @@ export default async function NotificationsPage() {
               <li key={d.id} className="space-y-1 py-3">
                 <Link
                   href={`/calendar/reminders/${d.source_kind}/${d.source_id}`}
-                  className="inline-block min-h-11 max-w-full break-words text-link underline"
+                  className="action-link"
                 >
                   {sourceLabels[d.source_kind]} reminder evidence
                 </Link>
@@ -98,10 +98,7 @@ export default async function NotificationsPage() {
           <p>No optional email delivery evidence yet.</p>
         )}
       </Panel>
-      <Link
-        href="/calendar"
-        className="inline-block min-h-11 max-w-full break-words text-link underline"
-      >
+      <Link href="/calendar" className="action-link">
         Review Agenda and source reminder controls
       </Link>
     </SettingsShell>

@@ -29,16 +29,13 @@ export default async function NewStatementPage({
     <div className="space-y-5">
       <Link
         href={`/money/cards/${scope.cardId}/statements`}
-        className="text-link underline"
+        className="action-link"
       >
         Statements for {data.card.name}
       </Link>
       <ScreenHeader scope="Money" title="Record verified statement" />
       {data.hasMore && (
-        <Link
-          href={`?candidateOffset=${offset + 100}`}
-          className="text-link underline"
-        >
+        <Link href={`?candidateOffset=${offset + 100}`} className="action-link">
           Load older purchase choices before entering statement
         </Link>
       )}

@@ -11,6 +11,8 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
+import taskStyles from "./money-workspace.module.css";
+import { exactDecimal } from "@/modules/reporting/domain/reports";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -110,6 +112,8 @@ export function DebtPaymentForm({
   categories: readonly CategoryListItem[];
 }) {
   const router = useRouter();
+  const [guided, setGuided] = useState(true);
+  const guidedIntent = useRef<string | null>(null);
   const [stage, setStage] = useState<
     "editing" | "reviewing" | "saving" | "unconfirmed" | "saved"
   >("editing");
@@ -168,6 +172,46 @@ export function DebtPaymentForm({
     name: "components",
   });
   const values = useWatch({ control: form.control });
+  // The guided path records an explicitly unresolved payment. Derive its
+  // components exactly; never infer principal, interest, or provider allocations.
+  useEffect(() => {
+    if (!guided) {
+      guidedIntent.current = null;
+      return;
+    }
+    if (stage !== "editing") return;
+    const intent = `${values.actualPaidMinor}:${values.externalFeeMinor}`;
+    if (guidedIntent.current === intent) return;
+    try {
+      const paid = parsePhpAmountToMinorUnits(values.actualPaidMinor || "0");
+      const fee = parsePhpAmountToMinorUnits(values.externalFeeMinor || "0");
+      const contractual = paid - fee;
+      if (contractual <= 0n) return;
+      guidedIntent.current = intent;
+      const amount = exactDecimal(contractual.toString());
+      form.setValue("contractualMinor", amount);
+      form.setValue("allocationCertainty", "unresolved");
+      form.setValue("components", [
+        {
+          disposition: "clearing",
+          amountMinor: amount,
+          liabilityComponent: null,
+          categoryId: "",
+          label: "Payment breakdown not yet confirmed",
+        },
+      ]);
+      form.setValue(
+        "dueAllocations",
+        form
+          .getValues("dueAllocations")
+          .map((row) => ({ ...row, amountMinor: "" })),
+      );
+      form.setValue("unappliedContractualMinor", amount);
+      form.setValue("dueAllocationConfirmed", false);
+    } catch {
+      /* Validation reports malformed amounts without changing evidence. */
+    }
+  }, [guided, stage, values.actualPaidMinor, values.externalFeeMinor, form]);
   const allocationKey = JSON.stringify([
     values.contractualMinor,
     values.dueAllocations,
@@ -446,9 +490,7 @@ export function DebtPaymentForm({
         Record debt payment
       </h2>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        Record money already paid to {debt.lenderName}. Principal repayment and
-        previously recognized charges are not spending. Due satisfaction is
-        confirmed separately from accounting.
+        Record a payment already made to {debt.lenderName}.
       </p>
       <form
         noValidate
@@ -543,28 +585,45 @@ export function DebtPaymentForm({
               `Actual total cash paid (${debt.currency})`,
               { money: true },
             )}
-            {field(
-              "contractualMinor",
-              `Contractual portion (${debt.currency})`,
-              {
-                money: true,
-                description:
-                  "The payment toward the contract, excluding an external payment fee.",
-              },
-            )}
-            {field(
-              "externalFeeMinor",
-              `External payment fee (${debt.currency})`,
-              {
-                money: true,
-                description: "Excluded from installment satisfaction.",
-              },
-            )}
-            {categorySelect("externalFeeCategoryId", "External fee category")}
-            {field("externalFeeLabel", "External fee label")}
+            {!guided &&
+              field(
+                "contractualMinor",
+                `Contractual portion (${debt.currency})`,
+                {
+                  money: true,
+                  description:
+                    "The payment toward the contract, excluding an external payment fee.",
+                },
+              )}
+            <details className={taskStyles.options}>
+              <summary>
+                Payment fee <span>Only if charged</span>
+              </summary>
+              <div className="space-y-4 pt-3">
+                {field(
+                  "externalFeeMinor",
+                  `External payment fee (${debt.currency})`,
+                  {
+                    money: true,
+                    description: "Excluded from installment satisfaction.",
+                  },
+                )}
+                {categorySelect(
+                  "externalFeeCategoryId",
+                  "External fee category",
+                )}
+                {field("externalFeeLabel", "External fee label")}
+              </div>
+            </details>
             {field("description", "Description")}
-            {field("reference", "Payment reference (optional)")}
-            {field("notes", "Notes (optional)")}
+            <details className={taskStyles.options}>
+              <summary>Reference and notes</summary>
+              <div className="space-y-4 pt-3">
+                {" "}
+                {field("reference", "Payment reference (optional)")}
+                {field("notes", "Notes (optional)")}
+              </div>
+            </details>
           </div>
           {negative ? (
             <label className="flex min-h-11 items-start gap-3 rounded-control border border-warning bg-warning-surface p-4 text-sm leading-6">
@@ -578,165 +637,188 @@ export function DebtPaymentForm({
               actual payment.
             </label>
           ) : null}
-          <section
-            aria-labelledby="payment-accounting-title"
-            className="space-y-4"
-          >
-            <h3 id="payment-accounting-title" className="font-semibold">
-              Accounting allocation
-            </h3>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Recognized liability: {money(debt.recognizedLiabilityMinor)};
-              recognized unclassified liability:{" "}
-              {money(debt.unclassifiedLiabilityMinor)}. Do not infer a principal
-              or interest split from installment terms. Use clearing when the
-              recognized liability reduction itself is unknown.
-            </p>
-            <FormField htmlFor="payment-certainty" label="Accounting certainty">
-              <select
-                {...form.register("allocationCertainty")}
-                id="payment-certainty"
-                className={selectClass}
+          <div className={taskStyles.contextBox}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-semibold">
+                How much did this reduce your debt?
+              </h3>
+              <Button variant="secondary" onClick={() => setGuided(!guided)}>
+                {guided ? "I know the breakdown" : "Use unknown breakdown"}
+              </Button>
+            </div>
+            {guided && (
+              <p className="text-sm leading-6">
+                Breakdown not confirmed. This records the cash payment, but
+                leaves your debt balance unchanged until you confirm how it was
+                applied. It does not count the payment as spending.
+              </p>
+            )}
+          </div>
+          {!guided && (
+            <>
+              <section
+                aria-labelledby="payment-accounting-title"
+                className="space-y-4"
               >
-                <option value="unresolved">
-                  Recognized reduction is unresolved (clearing)
-                </option>
-                <option value="confirmed_total">
-                  Confirmed reduction, composition unknown
-                </option>
-                <option value="known_components">
-                  Known or partially known accounting components
-                </option>
-              </select>
-            </FormField>
-            {components.fields.map((row, index) => (
-              <div
-                key={row.id}
-                className="space-y-4 rounded-control border border-border p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">
-                    Accounting component {index + 1}
-                  </h4>
-                  <Button
-                    variant="ghost"
-                    onClick={() => components.remove(index)}
+                <h3 id="payment-accounting-title" className="font-semibold">
+                  Payment breakdown
+                </h3>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Recognized liability: {money(debt.recognizedLiabilityMinor)};
+                  recognized unclassified liability:{" "}
+                  {money(debt.unclassifiedLiabilityMinor)}. Do not infer a
+                  principal or interest split from installment terms. Use
+                  clearing when the recognized liability reduction itself is
+                  unknown.
+                </p>
+                <FormField
+                  htmlFor="payment-certainty"
+                  label="What has the lender confirmed?"
+                >
+                  <select
+                    {...form.register("allocationCertainty")}
+                    id="payment-certainty"
+                    className={selectClass}
                   >
-                    Remove component {index + 1}
-                  </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    htmlFor={`payment-disposition-${index}`}
-                    label={`Accounting meaning ${index + 1}`}
+                    <option value="unresolved">
+                      I do not know how the payment reduced my debt
+                    </option>
+                    <option value="confirmed_total">
+                      Total reduction confirmed; breakdown unknown
+                    </option>
+                    <option value="known_components">
+                      I know all or part of the breakdown
+                    </option>
+                  </select>
+                </FormField>
+                {components.fields.map((row, index) => (
+                  <div
+                    key={row.id}
+                    className="space-y-4 rounded-control border border-border p-4"
                   >
-                    <select
-                      {...form.register(`components.${index}.disposition`)}
-                      id={`payment-disposition-${index}`}
-                      className={selectClass}
-                      onChange={(event) => {
-                        const disposition = event.target
-                          .value as Values["components"][number]["disposition"];
-                        form.setValue(
-                          `components.${index}.disposition`,
-                          disposition,
-                          { shouldDirty: true },
-                        );
-                        form.setValue(
-                          `components.${index}.liabilityComponent`,
-                          disposition === "liability_reduction"
-                            ? "unclassified"
-                            : null,
-                        );
-                        form.setValue(`components.${index}.categoryId`, "");
-                        form.setValue(
-                          `components.${index}.label`,
-                          paymentDispositionLabels[disposition],
-                        );
-                      }}
-                    >
-                      {paymentDispositions.map((d) => (
-                        <option key={d} value={d}>
-                          {paymentDispositionLabels[d]}
-                        </option>
-                      ))}
-                    </select>
-                  </FormField>
-                  {field(
-                    `components.${index}.amountMinor`,
-                    `Component amount ${index + 1} (${debt.currency})`,
-                    { money: true },
-                  )}
-                  {field(
-                    `components.${index}.label`,
-                    `Component label ${index + 1}`,
-                  )}
-                  {values.components?.[index]?.disposition ===
-                  "liability_reduction" ? (
-                    <FormField
-                      htmlFor={`payment-liability-${index}`}
-                      label={`Recognized liability component ${index + 1}`}
-                    >
-                      <select
-                        {...form.register(
-                          `components.${index}.liabilityComponent`,
-                        )}
-                        id={`payment-liability-${index}`}
-                        className={selectClass}
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">
+                        Accounting component {index + 1}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        onClick={() => components.remove(index)}
                       >
-                        {liabilityComponents.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {kind === "unclassified"
-                              ? "Unclassified (composition unknown)"
-                              : `Previously recognized ${kind}`}
-                            {` · ${money(debt.recognizedLiabilityComponents[kind])}`}
-                          </option>
-                        ))}
-                      </select>
-                    </FormField>
-                  ) : values.components?.[index]?.disposition?.startsWith(
-                      "new_",
-                    ) ? (
-                    categorySelect(
-                      `components.${index}.categoryId`,
-                      `Expense category ${index + 1}`,
-                    )
-                  ) : null}
-                </div>
-              </div>
-            ))}
-            <Button
-              variant="secondary"
-              onClick={() =>
-                components.append({
-                  disposition: "clearing",
-                  amountMinor: "",
-                  liabilityComponent: null,
-                  categoryId: "",
-                  label: "Pending accounting classification",
-                })
-              }
-            >
-              Add accounting component
-            </Button>
-          </section>
+                        Remove component {index + 1}
+                      </Button>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        htmlFor={`payment-disposition-${index}`}
+                        label={`Accounting meaning ${index + 1}`}
+                      >
+                        <select
+                          {...form.register(`components.${index}.disposition`)}
+                          id={`payment-disposition-${index}`}
+                          className={selectClass}
+                          onChange={(event) => {
+                            const disposition = event.target
+                              .value as Values["components"][number]["disposition"];
+                            form.setValue(
+                              `components.${index}.disposition`,
+                              disposition,
+                              { shouldDirty: true },
+                            );
+                            form.setValue(
+                              `components.${index}.liabilityComponent`,
+                              disposition === "liability_reduction"
+                                ? "unclassified"
+                                : null,
+                            );
+                            form.setValue(`components.${index}.categoryId`, "");
+                            form.setValue(
+                              `components.${index}.label`,
+                              paymentDispositionLabels[disposition],
+                            );
+                          }}
+                        >
+                          {paymentDispositions.map((d) => (
+                            <option key={d} value={d}>
+                              {paymentDispositionLabels[d]}
+                            </option>
+                          ))}
+                        </select>
+                      </FormField>
+                      {field(
+                        `components.${index}.amountMinor`,
+                        `Component amount ${index + 1} (${debt.currency})`,
+                        { money: true },
+                      )}
+                      {field(
+                        `components.${index}.label`,
+                        `Component label ${index + 1}`,
+                      )}
+                      {values.components?.[index]?.disposition ===
+                      "liability_reduction" ? (
+                        <FormField
+                          htmlFor={`payment-liability-${index}`}
+                          label={`Recognized liability component ${index + 1}`}
+                        >
+                          <select
+                            {...form.register(
+                              `components.${index}.liabilityComponent`,
+                            )}
+                            id={`payment-liability-${index}`}
+                            className={selectClass}
+                          >
+                            {liabilityComponents.map((kind) => (
+                              <option key={kind} value={kind}>
+                                {kind === "unclassified"
+                                  ? "Unclassified (composition unknown)"
+                                  : `Previously recognized ${kind}`}
+                                {` · ${money(debt.recognizedLiabilityComponents[kind])}`}
+                              </option>
+                            ))}
+                          </select>
+                        </FormField>
+                      ) : values.components?.[index]?.disposition?.startsWith(
+                          "new_",
+                        ) ? (
+                        categorySelect(
+                          `components.${index}.categoryId`,
+                          `Expense category ${index + 1}`,
+                        )
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    components.append({
+                      disposition: "clearing",
+                      amountMinor: "",
+                      liabilityComponent: null,
+                      categoryId: "",
+                      label: "Pending accounting classification",
+                    })
+                  }
+                >
+                  Add accounting component
+                </Button>
+              </section>
+            </>
+          )}
           <section aria-labelledby="payment-due-title" className="space-y-4">
             <h3 id="payment-due-title" className="font-semibold">
-              Contractual due allocation
+              Which installments did this pay?
             </h3>
             <p className="text-sm leading-6 text-muted-foreground">
-              These allocations say which obligations were satisfied. They do
-              not classify principal, interest, or spending. External fees never
-              satisfy an installment.
+              Confirm what your lender applied. Fees do not pay an installment.
             </p>
             <div className="flex flex-wrap gap-3">
               {activeInstallments.length > 0 ? (
                 <Button variant="secondary" onClick={() => propose(false)}>
-                  Propose oldest due first
+                  Suggest oldest installment first
                 </Button>
               ) : null}
               <Button variant="secondary" onClick={() => propose(true)}>
-                Leave contractual amount unapplied
+                Do not assign to installments yet
               </Button>
             </div>
             {activeInstallments.length === 0 ? (
@@ -770,7 +852,7 @@ export function DebtPaymentForm({
             })}
             {field(
               "unappliedContractualMinor",
-              `Explicit unapplied contractual amount (${debt.currency})`,
+              `Not assigned to installments (${debt.currency})`,
               { money: true },
             )}
             <FormField
@@ -800,9 +882,8 @@ export function DebtPaymentForm({
                 {...form.register("dueAllocationConfirmed")}
                 className="mt-1 size-5 shrink-0"
               />
-              I confirm the installment allocations and explicit unapplied
-              amount shown above. Accounting uncertainty does not imply due
-              satisfaction.
+              I confirm the installment amounts and the amount left unassigned
+              above.
             </label>
           </section>
         </fieldset>

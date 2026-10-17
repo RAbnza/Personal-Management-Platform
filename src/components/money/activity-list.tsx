@@ -8,10 +8,7 @@ export function ActivityList({
   items: Awaited<ReturnType<typeof listFinancialActions>>;
 }) {
   const destination = (item: (typeof items)[number]) => (
-    <Link
-      className="inline-flex min-h-11 items-center text-link underline-offset-4 hover:underline"
-      href={`/money/actions/${item.actionId}`}
-    >
+    <Link className="action-link" href={`/money/actions/${item.actionId}`}>
       {item.description}
     </Link>
   );

@@ -26,7 +26,7 @@ export default async function BudgetsPage({
     return (
       <div>
         <ScreenHeader scope="Money" title="Check budget filters" />
-        <Link href="/money/budgets" className="text-link underline">
+        <Link href="/money/budgets" className="action-link">
           Return to budgets
         </Link>
       </div>
@@ -39,7 +39,7 @@ export default async function BudgetsPage({
     return (
       <div>
         <ScreenHeader scope="Money" title="Budgets unavailable" />
-        <Link href="/money/budgets" className="text-link underline">
+        <Link href="/money/budgets" className="action-link">
           Retry private budgets
         </Link>
       </div>
@@ -70,7 +70,7 @@ export default async function BudgetsPage({
                   <Link
                     href={`/money/budgets/${b.id}`}
                     aria-label={`${b.categoryName} budget ${b.start_date} through ${b.end_date_exclusive} exclusive`}
-                    className="text-link underline"
+                    className="action-link"
                   >
                     {b.categoryName}
                   </Link>
@@ -86,7 +86,7 @@ export default async function BudgetsPage({
             {data.nextCursor && (
               <Link
                 href={`/money/budgets?${new URLSearchParams({ ...Object.fromEntries(pageParams), cursor: data.nextCursor })}`}
-                className="inline-flex min-h-11 items-center text-link underline"
+                className="action-link"
               >
                 Next budgets
               </Link>
@@ -97,7 +97,7 @@ export default async function BudgetsPage({
                   ? "/money/budgets"
                   : "/money/budgets?includeArchived=true"
               }
-              className="inline-flex min-h-11 items-center text-link underline"
+              className="action-link"
             >
               {q.data.includeArchived === "true"
                 ? "Show active budgets"

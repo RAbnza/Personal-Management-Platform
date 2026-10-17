@@ -1,3 +1,4 @@
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -21,23 +22,39 @@ export function SavingsGoalComparison({
         {g.status} ·{" "}
         {g.target_date ? `Target date ${g.target_date}` : "No target date"}
       </p>
-      <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          ["Target amount", g.target_minor],
-          ["Currently reserved", g.reservedMinor],
-          ["Remaining target", g.remainingTargetMinor],
-          ["Excess reserved", g.excessReservedMinor],
-          ["Minimum supported funding", g.minimumMinor],
-          ["Maximum supported funding", g.maximumMinor],
-        ].map(([label, amount]) => (
-          <div key={label}>
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="font-semibold">
-              {formatMoneyMinorUnits("PHP", amount!)}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className={styles.planSummary}>
+        <div>
+          <span>Reserved</span>
+          <strong>{formatMoneyMinorUnits("PHP", g.reservedMinor)}</strong>
+          <small>of {formatMoneyMinorUnits("PHP", g.target_minor)}</small>
+        </div>
+        <div>
+          <span>Still to reserve</span>
+          <strong>
+            {formatMoneyMinorUnits("PHP", g.remainingTargetMinor)}
+          </strong>
+        </div>
+      </div>
+      <details className={styles.options}>
+        <summary>Funding details</summary>{" "}
+        <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Target amount", g.target_minor],
+            ["Currently reserved", g.reservedMinor],
+            ["Remaining target", g.remainingTargetMinor],
+            ["Excess reserved", g.excessReservedMinor],
+            ["Minimum supported funding", g.minimumMinor],
+            ["Maximum supported funding", g.maximumMinor],
+          ].map(([label, amount]) => (
+            <div key={label}>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="font-semibold">
+                {formatMoneyMinorUnits("PHP", amount!)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </details>
       <p className={g.atRisk ? "font-semibold text-warning" : "font-semibold"}>
         {health}
         {g.atRisk ? " · Shared account shortfall or unavailable account" : ""}
@@ -97,6 +114,7 @@ export function SavingsGoalsSurface({
     <Panel
       className="min-w-0 break-words"
       title="Savings goals"
+      descriptionAsHelp
       description={`Current conceptual reservations as of ${today}; separate from reporting-period balances. No funds are moved or added.`}
     >
       <div className="space-y-5">
@@ -104,10 +122,7 @@ export function SavingsGoalsSurface({
         {data.items.map((g) => (
           <section key={g.id} className="space-y-3 border-b border-border pb-4">
             <h3 className="font-semibold">
-              <Link
-                className="text-link underline"
-                href={`/money/goals/${g.id}`}
-              >
+              <Link className="action-link" href={`/money/goals/${g.id}`}>
                 {g.name}
               </Link>
             </h3>
@@ -121,10 +136,7 @@ export function SavingsGoalsSurface({
             totals include every reservation.
           </p>
         )}
-        <Link
-          className="inline-flex min-h-11 items-center text-link underline"
-          href="/money/goals"
-        >
+        <Link className="action-link" href="/money/goals">
           Manage savings goals
         </Link>
         <p className="text-xs text-muted-foreground">

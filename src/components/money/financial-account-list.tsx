@@ -1,3 +1,4 @@
+import { HorizontalCollection } from "@/components/patterns/horizontal-collection";
 import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import {
@@ -86,7 +87,8 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
   return (
     <Panel
       title="Your accounts"
-      description="Balances are derived from finalized ledger activity rather than a manually edited balance field."
+      descriptionAsHelp
+      description="Balances come from recorded transactions. Use Check balance to compare against a statement; adjustments retain their history."
       action={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <span className="text-sm font-medium text-muted-foreground">
@@ -132,7 +134,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
         </div>
       }
     >
-      <div className={styles.records}>
+      <HorizontalCollection label="financial accounts">
         {accounts.items.map((account) => {
           const type = accountTypeContent[account.accountType];
 
@@ -141,7 +143,8 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
           return (
             <article
               key={account.accountId}
-              className="rounded-control border border-border bg-surface p-4"
+              className={styles.accountCard}
+              data-account-type={account.accountType}
             >
               <div className="flex items-start gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent text-accent-foreground">
@@ -157,7 +160,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                     <div className="min-w-0">
                       <h3 className="truncate text-sm font-semibold text-foreground">
                         <Link
-                          className="text-link hover:underline"
+                          className="action-link"
                           href={`/money/accounts/${account.accountId}/history`}
                         >
                           {account.name}
@@ -202,7 +205,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                   <div className="mt-4 border-t border-border pt-3">
                     <Link
                       href={`/money/accounts/${account.accountId}/history`}
-                      className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+                      className="action-link"
                     >
                       <History
                         aria-hidden="true"
@@ -213,9 +216,9 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
                     </Link>
                     <Link
                       href={`/money/accounts/${account.accountId}/reconcile`}
-                      className="ml-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                      className="action-link"
                     >
-                      Reconcile balance
+                      Check balance
                     </Link>
                   </div>
                 </div>
@@ -223,7 +226,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
             </article>
           );
         })}
-      </div>
+      </HorizontalCollection>
     </Panel>
   );
 }

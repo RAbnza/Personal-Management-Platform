@@ -1,3 +1,4 @@
+import styles from "./auth.module.css";
 import { useId, type ReactNode } from "react";
 import { LayoutGrid, LockKeyhole } from "lucide-react";
 
@@ -32,7 +33,31 @@ export function AuthCard({
           <ThemeSelect />
         </div>
       </header>
-      <div className="mx-auto w-full max-w-[440px]">
+      <div className={styles.layout}>
+        <aside className={styles.introduction}>
+          <span className={styles.kicker}>MONEY. PLANS. POSSIBILITIES.</span>
+          <h2>
+            A little more clarity.
+            <br />A lot more room
+            <br />
+            for life.
+          </h2>
+          <p>
+            Your money, your next move, and the things you want to make time
+            for. Together in your personal workspace.
+          </p>
+          <div className={styles.features}>
+            <span>
+              01 <strong>Know where you stand</strong>
+            </span>
+            <span>
+              02 <strong>Make your next move</strong>
+            </span>
+            <span>
+              03 <strong>Keep what matters close</strong>
+            </span>
+          </div>
+        </aside>
         <section
           aria-labelledby={titleId}
           className="rounded-card border border-border bg-card p-5 text-card-foreground shadow-level-1 sm:p-7"

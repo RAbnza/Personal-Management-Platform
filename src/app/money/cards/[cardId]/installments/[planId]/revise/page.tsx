@@ -37,7 +37,7 @@ export default async function ReviseInstallmentPage({
   return (
     <div className="space-y-6 break-words">
       <Link
-        className="text-link underline"
+        className="action-link"
         href={`/money/cards/${scope.cardId}/installments/${d.planId}`}
       >
         Current provider plan

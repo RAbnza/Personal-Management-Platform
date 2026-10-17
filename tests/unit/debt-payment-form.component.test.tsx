@@ -23,11 +23,12 @@ afterEach(() => vi.unstubAllGlobals());
 const set = (label: string, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 async function fill() {
+  fireEvent.click(screen.getByRole("button", { name: "I know the breakdown" }));
   set("Payment date", "2026-10-08");
   set("Actual total cash paid (PHP)", "1110.00");
   set("Contractual portion (PHP)", "1100.00");
   set("External payment fee (PHP)", "10.00");
-  set("Accounting certainty", "known_components");
+  set("What has the lender confirmed?", "known_components");
   set("Accounting meaning 1", "liability_reduction");
   set("Recognized liability component 1", "principal");
   set("Component amount 1 (PHP)", "1000.00");
@@ -37,7 +38,7 @@ async function fill() {
   set("Accounting meaning 2", "new_interest");
   set("Component amount 2 (PHP)", "100.00");
   fireEvent.click(
-    screen.getByRole("button", { name: "Propose oldest due first" }),
+    screen.getByRole("button", { name: "Suggest oldest installment first" }),
   );
   await waitFor(() =>
     expect(
@@ -48,13 +49,45 @@ async function fill() {
 async function confirmDue() {
   fireEvent.click(
     screen.getByRole("checkbox", {
-      name: /I confirm the installment allocations/,
+      name: /I confirm the installment amounts/,
     }),
   );
   fireEvent.click(screen.getByRole("button", { name: "Review payment" }));
   return screen.findByLabelText("Payment review");
 }
 describe("debt payment form", () => {
+  it("keeps an explicit guided due allocation through review and Edit without inferring principal", async () => {
+    render(
+      <DebtPaymentForm
+        detail={paymentDetail()}
+        accounts={[paymentAccount]}
+        categories={[]}
+      />,
+    );
+    set("Payment date", "2026-10-08");
+    set("Actual total cash paid (PHP)", "400.01");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Suggest oldest installment first" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Allocate to installment 1 (PHP)"),
+      ).toHaveValue("400.01"),
+    );
+    const review = await confirmDue();
+    expect(review).toHaveTextContent(
+      "Accounting classification remains unresolved",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
+    expect(
+      screen.getByLabelText("Allocate to installment 1 (PHP)"),
+    ).toHaveValue("400.01");
+    expect(
+      screen.getByLabelText("Not assigned to installments (PHP)"),
+    ).toHaveValue("0.00");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("requires explicit allocation confirmation and reviews exact cash, expense and liability before one submit", async () => {
     fetchMock.mockResolvedValue(
       new Response(
@@ -104,7 +137,7 @@ describe("debt payment form", () => {
     );
     await fill();
     const checkbox = screen.getByRole("checkbox", {
-      name: /I confirm the installment allocations/,
+      name: /I confirm the installment amounts/,
     });
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
@@ -124,16 +157,14 @@ describe("debt payment form", () => {
     );
     set("Payment date", "2026-10-08");
     set("Actual total cash paid (PHP)", "400");
-    set("Contractual portion (PHP)", "400");
-    set("Component amount 1 (PHP)", "400");
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Leave contractual amount unapplied",
+        name: "Do not assign to installments yet",
       }),
     );
     await waitFor(() =>
       expect(
-        screen.getByLabelText("Explicit unapplied contractual amount (PHP)"),
+        screen.getByLabelText("Not assigned to installments (PHP)"),
       ).toHaveValue("400.00"),
     );
     const review = await confirmDue();
@@ -223,7 +254,7 @@ describe("debt payment form", () => {
     );
     expect(
       screen.getByRole("checkbox", {
-        name: /I confirm the installment allocations/,
+        name: /I confirm the installment amounts/,
       }),
     ).not.toBeChecked();
   });

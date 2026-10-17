@@ -44,7 +44,7 @@ export default async function CardPage({
   const money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-6 break-words">
-      <Link href="/money/cards" className="text-link underline">
+      <Link href="/money/cards" className="action-link">
         Credit cards
       </Link>
       <ScreenHeader scope="Money" title={data.card.name} />
@@ -53,22 +53,13 @@ export default async function CardPage({
         {money(data.card.postedOutstandingMinor)} · Card credit{" "}
         {money(data.card.cardCreditMinor)}
       </p>
-      <Link
-        href="/money/transactions"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href="/money/transactions" className="action-link">
         Add Expense
       </Link>
-      <Link
-        href={`/money/actions?cardId=${id.data}`}
-        className="ml-4 inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href={`/money/actions?cardId=${id.data}`} className="action-link">
         Financial history for this card
       </Link>
-      <Link
-        href={`/money/cards/${id.data}/statements`}
-        className="block min-h-11 text-link underline"
-      >
+      <Link href={`/money/cards/${id.data}/statements`} className="action-link">
         Provider statements and reconciliation
       </Link>
       <nav
@@ -116,7 +107,7 @@ export default async function CardPage({
           </summary>
           <Link
             href={`/money/cards/${id.data}/installments`}
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
           >
             Manage provider schedules and confirmed applications
           </Link>
@@ -128,7 +119,7 @@ export default async function CardPage({
       >
         <Link
           href={`/money/cards/${id.data}/commands/new`}
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
         >
           Record payment, fee, interest or refund
         </Link>
@@ -154,7 +145,7 @@ export default async function CardPage({
             <li key={i.actionRevisionId} className="space-y-1 py-4">
               <Link
                 href={`/money/actions/${i.actionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 {i.description}
               </Link>
@@ -182,18 +173,12 @@ export default async function CardPage({
         </ol>
         {!data.items.length && <p>No posted card activity yet.</p>}
         {data.hasMore && (
-          <Link
-            href={`?offset=${page.data + 100}`}
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`?offset=${page.data + 100}`} className="action-link">
             Older activity
           </Link>
         )}
         {page.data > 0 && (
-          <Link
-            href="?offset=0"
-            className="ml-4 inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href="?offset=0" className="action-link">
             Latest activity
           </Link>
         )}

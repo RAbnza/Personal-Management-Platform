@@ -204,6 +204,7 @@ describe("TransactionCreateForm", () => {
       categories[0]!.categoryId,
     );
 
+    await user.click(screen.getByText(/^More details/));
     await user.type(
       screen.getByRole("textbox", {
         name: "Sender / source",
@@ -307,11 +308,10 @@ describe("TransactionCreateForm", () => {
     );
 
     expect(
-      screen.getByRole("textbox", {
-        name: "Category amount (PHP)",
-      }),
-    ).toHaveValue("125.75");
+      screen.queryByRole("textbox", { name: "Category amount (PHP)" }),
+    ).not.toBeInTheDocument();
 
+    await user.click(screen.getByText(/^More details/));
     await user.type(
       screen.getByRole("textbox", {
         name: "Merchant",
@@ -445,6 +445,7 @@ describe("TransactionCreateForm", () => {
       /category portions match the purchase amount exactly/i,
     );
 
+    await user.click(screen.getByText(/^More details/));
     await user.type(
       screen.getByRole("textbox", {
         name: "Merchant",
@@ -718,9 +719,7 @@ describe("TransactionCreateForm", () => {
       screen
         .getAllByRole("status")
         .some((element) =>
-          element.textContent?.includes(
-            "greater than the currently loaded balance",
-          ),
+          element.textContent?.includes("exceeds the loaded balance"),
         ),
     ).toBe(true);
     await user.type(screen.getByLabelText("Transaction date"), "2026-10-07");
@@ -778,6 +777,7 @@ describe("distinct expense task views", () => {
       screen.getByRole("textbox", { name: "Description" }),
       "Groceries",
     );
+    await user.click(screen.getByText(/^More details/));
     await user.type(
       screen.getByRole("textbox", { name: "Reference" }),
       "Receipt 42",

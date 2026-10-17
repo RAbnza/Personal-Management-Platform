@@ -70,10 +70,7 @@ export default async function MoneyAccountsPage() {
       >
         <div className="space-y-8">
           <div>
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/" className="action-link">
               <ArrowLeft
                 aria-hidden="true"
                 className="size-4"
@@ -94,10 +91,7 @@ export default async function MoneyAccountsPage() {
               financial accounts.
             </p>
 
-            <Link
-              href="/onboarding"
-              className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/onboarding" className="action-link">
               Review Getting Started
             </Link>
           </Panel>
@@ -131,10 +125,7 @@ export default async function MoneyAccountsPage() {
     >
       <div className="space-y-8">
         <div>
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/" className="action-link">
             <ArrowLeft
               aria-hidden="true"
               className="size-4"
@@ -181,10 +172,7 @@ export default async function MoneyAccountsPage() {
               account read before entering another financial account.
             </p>
 
-            <Link
-              href="/money/accounts"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/accounts" className="action-link">
               <RotateCcw
                 aria-hidden="true"
                 className="size-4"

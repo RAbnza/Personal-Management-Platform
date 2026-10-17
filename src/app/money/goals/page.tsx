@@ -26,7 +26,7 @@ export default async function GoalsPage({
     return (
       <div>
         <ScreenHeader scope="Money" title="Check goal filters" />
-        <Link className="text-link underline" href="/money/goals">
+        <Link className="action-link" href="/money/goals">
           Return to savings goals
         </Link>
       </div>
@@ -61,10 +61,7 @@ export default async function GoalsPage({
                 className="space-y-3 border-b border-border pb-4"
               >
                 <h2 className="text-xl font-semibold">
-                  <Link
-                    className="text-link underline"
-                    href={`/money/goals/${g.id}`}
-                  >
+                  <Link className="action-link" href={`/money/goals/${g.id}`}>
                     {g.name}
                   </Link>
                 </h2>
@@ -76,14 +73,14 @@ export default async function GoalsPage({
             )}
             {data.nextCursor && (
               <Link
-                className="inline-flex min-h-11 items-center text-link underline"
+                className="action-link"
                 href={`/money/goals?${new URLSearchParams({ ...Object.fromEntries(Object.entries(q.data).map(([k, v]) => [k, String(v)])), cursor: data.nextCursor })}`}
               >
                 Next savings goals
               </Link>
             )}
             <Link
-              className="inline-flex min-h-11 items-center text-link underline"
+              className="action-link"
               href={
                 q.data.includeArchived === "true"
                   ? "/money/goals"

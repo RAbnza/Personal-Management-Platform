@@ -24,7 +24,7 @@ export default async function RecurringLayout({
           <p>
             Money is hidden from normal navigation. Existing plans and due dates
             remain preserved.{" "}
-            <Link href="/onboarding" className="text-link underline">
+            <Link href="/onboarding" className="action-link">
               Restore Money
             </Link>
             .

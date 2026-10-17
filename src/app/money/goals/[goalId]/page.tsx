@@ -51,10 +51,7 @@ export default async function GoalPage({
     money = (v: string) => formatMoneyMinorUnits("PHP", v);
   return (
     <div className="space-y-6">
-      <Link
-        className="inline-flex min-h-11 items-center text-link underline"
-        href="/money/goals"
-      >
+      <Link className="action-link" href="/money/goals">
         All savings goals
       </Link>
       <h1 className="text-2xl font-semibold">{g.name} savings goal</h1>
@@ -85,7 +82,7 @@ export default async function GoalPage({
           {data.reservations.items.map((r) => (
             <li key={r.id}>
               <Link
-                className="text-link underline"
+                className="action-link"
                 href={`/money/accounts/${r.financial_account_id}/history`}
               >
                 {r.name}
@@ -106,7 +103,7 @@ export default async function GoalPage({
         {!data.reservations.items.length && <p>No recorded reservations.</p>}
         {data.reservations.nextCursor && (
           <Link
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
             href={pages({ reservationCursor: data.reservations.nextCursor })}
           >
             Next reservations
@@ -140,7 +137,7 @@ export default async function GoalPage({
         </dl>
         {data.accounts.nextCursor && (
           <Link
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
             href={pages({ accountCursor: data.accounts.nextCursor })}
           >
             Next cash accounts
@@ -160,7 +157,7 @@ export default async function GoalPage({
         />
         {data.targets.nextCursor && (
           <Link
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
             href={pages({ targetCursor: data.targets.nextCursor })}
           >
             Next destination goals
@@ -216,7 +213,7 @@ export default async function GoalPage({
         </ol>
         {data.history.nextCursor && (
           <Link
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
             href={pages({ historyCursor: data.history.nextCursor })}
           >
             Earlier goal history

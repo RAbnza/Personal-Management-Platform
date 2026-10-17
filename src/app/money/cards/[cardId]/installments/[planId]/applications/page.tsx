@@ -39,7 +39,7 @@ export default async function InstallmentApplicationsPage({
   return (
     <div className="space-y-6 break-words">
       <Link
-        className="text-link underline"
+        className="action-link"
         href={`/money/cards/${scope.cardId}/installments/${d.planId}`}
       >
         Provider installment plan
@@ -69,7 +69,7 @@ export default async function InstallmentApplicationsPage({
           ))}
         </ul>
         <Link
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
           href={`/money/cards/${scope.cardId}/statements`}
         >
           Manage verified statement allocations
@@ -79,7 +79,7 @@ export default async function InstallmentApplicationsPage({
       d.chargeChoices.hasMore ||
       d.unappliedCredits.hasMore ? (
         <Link
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
           href={`${base}?choiceOffset=${choiceOffset + 100}&applicationOffset=${applicationOffset}`}
         >
           Older allocation, charge and credit choices
@@ -87,7 +87,7 @@ export default async function InstallmentApplicationsPage({
       ) : null}
       {d.applications.hasMore && (
         <Link
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
           href={`${base}?choiceOffset=${choiceOffset}&applicationOffset=${applicationOffset + 100}`}
         >
           Older immutable application evidence

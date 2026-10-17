@@ -1065,7 +1065,7 @@ export function FinancialActionReviewForm({
                 Financial command saved. Reload to view the current revision and
                 preserved history.{" "}
                 <a
-                  className="text-link underline"
+                  className="action-link"
                   href={`/money/actions/${detail.current.actionId}`}
                 >
                   View updated action
@@ -1077,7 +1077,7 @@ export function FinancialActionReviewForm({
                 Reload and review current financial evidence before issuing a
                 new command.{" "}
                 <a
-                  className="text-link underline"
+                  className="action-link"
                   href={`/money/actions/${detail.current.actionId}`}
                 >
                   Reload current evidence

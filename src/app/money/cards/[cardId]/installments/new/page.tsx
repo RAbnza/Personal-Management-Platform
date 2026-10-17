@@ -38,7 +38,7 @@ export default async function NewInstallmentPage({
   const base = `/money/cards/${scope.cardId}/installments`;
   return (
     <div className="space-y-6 break-words">
-      <Link className="text-link underline" href={base}>
+      <Link className="action-link" href={base}>
         Provider installment plans
       </Link>
       <ScreenHeader scope="Money" title="Record provider installment plan" />
@@ -60,7 +60,7 @@ export default async function NewInstallmentPage({
             {setup.purchases.map((p) => (
               <li key={p.actionId}>
                 <Link
-                  className="inline-flex min-h-11 text-link underline"
+                  className="action-link"
                   href={`${base}/new?purchaseActionId=${p.actionId}`}
                 >
                   {p.description} — provider posted {p.postingDate}
@@ -69,10 +69,7 @@ export default async function NewInstallmentPage({
             ))}
           </ul>
           {setup.hasMore && (
-            <Link
-              className="inline-flex min-h-11 text-link underline"
-              href={`?offset=${offset + 100}`}
-            >
+            <Link className="action-link" href={`?offset=${offset + 100}`}>
               Older recognized purchase choices
             </Link>
           )}

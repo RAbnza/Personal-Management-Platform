@@ -249,7 +249,7 @@ export function AccountHistoryList({
                           <p className="text-sm font-semibold text-foreground">
                             <Link
                               href={`/money/actions/${entry.actionId}`}
-                              className="text-link underline-offset-4 hover:underline"
+                              className="action-link"
                             >
                               {entry.description}
                             </Link>
@@ -328,7 +328,7 @@ export function AccountHistoryList({
         {paginatedView ? (
           <Link
             href={`/money/accounts/${account.accountId}/history`}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+            className="action-link"
           >
             <ArrowLeft
               aria-hidden="true"
@@ -349,7 +349,7 @@ export function AccountHistoryList({
                 cursor: nextCursor,
               },
             }}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+            className="action-link"
           >
             Older activity
             <ArrowRight

@@ -58,10 +58,7 @@ export function ActivityFilters({
       <Button type="submit" variant="secondary">
         Apply filters
       </Button>
-      <Link
-        href="/money/actions"
-        className="inline-flex min-h-11 items-center text-sm text-link underline"
-      >
+      <Link href="/money/actions" className="action-link">
         Reset filters
       </Link>
       {(filters.cardId || filters.categoryId) && (

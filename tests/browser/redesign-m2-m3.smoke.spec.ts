@@ -47,7 +47,7 @@ test("production discovery and reviewed expense preserve private draft and ident
   await expect(page).toHaveURL(/\/money\/accounts$/);
   await page.goBack();
   await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
+    page.getByRole("heading", { name: /^A clearer day,/ }),
   ).toBeVisible();
   for (const [route, title] of [
     ["/settings?section=appearance", "Settings"],
@@ -96,6 +96,7 @@ test("production discovery and reviewed expense preserve private draft and ident
   await page
     .getByLabel("Description", { exact: true })
     .fill("Reviewed browser expense");
+  await page.locator("summary").filter({ hasText: "More details" }).click();
   await page
     .getByLabel("Notes", { exact: true })
     .fill("Retained optional draft");
@@ -150,5 +151,41 @@ test("production discovery and reviewed expense preserve private draft and ident
     purchaseMinor: "1234",
     notes: "Retained optional draft",
   });
+  await page.goto("/?period=custom&startDate=2026-10-01&endDate=2026-10-31");
+  const overview = page.getByRole("region", {
+    name: "account overview",
+    exact: true,
+  });
+  await overview.getByRole("button", { name: "Next account overview" }).click();
+  await expect(overview.getByText("2 / 2", { exact: false })).toBeVisible();
+  await expect(
+    overview.getByRole("link", { name: "Account history", exact: true }),
+  ).toBeInViewport();
+  const rail = overview.getByLabel(
+    "account overview: scroll horizontally or use arrow keys",
+  );
+  await rail.focus();
+  await rail.press("Home");
+  await expect(
+    overview.getByRole("button", { name: "Previous account overview" }),
+  ).toBeDisabled();
+  await page.getByText("Exact chart data", { exact: true }).click();
+  await expect(
+    page.getByRole("table", { name: /Recorded daily totals/ }),
+  ).toContainText("PHP 12.34");
+  await page
+    .getByRole("button", { name: "Savings goals", exact: true })
+    .click();
+  await expect(
+    page.getByRole("link", { name: "Set a savings goal" }),
+  ).toBeVisible();
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
   expect(errors).toEqual([]);
 });

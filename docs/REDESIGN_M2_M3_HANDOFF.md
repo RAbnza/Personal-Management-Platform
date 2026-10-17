@@ -1,5 +1,7 @@
 # M2 + M3 implementation handoff
 
+The subsequent [design-led overhaul and horizontal interaction continuation](REDESIGN_M2_M3_DESIGN_OVERHAUL.md) supersedes the visual composition described here and records its behavioral changes and focused checks.
+
 October 17, 2026 (Asia/Manila). Branch: `feat/redesign-m2-m3`. Verified starting remote `main`: `a109b19172ce1f634d1a9cb3f188307967eaff87`. M1 remains owner-approved. This assignment implements M2, records its checkpoint, then continues into M3; no M4–M6, PR or merge is authorized.
 
 ## Running implementation checklist

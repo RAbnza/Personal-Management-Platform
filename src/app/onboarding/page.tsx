@@ -89,10 +89,7 @@ export default async function OnboardingPage() {
     >
       <div className="space-y-8">
         <header>
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/" className="action-link">
             <ArrowLeft
               aria-hidden="true"
               className="size-4"
@@ -170,10 +167,7 @@ export default async function OnboardingPage() {
                     is written to the financial ledger.
                   </p>
 
-                  <Link
-                    href="/money/accounts"
-                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                  >
+                  <Link href="/money/accounts" className="action-link">
                     Add your first account
                   </Link>
                 </Panel>
@@ -191,10 +185,7 @@ export default async function OnboardingPage() {
                     step only for a transaction that really happened.
                   </p>
 
-                  <Link
-                    href="/money/transactions"
-                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                  >
+                  <Link href="/money/transactions" className="action-link">
                     Record transaction
                   </Link>
                 </Panel>
@@ -213,10 +204,7 @@ export default async function OnboardingPage() {
                     open until that Career event is scheduled.
                   </p>
 
-                  <Link
-                    href="/career/applications/new"
-                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                  >
+                  <Link href="/career/applications/new" className="action-link">
                     Add job application
                   </Link>
                 </Panel>
@@ -234,10 +222,7 @@ export default async function OnboardingPage() {
                     review the Agenda, then explicitly confirm the lesson there.
                   </p>
 
-                  <Link
-                    href="/calendar"
-                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                  >
+                  <Link href="/calendar" className="action-link">
                     Review Agenda
                   </Link>
                 </Panel>
@@ -261,10 +246,7 @@ export default async function OnboardingPage() {
               could not be loaded. Refresh the page to try again.
             </p>
 
-            <Link
-              href="/onboarding"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/onboarding" className="action-link">
               <RotateCcw
                 aria-hidden="true"
                 className="size-4"

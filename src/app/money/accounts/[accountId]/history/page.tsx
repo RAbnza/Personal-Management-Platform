@@ -119,7 +119,7 @@ export default async function MoneyAccountHistoryPage({
         <div>
           <Link
             href={moneyEnabled ? "/money/accounts" : "/"}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
+            className="action-link"
           >
             <ArrowLeft
               aria-hidden="true"
@@ -162,7 +162,7 @@ export default async function MoneyAccountHistoryPage({
 
             <Link
               href={`/money/accounts/${accountId}/history`}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+              className="action-link"
             >
               <RotateCcw
                 aria-hidden="true"
@@ -182,10 +182,7 @@ export default async function MoneyAccountHistoryPage({
               be temporarily unavailable. No financial data has been changed.
             </p>
 
-            <Link
-              href="/money/accounts"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/accounts" className="action-link">
               <ArrowLeft
                 aria-hidden="true"
                 className="size-4"

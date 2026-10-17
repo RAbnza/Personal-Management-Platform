@@ -72,10 +72,7 @@ export default async function MoneyTransfersPage() {
           title="Money is currently disabled"
           description="Existing financial data remains preserved."
         >
-          <Link
-            href="/onboarding"
-            className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/onboarding" className="action-link">
             Enable Money from Getting Started
           </Link>
         </Panel>
@@ -130,10 +127,7 @@ export default async function MoneyTransfersPage() {
     >
       <div className="space-y-8">
         <div>
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             <ArrowLeft
               aria-hidden="true"
               className="size-4"
@@ -161,10 +155,7 @@ export default async function MoneyTransfersPage() {
               financial action.
             </p>
 
-            <Link
-              href="/money/transfers"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/transfers" className="action-link">
               <RotateCcw
                 aria-hidden="true"
                 className="size-4"
@@ -183,15 +174,18 @@ export default async function MoneyTransfersPage() {
               transfer between your accounts.
             </p>
 
-            <Link
-              href="/money/accounts"
-              className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/accounts" className="action-link">
               Add financial account
             </Link>
           </Panel>
         ) : (
           <TransferCreateForm
+            today={new Intl.DateTimeFormat("en-CA", {
+              timeZone: workspace.timezone,
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(new Date())}
             currency={workspace.currency}
             accounts={transferSetup.accounts.items}
             categories={transferSetup.categories.items}

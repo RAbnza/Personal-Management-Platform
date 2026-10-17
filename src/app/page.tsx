@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -86,14 +87,21 @@ export default async function Home({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
-          <p className="text-sm font-medium text-link">Private workspace</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-            Home
-          </h1>
-          <p className="mt-3 text-muted-foreground">
-            Your tracked records, commitments and next actions.
-          </p>
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">
+              YOUR PERSONAL WORKSPACE
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+              A clearer day, {user.name.split(" ")[0]}.
+            </h1>
+          </div>
+          <Link
+            href="/onboarding"
+            className={buttonVariants({ variant: "secondary" })}
+          >
+            Customize workspace
+          </Link>
         </header>
         {onboarding !== null &&
           !onboarding.complete &&
@@ -113,7 +121,7 @@ export default async function Home({
               <DashboardFilters />
             ) : (
               <Link
-                className="inline-flex min-h-11 items-center text-link underline"
+                className={buttonVariants({ variant: "secondary" })}
                 href="/"
               >
                 Retry Home

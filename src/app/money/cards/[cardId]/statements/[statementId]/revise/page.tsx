@@ -43,7 +43,7 @@ export default async function ReviseStatementPage({
     <div className="space-y-5">
       <Link
         href={`/money/cards/${scope.cardId}/statements/${scope.statementId}`}
-        className="text-link underline"
+        className="action-link"
       >
         Statement history
       </Link>
@@ -60,10 +60,7 @@ export default async function ReviseStatementPage({
         </p>
       )}
       {setup.hasMore && (
-        <Link
-          href={`?candidateOffset=${offset + 100}`}
-          className="text-link underline"
-        >
+        <Link href={`?candidateOffset=${offset + 100}`} className="action-link">
           Load older purchase choices before editing statement
         </Link>
       )}

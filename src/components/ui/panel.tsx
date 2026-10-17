@@ -1,11 +1,13 @@
 import { useId, type HTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import { InfoTip } from "./info-tip";
 
 export interface PanelProps extends HTMLAttributes<HTMLElement> {
   title: string;
   description?: string;
   action?: ReactNode;
+  descriptionAsHelp?: boolean;
 }
 
 export function Panel({
@@ -14,6 +16,7 @@ export function Panel({
   action,
   children,
   className,
+  descriptionAsHelp = false,
   ...props
 }: PanelProps) {
   const titleId = useId();
@@ -22,7 +25,9 @@ export function Panel({
   return (
     <section
       aria-labelledby={titleId}
-      aria-describedby={description ? descriptionId : undefined}
+      aria-describedby={
+        description && !descriptionAsHelp ? descriptionId : undefined
+      }
       className={cn(
         "rounded-card border border-border bg-card text-card-foreground",
         className,
@@ -35,10 +40,13 @@ export function Panel({
             id={titleId}
             className="text-lg font-semibold tracking-[-0.01em] text-foreground"
           >
-            {title}
+            {title}{" "}
+            {description && descriptionAsHelp && (
+              <InfoTip title={title}>{description}</InfoTip>
+            )}
           </h2>
 
-          {description ? (
+          {description && !descriptionAsHelp ? (
             <p
               id={descriptionId}
               className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground"

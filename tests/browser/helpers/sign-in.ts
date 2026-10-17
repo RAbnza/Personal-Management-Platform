@@ -23,6 +23,6 @@ export async function signIn(page: Page, owner: BrowserOwner) {
   }
   expect(response.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
+    page.getByRole("heading", { name: /^A clearer day,/ }),
   ).toBeVisible();
 }

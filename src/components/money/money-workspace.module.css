@@ -41,19 +41,21 @@
   scroll-margin-block: 2rem;
 }
 .columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   align-items: start;
   gap: 1.5rem;
 }
 .columns > * {
   min-width: 0;
+  width: 100%;
 }
 .creation {
+  order: -1;
   border: 1px solid var(--border);
   border-radius: var(--geometry-radius-panel);
-  padding: 1.25rem;
-  background: var(--surface);
+  padding: 0.5rem 1.25rem;
+  background: var(--surface-subtle);
 }
 .creation > summary {
   min-height: 2.75rem;
@@ -61,6 +63,14 @@
   cursor: pointer;
   font-weight: 600;
   color: var(--link);
+}
+.creation > summary::marker {
+  color: var(--primary);
+}
+.creation[open] > div {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding-bottom: 1.25rem;
 }
 .steps {
   display: flex;
@@ -76,8 +86,116 @@
   font-weight: 700;
 }
 .task {
-  max-width: 48rem;
+  max-width: 40rem;
   margin-inline: auto;
+}
+.entryHeading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.entryMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.entryFields {
+  display: grid;
+  gap: 1.5rem;
+}
+.intentSwitch {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--surface-subtle);
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+}
+.intentSwitch label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.intentSwitch label:has(:checked) {
+  background: var(--surface);
+  color: var(--accent-foreground);
+  box-shadow: var(--elevation-level-1);
+}
+.intentSwitch input {
+  accent-color: var(--primary);
+}
+.amountEntry {
+  background: var(--focal-background);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: var(--focal-foreground);
+}
+.amountEntry input {
+  min-height: 4rem;
+  background: var(--surface);
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  line-height: 1.25;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--input);
+  border-radius: var(--geometry-radius-control);
+  background: var(--surface);
+  color: var(--foreground);
+}
+.splitRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.splitRow > button {
+  grid-column: 1/-1;
+  justify-self: end;
+}
+.options {
+  border-block: 1px solid var(--border);
+  padding-block: 0.5rem;
+}
+.options > summary {
+  min-height: 2.75rem;
+  padding: 0.75rem 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.options > summary span {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin-left: 0.75rem;
+}
+.contextBox {
+  display: grid;
+  gap: 1rem;
+  background: var(--blue-surface);
+  border-radius: 0.75rem;
+  padding: 1rem;
 }
 .task [hidden] {
   display: none !important;
@@ -98,6 +216,127 @@
   display: grid;
   gap: 0;
 }
+.accountCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+}
+.accountCard {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--focal-background);
+}
+.accountCard[data-account-type="savings"] {
+  background: var(--blue-surface);
+}
+.accountCard[data-account-type="checking"] {
+  background: var(--teal-surface);
+}
+.accountCard h3 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.accountCard a {
+  margin: 0.25rem 0.25rem 0.25rem 0;
+}
+.planSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: end;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: var(--focal-background);
+}
+.planSummary > div {
+  flex: 1;
+  min-width: 0;
+}
+.planSummary span,
+.planSummary small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.planSummary strong {
+  display: block;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 0.3rem 0;
+  overflow-wrap: anywhere;
+}
+.cardMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cardMetrics > div {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--surface-subtle);
+}
+.cardMetrics > div:first-child {
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.cardMetrics > div:first-child dt {
+  color: var(--focal-muted);
+}
+.cardMetrics dt {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.cardMetrics dd {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.5rem;
+}
+.cardMetrics dd + dd {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.creditCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+.creditCard {
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--rail-background);
+  color: var(--rail-foreground);
+  display: grid;
+  gap: 1.5rem;
+}
+.creditCard:nth-child(even) {
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.creditCard strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.creditCard small {
+  font-size: 0.75rem;
+}
+.creditCard a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid currentColor;
+  min-height: 2.75rem;
+  font-weight: 600;
+}
 .records > article {
   border: 0;
   border-bottom: 1px solid var(--border);
@@ -110,7 +349,7 @@
 }
 @media (min-width: 1100px) {
   .columns {
-    grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.8fr);
+    gap: 1.25rem;
   }
 }
 @media (max-width: 767px) {

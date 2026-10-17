@@ -1,4 +1,5 @@
 "use client";
+import styles from "./money-workspace.module.css";
 import { useId, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function CardCommandForm({
     confirmed: false,
     negative: false,
   });
+  const [evidenceChoice, setEvidenceChoice] = useState("");
   const [parts, setParts] = useState<Record<string, string>>({});
   const money = (n: string) => formatMoneyMinorUnits(card.currency, n);
   const field = (
@@ -182,8 +184,42 @@ export function CardCommandForm({
           {field("effectiveDate", "Transaction date", "date")}
           {field("postingDate", "Provider posting date", "date")}
           {field("description", "Description")}
-          {field("confirmationSource", "Actual evidence source")}
-          {field("providerReference", "Provider reference", "text", false)}
+          <div>
+            <label
+              htmlFor={`${id}-evidence`}
+              className="block text-sm font-medium"
+            >
+              Where did you verify this?
+            </label>
+            <select
+              id={`${id}-evidence`}
+              className={styles.select}
+              value={evidenceChoice}
+              required
+              onChange={(event) => {
+                setEvidenceChoice(event.target.value);
+                setFields({
+                  ...fields,
+                  confirmationSource:
+                    event.target.value === "custom" ? "" : event.target.value,
+                });
+              }}
+            >
+              <option value="">Choose your source</option>
+              <option>Bank or card app</option>
+              <option>Card statement</option>
+              <option>Payment receipt</option>
+              <option value="custom">Another source</option>
+            </select>
+          </div>
+          {evidenceChoice === "custom" &&
+            field("confirmationSource", "Actual evidence source")}
+          <details className={styles.options}>
+            <summary>
+              Add provider reference <span>Optional</span>
+            </summary>
+            {field("providerReference", "Provider reference", "text", false)}
+          </details>
           {kind === "card_payment" ? (
             <div>
               <label htmlFor={`${id}-account`} className="block">

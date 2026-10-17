@@ -1,4 +1,6 @@
 import { ScreenHeader } from "@/components/patterns/work-area";
+import { ArrowUpRight, CreditCard } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 import Link from "next/link";
 
 import { debtReadQuerySchema } from "@/modules/finance/domain/debt";
@@ -20,7 +22,7 @@ export default async function DebtsPage({
       <div>
         <ScreenHeader scope="Money" title="Invalid debt list filter" />
 
-        <Link href="/money/debts" className="text-link underline">
+        <Link href="/money/debts" className="action-link">
           Reset filters
         </Link>
       </div>
@@ -38,12 +40,13 @@ export default async function DebtsPage({
       <div>
         <ScreenHeader scope="Money" title="Debts" />
 
-        <p className="mt-3 max-w-[68ch] text-muted-foreground">
-          Track new borrowing and existing provider-confirmed liabilities.
-          Recognized liability and scheduled payable remain separate, and
-          missing breakdowns or due dates stay visible as unknown.
-        </p>
-
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          A clear view of what you owe.
+          <InfoTip title="Debt balances">
+            Recorded debt balances and scheduled payments are separate. Missing
+            breakdowns and due dates stay unknown until you supply evidence.
+          </InfoTip>
+        </div>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             href="/money/debts/borrow"
@@ -91,9 +94,10 @@ export default async function DebtsPage({
               <h2 className="wrap-break-word text-lg font-semibold">
                 <Link
                   href={`/money/debts/${debt.debtId}`}
-                  className="inline-flex min-h-11 items-center text-link underline-offset-4 hover:underline"
+                  className="action-link"
                 >
                   {debt.name}
+                  <ArrowUpRight size={16} />
                 </Link>
               </h2>
 
@@ -103,7 +107,7 @@ export default async function DebtsPage({
 
               <dl className="grid gap-4 text-sm sm:grid-cols-3 lg:col-start-2 lg:row-span-3 lg:row-start-1">
                 <div>
-                  <dt>Recognized liability</dt>
+                  <dt>Recorded balance</dt>
 
                   <dd className="numeric-value mt-1 font-semibold">
                     {formatMoneyMinorUnits(
@@ -114,7 +118,7 @@ export default async function DebtsPage({
                 </div>
 
                 <div>
-                  <dt>Remaining supplied schedule</dt>
+                  <dt>Scheduled payments left</dt>
 
                   <dd className="numeric-value mt-1">
                     {debt.remainingScheduledMinor === null
@@ -138,6 +142,15 @@ export default async function DebtsPage({
                   </dd>
                 </div>
               </dl>
+              {debt.lifecycle === "active" && (
+                <Link
+                  href={`/money/debts/${debt.debtId}/pay`}
+                  className="action-link w-fit"
+                >
+                  <CreditCard size={16} />
+                  Record payment
+                </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -145,17 +158,14 @@ export default async function DebtsPage({
 
       <div className="flex flex-wrap gap-5">
         {query.data.after ? (
-          <Link
-            className="inline-flex min-h-11 items-center text-link underline"
-            href="/money/debts"
-          >
+          <Link className="action-link" href="/money/debts">
             Back to first page
           </Link>
         ) : null}
 
         {result.nextCursor ? (
           <Link
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
             href={`/money/debts?after=${result.nextCursor}`}
           >
             Next debts

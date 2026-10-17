@@ -10,7 +10,7 @@ export default async function SupportPage() {
       title="Support and feedback"
       path="/help/support"
     >
-      <Link href="/help" className="text-link underline">
+      <Link href="/help" className="action-link">
         Back to Help
       </Link>
       <FeedbackDraft email={getServerEnvironment().SUPPORT_EMAIL ?? null} />

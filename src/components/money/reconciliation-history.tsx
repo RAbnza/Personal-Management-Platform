@@ -84,7 +84,7 @@ export function ReconciliationHistory({
                   <p className="mt-2 text-sm">
                     Supersedes comparison{" "}
                     <a
-                      className="text-link underline"
+                      className="action-link"
                       href={`#comparison-${r.supersedesReconciliationId}`}
                     >
                       {r.supersedesReconciliationId}
@@ -107,7 +107,7 @@ export function ReconciliationHistory({
                 {!r.supersededByReconciliationId && onCompare ? (
                   <button
                     type="button"
-                    className="mt-3 min-h-11 text-link underline"
+                    className="action-link"
                     onClick={() => onCompare(r)}
                   >
                     Compare again for {r.cutoffDate}
@@ -120,7 +120,7 @@ export function ReconciliationHistory({
                 r.differenceMinor !== "0" ? (
                   <button
                     type="button"
-                    className="ml-4 mt-3 min-h-11 text-link underline"
+                    className="action-link"
                     onClick={() => onAdjust(r)}
                   >
                     Review explicit adjustment for {r.cutoffDate}
@@ -132,7 +132,7 @@ export function ReconciliationHistory({
         )}
         <Link
           href={`/money/accounts/${setup.account.financialAccountId}/history`}
-          className="mt-4 inline-flex min-h-11 items-center text-link underline"
+          className="action-link"
         >
           Investigate account activity
         </Link>

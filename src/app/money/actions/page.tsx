@@ -27,7 +27,7 @@ export default async function FinancialActionsPage({
         <p role="alert">
           Use supported funding and valid transaction or provider dates.
         </p>
-        <Link href="/money/actions" className="text-link underline">
+        <Link href="/money/actions" className="action-link">
           Reset filters
         </Link>
       </div>
@@ -44,7 +44,7 @@ export default async function FinancialActionsPage({
     return (
       <p role="alert">
         Financial activity could not be loaded.{" "}
-        <Link href="/money/actions" className="text-link underline">
+        <Link href="/money/actions" className="action-link">
           Retry this page
         </Link>
         .

@@ -33,10 +33,7 @@ export default async function InstallmentListPage({
   const base = `/money/cards/${scope.cardId}/installments`;
   return (
     <div className="space-y-6 break-words">
-      <Link
-        className="text-link underline"
-        href={`/money/cards/${scope.cardId}`}
-      >
+      <Link className="action-link" href={`/money/cards/${scope.cardId}`}>
         {data.card.name}
       </Link>
       <ScreenHeader scope="Money" title="Provider installment plans" />
@@ -45,16 +42,13 @@ export default async function InstallmentListPage({
         spending once; only actual recorded payments, interest, fees and refunds
         change financial balances.
       </p>
-      <Link
-        className="inline-flex min-h-11 text-link underline"
-        href={`${base}/new`}
-      >
+      <Link className="action-link" href={`${base}/new`}>
         Record provider installment plan
       </Link>
       <ul className="space-y-4">
         {data.plans.map((p) => (
           <li key={p.planId} className="rounded-md border border-border p-4">
-            <Link className="text-link underline" href={`${base}/${p.planId}`}>
+            <Link className="action-link" href={`${base}/${p.planId}`}>
               {p.description}
             </Link>
             <p>
@@ -78,10 +72,7 @@ export default async function InstallmentListPage({
         <p>No provider installment plan is recorded.</p>
       )}
       {data.hasMore && (
-        <Link
-          className="inline-flex min-h-11 text-link underline"
-          href={`?offset=${offset + 25}`}
-        >
+        <Link className="action-link" href={`?offset=${offset + 25}`}>
           More recorded plans
         </Link>
       )}

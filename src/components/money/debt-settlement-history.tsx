@@ -18,7 +18,7 @@ export function DebtSettlementHistory({
         Settlement history
       </h2>
       <p>
-        {s.settlementDate} ?{" "}
+        {s.settlementDate} ·{" "}
         {s.settlementKind === "early"
           ? "Early settlement"
           : "Normal settlement"}
@@ -44,8 +44,8 @@ export function DebtSettlementHistory({
       <ul className="space-y-2">
         {s.components.map((c, i) => (
           <li key={i}>
-            {c.kind.replaceAll("_", " ")}: {money(c.amountMinor)} ?{" "}
-            {c.liabilityComponent ?? "unrecognized future charge"} ?{" "}
+            {c.kind.replaceAll("_", " ")}: {money(c.amountMinor)} ·{" "}
+            {c.liabilityComponent ?? "unrecognized future charge"} ·{" "}
             {c.explanation}
             {c.unknownOpening
               ? " ? Disclosed imported opening adjustment; no expense reversal"

@@ -68,10 +68,7 @@ export default async function FinancialActionPage({
         title="Financial evidence unavailable"
         description="Current evidence could not be loaded safely."
       >
-        <Link
-          href={`/money/actions/${id.data}`}
-          className="text-link underline"
-        >
+        <Link href={`/money/actions/${id.data}`} className="action-link">
           Retry loading evidence
         </Link>
       </Panel>
@@ -79,7 +76,7 @@ export default async function FinancialActionPage({
   }
   return (
     <div className="space-y-6">
-      <Link href="/money/actions" className="text-link underline">
+      <Link href="/money/actions" className="action-link">
         Financial activity
       </Link>
       <ScreenHeader scope="Money" title={detail.current.description} />
@@ -121,7 +118,7 @@ export default async function FinancialActionPage({
               <li key={link.occurrenceId}>
                 <Link
                   href={`/money/recurring/occurrences/${link.occurrenceId}`}
-                  className="inline-block min-h-11 max-w-full break-words text-link underline"
+                  className="action-link"
                 >
                   {link.name} · {link.dueDate} ·{" "}
                   {formatMoneyMinorUnits(workspace.currency, link.linkedMinor)}{" "}
@@ -152,13 +149,13 @@ export default async function FinancialActionPage({
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`/money/cards/${detail.current.evidence.cardId}/installments/new?purchaseActionId=${id.data}`}
               >
                 Record provider installment schedule
               </Link>
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`/money/cards/${detail.current.evidence.cardId}/installments`}
               >
                 View provider installment plans
@@ -189,7 +186,7 @@ export default async function FinancialActionPage({
             </p>
           )}
           <Link
-            className="text-link underline"
+            className="action-link"
             href={
               detail.privateGroupLink.expenseId
                 ? `/sharing/${detail.privateGroupLink.groupId}/expenses/${detail.privateGroupLink.expenseId}`

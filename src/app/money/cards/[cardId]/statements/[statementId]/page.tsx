@@ -45,12 +45,12 @@ export default async function StatementPage({
     money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-6 break-words">
-      <Link href={base} className="text-link underline">
+      <Link href={base} className="action-link">
         Statements for {data.card.name}
       </Link>
       <Link
         href={`/calendar/reminders/card_statement/${scope.statementId}`}
-        className="inline-flex min-h-11 items-center text-link underline"
+        className="action-link"
       >
         Current statement reminder controls
       </Link>
@@ -127,7 +127,7 @@ export default async function StatementPage({
           </p>
           <Link
             href={`${base}/${s.statementId}/allocations${data.isCurrent ? "" : `?revisionId=${s.revisionId}`}`}
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
           >
             Confirm allocations and review reversal history
           </Link>
@@ -158,7 +158,7 @@ export default async function StatementPage({
               <li key={c.actionRevisionId}>
                 <Link
                   href={`/money/actions/${c.actionId}`}
-                  className="text-link underline"
+                  className="action-link"
                 >
                   {c.description}
                 </Link>{" "}
@@ -189,7 +189,7 @@ export default async function StatementPage({
                   <>
                     <Link
                       href={`/money/actions/${link.actionId}`}
-                      className="text-link underline"
+                      className="action-link"
                     >
                       Linked card activity
                     </Link>
@@ -216,10 +216,7 @@ export default async function StatementPage({
         )}
       </Panel>
       {data.isCurrent && (
-        <Link
-          href={`${base}/${s.statementId}/revise`}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <Link href={`${base}/${s.statementId}/revise`} className="action-link">
           Correct statement evidence
         </Link>
       )}
@@ -232,7 +229,7 @@ export default async function StatementPage({
             <li key={h.revisionId}>
               <Link
                 href={`${base}/${s.statementId}?revisionId=${h.revisionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 Revision {h.version}
               </Link>
@@ -245,10 +242,7 @@ export default async function StatementPage({
           ))}
         </ol>
         {data.historyHasMore && (
-          <Link
-            href={`?offset=${historyOffset + 25}`}
-            className="text-link underline"
-          >
+          <Link href={`?offset=${historyOffset + 25}`} className="action-link">
             Older revisions
           </Link>
         )}

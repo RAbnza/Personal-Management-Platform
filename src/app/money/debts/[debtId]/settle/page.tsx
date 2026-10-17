@@ -37,10 +37,7 @@ export default async function SettleDebtPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
         <ScreenHeader scope="Money" title="Settle debt" />
@@ -60,10 +57,7 @@ export default async function SettleDebtPage({
           description="Current settlement information could not be loaded safely."
         >
           <p>No settlement has been submitted.</p>
-          <Link
-            className="inline-flex min-h-11 items-center text-link underline"
-            href={`${back}/settle`}
-          >
+          <Link className="action-link" href={`${back}/settle`}>
             Retry settlement setup
           </Link>
         </Panel>

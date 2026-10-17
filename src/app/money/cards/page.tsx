@@ -1,3 +1,5 @@
+import styles from "@/components/money/money-workspace.module.css";
+import { ArrowUpRight, CreditCard } from "lucide-react";
 import { ScreenHeader } from "@/components/patterns/work-area";
 import {
   MoneyColumns,
@@ -25,7 +27,7 @@ export default async function CardsPage() {
         title="Credit cards unavailable"
         description="Your private cards could not be loaded safely."
       >
-        <Link href="/money/cards" className="text-link underline">
+        <Link href="/money/cards" className="action-link">
           Retry loading cards
         </Link>
       </Panel>
@@ -34,34 +36,45 @@ export default async function CardsPage() {
   return (
     <div className="space-y-6 break-words">
       <ScreenHeader scope="Money" title="Credit cards" />
-      <Link
-        href="/money/transactions"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href="/money/transactions" className="action-link">
         Add Expense
       </Link>
       <CardSurfacePanel data={surface} currency={workspace.currency} />
       <MoneyColumns>
         <Panel
           title="Recorded cards"
+          descriptionAsHelp
           description="Outstanding comes from posted activity. Unrecorded provider history remains unknown. Available credit is excluded from liquid funds."
         >
-          <ul className="divide-y divide-border">
+          <ul className={styles.creditCards}>
             {surface.cards.slice(0, 100).map((c) => (
-              <li key={c.cardId} className="py-3">
-                <Link
-                  href={`/money/cards/${c.cardId}`}
-                  className="text-link underline"
-                >
+              <li key={c.cardId} className={styles.creditCard}>
+                <div className="flex items-center justify-between gap-3">
+                  <CreditCard size={25} />
+                  <small>
+                    {c.issuerName}
+                    {c.archived ? " ? Archived" : ""}
+                  </small>
+                </div>
+                <div>
+                  <small>Posted outstanding</small>
+                  <strong>
+                    {formatMoneyMinorUnits(
+                      c.currency,
+                      c.postedOutstandingMinor,
+                    )}
+                  </strong>
+                  {c.cardCreditMinor !== "0" && (
+                    <small>
+                      Card credit{" "}
+                      {formatMoneyMinorUnits(c.currency, c.cardCreditMinor)}
+                    </small>
+                  )}
+                </div>
+                <Link href={`/money/cards/${c.cardId}`}>
                   {c.name}
+                  <ArrowUpRight size={18} />
                 </Link>
-                <p>
-                  {c.issuerName}
-                  {c.archived ? " · Archived" : ""} · Posted outstanding{" "}
-                  {formatMoneyMinorUnits(c.currency, c.postedOutstandingMinor)}{" "}
-                  · Card credit{" "}
-                  {formatMoneyMinorUnits(c.currency, c.cardCreditMinor)}
-                </p>
               </li>
             ))}
           </ul>

@@ -24,7 +24,7 @@ export default async function BudgetLayout({
           <p>
             Money is hidden from navigation. Budget definitions and recognized
             spending remain preserved.{" "}
-            <Link href="/onboarding" className="text-link underline">
+            <Link href="/onboarding" className="action-link">
               Restore Money
             </Link>
             .

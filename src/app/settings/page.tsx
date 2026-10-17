@@ -1,3 +1,10 @@
+import {
+  ArrowUpRight,
+  UserRound,
+  Palette,
+  SlidersHorizontal,
+  LayoutGrid,
+} from "lucide-react";
 import Link from "next/link";
 import {
   ProfileForm,
@@ -33,16 +40,22 @@ export default async function SettingsPage({
           aria-label="Settings categories"
           className="flex flex-wrap gap-1 rounded-panel border border-border bg-surface p-2 md:flex-col"
         >
-          {sections.map(([key, label]) => (
-            <Link
-              key={key}
-              href={`/settings?section=${key}`}
-              aria-current={section === key ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-control px-3 py-2 text-sm ${section === key ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted"}`}
-            >
-              {label}
-            </Link>
-          ))}
+          {sections.map(([key, label], index) => {
+            const Icon = [UserRound, Palette, SlidersHorizontal, LayoutGrid][
+              index
+            ]!;
+            return (
+              <Link
+                key={key}
+                href={`/settings?section=${key}`}
+                aria-current={section === key ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center gap-3 rounded-control px-3 py-2 text-sm ${section === key ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                <Icon size={16} />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="min-w-0 space-y-6">
           {section === "profile" && (
@@ -50,14 +63,21 @@ export default async function SettingsPage({
           )}
           {section === "appearance" && (
             <Panel
-              title="Workspace"
-              description={`Verified sign-in email: ${b.user.email}. Appearance follows your signed-in workspace preference.`}
+              title="Appearance"
+              description="Choose the appearance of your signed-in workspace."
             >
-              <p className="text-sm text-muted-foreground">
-                Timezone changes affect display and future reminders. Financial
-                effective dates remain as recorded. Currency is a setup choice
-                and becomes fixed when financial structure exists.
-              </p>
+              <div
+                className="mb-5 rounded-panel p-6"
+                style={{
+                  background: "var(--focal-background)",
+                  color: "var(--focal-foreground)",
+                }}
+              >
+                <p className="text-xl font-semibold">Make yourself at home.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Porcelain by day. Midnight Spectrum after dark.
+                </p>
+              </div>
               <WorkspaceThemeSelect
                 className="mt-4 max-w-xs"
                 theme={b.preference.theme}
@@ -84,6 +104,7 @@ export default async function SettingsPage({
           {section === "modules" && (
             <Panel
               title="Modules and due indicators"
+              descriptionAsHelp
               description="Hiding a module retains its records. Re-enable it here to restore normal access. Existing source deadlines can remain in Agenda, with read-only source review and separate reminder controls."
             >
               <div className="grid gap-4 md:grid-cols-3">
@@ -94,10 +115,7 @@ export default async function SettingsPage({
                   />
                 ))}
               </div>
-              <Link
-                href="/calendar"
-                className="mt-4 inline-flex min-h-11 items-center text-link underline"
-              >
+              <Link href="/calendar" className="action-link">
                 Review in-app reminder defaults and source controls
               </Link>
               <p className="text-sm text-muted-foreground">
@@ -109,7 +127,7 @@ export default async function SettingsPage({
         </div>
       </div>
       <Panel title="Account and help">
-        <div className="flex flex-wrap gap-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             ["/settings/notifications", "Manage optional reminder email"],
             ["/settings/files", "Manage private evidence files"],
@@ -120,12 +138,9 @@ export default async function SettingsPage({
             ["/onboarding", "Resume Getting Started"],
             ["/help/support", "Support and feedback"],
           ].map(([href, label]) => (
-            <Link
-              key={href}
-              href={href!}
-              className="inline-flex min-h-11 items-center text-link underline"
-            >
+            <Link key={href} href={href!} className="action-link">
               {label}
+              <ArrowUpRight className="size-4 shrink-0" />
             </Link>
           ))}
         </div>

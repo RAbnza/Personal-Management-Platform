@@ -25,10 +25,7 @@ export default async function ReconcileAccountPage({
         title="Workspace unavailable"
         description="Your private workspace could not be prepared safely."
       >
-        <Link
-          href="/money/accounts"
-          className="inline-flex min-h-11 text-link underline"
-        >
+        <Link href="/money/accounts" className="action-link">
           Return to accounts
         </Link>
       </AuthCard>
@@ -65,10 +62,7 @@ export default async function ReconcileAccountPage({
     >
       <div className="space-y-6">
         <div>
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 text-link underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             Back to accounts
           </Link>
           <ScreenHeader scope="Money" title="Account reconciliation" />
@@ -94,7 +88,7 @@ export default async function ReconcileAccountPage({
                   ? `/money/accounts/${parsed.data.accountId}/reconcile`
                   : "/money/accounts"
               }
-              className="inline-flex min-h-11 text-link underline"
+              className="action-link"
             >
               Retry account setup
             </Link>

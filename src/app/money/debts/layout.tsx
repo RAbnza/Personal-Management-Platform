@@ -25,7 +25,7 @@ export default async function DebtLayout({
           <p className="rounded-control border border-border p-4 text-sm">
             Money is hidden from normal navigation. Your records and due dates
             are preserved.{" "}
-            <Link href="/onboarding" className="text-link underline">
+            <Link href="/onboarding" className="action-link">
               Restore Money
             </Link>
             .

@@ -32,10 +32,7 @@ export default async function PayDebtPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-sm font-medium text-link hover:underline"
-        >
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
         <ScreenHeader scope="Money" title="Record debt payment" />
@@ -57,10 +54,7 @@ export default async function PayDebtPage({
           <p className="text-sm">
             No payment has been submitted. Retry loading before recording it.
           </p>
-          <Link
-            href={`${back}/pay`}
-            className="mt-3 inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`${back}/pay`} className="action-link">
             Retry payment setup
           </Link>
         </Panel>
@@ -75,10 +69,7 @@ export default async function PayDebtPage({
           title="Add a paying account first"
           description="A debt payment must identify the tracked account where cash was actually paid."
         >
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             Add financial account
           </Link>
         </Panel>

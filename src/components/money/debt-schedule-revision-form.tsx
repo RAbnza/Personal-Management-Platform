@@ -746,7 +746,7 @@ export function DebtScheduleRevisionForm({
         >
           <h2 className="text-lg font-semibold">Review schedule revision</h2>
           <p>
-            Schedule frequency: {reviewSetup.frequency} â†’ {pending.frequency}.
+            Schedule frequency: {reviewSetup.frequency} → {pending.frequency}.
           </p>
           <p>
             {pending.revisionKind.replaceAll("_", " ")} · effective{" "}
@@ -850,7 +850,7 @@ export function DebtScheduleRevisionForm({
                 Payment pool{" "}
                 {reviewSetup.pools.findIndex((p) => poolKey(p) === poolKey(m)) +
                   1}{" "}
-                â†’ {targetLabel(m.targetEntryKey)}: {money(m.amountMinor)}
+                → {targetLabel(m.targetEntryKey)}: {money(m.amountMinor)}
               </p>
             ))}
             <p>Explicit unapplied total: {money(preview.unappliedMinor)}</p>

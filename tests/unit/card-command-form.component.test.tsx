@@ -40,6 +40,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 function fill() {
+  fireEvent.change(screen.getByLabelText("Where did you verify this?"), {
+    target: { value: "custom" },
+  });
   fireEvent.change(screen.getByLabelText("Activity kind"), {
     target: { value: "card_fee" },
   });

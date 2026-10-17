@@ -39,41 +39,46 @@ export default async function HelpPage() {
   return (
     <SettingsShell bootstrap={b} title="Help and guides" path="/help">
       <GuideTour />
-      <section
-        aria-label="Task guides"
-        className="rounded-panel border border-border bg-surface px-4 sm:px-6"
-      >
-        <ul className="divide-y divide-border">
-          {topics.map(([title, description, href]) => (
-            <li
+      <section aria-label="Task guides">
+        <div className="mb-5">
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+            A LITTLE GUIDANCE
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            What would you like to do?
+          </h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {topics.map(([title, description, href], index) => (
+            <details
               key={title}
-              className="grid gap-3 py-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]"
+              className="rounded-panel border border-border bg-surface p-5"
             >
-              <Link
-                href={href!}
-                className="inline-flex min-h-11 items-start gap-2 py-2 font-semibold text-link underline-offset-4 hover:underline"
-              >
+              <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+                <span className="mr-3 text-sm text-muted-foreground">
+                  0{index + 1}
+                </span>
                 {title}
-                <ArrowUpRight
-                  className="mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-              </Link>
-              <p className="text-sm leading-6 text-muted-foreground">
+              </summary>
+              <p className="py-4 text-sm leading-7 text-muted-foreground">
                 {description}
               </p>
-            </li>
+              <Link href={href!} className="action-link">
+                Open {title!.split(" and ")[0]!.toLowerCase()}
+                <ArrowUpRight size={16} />
+              </Link>
+            </details>
           ))}
-        </ul>
+        </div>
       </section>
       <div className="flex flex-wrap gap-5">
-        <Link href="/onboarding" className="text-link underline">
+        <Link href="/onboarding" className="action-link">
           Resume Getting Started
         </Link>
-        <Link href="/settings" className="text-link underline">
+        <Link href="/settings" className="action-link">
           Manage Settings
         </Link>
-        <Link href="/help/support" className="text-link underline">
+        <Link href="/help/support" className="action-link">
           Support and feedback
         </Link>
       </div>

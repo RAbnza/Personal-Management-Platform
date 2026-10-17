@@ -55,10 +55,7 @@ export default async function BorrowDebtPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href="/money/debts"
-          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-        >
+        <Link href="/money/debts" className="action-link">
           <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={1.9} />
           Back to debts
         </Link>
@@ -84,10 +81,7 @@ export default async function BorrowDebtPage() {
             borrowing.
           </p>
 
-          <Link
-            href="/money/debts/borrow"
-            className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/money/debts/borrow" className="action-link">
             <RotateCcw
               aria-hidden="true"
               className="size-4"
@@ -106,10 +100,7 @@ export default async function BorrowDebtPage() {
             provider deposited the money.
           </p>
 
-          <Link
-            href="/money/accounts"
-            className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             Add financial account
           </Link>
         </Panel>

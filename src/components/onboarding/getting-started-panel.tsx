@@ -25,7 +25,7 @@ const stepContent: Record<
   "create-first-tracker": {
     title: "Create a private tracker",
     description:
-      "Choose Learning, Books or Personal Tasks, add an entry and review its history. Customize a versioned template when needed; deadlines feed Calendar without duplicate appointments.",
+      "Start with Learning, Books or Personal Tasks. Add an entry to make it your own.",
   },
   "choose-goal": {
     title: "Choose a starting goal",
@@ -60,7 +60,7 @@ const stepContent: Record<
   "review-agenda": {
     title: "Review your agenda",
     description:
-      "See how dates from authoritative source records become upcoming items without creating duplicate editable records.",
+      "Find your upcoming bills, events and next steps in one place.",
   },
 };
 
@@ -146,6 +146,7 @@ export function GettingStartedPanel({
   }
   return (
     <Panel
+      descriptionAsHelp
       title={progress.complete ? "Getting started complete" : "Getting started"}
       description={
         progress.complete
@@ -247,10 +248,7 @@ export function GettingStartedPanel({
                     {content.description}
                   </p>
                   {step.stepKey === "create-first-tracker" && (
-                    <Link
-                      href="/trackers"
-                      className="inline-flex min-h-11 items-center text-link underline"
-                    >
+                    <Link href="/trackers" className="action-link">
                       Open Trackers
                     </Link>
                   )}

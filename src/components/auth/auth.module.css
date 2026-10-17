@@ -1,0 +1,75 @@
+.layout {
+  display: grid;
+  gap: 2rem;
+  max-width: 66rem;
+  margin: 2rem auto;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+.introduction {
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.introduction h2 {
+  margin: 2rem 0 1.5rem;
+  font-size: clamp(2rem, 3.5vw, 3.25rem);
+  font-weight: 550;
+  line-height: 1.15;
+  letter-spacing: -0.05em;
+}
+.introduction p {
+  font-size: 0.875rem;
+  line-height: 1.8;
+  max-width: 36ch;
+}
+.features {
+  display: grid;
+  margin-top: 2rem;
+}
+.features span {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  font-size: 0.7rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--focal-foreground) 18%, transparent);
+}
+.features strong {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 3rem;
+  }
+  .introduction {
+    padding: 3rem;
+  }
+}
+@media (max-width: 899px) {
+  .layout {
+    max-width: 28rem;
+  }
+  .introduction {
+    padding: 1.25rem;
+  }
+  .introduction h2 {
+    margin: 1rem 0;
+    font-size: 1.75rem;
+  }
+  .introduction h2 br {
+    display: none;
+  }
+  .introduction p,
+  .features {
+    display: none;
+  }
+}

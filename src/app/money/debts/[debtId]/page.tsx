@@ -51,10 +51,7 @@ export default async function DebtDetailPage({
           This debt could not be found in your private workspace.
         </p>
 
-        <Link
-          href="/money/debts"
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <Link href="/money/debts" className="action-link">
           Back to debts
         </Link>
       </div>
@@ -80,10 +77,7 @@ export default async function DebtDetailPage({
   return (
     <article className="space-y-6">
       <div>
-        <Link
-          href="/money/debts"
-          className="inline-flex min-h-11 items-center text-sm font-medium text-link underline-offset-4 hover:underline"
-        >
+        <Link href="/money/debts" className="action-link">
           Back to debts
         </Link>
 
@@ -109,7 +103,7 @@ export default async function DebtDetailPage({
         {debt.lifecycle === "active" && debt.scheduleVersionId ? (
           <Link
             href={`/money/debts/${debt.debtId}/revise-schedule`}
-            className="ml-3 mt-4 inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Revise schedule
           </Link>
@@ -117,7 +111,7 @@ export default async function DebtDetailPage({
         {debt.lifecycle === "active" && debt.scheduleVersionId ? (
           <Link
             href={`/money/debts/${debt.debtId}/settle`}
-            className="ml-3 mt-4 inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Settle debt
           </Link>
@@ -244,7 +238,7 @@ export default async function DebtDetailPage({
                   </h3>
                   <Link
                     href={`/calendar/reminders/debt_installment/${row.obligationId}`}
-                    className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                    className="action-link"
                   >
                     Reminder controls and history
                   </Link>

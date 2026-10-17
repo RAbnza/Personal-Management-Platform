@@ -122,7 +122,6 @@ const transferFormSchema = z
     description: z
       .string()
       .trim()
-      .min(1, "Enter a transfer description.")
       .max(2000, "Description must be 2,000 characters or fewer."),
 
     reference: z.string(),
@@ -315,6 +314,7 @@ async function postTransfer(
 }
 
 export interface TransferCreateFormProps {
+  today?: string;
   currency: string;
 
   accounts: readonly FinancialAccountListItem[];
@@ -324,6 +324,7 @@ export interface TransferCreateFormProps {
 
 export function TransferCreateForm({
   currency,
+  today = "",
   accounts,
   categories,
 }: TransferCreateFormProps) {
@@ -361,7 +362,7 @@ export function TransferCreateForm({
 
       destinationAccountId: accounts[1]?.accountId ?? "",
 
-      effectiveDate: "",
+      effectiveDate: today,
 
       destinationAmount: "",
 
@@ -747,7 +748,9 @@ export function TransferCreateForm({
 
       fees: normalizedFees,
 
-      description: values.description.trim(),
+      description:
+        values.description.trim() ||
+        `Transfer from ${sourceAccount?.name ?? "source account"} to ${destinationAccount?.name ?? "destination account"}`,
 
       reference: reference.length > 0 ? reference : null,
 
@@ -803,9 +806,7 @@ export function TransferCreateForm({
         </h2>
 
         <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-          Record a transfer that has already completed. The principal moves
-          between your accounts without becoming income or spending. Any real
-          transfer fees are recorded separately as expenses.
+          Move money between your accounts. Record completed transfers only.
         </p>
       </div>
 
@@ -830,7 +831,7 @@ export function TransferCreateForm({
             setAcknowledgeNegativeBalance(false);
         }}
       >
-        <div hidden={reviewDraft !== null}>
+        <div hidden={reviewDraft !== null} className={taskStyles.entryFields}>
           <div className="grid gap-5 md:grid-cols-2">
             <FormField
               htmlFor="transfer-source"
@@ -973,201 +974,311 @@ export function TransferCreateForm({
             </FormField>
           </div>
 
-          <fieldset
-            disabled={fieldsDisabled}
-            className="space-y-4 rounded-control border border-border bg-surface-subtle p-4 sm:p-5"
+          <details
+            className={taskStyles.options}
+            open={errors.fees ? true : undefined}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <legend className="text-sm font-semibold text-foreground">
-                  Transfer fees
-                </legend>
+            <summary>
+              Transfer fees{" "}
+              <span>
+                {feeFields.length
+                  ? `${feeFields.length} added`
+                  : "Add if charged"}
+              </span>
+            </summary>{" "}
+            <fieldset
+              disabled={fieldsDisabled}
+              className="space-y-4 rounded-control border border-border bg-surface-subtle p-4 sm:p-5"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <legend className="text-sm font-semibold text-foreground">
+                    Transfer fees
+                  </legend>
 
-                <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Add only fees that were actually charged. Each fee remains an
-                  expense rather than becoming part of transferred spending.
-                </p>
+                  <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    Add only fees that were actually charged. Each fee remains
+                    an expense rather than becoming part of transferred
+                    spending.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={fieldsDisabled || feeFields.length >= 20}
+                  onClick={() => {
+                    appendFee({
+                      label: "Transfer fee",
+
+                      amount: "",
+
+                      treatment: "source_additional",
+
+                      effectiveDate: "",
+
+                      bearingAccountId: sourceAccountId,
+
+                      categoryId: defaultFeeCategoryId,
+                    });
+                  }}
+                >
+                  <Plus
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.9}
+                  />
+                  Add fee
+                </Button>
               </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={fieldsDisabled || feeFields.length >= 20}
-                onClick={() => {
-                  appendFee({
-                    label: "Transfer fee",
+              {feeFields.length === 0 ? (
+                <p className="rounded-control border border-border bg-surface px-4 py-3 text-sm leading-6 text-muted-foreground">
+                  No transfer fee.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {feeFields.map((field, index) => {
+                    const watchedFee = watchedFees[index];
 
-                    amount: "",
+                    const treatment =
+                      watchedFee?.treatment ?? "source_additional";
 
-                    treatment: "source_additional",
+                    const treatmentContent = feeTreatmentContent[treatment];
 
-                    effectiveDate: "",
+                    const labelError = errors.fees?.[index]?.label?.message;
 
-                    bearingAccountId: sourceAccountId,
+                    const amountError = errors.fees?.[index]?.amount?.message;
 
-                    categoryId: defaultFeeCategoryId,
-                  });
-                }}
-              >
-                <Plus aria-hidden="true" className="size-4" strokeWidth={1.9} />
-                Add fee
-              </Button>
-            </div>
+                    const dateError =
+                      errors.fees?.[index]?.effectiveDate?.message;
 
-            {feeFields.length === 0 ? (
-              <p className="rounded-control border border-border bg-surface px-4 py-3 text-sm leading-6 text-muted-foreground">
-                No fees added. A fee-free internal transfer changes where your
-                money is held but does not change total tracked liquid funds.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {feeFields.map((field, index) => {
-                  const watchedFee = watchedFees[index];
+                    const accountError =
+                      errors.fees?.[index]?.bearingAccountId?.message;
 
-                  const treatment =
-                    watchedFee?.treatment ?? "source_additional";
+                    const categoryError =
+                      errors.fees?.[index]?.categoryId?.message;
 
-                  const treatmentContent = feeTreatmentContent[treatment];
+                    return (
+                      <div
+                        key={field.id}
+                        className="space-y-4 rounded-control border border-border bg-surface p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-semibold text-foreground">
+                              Fee {index + 1}
+                            </h3>
 
-                  const labelError = errors.fees?.[index]?.label?.message;
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                              {treatmentContent.description}
+                            </p>
+                          </div>
 
-                  const amountError = errors.fees?.[index]?.amount?.message;
-
-                  const dateError =
-                    errors.fees?.[index]?.effectiveDate?.message;
-
-                  const accountError =
-                    errors.fees?.[index]?.bearingAccountId?.message;
-
-                  const categoryError =
-                    errors.fees?.[index]?.categoryId?.message;
-
-                  return (
-                    <div
-                      key={field.id}
-                      className="space-y-4 rounded-control border border-border bg-surface p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">
-                            Fee {index + 1}
-                          </h3>
-
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {treatmentContent.description}
-                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label={`Remove fee ${index + 1}`}
+                            disabled={fieldsDisabled}
+                            onClick={() => {
+                              removeFee(index);
+                            }}
+                          >
+                            <Trash2
+                              aria-hidden="true"
+                              className="size-4"
+                              strokeWidth={1.9}
+                            />
+                            Remove
+                          </Button>
                         </div>
 
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          aria-label={`Remove fee ${index + 1}`}
-                          disabled={fieldsDisabled}
-                          onClick={() => {
-                            removeFee(index);
-                          }}
-                        >
-                          <Trash2
-                            aria-hidden="true"
-                            className="size-4"
-                            strokeWidth={1.9}
-                          />
-                          Remove
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <FormField
-                          htmlFor={`transfer-fee-label-${index}`}
-                          label={`Fee label ${index + 1}`}
-                          error={labelError}
-                          errorId={`transfer-fee-label-error-${index}`}
-                        >
-                          <Input
-                            {...register(`fees.${index}.label`)}
-                            id={`transfer-fee-label-${index}`}
-                            type="text"
-                            autoComplete="off"
-                            disabled={fieldsDisabled}
-                            aria-invalid={Boolean(labelError)}
-                            aria-describedby={
-                              labelError
-                                ? `transfer-fee-label-error-${index}`
-                                : undefined
-                            }
-                          />
-                        </FormField>
-
-                        <FormField
-                          htmlFor={`transfer-fee-amount-${index}`}
-                          label={`Fee amount ${index + 1} (${currency})`}
-                          error={amountError}
-                          errorId={`transfer-fee-amount-error-${index}`}
-                        >
-                          <Input
-                            {...register(`fees.${index}.amount`)}
-                            id={`transfer-fee-amount-${index}`}
-                            type="text"
-                            inputMode="decimal"
-                            autoComplete="off"
-                            placeholder="0.00"
-                            disabled={fieldsDisabled}
-                            aria-invalid={Boolean(amountError)}
-                            aria-describedby={
-                              amountError
-                                ? `transfer-fee-amount-error-${index}`
-                                : undefined
-                            }
-                            className="numeric-value"
-                          />
-                        </FormField>
-
-                        <FormField
-                          htmlFor={`transfer-fee-treatment-${index}`}
-                          label={`Fee treatment ${index + 1}`}
-                          description={treatmentContent.description}
-                          descriptionId={`transfer-fee-treatment-description-${index}`}
-                        >
-                          <select
-                            {...register(`fees.${index}.treatment`)}
-                            id={`transfer-fee-treatment-${index}`}
-                            disabled={fieldsDisabled}
-                            aria-describedby={`transfer-fee-treatment-description-${index}`}
-                            className={[
-                              "min-h-11 w-full rounded-control border border-input",
-                              "bg-surface px-3 py-2 text-base text-foreground",
-                              "transition-colors duration-(--motion-duration-fast) ease-state",
-                              "hover:border-ring",
-                              "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                              "motion-reduce:transition-none",
-                            ].join(" ")}
-                          >
-                            {transferFeeTreatments.map((option) => (
-                              <option key={option} value={option}>
-                                {feeTreatmentContent[option].label}
-                              </option>
-                            ))}
-                          </select>
-                        </FormField>
-
-                        {treatment === "separate" ? (
+                        <div className="grid gap-5 md:grid-cols-2">
                           <FormField
-                            htmlFor={`transfer-fee-account-${index}`}
-                            label={`Fee-paying account ${index + 1}`}
-                            description="Choose the account that actually paid this separate fee."
-                            descriptionId={`transfer-fee-account-description-${index}`}
-                            error={accountError}
-                            errorId={`transfer-fee-account-error-${index}`}
+                            htmlFor={`transfer-fee-label-${index}`}
+                            label={`Fee label ${index + 1}`}
+                            error={labelError}
+                            errorId={`transfer-fee-label-error-${index}`}
+                          >
+                            <Input
+                              {...register(`fees.${index}.label`)}
+                              id={`transfer-fee-label-${index}`}
+                              type="text"
+                              autoComplete="off"
+                              disabled={fieldsDisabled}
+                              aria-invalid={Boolean(labelError)}
+                              aria-describedby={
+                                labelError
+                                  ? `transfer-fee-label-error-${index}`
+                                  : undefined
+                              }
+                            />
+                          </FormField>
+
+                          <FormField
+                            htmlFor={`transfer-fee-amount-${index}`}
+                            label={`Fee amount ${index + 1} (${currency})`}
+                            error={amountError}
+                            errorId={`transfer-fee-amount-error-${index}`}
+                          >
+                            <Input
+                              {...register(`fees.${index}.amount`)}
+                              id={`transfer-fee-amount-${index}`}
+                              type="text"
+                              inputMode="decimal"
+                              autoComplete="off"
+                              placeholder="0.00"
+                              disabled={fieldsDisabled}
+                              aria-invalid={Boolean(amountError)}
+                              aria-describedby={
+                                amountError
+                                  ? `transfer-fee-amount-error-${index}`
+                                  : undefined
+                              }
+                              className="numeric-value"
+                            />
+                          </FormField>
+
+                          <FormField
+                            htmlFor={`transfer-fee-treatment-${index}`}
+                            label={`Fee treatment ${index + 1}`}
+                            description={treatmentContent.description}
+                            descriptionId={`transfer-fee-treatment-description-${index}`}
                           >
                             <select
-                              {...register(`fees.${index}.bearingAccountId`)}
-                              id={`transfer-fee-account-${index}`}
+                              {...register(`fees.${index}.treatment`)}
+                              id={`transfer-fee-treatment-${index}`}
                               disabled={fieldsDisabled}
-                              aria-invalid={Boolean(accountError)}
+                              aria-describedby={`transfer-fee-treatment-description-${index}`}
+                              className={[
+                                "min-h-11 w-full rounded-control border border-input",
+                                "bg-surface px-3 py-2 text-base text-foreground",
+                                "transition-colors duration-(--motion-duration-fast) ease-state",
+                                "hover:border-ring",
+                                "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                                "motion-reduce:transition-none",
+                              ].join(" ")}
+                            >
+                              {transferFeeTreatments.map((option) => (
+                                <option key={option} value={option}>
+                                  {feeTreatmentContent[option].label}
+                                </option>
+                              ))}
+                            </select>
+                          </FormField>
+
+                          {treatment === "separate" ? (
+                            <FormField
+                              htmlFor={`transfer-fee-account-${index}`}
+                              label={`Fee-paying account ${index + 1}`}
+                              description="Choose the account that actually paid this separate fee."
+                              descriptionId={`transfer-fee-account-description-${index}`}
+                              error={accountError}
+                              errorId={`transfer-fee-account-error-${index}`}
+                            >
+                              <select
+                                {...register(`fees.${index}.bearingAccountId`)}
+                                id={`transfer-fee-account-${index}`}
+                                disabled={fieldsDisabled}
+                                aria-invalid={Boolean(accountError)}
+                                aria-describedby={[
+                                  `transfer-fee-account-description-${index}`,
+                                  accountError
+                                    ? `transfer-fee-account-error-${index}`
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                className={[
+                                  "min-h-11 w-full rounded-control border border-input",
+                                  "bg-surface px-3 py-2 text-base text-foreground",
+                                  "transition-colors duration-(--motion-duration-fast) ease-state",
+                                  "hover:border-ring",
+                                  "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
+                                  "motion-reduce:transition-none",
+                                ].join(" ")}
+                              >
+                                {accounts.map((account) => (
+                                  <option
+                                    key={account.accountId}
+                                    value={account.accountId}
+                                  >
+                                    {account.name} —{" "}
+                                    {formatMoneyMinorUnits(
+                                      account.currency,
+                                      account.currentBalanceMinor,
+                                    )}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormField>
+                          ) : (
+                            <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+                              <p className="text-sm font-medium text-foreground">
+                                Fee-paying account
+                              </p>
+
+                              <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                                {sourceAccount?.name ?? "Source account"}
+                              </p>
+                            </div>
+                          )}
+
+                          {treatment !== "withheld" ? (
+                            <FormField
+                              htmlFor={`transfer-fee-date-${index}`}
+                              label={`Fee date ${index + 1}`}
+                              description="Optional. Leave blank to use the transfer date."
+                              descriptionId={`transfer-fee-date-description-${index}`}
+                              error={dateError}
+                              errorId={`transfer-fee-date-error-${index}`}
+                            >
+                              <Input
+                                {...register(`fees.${index}.effectiveDate`)}
+                                id={`transfer-fee-date-${index}`}
+                                type="date"
+                                disabled={fieldsDisabled}
+                                aria-invalid={Boolean(dateError)}
+                                aria-describedby={[
+                                  `transfer-fee-date-description-${index}`,
+                                  dateError
+                                    ? `transfer-fee-date-error-${index}`
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              />
+                            </FormField>
+                          ) : (
+                            <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+                              <p className="text-sm font-medium text-foreground">
+                                Fee date
+                              </p>
+
+                              <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                                Same as transfer date:{" "}
+                                {effectiveDate || "Not selected yet"}
+                              </p>
+                            </div>
+                          )}
+
+                          <FormField
+                            htmlFor={`transfer-fee-category-${index}`}
+                            label={`Fee category ${index + 1}`}
+                            description="Optional. Transaction Fees is selected automatically when the default category is available."
+                            descriptionId={`transfer-fee-category-description-${index}`}
+                            error={categoryError}
+                            errorId={`transfer-fee-category-error-${index}`}
+                          >
+                            <select
+                              {...register(`fees.${index}.categoryId`)}
+                              id={`transfer-fee-category-${index}`}
+                              disabled={fieldsDisabled}
+                              aria-invalid={Boolean(categoryError)}
                               aria-describedby={[
-                                `transfer-fee-account-description-${index}`,
-                                accountError
-                                  ? `transfer-fee-account-error-${index}`
+                                `transfer-fee-category-description-${index}`,
+                                categoryError
+                                  ? `transfer-fee-category-error-${index}`
                                   : null,
                               ]
                                 .filter(Boolean)
@@ -1181,119 +1292,26 @@ export function TransferCreateForm({
                                 "motion-reduce:transition-none",
                               ].join(" ")}
                             >
-                              {accounts.map((account) => (
+                              <option value="">Uncategorized</option>
+
+                              {expenseCategories.map((category) => (
                                 <option
-                                  key={account.accountId}
-                                  value={account.accountId}
+                                  key={category.categoryId}
+                                  value={category.categoryId}
                                 >
-                                  {account.name} —{" "}
-                                  {formatMoneyMinorUnits(
-                                    account.currency,
-                                    account.currentBalanceMinor,
-                                  )}
+                                  {category.name}
                                 </option>
                               ))}
                             </select>
                           </FormField>
-                        ) : (
-                          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
-                            <p className="text-sm font-medium text-foreground">
-                              Fee-paying account
-                            </p>
-
-                            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                              {sourceAccount?.name ?? "Source account"}
-                            </p>
-                          </div>
-                        )}
-
-                        {treatment !== "withheld" ? (
-                          <FormField
-                            htmlFor={`transfer-fee-date-${index}`}
-                            label={`Fee date ${index + 1}`}
-                            description="Optional. Leave blank to use the transfer date."
-                            descriptionId={`transfer-fee-date-description-${index}`}
-                            error={dateError}
-                            errorId={`transfer-fee-date-error-${index}`}
-                          >
-                            <Input
-                              {...register(`fees.${index}.effectiveDate`)}
-                              id={`transfer-fee-date-${index}`}
-                              type="date"
-                              disabled={fieldsDisabled}
-                              aria-invalid={Boolean(dateError)}
-                              aria-describedby={[
-                                `transfer-fee-date-description-${index}`,
-                                dateError
-                                  ? `transfer-fee-date-error-${index}`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            />
-                          </FormField>
-                        ) : (
-                          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
-                            <p className="text-sm font-medium text-foreground">
-                              Fee date
-                            </p>
-
-                            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                              Same as transfer date:{" "}
-                              {effectiveDate || "Not selected yet"}
-                            </p>
-                          </div>
-                        )}
-
-                        <FormField
-                          htmlFor={`transfer-fee-category-${index}`}
-                          label={`Fee category ${index + 1}`}
-                          description="Optional. Transaction Fees is selected automatically when the default category is available."
-                          descriptionId={`transfer-fee-category-description-${index}`}
-                          error={categoryError}
-                          errorId={`transfer-fee-category-error-${index}`}
-                        >
-                          <select
-                            {...register(`fees.${index}.categoryId`)}
-                            id={`transfer-fee-category-${index}`}
-                            disabled={fieldsDisabled}
-                            aria-invalid={Boolean(categoryError)}
-                            aria-describedby={[
-                              `transfer-fee-category-description-${index}`,
-                              categoryError
-                                ? `transfer-fee-category-error-${index}`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
-                            className={[
-                              "min-h-11 w-full rounded-control border border-input",
-                              "bg-surface px-3 py-2 text-base text-foreground",
-                              "transition-colors duration-(--motion-duration-fast) ease-state",
-                              "hover:border-ring",
-                              "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                              "motion-reduce:transition-none",
-                            ].join(" ")}
-                          >
-                            <option value="">Uncategorized</option>
-
-                            {expenseCategories.map((category) => (
-                              <option
-                                key={category.categoryId}
-                                value={category.categoryId}
-                              >
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        </FormField>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </fieldset>
+                    );
+                  })}
+                </div>
+              )}
+            </fieldset>
+          </details>
 
           {accountsBelowZero.length > 0 ? (
             <div
@@ -1337,7 +1355,7 @@ export function TransferCreateForm({
           <FormField
             htmlFor="transfer-description"
             label="Description"
-            description="Describe the completed movement, such as Transfer from GCash to savings."
+            description="Optional. If left blank, the account names describe the transfer."
             descriptionId="transfer-description-description"
             error={errors.description?.message}
             errorId="transfer-description-error"
@@ -1345,6 +1363,7 @@ export function TransferCreateForm({
             <Input
               {...register("description")}
               id="transfer-description"
+              placeholder={`Transfer from ${sourceAccount?.name ?? "source account"} to ${destinationAccount?.name ?? "destination account"}`}
               type="text"
               autoComplete="off"
               disabled={fieldsDisabled}
@@ -1358,43 +1377,53 @@ export function TransferCreateForm({
             />
           </FormField>
 
-          <FormField
-            htmlFor="transfer-reference"
-            label="Reference"
-            description="Optional provider confirmation number or transfer reference."
-            descriptionId="transfer-reference-description"
+          <details
+            className={taskStyles.options}
+            open={errors.notes ? true : undefined}
           >
-            <Input
-              {...register("reference")}
-              id="transfer-reference"
-              type="text"
-              autoComplete="off"
-              disabled={fieldsDisabled}
-              aria-describedby="transfer-reference-description"
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="transfer-notes"
-            label="Notes"
-            description="Optional context. Do not store passwords, PINs, recovery codes, or other secrets."
-            descriptionId="transfer-notes-description"
-            error={errors.notes?.message}
-            errorId="transfer-notes-error"
-          >
-            <Textarea
-              {...register("notes")}
-              id="transfer-notes"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.notes)}
-              aria-describedby={[
-                "transfer-notes-description",
-                errors.notes ? "transfer-notes-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
+            <summary>
+              More details <span>Reference and notes</span>
+            </summary>
+            <div className="space-y-5 pt-4">
+              {" "}
+              <FormField
+                htmlFor="transfer-reference"
+                label="Reference"
+                description="Optional provider confirmation number or transfer reference."
+                descriptionId="transfer-reference-description"
+              >
+                <Input
+                  {...register("reference")}
+                  id="transfer-reference"
+                  type="text"
+                  autoComplete="off"
+                  disabled={fieldsDisabled}
+                  aria-describedby="transfer-reference-description"
+                />
+              </FormField>
+              <FormField
+                htmlFor="transfer-notes"
+                label="Notes"
+                description="Optional context. Do not store passwords, PINs, recovery codes, or other secrets."
+                descriptionId="transfer-notes-description"
+                error={errors.notes?.message}
+                errorId="transfer-notes-error"
+              >
+                <Textarea
+                  {...register("notes")}
+                  id="transfer-notes"
+                  disabled={fieldsDisabled}
+                  aria-invalid={Boolean(errors.notes)}
+                  aria-describedby={[
+                    "transfer-notes-description",
+                    errors.notes ? "transfer-notes-error" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                />
+              </FormField>
+            </div>
+          </details>
         </div>
         {reviewDraft && (
           <>

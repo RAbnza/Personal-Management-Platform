@@ -56,7 +56,7 @@ export default async function AllocationPage({
     r = statement.reconciliation;
   return (
     <div className="space-y-6 break-words">
-      <Link href={base} className="text-link underline">
+      <Link href={base} className="action-link">
         Statement {statement.snapshot.statementDate}
       </Link>
       <ScreenHeader scope="Money" title="Statement allocations" />
@@ -75,7 +75,7 @@ export default async function AllocationPage({
       {setup.creditSources.hasMore && (
         <Link
           href={`?offset=${offset + 100}&allocationOffset=${allocationOffset}${q.revisionId ? `&revisionId=${q.revisionId}` : ""}`}
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
         >
           Older payment and credit choices
         </Link>
@@ -83,7 +83,7 @@ export default async function AllocationPage({
       {statement.allocations.hasMore && (
         <Link
           href={`?offset=${offset}&allocationOffset=${allocationOffset + 100}${q.revisionId ? `&revisionId=${q.revisionId}` : ""}`}
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
         >
           Older allocation evidence
         </Link>

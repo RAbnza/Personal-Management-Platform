@@ -24,7 +24,7 @@ export default async function SavingsGoalLayout({
           <p>
             Money is hidden from navigation. Goal history and reservations
             remain preserved.{" "}
-            <Link href="/onboarding" className="text-link underline">
+            <Link href="/onboarding" className="action-link">
               Restore Money
             </Link>
             .

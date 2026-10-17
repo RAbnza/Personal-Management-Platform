@@ -1,75 +1,708 @@
 .homeGrid {
   display: grid;
-  min-width: 0;
-  gap: 1.5rem;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "attention" "actions" "agenda" "filters" "finance" "progress" "activity" "provenance";
+  gap: 1rem;
 }
 .homeGrid > * {
   min-width: 0;
 }
-.attention {
-  grid-area: attention;
-}
-.actions {
-  grid-area: actions;
-}
-.agenda {
-  grid-area: agenda;
-}
-.filters {
-  grid-area: filters;
-}
-.finance {
-  grid-area: finance;
-}
-.snapshot {
-  min-width: 0;
-}
-.progress {
-  grid-area: progress;
-  display: grid;
-  gap: 1.5rem;
-  align-items: start;
-}
-.activity {
-  grid-area: activity;
-}
+.toolbar,
+.actions,
+.coverageWarnings,
+.modules,
 .provenance {
-  grid-area: provenance;
+  grid-column: 1/-1;
 }
-.primaryMetrics {
-  display: grid;
-  gap: 1.5rem;
-  align-items: start;
-  grid-template-columns: minmax(0, 1fr);
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
-.primaryMetrics > div:first-child {
+.eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sectionHeading h2 {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.sectionHeading h3 {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.sectionHeading .eyebrow {
+  margin-bottom: 0.5rem;
+}
+.balance,
+.spending,
+.trend,
+.categories,
+.planning,
+.activity,
+.agenda,
+.attention {
   padding: 1.25rem;
-  border: 0;
-  border-radius: var(--geometry-radius-panel);
+  border-radius: 1.25rem;
+}
+.balance {
   background: var(--focal-background);
   color: var(--focal-foreground);
+  border: 1px solid var(--border);
 }
-.primaryMetrics > div:first-child :is(dt, p) {
-  color: var(--focal-muted);
+.balanceCollection {
+  min-width: 0;
 }
-.primaryMetrics > div:first-child a {
-  color: var(--focal-foreground);
-  font-size: clamp(1.25rem, 3vw, 2rem);
+.balanceCollection .balance {
+  min-height: 100%;
+}
+.balance[data-account-type="e_wallet"] {
+  background: var(--teal-surface);
+  color: var(--foreground);
+}
+.balance[data-account-type="savings"] {
+  background: var(--blue-surface);
+  color: var(--foreground);
+}
+.balance[data-account-type="checking"] {
+  background: var(--plum-surface);
+  color: var(--foreground);
+}
+.balance h2,
+.spending h2 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 1.25rem;
+}
+.balanceValue {
+  font-size: clamp(1.9rem, 4.1vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 1.2;
+  margin: 0.5rem 0 0.75rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.iconTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+}
+.liveLabel {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+.balanceLink,
+.smallAction {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.balanceLink {
+  border-color: color-mix(in srgb, var(--focal-foreground) 20%, transparent);
+}
+.smallAction {
+  color: var(--foreground);
+  background: var(--surface);
+}
+.smallAction:hover,
+.balanceLink:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.balanceFoot {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--focal-foreground) 20%, transparent);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+.balanceFoot > div > span {
+  display: flex;
+  align-items: center;
+  min-height: 2.25rem;
+  gap: 0.1rem;
+  font-size: 0.75rem;
+}
+.balanceFoot strong {
+  display: block;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+.spending {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.spending .iconTile {
+  background: var(--plum-surface);
+  color: var(--plum);
+  border: 0;
+}
+.spendingValue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: clamp(1.75rem, 3.3vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  padding: 0.5rem 0;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--border);
+}
+.spendingValue:hover {
+  color: var(--link);
+}
+.periodLabel {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  margin-top: 0.75rem;
+}
+.spendingFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.spendingFoot strong {
+  display: block;
+  color: var(--foreground);
+  margin-top: 0.375rem;
+  font-size: 1rem;
+  font-weight: 550;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding-block: 0.25rem;
+}
+.actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface);
+}
+.actions a:hover {
+  border-color: var(--primary);
+}
+.actions .primaryAction {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.coverageWarnings:empty {
+  display: none;
+}
+.coverageWarnings {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--warning-surface);
+  color: var(--warning);
+  font-size: 0.8rem;
+}
+.coverageWarnings p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.coverageWarnings svg {
+  flex-shrink: 0;
+}
+.trend,
+.categories,
+.activity,
+.agenda {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.chartToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.chartToolbar > span {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+.segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.2rem;
+  background: var(--surface-subtle);
+}
+.segmented button {
+  padding: 0.5rem 0.875rem;
+  min-height: 2.5rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--accent-foreground);
+  box-shadow: var(--elevation-level-1);
+}
+.chart {
+  width: 100%;
+  height: 13rem;
+  min-width: 0;
+}
+.categoryChart {
+  height: 11rem;
+  min-width: 0;
+}
+.chartFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  margin-top: 0.5rem;
+}
+.tooltip {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  padding: 0.75rem 1rem;
+  box-shadow: var(--elevation-level-2);
+  font-size: 0.75rem;
+}
+.tooltip strong {
+  display: block;
+  font-size: 1rem;
+  margin-top: 0.3rem;
+}
+.chartEmpty {
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--surface-subtle);
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+.chartEmpty span {
+  font-weight: 600;
+}
+.chartEmpty p {
+  font-size: 0.8rem;
+  max-width: 32ch;
+  color: var(--muted-foreground);
+  margin-top: 0.5rem;
+}
+.categoryList li + li {
+  border-top: 1px solid var(--border);
+}
+.categoryList a {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+}
+.categoryList a:hover {
+  background: var(--surface-subtle);
+}
+.categoryList strong {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.colorDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.attention {
+  background: var(--warm-surface);
+  color: var(--foreground);
+  border: 1px solid color-mix(in srgb, var(--warm) 25%, var(--border));
+}
+.count {
+  border-radius: 50%;
+  background: var(--surface);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.attentionLink {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  border-top: 1px solid color-mix(in srgb, var(--warm) 25%, var(--border));
+  padding: 0.875rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.attentionLink > svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+.attentionLink > span {
+  flex: 1;
+}
+.attentionLink:hover span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.attentionLink small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  margin-top: 0.35rem;
+}
+.quietState {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem 0;
+  font-size: 0.85rem;
+}
+.quietState small {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+.planning {
+  background: var(--surface-subtle);
+}
+.planColumns {
+  display: grid;
+  gap: 1.5rem;
+}
+.planItem {
+  margin: 1rem 0;
+}
+.planItem > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.planItem > a:hover {
+  color: var(--link);
+}
+.planAmounts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.planAmounts span:last-child {
+  color: var(--muted-foreground);
+}
+.planItem progress {
+  display: block;
+  width: 100%;
+  height: 0.4rem;
+  margin: 0.75rem 0;
+  accent-color: var(--primary);
+  border: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--border);
+}
+.planItem progress::-webkit-progress-bar {
+  background: var(--border);
+  border-radius: 1rem;
+}
+.planItem progress::-webkit-progress-value {
+  background: var(--primary);
+  border-radius: 1rem;
+}
+.planColumns > div:last-child progress::-webkit-progress-value {
+  background: var(--teal);
+}
+.planItem small {
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+}
+.emptyCopy {
+  padding: 1rem 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+.emptyCopy a {
+  display: flex;
+  width: fit-content;
+  margin-top: 0.75rem;
+}
+.activityLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.activityLink:hover {
+  background: var(--surface-subtle);
+}
+.activityIcon {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue-surface);
+  color: var(--blue);
+  border-radius: 0.875rem;
+  flex-shrink: 0;
+}
+.activityLink > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.activityLink strong {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.activityLink small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  margin-top: 0.3rem;
+}
+.activityLink time {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+.activity > .smallAction {
+  margin-top: 1rem;
+}
+.agendaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.dateTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 3rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.dateTile small,
+.agendaItem div > small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.agendaItem .smallAction {
+  border: 0;
+  padding-left: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+.modules {
+  display: grid;
+  gap: 1rem;
+}
+.career,
+.trackers {
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+}
+.career {
+  background: var(--blue-surface);
+  color: var(--blue);
+}
+.trackers {
+  background: var(--teal-surface);
+  color: var(--teal);
+}
+.moduleNumbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin: 0.5rem 0 1rem;
+}
+.moduleNumbers strong {
+  display: block;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+  font-weight: 550;
+}
+.moduleNumbers span,
+.modules p,
+.modules small {
+  font-size: 0.75rem;
+}
+.provenance {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.dataDisclosure {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+.dataDisclosure summary {
+  padding: 0.75rem 0;
+  min-height: 2.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dataTable {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.dataTable table {
+  width: 100%;
+  font-size: 0.75rem;
+  text-align: left;
+}
+.dataTable td,
+.dataTable th {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.filters {
+  font-size: 0.75rem;
+  width: auto;
+  max-width: 100%;
+}
+.filters summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--input);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 600;
+}
+.filters[open] {
+  width: 100%;
+}
+.filters form {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
 }
 @media (min-width: 768px) {
-  .primaryMetrics {
-    grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  .homeGrid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-auto-flow: row dense;
+    gap: 1.25rem;
   }
-  .progress {
+  .balance,
+  .spending {
+    padding: 1.75rem;
+  }
+  .trend {
+    grid-column: 1;
+  }
+  .categories {
+    grid-column: 2;
+  }
+  .attention {
+    grid-column: 2;
+  }
+  .planning {
+    grid-column: 1;
+  }
+  .activity {
+    grid-column: 1;
+  }
+  .agenda {
+    grid-column: 2;
+  }
+  .modules,
+  .planColumns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .planColumns > div + div {
+    border-left: 1px solid var(--border);
+    padding-left: 1.5rem;
+  }
 }
-@media (min-width: 1100px) {
-  .homeGrid {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    grid-template-areas: "attention agenda" "actions agenda" "filters filters" "finance finance" "progress progress" "activity activity" "provenance provenance";
-    align-items: start;
+@media (max-width: 480px) {
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .actions a {
+    padding: 0.75rem 0.5rem;
+  }
+  .actions a:last-child {
+    grid-column: 1/-1;
+  }
+  .balanceFoot {
+    grid-template-columns: 1fr;
+  }
+  .activityLink time {
+    display: none;
   }
 }

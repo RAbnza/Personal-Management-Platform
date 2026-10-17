@@ -37,10 +37,7 @@ export default async function ReviseSchedulePage({
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
         <ScreenHeader scope="Money" title="Revise debt schedule" />
@@ -59,10 +56,7 @@ export default async function ReviseSchedulePage({
           title="Schedule revision temporarily unavailable"
           description="The current schedule and allocation snapshot could not be loaded safely."
         >
-          <Link
-            href={`${back}/revise-schedule`}
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`${back}/revise-schedule`} className="action-link">
             Retry loading schedule
           </Link>
         </Panel>

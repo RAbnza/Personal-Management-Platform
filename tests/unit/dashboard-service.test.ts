@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   budgets: vi.fn(),
   savingsGoals: vi.fn(),
   spending: vi.fn(),
+  breakdowns: vi.fn(),
   reconciliation: vi.fn(),
   career: vi.fn(),
   agenda: vi.fn(),
@@ -25,6 +26,12 @@ vi.mock("@/modules/reporting/repositories/report-context-repository", () => ({
 vi.mock("@/modules/reporting/repositories/financial-report-repository", () => ({
   readSpendingSummary: mocks.spending,
 }));
+vi.mock(
+  "@/modules/reporting/repositories/financial-overview-repository",
+  () => ({
+    readFinancialBreakdowns: mocks.breakdowns,
+  }),
+);
 vi.mock("@/modules/finance/repositories/card-surface-repository", () => ({
   readCardSurface: mocks.cardSurface,
 }));
@@ -74,6 +81,7 @@ beforeEach(() => {
   mocks.budgets.mockResolvedValue(d.finance.budgets);
   mocks.savingsGoals.mockResolvedValue(d.finance.savingsGoals);
   mocks.spending.mockResolvedValue(d.finance.spending);
+  mocks.breakdowns.mockResolvedValue(d.finance.breakdowns);
   mocks.reconciliation.mockResolvedValue([]);
   mocks.career.mockResolvedValue({ applications: [], events: [] });
   mocks.agenda.mockResolvedValue(d.agenda);
@@ -120,6 +128,7 @@ describe("Dashboard service contract", () => {
       mocks.debts,
       mocks.cards,
       mocks.spending,
+      mocks.breakdowns,
       mocks.reconciliation,
       mocks.career,
       mocks.agenda,
@@ -129,6 +138,14 @@ describe("Dashboard service contract", () => {
       expect(read.mock.calls.every((call) => call[0] === snapshot)).toBe(true);
     expect(result.financialRevision).toBe("12");
     expect(result.period.startDate).toBe("2026-10-05");
+    expect(mocks.breakdowns).toHaveBeenCalledWith(
+      snapshot,
+      actor.workspaceId,
+      result.period,
+    );
+    expect(result.finance.breakdowns).toEqual(
+      dashboardFixture().finance.breakdowns,
+    );
   });
   it("keeps exact integer sums above Number's safe range and negative balances", async () => {
     mocks.accounts.mockResolvedValue([

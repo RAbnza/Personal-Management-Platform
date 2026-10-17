@@ -49,7 +49,7 @@ beforeEach(() => {
   mocks.dashboard.mockResolvedValue(dashboardFixture());
 });
 describe("Dashboard critical states and navigation", () => {
-  it("prioritizes attention and keeps unsupported coverage visibly unknown", () => {
+  it("leads with balances and keeps unsupported coverage visibly unknown", () => {
     render(
       <DashboardView
         data={dashboardFixture()}
@@ -57,9 +57,9 @@ describe("Dashboard critical states and navigation", () => {
       />,
     );
     expect(screen.getAllByRole("heading", { level: 2 })[0]).toHaveTextContent(
-      "What needs your attention?",
+      "Available in accounts",
     );
-    expect(screen.getByText("Coverage not established")).toBeInTheDocument();
+    expect(screen.getAllByText("Coverage not established")[0]).toBeVisible();
     expect(screen.getByText("No accounts tracked")).toBeInTheDocument();
     expect(
       screen.getByText(/Money is hidden in navigation/),
@@ -93,7 +93,7 @@ describe("Dashboard critical states and navigation", () => {
       />,
     );
     expect(
-      screen.getByRole("link", { name: "Resolve clearing" }),
+      screen.getByRole("link", { name: /Resolve clearing/ }),
     ).toHaveAttribute("href", "/money/debts/owned");
     expect(
       screen.getByText(/Excluded payment clearing: PHP 10.00/),

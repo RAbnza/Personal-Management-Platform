@@ -47,7 +47,7 @@ export default async function InstallmentDetailPage({
   return (
     <div className="space-y-6 break-words">
       <Link
-        className="text-link underline"
+        className="action-link"
         href={`/money/cards/${scope.cardId}/installments`}
       >
         Provider installment plans
@@ -101,7 +101,7 @@ export default async function InstallmentDetailPage({
             and do not change these financial balances.
           </p>
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`/money/actions/${d.snapshot.purchaseActionId}`}
           >
             Original purchase and correction history
@@ -110,26 +110,20 @@ export default async function InstallmentDetailPage({
       </MoneyColumns>
       {d.isCurrent && (
         <div className="flex flex-wrap gap-3">
-          <Link
-            className="inline-flex min-h-11 text-link underline"
-            href={`${base}/revise`}
-          >
+          <Link className="action-link" href={`${base}/revise`}>
             Revise or cancel provider schedule
           </Link>
-          <Link
-            className="inline-flex min-h-11 text-link underline"
-            href={`${base}/applications`}
-          >
+          <Link className="action-link" href={`${base}/applications`}>
             Confirm installment applications
           </Link>
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`/money/cards/${scope.cardId}/commands/new`}
           >
             Record actual card payment or charge
           </Link>
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`/money/cards/${scope.cardId}/statements`}
           >
             Verified statements and allocations
@@ -199,7 +193,7 @@ export default async function InstallmentDetailPage({
           {d.history.map((h) => (
             <li key={h.revisionId}>
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`${base}?revisionId=${h.revisionId}`}
               >
                 Revision {h.version}
@@ -211,7 +205,7 @@ export default async function InstallmentDetailPage({
         </ul>
         {d.historyHasMore && (
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`?offset=${historyOffset + 25}${rev?.success ? `&revisionId=${rev.data}` : ""}`}
           >
             Older provider revisions

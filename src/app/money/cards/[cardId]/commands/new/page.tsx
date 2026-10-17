@@ -37,10 +37,7 @@ export default async function CardCommandPage({
   const base = `/money/cards/${scope.cardId}/commands/new`;
   return (
     <div className="space-y-6 break-words">
-      <Link
-        href={`/money/cards/${scope.cardId}`}
-        className="text-link underline"
-      >
+      <Link href={`/money/cards/${scope.cardId}`} className="action-link">
         {setup.card.name}
       </Link>
       <ScreenHeader
@@ -67,7 +64,7 @@ export default async function CardCommandPage({
             <li key={p.actionId}>
               <Link
                 href={`${base}?purchaseActionId=${p.actionId}`}
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
               >
                 {p.description} — provider posted {p.postingDate}
               </Link>
@@ -75,18 +72,12 @@ export default async function CardCommandPage({
           ))}
         </ul>
         {q.purchaseActionId && (
-          <Link
-            href={base}
-            className="inline-flex min-h-11 text-link underline"
-          >
+          <Link href={base} className="action-link">
             Use confirmed classification without a purchase link
           </Link>
         )}
         {setup.purchasesHaveMore && (
-          <Link
-            href={`${base}?offset=${offset + 100}`}
-            className="inline-flex min-h-11 text-link underline"
-          >
+          <Link href={`${base}?offset=${offset + 100}`} className="action-link">
             Older purchase choices
           </Link>
         )}
