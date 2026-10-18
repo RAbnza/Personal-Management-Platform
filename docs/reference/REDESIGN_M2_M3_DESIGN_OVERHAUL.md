@@ -7,7 +7,7 @@ This continues the uncommitted design-led work recovered on `feat/redesign-m2-m3
 
 ## Implemented experience
 
-- The five images in `docs/redesign-references` informed stronger balance typography, compact icon actions, complementary account colors, asymmetric desktop composition, integrated charts and concise activity. They are visual references, not financial data or copied screens.
+- The five images in `docs/reference/redesign-references` informed stronger balance typography, compact icon actions, complementary account colors, asymmetric desktop composition, integrated charts and concise activity. They are visual references, not financial data or copied screens.
 - Home leads with a focal balance area, period spending, daily spending/income chart and signed category bars. Attention, activity and Agenda have compact initial views with explicit access to remaining records. Career and Tracker summaries use distinct accents. Contextual information controls and evidence disclosures reduce persistent explanation; coverage and funding warnings stay visible.
 - The overall balance and individual accounts occupy one horizontal Home collection. Account browsing uses a horizontal collection with partially visible next cards. Budget and savings highlights have a view switch and separate horizontal collections, preserving their periods, values and risks. Manage links expose the full paginated collections.
 - Native overflow and CSS scroll snap provide touch/trackpad scrolling, previous/next buttons, position indicators, keyboard arrows/Home/End, ordinary link focus and reduced-motion handling. No auto-rotation, custom gesture engine or new dependency. Histories and consequential forms retain conventional layouts.

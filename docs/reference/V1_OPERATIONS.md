@@ -62,7 +62,7 @@ For journal imbalance or unexpected duplicate economic evidence, stop financial 
 
 ## Scheduled Notifications (V2-G)
 
-See `docs/v2/SCHEDULED_NOTIFICATIONS.md` for the approved delivery contract.
+See `docs/reference/v2/SCHEDULED_NOTIFICATIONS.md` for the approved delivery contract.
 `NOTIFICATIONS_ENABLED` defaults off independently of required authentication mail.
 Consent is a private owner command, not a deployment switch. Configure the same
 optional-delivery gate for web/status and worker environments. The worker's separate

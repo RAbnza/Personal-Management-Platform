@@ -10,7 +10,7 @@
 
 **Current verified implementation `main` HEAD:** `26ece41a05b40784032a917794be455001917c2d` — `fix(ci): generate route types before clean-checkout validation`
 
-**HEAD continuity:** Run `git rev-parse main` for the current branch tip. V1 functional development, local acceptance, hosted CI, migration verification, browser acceptance and local operational hardening are complete for the documented V1 scope. Infrastructure-dependent production release acceptance is intentionally deferred until after V2 and V3 because the application will not be publicly released before then. V2 development is now authorized from the verified V1 baseline. See `docs/V2_DEVELOPMENT_HANDOFF.md` for the current phase boundary and sequencing decision. Production-readiness requirements remain mandatory before public release.
+**HEAD continuity:** Run `git rev-parse main` for the current branch tip. V1 functional development, local acceptance, hosted CI, migration verification, browser acceptance and local operational hardening are complete for the documented V1 scope. Infrastructure-dependent production release acceptance is intentionally deferred until after V2 and V3 because the application will not be publicly released before then. V2 development is now authorized from the verified V1 baseline. See `docs/reference/V2_DEVELOPMENT_HANDOFF.md` for the current phase boundary and sequencing decision. Production-readiness requirements remain mandatory before public release.
 
 ---
 
@@ -31,10 +31,10 @@ It records:
 
 This document **does not replace the authoritative project documentation**. Before making important product, architecture, database, or design decisions, inspect the current repository and the relevant authoritative files:
 
-- `docs/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`
-- `docs/SYSTEM_ARCHITECTURE.md`
-- `docs/DATABASE_ARCHITECTURE.md`
-- `docs/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md`
+- `docs/reference/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`
+- `docs/reference/SYSTEM_ARCHITECTURE.md`
+- `docs/reference/DATABASE_ARCHITECTURE.md`
+- `docs/reference/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md`
 
 Each document remains authoritative within its own domain. If this handoff conflicts with a current authoritative document, follow the authoritative document and update this handoff to match.
 
@@ -753,7 +753,7 @@ Final local evidence:
 
 Local development is migrated and healthy on port **3000**; the separate local worker is healthy on **3102**. Earlier user/runtime processes disappeared during execution; this work did not kill them. They were restarted hidden, preserving existing environment secrets and adding only missing local deployment/encryption settings. Worker configuration is ignored, uses separate credentials and keeps automated lifecycle purge disabled. Runtime logs live under ignored `node_modules/.cache/pmp-v1-c5-runtime`.
 
-Read [README/setup](../README.md), [V1 operations](V1_OPERATIONS.md), [user guide](V1_USER_GUIDE.md), [ADR 0004](adr/0004-v1-c5-security-mail-and-recovery.md) and the lifecycle runbook before deployment. Remaining production acceptance requires the actual approved deployment target/paid plan, verified security-mail sender, independent private backup/register location with enforced retention, operational support contact, monitoring and hosted capacity/PITR/restore/promotion evidence. Those credentials/configuration were not supplied. **The later V2 transition decision supersedes this section's original release-continuation gate: V1 is functionally complete and locally accepted; V2 development is authorized. Public production release and its infrastructure acceptance remain deferred until after V3.** See [the V2 handoff](V2_DEVELOPMENT_HANDOFF.md) for current milestone progress.
+Read [README/setup](../../README.md), [V1 operations](V1_OPERATIONS.md), [user guide](V1_USER_GUIDE.md), [ADR 0004](adr/0004-v1-c5-security-mail-and-recovery.md) and the lifecycle runbook before deployment. Remaining production acceptance requires the actual approved deployment target/paid plan, verified security-mail sender, independent private backup/register location with enforced retention, operational support contact, monitoring and hosted capacity/PITR/restore/promotion evidence. Those credentials/configuration were not supplied. **The later V2 transition decision supersedes this section's original release-continuation gate: V1 is functionally complete and locally accepted; V2 development is authorized. Public production release and its infrastructure acceptance remain deferred until after V3.** See [the V2 handoff](V2_DEVELOPMENT_HANDOFF.md) for current milestone progress.
 
 ---
 
@@ -821,7 +821,7 @@ released before then. This deferral changes development sequencing only; it
 does not remove or weaken any production-readiness requirement.
 
 Continue from the verified V1 repository state and
-`docs/V2_DEVELOPMENT_HANDOFF.md`.
+`docs/reference/V2_DEVELOPMENT_HANDOFF.md`.
 
 The first V2 assignment is:
 
@@ -1272,7 +1272,7 @@ V2 consists of the documented financial-maturity release plus the required
 shared-expense companion release and other features explicitly assigned to this
 stage by the authoritative docs.
 
-Read `docs/V2_DEVELOPMENT_HANDOFF.md` before starting V2 implementation.
+Read `docs/reference/V2_DEVELOPMENT_HANDOFF.md` before starting V2 implementation.
 
 Do not implement V3 trackers during V2.
 
@@ -1284,7 +1284,7 @@ Implement the documented card-liability and statement model while integrating ca
 
 Detailed V2 requirements are maintained in:
 
-`docs/v2/CREDIT_CARDS_AND_STATEMENTS.md`
+`docs/reference/v2/CREDIT_CARDS_AND_STATEMENTS.md`
 
 Core principles:
 
@@ -1449,7 +1449,7 @@ Supported group contexts include family, siblings, friends, couples, roommates, 
 
 Detailed requirements are maintained in:
 
-`docs/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
+`docs/reference/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
 
 Implement after the private V2 financial model is sufficiently stable.
 

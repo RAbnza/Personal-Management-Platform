@@ -20,9 +20,9 @@ Detailed requirements belong in separate domain documents so future development 
 
 The V2 documentation structure begins with:
 
-- `docs/V2_DEVELOPMENT_HANDOFF.md`
-- `docs/v2/CREDIT_CARDS_AND_STATEMENTS.md`
-- `docs/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
+- `docs/reference/V2_DEVELOPMENT_HANDOFF.md`
+- `docs/reference/v2/CREDIT_CARDS_AND_STATEMENTS.md`
+- `docs/reference/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
 
 Additional V2 domain documents should be created only when their implementation phase begins if the authoritative project documentation is not already sufficient.
 
@@ -32,12 +32,12 @@ Additional V2 domain documents should be created only when their implementation 
 
 The primary authoritative project documents remain:
 
-- `docs/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`
-- `docs/SYSTEM_ARCHITECTURE.md`
-- `docs/DATABASE_ARCHITECTURE.md`
-- `docs/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md`
+- `docs/reference/PROJECT_VISION_AND_FEATURE_BLUEPRINT.md`
+- `docs/reference/SYSTEM_ARCHITECTURE.md`
+- `docs/reference/DATABASE_ARCHITECTURE.md`
+- `docs/reference/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md`
 
-`docs/PROJECT_DEVELOPMENT_HANDOFF.md` remains the detailed implementation history and continuing repository handoff.
+`docs/reference/PROJECT_DEVELOPMENT_HANDOFF.md` remains the detailed implementation history and continuing repository handoff.
 
 The V2 domain documents are later, more specific decisions for their V2 subject areas.
 
@@ -189,7 +189,7 @@ V2 currently consists of:
 
 Detailed specification:
 
-`docs/v2/CREDIT_CARDS_AND_STATEMENTS.md`
+`docs/reference/v2/CREDIT_CARDS_AND_STATEMENTS.md`
 
 Credit cards extend the existing expense and financial-action system without becoming a duplicate expense tracker.
 
@@ -235,7 +235,7 @@ Uploaded evidence must never silently change financial or Career facts.
 
 Detailed specification:
 
-`docs/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
+`docs/reference/v2/SHARED_EXPENSES_AND_SETTLEMENTS.md`
 
 This is a required V2 capability, not a family-only feature.
 
@@ -349,7 +349,7 @@ The first official V2 implementation area is:
 
 Before implementation, read:
 
-- `docs/v2/CREDIT_CARDS_AND_STATEMENTS.md`;
+- `docs/reference/v2/CREDIT_CARDS_AND_STATEMENTS.md`;
 - relevant credit-card sections of the blueprint;
 - relevant Finance sections of the system architecture;
 - the card schema design in the database architecture;
@@ -757,7 +757,7 @@ The approved specification's independently testable scenarios **1–21** are cov
 - Four `planning` tables: `recurring_obligation`, `recurrence_version`, `expected_occurrence`, `occurrence_actual_link`. Ten forward migrations `0094`–`0103` produce **104 migrations / 74 declarative tables**; published A/V1 migrations remain unchanged. Scoped concrete FKs, enabled/forced owner RLS, restricted grants, permanent receipts, exact private audit evidence, active workspace locks, immutable versions/reversals and approved child-first lifecycle deletion preserve established protections. Auth/queue/worker roles receive no planning access. Expected evidence cannot create financial revisions or ledger postings.
 - Independent SQL calendar ordinal validation verifies generated dates. Nullable grammar/reason constraints explicitly reject missing evidence. Command replay normalizes date/weekday/UUID inputs before storing permanent evidence; concurrent requests cannot reuse actual capacity or supersede a stale version. Planning commands advance workspace read revision metadata without recognizing income/spending/liability/cash again.
 - Financial corrections/reversals reject effective occurrence dependencies in both service and database. Explicitly reverse planning links, perform the existing financial command, then review eligible corrected evidence; history remains immutable. No silent reassignment. The optional schema-availability probe preserves earlier migration baseline smokes.
-- Supported dates are 1900–2199; each generation window is at most 366 inclusive days/500 dates. Initial preview covers 90 days from local today or the rule boundary. Terminal skipped/cancelled occurrences do not silently reactivate. Root/occurrence/actual histories and lists are bounded and paginated; full limits and recurrence count semantics are specified in `docs/v2/RECURRING_OBLIGATIONS.md`.
+- Supported dates are 1900–2199; each generation window is at most 366 inclusive days/500 dates. Initial preview covers 90 days from local today or the rule boundary. Terminal skipped/cancelled occurrences do not silently reactivate. Root/occurrence/actual histories and lists are bounded and paginated; full limits and recurrence count semantics are specified in `docs/reference/v2/RECURRING_OBLIGATIONS.md`.
 - Typed occurrence references extend the existing Agenda/reminder graph. Completion, skip, cancellation, date changes and supersession invalidate obsolete reminders; explicit link reversal reopens outstanding expectations with a new source generation. Civil dates retain the definition timezone. No external delivery, budgets, forecasts or later domains were introduced.
 - Performance diagnosis found repeated source projections and nested RLS timezone joins. Requested Agenda sources are now materialized once; forward migration 0103 exposes definition timezone directly. Ownership, RLS, transaction isolation and all source lifecycle assertions remain unchanged.
 
@@ -826,7 +826,7 @@ The approved specification's independently testable scenarios **1–21** are cov
 
 ## 24. V2-D — Savings Goals
 
-**Implementation date:** October 13, 2026 (Asia/Manila). **Baseline:** clean `main`, `d2e2b740ccfbf4f357607326bea869cee4eaea07`, fetched and equal to `origin/main`. V2-C hosted acceptance `38397495477` was successful. Inspection reused the established architecture, relevant Savings Goals requirements, C handoff, affected Finance/Planning sources and installed Next.js guides. `docs/v2/SAVINGS_GOALS.md` consolidates the approved direction, decisions and acceptance requirements.
+**Implementation date:** October 13, 2026 (Asia/Manila). **Baseline:** clean `main`, `d2e2b740ccfbf4f357607326bea869cee4eaea07`, fetched and equal to `origin/main`. V2-C hosted acceptance `38397495477` was successful. Inspection reused the established architecture, relevant Savings Goals requirements, C handoff, affected Finance/Planning sources and installed Next.js guides. `docs/reference/v2/SAVINGS_GOALS.md` consolidates the approved direction, decisions and acceptance requirements.
 
 **Acceptance:** D1–D3 completed and accepted locally; no local Savings Goals acceptance blocker remains. The completion report supplies the hosted workflow outcome for the exact pushed commit. No V2-E implementation or production deployment is included.
 
@@ -867,7 +867,7 @@ The approved specification's independently testable scenarios **1–21** are cov
 
 ## 25. V2-E — Forecasts
 
-**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `c76794915ef1bca4b237c00fdad1335016bd0696`, fetched and equal to `origin/main`. V2-D hosted acceptance `38420833205` was successful. Inspection reused the relevant architecture, D handoff, affected Finance/Planning/Reports implementations and installed Next.js guides. `docs/v2/FORECASTS.md` records source coverage, explicit assumptions, limits and acceptance rules.
+**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `c76794915ef1bca4b237c00fdad1335016bd0696`, fetched and equal to `origin/main`. V2-D hosted acceptance `38420833205` was successful. Inspection reused the relevant architecture, D handoff, affected Finance/Planning/Reports implementations and installed Next.js guides. `docs/reference/v2/FORECASTS.md` records source coverage, explicit assumptions, limits and acceptance rules.
 
 **Acceptance:** E1–E3 completed and accepted locally; no local Forecasts acceptance blocker remains. The completion report supplies the exact remote commit and hosted workflow outcome. No V2-F implementation or production deployment is included.
 
@@ -906,7 +906,7 @@ The approved specification's independently testable scenarios **1–21** are cov
 
 ## 26. V2-F — Richer Career Analytics
 
-**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `5e398763d845faf64b4969ab5fc3e8f28f657163`, fetched and equal to `origin/main`. V2-E hosted acceptance `38449299890` completed successfully. Inspection reused the relevant F requirements, E handoff, existing Career/Reports/Dashboard implementations and installed Next.js guides. The existing submitted cohort, separate event grains, explicit responses, source grouping, effective cutoff and corrected repeated-stage durations were audited first. `docs/v2/CAREER_ANALYTICS.md` consolidates the approved definitions and acceptance requirements.
+**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `5e398763d845faf64b4969ab5fc3e8f28f657163`, fetched and equal to `origin/main`. V2-E hosted acceptance `38449299890` completed successfully. Inspection reused the relevant F requirements, E handoff, existing Career/Reports/Dashboard implementations and installed Next.js guides. The existing submitted cohort, separate event grains, explicit responses, source grouping, effective cutoff and corrected repeated-stage durations were audited first. `docs/reference/v2/CAREER_ANALYTICS.md` consolidates the approved definitions and acceptance requirements.
 
 **Acceptance:** F1–F3 completed and accepted locally; no local Career Analytics acceptance blocker remains. The completion report supplies the exact pushed commit and hosted workflow outcome. No V2-G implementation or production deployment is included.
 
@@ -944,7 +944,7 @@ The approved specification's independently testable scenarios **1–21** are cov
 
 ## 27. V2-G — Scheduled Opted-In Notifications
 
-**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `acf51fd11b4302a98877db92242270d403775291`, fetched and equal to `origin/main`. V2-F hosted acceptance `38530986883` succeeded with 942 unit, 583 integration and 53 browser scenarios. Inspection reused the F handoff, relevant architecture requirements, existing reminder/Agenda sources, pg-boss transaction adapter, email adapter, lifecycle protections and installed Next.js route/component guides. `docs/v2/SCHEDULED_NOTIFICATIONS.md` records the domain contract; `docs/V1_OPERATIONS.md` records runtime and recovery gates.
+**Implementation date:** October 14, 2026 (Asia/Manila). **Baseline:** clean `main`, `acf51fd11b4302a98877db92242270d403775291`, fetched and equal to `origin/main`. V2-F hosted acceptance `38530986883` succeeded with 942 unit, 583 integration and 53 browser scenarios. Inspection reused the F handoff, relevant architecture requirements, existing reminder/Agenda sources, pg-boss transaction adapter, email adapter, lifecycle protections and installed Next.js route/component guides. `docs/reference/v2/SCHEDULED_NOTIFICATIONS.md` records the domain contract; `docs/reference/V1_OPERATIONS.md` records runtime and recovery gates.
 
 **Acceptance:** G1–G3 completed and accepted locally; no local in-scope acceptance blocker remains. Staged review precedes the authorized commit/push. No production deployment or real external delivery is included. The completion report supplies final remote identity and hosted outcome.
 
@@ -1005,7 +1005,7 @@ Implementation builds on committed/pushed G baseline `b744f491a62588124d612fb936
 
 ### Operational and capacity acceptance
 
-Final Windows and Linux production builds pass. Fresh web/worker/backup images pass nonroot/secret/dependency boundaries, restricted roles, health/private API, graceful shutdown and fail-closed backup acceptance. The actual encrypted dump/decrypt/pg_restore drill passes exact counts/balances, reports, real-role RLS, credential revocation, independent deletion-register reapplication and other-owner preservation; H staged import rows and private export bodies are verified after recovery. Full production-browser acceptance passes 57/57 scenarios (Chrome 155), including H upload/quarantine/scan/download, foreign ownership, exact CSV cash, duplicate raw JSON rejection, preview/typed replacement/recovery download, mobile keyboard/reflow and light/dark Axe audits. H screenshots were visually inspected. After the final export replay fix, all 21 H integration tests and the affected CSV/export/confirmed-restore/recovery browser scenario pass again; final current-source builds and runtime container acceptance pass. No redundant complete regression rerun is claimed for that localized fix. As requested for a four-person household, routine financial capacity now defaults to 10,000 actions; the original 50,000-action profile remains explicitly available through PMP_PERFORMANCE_ACTIONS. Latency, integrity and concurrent-load assertions are unchanged. The interrupted larger synthetic fixture was removed with guarded test-only cleanup, and it is not claimed as a completed benchmark. The 10,000-action run passes with 60,042 primary-workspace postings, 1,000 applications/events, ten multi-year debt schedules and the existing 100-user/20-active load checks. Actual command maximum is 180.67 ms < 1,000; account history p95 174.21 ms < 800; Dashboard 599.56 ms and financial reports 671.82 ms < 2,000; 20-active reads/commands 34.68/432.11 ms < 800/1,000. All other measured read budgets pass and guarded cleanup completes. Notification capacity passes 1,000 sources/deliveries: scan p95 1,795.69 ms < 5,000 and status p95 71.88 ms < 800, with unchanged financial evidence. The first two scan measurements exceeded the existing budget; batching retirement checks and avoiding unchanged delivery writes resolved the regression. Quiet-hour/schedule changes retain guarded revalidation and updates. Real S3 policy/IAM/scanner updates, inventory/retention/backups, production TLS/secrets/monitoring and operational drills remain human gates in `docs/V2_H_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md`; missing credentials do not block unrelated local functionality. No real external mail, object operation or deployment is claimed.
+Final Windows and Linux production builds pass. Fresh web/worker/backup images pass nonroot/secret/dependency boundaries, restricted roles, health/private API, graceful shutdown and fail-closed backup acceptance. The actual encrypted dump/decrypt/pg_restore drill passes exact counts/balances, reports, real-role RLS, credential revocation, independent deletion-register reapplication and other-owner preservation; H staged import rows and private export bodies are verified after recovery. Full production-browser acceptance passes 57/57 scenarios (Chrome 155), including H upload/quarantine/scan/download, foreign ownership, exact CSV cash, duplicate raw JSON rejection, preview/typed replacement/recovery download, mobile keyboard/reflow and light/dark Axe audits. H screenshots were visually inspected. After the final export replay fix, all 21 H integration tests and the affected CSV/export/confirmed-restore/recovery browser scenario pass again; final current-source builds and runtime container acceptance pass. No redundant complete regression rerun is claimed for that localized fix. As requested for a four-person household, routine financial capacity now defaults to 10,000 actions; the original 50,000-action profile remains explicitly available through PMP_PERFORMANCE_ACTIONS. Latency, integrity and concurrent-load assertions are unchanged. The interrupted larger synthetic fixture was removed with guarded test-only cleanup, and it is not claimed as a completed benchmark. The 10,000-action run passes with 60,042 primary-workspace postings, 1,000 applications/events, ten multi-year debt schedules and the existing 100-user/20-active load checks. Actual command maximum is 180.67 ms < 1,000; account history p95 174.21 ms < 800; Dashboard 599.56 ms and financial reports 671.82 ms < 2,000; 20-active reads/commands 34.68/432.11 ms < 800/1,000. All other measured read budgets pass and guarded cleanup completes. Notification capacity passes 1,000 sources/deliveries: scan p95 1,795.69 ms < 5,000 and status p95 71.88 ms < 800, with unchanged financial evidence. The first two scan measurements exceeded the existing budget; batching retirement checks and avoiding unchanged delivery writes resolved the regression. Quiet-hour/schedule changes retain guarded revalidation and updates. Real S3 policy/IAM/scanner updates, inventory/retention/backups, production TLS/secrets/monitoring and operational drills remain human gates in `docs/reference/V2_H_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md`; missing credentials do not block unrelated local functionality. No real external mail, object operation or deployment is claimed.
 
 Portable bounds are 10 MiB/10,000 total graph rows; CSV bounds are 1 MiB/500 rows. Workspace file quota is 1 GiB/1,000 live objects, 10 MiB per object. Larger formats, versioned bucket erasure, byte-inclusive bundles, image metadata stripping, unknown provider protocols and group restoration require separately reviewed support. Live file bytes cannot be silently discarded during replacement. Current account identity/tombstones and operational retirement remain outside user-controlled restoration.
 
@@ -1034,7 +1034,7 @@ Date: October 15, 2026 (Asia/Manila). Accepted baseline: `f81260cffd0cb225936631
 
 ### Exact prerequisites and stop boundary
 
-Continue on this feature branch with migrations through `0169`. Read `docs/v2/SHARED_EXPENSES_IMPLEMENTATION.md` for decisions, bounds and the repository-relative file inventory, and `docs/V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md` for setup/operations. Keep H/G external infrastructure gates intact.
+Continue on this feature branch with migrations through `0169`. Read `docs/reference/v2/SHARED_EXPENSES_IMPLEMENTATION.md` for decisions, bounds and the repository-relative file inventory, and `docs/reference/V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md` for setup/operations. Keep H/G external infrastructure gates intact.
 
 Assignment 2 must implement I4 settlements/pending confirmation/clearing; I5 relationship explanations and agreed suggestions; I6 refunds and explicit shared/private correction revisions/reporting; and I7 cross-domain integration plus consolidated acceptance. In particular, define portability for adopted workspaces before lifting the current export/replacement guard, complete group File/Time/Dashboard integration and external invitation delivery, and verify historical/deletion/restoration behavior.
 
@@ -1057,7 +1057,7 @@ The declarative graph contains 116 tables and 200 migrations through `0199`; 22 
 
 Four private group-evidence tables enter the private bundle registry; shared authority and server-owned checksum proofs stay outside uploaded bundles. Adopted history restores only from unmodified trusted own exports/recovery. Exact approval audit/receipt completeness and deferred predecessor FKs preserve canonical recovery without relaxing commit-time integrity. H format-2 compatibility adds only empty absent I descriptors after the exact H checksum/fingerprint passes. Authorized separate group-history JSON is non-restorable and excludes invitation contacts/tokens/private funding. Backup/deletion retention must preserve provenance until approved account purge.
 
-The full-domain `SHARED_EXPENSES_ENABLED` flag defaults false. Legacy preview remains local/test-only. Secure manual invitation handoff is operational; automated invitation email is not advertised or activated. Personal follow-ups require user-selected dates and existing reminder/email opt-in; no member is automatically notified. Ownerless groups archive on deletion. Legal/retention, verified TLS/secrets, real mail/S3/scanning, staging/human assistive technology, backups and monitoring remain production gates, documented with exact instructions in `docs/V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md`.
+The full-domain `SHARED_EXPENSES_ENABLED` flag defaults false. Legacy preview remains local/test-only. Secure manual invitation handoff is operational; automated invitation email is not advertised or activated. Personal follow-ups require user-selected dates and existing reminder/email opt-in; no member is automatically notified. Ownerless groups archive on deletion. Legal/retention, verified TLS/secrets, real mail/S3/scanning, staging/human assistive technology, backups and monitoring remain production gates, documented with exact instructions in `docs/reference/V2_I_MANUAL_SETUP_AND_PRODUCTION_CHECKLIST.md`.
 
 ### Actual consolidated verification
 
@@ -1069,4 +1069,4 @@ The full-domain `SHARED_EXPENSES_ENABLED` flag defaults false. Legacy preview re
 - Household performance passes **10,000 actions / 60,042 postings**, 1,000 applications/events, ten long-lived debt schedules and 100-user/20-active checks. Command max is 248.27 ms, account history p95 173.08 ms, Dashboard 518.75 ms, financial reports 569 ms and concurrent reads/commands 41.25/488.58 ms. Sharing passes **200 bills / 800 positions / four participants**, 51 confirmed and 57 pending payments: group/Dashboard/private-report/command p95 **628.72/148.46/248.24/486.48 ms**. A full 180-bill report/confirmation takes **1,846.63/1,574.66 ms**, below the additional 5,000 ms large-allocation guard; exact net-zero and unchanged private financial evidence hold. The initial large report took 251,747 ms; indexed/scoped projections and sealed child totals removed repeated validation while preserving full constraints. Measurements establish local evidence at these fixture sizes, not production capacity.
 - Resource handling preserved two unused Chromium 1148 vendor caches under ignored `out/preserved-v2-i-playwright-cache` on E: with original-path junctions, and reclaimed disposable Docker builder cache. These remain local tooling artifacts.
 
-See `docs/v2/SHARED_EXPENSES_IMPLEMENTATION.md` for the passing 40-scenario evidence index and complete decisions. This was one consolidated phase with affected reruns after failures. No local implementation blocker remains. Authorized completion commit: `feat(sharing): complete V2-I shared expenses and settlements`; resolve through Git history and the final verified remote-SHA report. No production deployment, V3 or broad redesign is included.
+See `docs/reference/v2/SHARED_EXPENSES_IMPLEMENTATION.md` for the passing 40-scenario evidence index and complete decisions. This was one consolidated phase with affected reruns after failures. No local implementation blocker remains. Authorized completion commit: `feat(sharing): complete V2-I shared expenses and settlements`; resolve through Git history and the final verified remote-SHA report. No production deployment, V3 or broad redesign is included.

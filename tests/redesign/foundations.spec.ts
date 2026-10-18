@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const evidence = resolve("docs/verification/assets/redesign-m1");
+const evidence = resolve("docs/reference/verification/assets/redesign-m1");
 mkdirSync(evidence, { recursive: true });
 const names = {
   home: "A little clarity for your day.",

@@ -228,7 +228,7 @@ src/platform/email/         delivery adapter and templates
 src/shared/                 Money, dates, errors, IDs, safe UI primitives
 src/worker.ts               worker entry point
 tests/{unit,integration,e2e}/
-docs/adr/                   decisions that change this baseline
+docs/reference/adr/                   decisions that change this baseline
 ```
 
 Repositories require an authorized transaction/query context, never a loose `userId` supplied from the browser. Avoid a generic repository abstraction. Domain modules export explicit use cases and DTOs; other modules do not reach into their tables to mutate them. Use ESLint restricted-import rules to keep database/auth code out of browser bundles and cross-module internals out of callers.
