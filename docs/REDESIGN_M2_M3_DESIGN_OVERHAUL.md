@@ -1,5 +1,8 @@
 # M2/M3 design overhaul continuation
 
+**Owner visual approval:** M1–M5 explicitly approved October 18, 2026 (Asia/Manila). Implementation is complete as recorded below; consolidated technical acceptance is tracked separately in [M6 acceptance](REDESIGN_M6_ACCEPTANCE.md). Historical test results are not retroactively expanded.
+
+
 This continues the uncommitted design-led work recovered on `feat/redesign-m2-m3` from baseline `fa154fa0aa651472e87f7e9632a8967f8a622e56`. It supersedes the earlier handoff's panel-and-paragraph layout descriptions. The approved Porcelain, Midnight Spectrum and Magic Dock foundations remain.
 
 ## Implemented experience

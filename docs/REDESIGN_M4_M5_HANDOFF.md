@@ -1,5 +1,8 @@
 # M4 + M5 design implementation
 
+**Owner visual approval:** M1–M5 explicitly approved October 18, 2026 (Asia/Manila). Implementation is complete as recorded below; consolidated technical acceptance is tracked separately in [M6 acceptance](REDESIGN_M6_ACCEPTANCE.md). Historical test results are not retroactively expanded.
+
+
 Branch: `feat/redesign-m4-m5`, based on the owner-approved M2/M3 commit `9f3d9bd808cda003dc2a2b7261fbcecffaa29e43`.
 
 ## M4 checkpoint
@@ -61,7 +64,7 @@ Date adapter and Agenda API: 7 tests passed. Agenda integration: 6 tests passed 
 
 - The isolated browser server has no configured object store/scanner. File browsing tests seeded reserved metadata through the existing test seam and verified that download stayed unavailable; they did not claim an uploaded file was scanned successfully.
 - File search/filtering applies to the current authorized source/file page. Career/Tracker counts retain their stated cohort/current-state/recorded-activity definitions. Calendar coverage remains bounded and explicitly offers more pages.
-- Historical browser campaigns, destructive replacement/purge execution, production delivery and consolidated M6 acceptance were not run. Existing APIs and deeper protection tests are preserved. Owner visual review is pending.
+- Historical browser campaigns, destructive replacement/purge execution, production delivery and consolidated M6 acceptance were not run. Existing APIs and deeper protection tests are preserved. Owner visual review was granted October 18, 2026; consolidated technical acceptance is tracked in M6.
 - No M6, merge, production deployment or native/offline implementation is included.
 
 Owner review uses the running application. No screenshot, video, trace or visual-report package is produced.

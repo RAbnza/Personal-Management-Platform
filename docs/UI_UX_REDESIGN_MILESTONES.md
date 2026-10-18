@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Planning baseline (October 16):** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1–M3 are owner-approved. M4 is implemented and checkpointed at `160ce15` on `feat/redesign-m4-m5`. M5 is implemented with focused verification on the same branch; owner visual review remains pending. M6 has not started.\
+**Status:** M1–M5 implementation and owner visual approval are complete (October 18, 2026, Asia/Manila). M6 consolidated technical acceptance passed with documented limitations on `feat/redesign-m6-acceptance`; see the acceptance record.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -199,7 +199,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Acceptance criteria:** all inventory IDs verified; no unresolved critical financial/privacy/accessibility regression; all required gates pass or a material limitation is explicitly accepted by the owner; measured performance is within agreed budgets; ordinary and advanced workflows remain discoverable; current V3 remains functional throughout adoption.
 
-**Expected deliverables:** finished current redesign, coverage/verification report, final screenshots and measured performance/accessibility evidence, updated handoff with any remaining limitations. No native/offline implementation or production launch.
+**Expected deliverables:** finished current redesign, coverage/verification report and measured performance/accessibility evidence without image artifacts, updated handoff with any remaining limitations. No native/offline implementation or production launch.
 
 ## 8. Coverage and responsibility ledger
 
@@ -222,11 +222,11 @@ Use the project's code-output rule when creating or updating code/configuration 
 
 | Milestone | Current state                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
-| M2 | Implemented; owner review/M6 acceptance pending | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
-| M3 | Implemented; owner review/M6 acceptance pending | [Combined inventory and checks](REDESIGN_M2_M3_HANDOFF.md) |
+| M1 | Completed; first approval October 17; cumulative M1-M5 visual approval October 18, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
+| M2 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
+| M3 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined inventory and checks](REDESIGN_M2_M3_HANDOFF.md) |
 | M4 | Implemented and checkpointed (`160ce15`) | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
-| M5 | Implemented; focused checks passed; owner review pending | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
-| M6        | Not started                               | No acceptance results claimed |
+| M5 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
+| M6 | Passed with documented limitations | [Actual acceptance results](REDESIGN_M6_ACCEPTANCE.md) |
 
-Next step: owner visual review of the combined M4/M5 implementation on `feat/redesign-m4-m5`. The combined assignment authorizes M4 and M5 only; no merge, M6, production deployment or native/offline work is included. Historical evidence remains intact; no unperformed acceptance checks are implied.
+Next step: review `feat/redesign-m6-acceptance` for eventual integration, retaining the manual/device and operational limitations in the M6 record. Visual approval is granted for M1–M5; test completion is a separate recorded gate. No merge, deployment or native/offline work is authorized.

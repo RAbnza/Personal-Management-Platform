@@ -1,5 +1,8 @@
 # Adaptive navigation and page context
 
+**Owner visual approval:** M1–M5 explicitly approved October 18, 2026 (Asia/Manila). Implementation is complete as recorded below; consolidated technical acceptance is tracked separately in [M6 acceptance](REDESIGN_M6_ACCEPTANCE.md). Historical test results are not retroactively expanded.
+
+
 Follow-up to the M2/M3 design overhaul, on `feat/redesign-m2-m3`. This refines the existing visual direction; it does not start M4/M5.
 
 ## Composition

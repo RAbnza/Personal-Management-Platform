@@ -5,7 +5,7 @@
 **Inspected baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
 **Owner approval:** October 17, 2026, Asia/Manila — D01, D03 and D04 approved; D02 working identity approved and final branding deferred.\
 **Documentation alignment baseline:** `main`, `62043c1ff8cc08d4e64576b356dc1c30717cd1ed`\
-**Status:** Approved visual/interaction baseline and M1–M6 roadmap. M1 is completed and explicitly owner-approved October 17, 2026 (Asia/Manila); M2 is ready for separate assignment and M2–M6 have not started. See [M1 handoff](REDESIGN_M1_HANDOFF.md).\
+**Status:** M1–M5 are implemented and explicitly visually approved October 18, 2026 (Asia/Manila). M6 consolidated technical acceptance passed with documented limitations; see [acceptance record](REDESIGN_M6_ACCEPTANCE.md). Historical evidence remains scoped to the checks actually executed.\
 **Companions:** [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md) · [Six-milestone roadmap](UI_UX_REDESIGN_MILESTONES.md)
 
 ## 1. Purpose, authority, and scope

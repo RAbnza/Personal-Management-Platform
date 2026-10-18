@@ -1,5 +1,8 @@
 # M2 + M3 implementation handoff
 
+**Owner visual approval:** M1–M5 explicitly approved October 18, 2026 (Asia/Manila). Implementation is complete as recorded below; consolidated technical acceptance is tracked separately in [M6 acceptance](REDESIGN_M6_ACCEPTANCE.md). Historical test results are not retroactively expanded.
+
+
 See the [adaptive navigation foundation](NAVIGATION_FOUNDATION.md) for the subsequent desktop dock, header, breadcrumbs and card-alignment refinement, including the reuse contract for M4/M5.
 
 The subsequent [design-led overhaul and horizontal interaction continuation](REDESIGN_M2_M3_DESIGN_OVERHAUL.md) supersedes the visual composition described here and records its behavioral changes and focused checks.
