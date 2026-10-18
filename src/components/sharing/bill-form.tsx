@@ -368,35 +368,57 @@ export function SharedBillForm({
               ))}
             </div>
           ) : (
-            <Field label="Payer">
-              <select
-                className={selectClass}
-                value={single}
-                onChange={(e) => setSingle(e.target.value)}
-              >
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.displayName}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div
+              role="group"
+              aria-label="Payer"
+              className="flex flex-wrap gap-2"
+            >
+              {people.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={single === p.id}
+                  onClick={() => setSingle(p.id)}
+                  className={`min-h-11 rounded-control border px-4 py-3 text-sm font-semibold ${single === p.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`}
+                >
+                  {p.displayName}
+                </button>
+              ))}
+            </div>
           )}
         </fieldset>
-        <Field label="Split method">
-          <select
-            className={selectClass}
-            value={method}
-            onChange={(e) => setMethod(e.target.value as "equal" | "exact")}
-          >
-            <option value="equal">Equal shares</option>
-            <option value="exact">Exact amounts</option>
-          </select>
-        </Field>
+        <fieldset className="space-y-2">
+          <legend className="font-semibold">Split method</legend>
+          <div className="flex flex-wrap gap-3">
+            {(
+              [
+                ["equal", "Split equally"],
+                ["exact", "Set exact amounts"],
+              ] as const
+            ).map(([value, label]) => (
+              <label
+                key={value}
+                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-control border p-3 ${method === value ? "border-primary bg-[var(--teal-surface)]" : "border-border"}`}
+              >
+                <input
+                  type="radio"
+                  name="split-method"
+                  value={value}
+                  checked={method === value}
+                  onChange={() => setMethod(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <fieldset className="grid gap-3 sm:grid-cols-2">
           <legend className="font-semibold">Who participated?</legend>
           {people.map((p) => (
-            <div key={p.id} className="space-y-2">
+            <div
+              key={p.id}
+              className={`space-y-2 rounded-card border p-4 ${selected[p.id] ? "border-primary bg-[var(--teal-surface)]" : "border-border bg-surface"}`}
+            >
               <label className="flex min-h-11 items-center gap-3">
                 <input
                   type="checkbox"
@@ -407,6 +429,20 @@ export function SharedBillForm({
                 />
                 {p.displayName}
               </label>
+              {selected[p.id] && preview && (
+                <p className="text-xl font-semibold tabular-nums">
+                  {money(
+                    preview.shares.find((s) => s.participantId === p.id)
+                      ?.amountMinor ?? "0",
+                  )}
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {preview.shares.find((s) => s.participantId === p.id)
+                      ?.roundingExtraMinor
+                      ? "Includes one rounding centavo"
+                      : "Allocated share"}
+                  </span>
+                </p>
+              )}
               {method === "exact" && selected[p.id] && (
                 <Field label={`${p.displayName} share (PHP)`}>
                   <Input
@@ -423,7 +459,7 @@ export function SharedBillForm({
         </fieldset>
         <section
           aria-label="Bill preview"
-          className="rounded-card border border-border p-4"
+          className="rounded-card bg-surface-subtle p-5"
         >
           <h3 className="font-semibold">Review exact allocations</h3>
           {preview ? (
@@ -462,14 +498,17 @@ export function SharedBillForm({
             <p>{previewError}</p>
           )}
         </section>
-        <Field label="Shared notes (optional)">
-          <textarea
-            name="notes"
-            className={selectClass}
-            maxLength={20000}
-            defaultValue={initial?.notes ?? ""}
-          />
-        </Field>
+        <details>
+          <summary className="action-link">Add shared notes</summary>
+          <Field label="Shared notes (optional)">
+            <textarea
+              name="notes"
+              className={selectClass}
+              maxLength={20000}
+              defaultValue={initial?.notes ?? ""}
+            />
+          </Field>
+        </details>
         {initial ? (
           <Field label="Reason for reviewed revision">
             <Input name="reason" required maxLength={2000} />

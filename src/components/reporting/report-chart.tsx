@@ -1,9 +1,9 @@
 "use client";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -74,6 +74,11 @@ export default function ReportChart({
   }[];
   currency: string;
 }) {
+  const [visible, setVisible] = useState({
+    income: true,
+    net: true,
+    cashOut: true,
+  });
   // Approximate chart coordinates only. Exact source strings remain in the
   // tooltip and the adjacent server-rendered table; no business totals here.
   const data = rows.map((r) => ({
@@ -83,72 +88,99 @@ export default function ReportChart({
     cashOut: Number(r.cashOutMinor) / 100,
   }));
   return (
-    <div
-      role="group"
-      className="h-72 w-full min-w-0"
-      aria-label={`Daily recognized income, net spending and external cash outflows in ${currency}`}
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          accessibilityLayer
-          margin={{ left: 12, right: 12, bottom: 16 }}
-        >
-          <CartesianGrid vertical={false} stroke="var(--color-border)" />
-          <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={45} />
-          <YAxis tick={{ fontSize: 11 }} width={75} />
-          <ReferenceLine y={0} stroke="var(--color-foreground)" />
-          <Tooltip
-            content={({ active, payload, label }) =>
-              active && payload?.[0]?.payload ? (
-                <div className="rounded-control border border-border bg-background p-3 text-sm">
-                  <p>{String(label)}</p>
-                  <p>
-                    Income:{" "}
-                    {formatMoneyMinorUnits(
-                      currency,
-                      payload[0].payload.incomeMinor,
-                    )}
-                  </p>
-                  <p>
-                    Net spending:{" "}
-                    {formatMoneyMinorUnits(
-                      currency,
-                      payload[0].payload.netMinor,
-                    )}
-                  </p>
-                  <p>
-                    External cash outflow:{" "}
-                    {formatMoneyMinorUnits(
-                      currency,
-                      payload[0].payload.cashOutMinor,
-                    )}
-                  </p>
-                </div>
-              ) : null
-            }
-          />
-          <Legend />
-          <Bar
-            name="Recognized income"
-            dataKey="income"
-            fill="var(--color-link)"
-            isAnimationActive={false}
-          />
-          <Bar
-            name="Net recognized spending"
-            dataKey="net"
-            fill="var(--color-warning)"
-            isAnimationActive={false}
-          />
-          <Bar
-            name="External cash outflows"
-            dataKey="cashOut"
-            fill="var(--color-muted-foreground)"
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <>
+      <div
+        role="group"
+        aria-label="Visible daily metrics"
+        className="mb-4 flex flex-wrap gap-2"
+      >
+        {(
+          [
+            ["income", "Income"],
+            ["net", "Net spending"],
+            ["cashOut", "External cash outflows"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={visible[key]}
+            onClick={() => setVisible({ ...visible, [key]: !visible[key] })}
+            className={`min-h-11 rounded-control border px-3 text-sm ${visible[key] ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div
+        role="group"
+        className="h-72 w-full min-w-0"
+        aria-label={`Daily recognized income, net spending and external cash outflows in ${currency}`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            accessibilityLayer
+            margin={{ left: 12, right: 12, bottom: 16 }}
+          >
+            <CartesianGrid vertical={false} stroke="var(--color-border)" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={45} />
+            <YAxis tick={{ fontSize: 11 }} width={75} />
+            <ReferenceLine y={0} stroke="var(--color-foreground)" />
+            <Tooltip
+              content={({ active, payload, label }) =>
+                active && payload?.[0]?.payload ? (
+                  <div className="rounded-control border border-border bg-background p-3 text-sm">
+                    <p>{String(label)}</p>
+                    <p>
+                      Income:{" "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        payload[0].payload.incomeMinor,
+                      )}
+                    </p>
+                    <p>
+                      Net spending:{" "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        payload[0].payload.netMinor,
+                      )}
+                    </p>
+                    <p>
+                      External cash outflow:{" "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        payload[0].payload.cashOutMinor,
+                      )}
+                    </p>
+                  </div>
+                ) : null
+              }
+            />
+            <Bar
+              name="Recognized income"
+              hide={!visible.income}
+              dataKey="income"
+              fill="var(--color-link)"
+              isAnimationActive={false}
+            />
+            <Bar
+              name="Net recognized spending"
+              hide={!visible.net}
+              dataKey="net"
+              fill="var(--color-warning)"
+              isAnimationActive={false}
+            />
+            <Bar
+              name="External cash outflows"
+              hide={!visible.cashOut}
+              dataKey="cashOut"
+              fill="var(--color-muted-foreground)"
+              isAnimationActive={false}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </>
   );
 }

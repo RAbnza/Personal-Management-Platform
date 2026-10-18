@@ -76,9 +76,11 @@ export function NotificationSettings({
       >
         <fieldset disabled={locked || !hydrated} className="space-y-4">
           <legend className="sr-only">Email notification preferences</legend>
-          <label className="flex min-h-11 items-center gap-3">
+          <label className="flex min-h-16 items-center justify-between gap-3 rounded-card bg-[var(--blue-surface)] p-4 font-semibold">
             <input
               type="checkbox"
+              role="switch"
+              className="h-6 w-6 accent-primary"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
             />
@@ -89,10 +91,8 @@ export function NotificationSettings({
             Enabling does not send historical reminders. Dismiss, snooze or
             disable reminders from Agenda or their source.
           </p>
-          <details>
-            <summary className="min-h-11 cursor-pointer py-3">
-              Quiet hours and content
-            </summary>
+          <section className="rounded-card bg-surface-subtle p-4">
+            <h3 className="font-semibold">Quiet hours and content</h3>
             <div className="space-y-4 pt-3">
               <label className="block" htmlFor="notification-timezone">
                 Quiet-hours timezone (blank uses workspace timezone)
@@ -141,7 +141,7 @@ export function NotificationSettings({
                 notes.
               </p>
             </div>
-          </details>
+          </section>
         </fieldset>
         <Button
           disabled={

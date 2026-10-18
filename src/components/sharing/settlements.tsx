@@ -118,7 +118,7 @@ export function SettlementPanel({ data }: { data: GroupDetail }) {
           )?.netMinor ?? "0",
         )}
       </p>
-      <details>
+      <details open className="rounded-card bg-[var(--teal-surface)] p-5">
         <summary className="min-h-11 cursor-pointer font-semibold">
           Pairwise balances and explanations
         </summary>
@@ -374,7 +374,7 @@ export function SettlementPanel({ data }: { data: GroupDetail }) {
             return (
               <li
                 key={s.id}
-                className="space-y-3 rounded-card border border-border p-4"
+                className={`space-y-3 rounded-card border p-5 ${s.state === "pending" ? "border-warning bg-[var(--warm-surface)]" : "border-border bg-surface"}`}
                 id={`settlement-${s.id}`}
               >
                 <h3 className="font-semibold">
@@ -406,40 +406,45 @@ export function SettlementPanel({ data }: { data: GroupDetail }) {
                 </ul>
                 <p>Advance/reverse component {money(s.advanceMinor)}</p>
                 {operations.length > 0 && (
-                  <CommandForm
-                    label="Record settlement transition"
-                    build={(f) => ({
-                      kind: "settlement_transition",
-                      groupId: group.id,
-                      expectedVersion: group.version,
-                      clientCommandId: crypto.randomUUID(),
-                      settlementId: s.id,
-                      expectedSettlementVersion: s.version,
-                      operation: f.get("operation"),
-                      reason: f.get("reason"),
-                      acknowledgeManualLimitation: f.get("manual") === "on",
-                    })}
-                  >
-                    <Field label="Transition">
-                      <select className={selectClass} name="operation">
-                        {operations.map((op) => (
-                          <option key={op} value={op}>
-                            {op.replaceAll("_", " ")}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Transition reason">
-                      <Input name="reason" required maxLength={1800} />
-                    </Field>
-                    {manual && (
-                      <label className="flex min-h-11 items-center gap-2">
-                        <input type="checkbox" name="manual" />I acknowledge the
-                        recipient has no authenticated confirmation. This is an
-                        owner-entered manual record.
-                      </label>
-                    )}
-                  </CommandForm>
+                  <details>
+                    <summary className="action-link">
+                      Review payment and record a decision
+                    </summary>
+                    <CommandForm
+                      label="Record settlement transition"
+                      build={(f) => ({
+                        kind: "settlement_transition",
+                        groupId: group.id,
+                        expectedVersion: group.version,
+                        clientCommandId: crypto.randomUUID(),
+                        settlementId: s.id,
+                        expectedSettlementVersion: s.version,
+                        operation: f.get("operation"),
+                        reason: f.get("reason"),
+                        acknowledgeManualLimitation: f.get("manual") === "on",
+                      })}
+                    >
+                      <Field label="Transition">
+                        <select className={selectClass} name="operation">
+                          {operations.map((op) => (
+                            <option key={op} value={op}>
+                              {op.replaceAll("_", " ")}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Transition reason">
+                        <Input name="reason" required maxLength={1800} />
+                      </Field>
+                      {manual && (
+                        <label className="flex min-h-11 items-center gap-2">
+                          <input type="checkbox" name="manual" />I acknowledge
+                          the recipient has no authenticated confirmation. This
+                          is an owner-entered manual record.
+                        </label>
+                      )}
+                    </CommandForm>
+                  </details>
                 )}
                 {[s.senderId, s.recipientId].includes(group.participantId) && (
                   <Link

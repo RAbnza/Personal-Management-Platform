@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { FileText, Image as ImageIcon } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 type Row = {
   id: string;
@@ -8,21 +9,33 @@ type Row = {
   version: number;
   scan_result_code: string | null;
   total: string;
+  declared_mime: string;
+  declared_bytes: string;
 };
 export function Attachments({
   sourceKind,
   sourceId,
+  initiallyExpanded = false,
+  onLockChange,
 }: {
   sourceKind: string;
   sourceId: string;
+  initiallyExpanded?: boolean;
+  onLockChange?: (locked: boolean) => void;
 }) {
-  const [expanded, setExpanded] = useState(false),
+  const [expanded, setExpanded] = useState(initiallyExpanded),
     [afterId, setAfterId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [uncertain, setUncertain] = useState(false),
     [mutationUncertain, setMutationUncertain] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState(""),
+    [status, setStatus] = useState("all");
+  useEffect(() => {
+    onLockChange?.(busy || uncertain || mutationUncertain);
+  }, [busy, uncertain, mutationUncertain, onLockChange]);
   const mutation = useRef<{
     row: Row;
     operation: "delete" | "unlink";
@@ -34,13 +47,19 @@ export function Attachments({
     );
   const url = `/api/v1/files?sourceKind=${encodeURIComponent(sourceKind)}&sourceId=${encodeURIComponent(sourceId)}${afterId ? `&afterId=${afterId}` : ""}`;
   async function refresh() {
+    setLoading(true);
     try {
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw Error();
       const j = await r.json();
       setRows(j.attachments);
+      setMessage((m) =>
+        m.startsWith("Evidence could not be loaded") ? "" : m,
+      );
     } catch {
       setMessage("Evidence could not be loaded. Refresh to retry.");
+    } finally {
+      setLoading(false);
     }
   }
   useEffect(() => {
@@ -50,10 +69,16 @@ export function Attachments({
       .then(async (r) => {
         if (!r.ok) throw Error();
         const j = await r.json();
-        if (live) setRows(j.attachments);
+        if (live) {
+          setRows(j.attachments);
+          setLoading(false);
+        }
       })
       .catch(() => {
-        if (live) setMessage("Evidence could not be loaded.");
+        if (live) {
+          setMessage("Evidence could not be loaded.");
+          setLoading(false);
+        }
       });
     return () => {
       live = false;
@@ -180,7 +205,10 @@ export function Attachments({
       title="Supporting files"
       description="Private evidence only. Files do not change money, statements or application history."
     >
-      <details onToggle={(e) => setExpanded(e.currentTarget.open)}>
+      <details
+        open={expanded}
+        onToggle={(e) => setExpanded(e.currentTarget.open)}
+      >
         <summary className="min-h-11 cursor-pointer py-3">
           Manage evidence files
         </summary>
@@ -189,34 +217,37 @@ export function Attachments({
             PDF, JPEG or PNG; 10 MiB per file, 1 GiB per workspace. Original
             file metadata is retained. No inline document previews.
           </p>
-          <label className="block">
-            Evidence file
-            <input
-              ref={input}
-              disabled={busy || uncertain}
-              className="mt-2 block w-full min-w-0"
-              type="file"
-              accept="application/pdf,image/jpeg,image/png"
-            />
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="min-h-11 rounded border px-4"
-              disabled={busy}
-              onClick={() => void upload()}
-            >
-              {uncertain ? "Retry identical upload" : "Upload privately"}
-            </button>
-            <button
-              type="button"
-              className="min-h-11 rounded border px-4"
-              disabled={busy}
-              onClick={() => void refresh()}
-            >
-              Refresh scan status
-            </button>
-          </div>
+          <details className="rounded-card border border-dashed border-border p-4">
+            <summary className="action-link">Upload a supporting file</summary>
+            <label className="block">
+              Evidence file
+              <input
+                ref={input}
+                disabled={busy || uncertain || mutationUncertain}
+                className="mt-2 block w-full min-w-0"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png"
+              />
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="min-h-11 rounded border px-4"
+                disabled={busy || mutationUncertain}
+                onClick={() => void upload()}
+              >
+                {uncertain ? "Retry identical upload" : "Upload privately"}
+              </button>
+            </div>
+          </details>
+          <button
+            type="button"
+            className="min-h-11 rounded border px-4"
+            disabled={busy}
+            onClick={() => void refresh()}
+          >
+            Refresh scan status
+          </button>
           {mutationUncertain && (
             <button
               className="min-h-11 rounded border px-4"
@@ -236,59 +267,124 @@ export function Attachments({
             <button
               className="min-h-11 rounded border px-4"
               disabled={busy || rows.length < 50}
-              onClick={() => setAfterId(rows.at(-1)!.id)}
+              onClick={() => {
+                setLoading(true);
+                setAfterId(rows.at(-1)!.id);
+                setRows([]);
+              }}
             >
               Next file page
             </button>
             <button
               className="min-h-11 rounded border px-4"
               disabled={busy || !afterId}
-              onClick={() => setAfterId(null)}
+              onClick={() => {
+                setLoading(true);
+                setAfterId(null);
+                setRows([]);
+              }}
             >
               First file page
             </button>
           </div>
-          <ul className="space-y-3">
-            {rows.map((row) => (
-              <li key={row.id} className="rounded border p-3">
-                <p className="break-words font-medium">
-                  {row.original_filename}
-                </p>
-                <p>{row.status.replaceAll("_", " ")}</p>
-                {row.status === "available" && (
-                  <a
-                    className="inline-flex min-h-11 items-center text-link underline"
-                    href={`/api/v1/files/${row.id}`}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm">
+              Find file on this page
+              <input
+                className="min-h-11 rounded-control border border-input bg-surface px-3"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+            </label>
+            <label className="grid gap-2 text-sm">
+              File status
+              <select
+                className="min-h-11 rounded-control border border-input bg-surface px-3"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="all">All states</option>
+                {[...new Set(rows.map((r) => r.status))].map((state) => (
+                  <option key={state} value={state}>
+                    {state.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {loading && <p role="status">Loading evidence files...</p>}
+          {!loading && !rows.length && !message && (
+            <p>No supporting files on this page.</p>
+          )}
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {rows
+              .filter(
+                (row) =>
+                  row.original_filename
+                    .toLowerCase()
+                    .includes(filter.toLowerCase()) &&
+                  (status === "all" || row.status === status),
+              )
+              .map((row) => (
+                <li
+                  key={row.id}
+                  className="space-y-2 rounded-card border border-border bg-surface p-4"
+                >
+                  {row.declared_mime?.startsWith("image/") ? (
+                    <ImageIcon aria-hidden="true" className="text-primary" />
+                  ) : (
+                    <FileText aria-hidden="true" className="text-primary" />
+                  )}
+                  <p className="break-words font-medium">
+                    {row.original_filename}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.declared_mime ?? "Type unavailable"} /{" "}
+                    {row.declared_bytes
+                      ? `${Number(row.declared_bytes).toLocaleString()} bytes declared`
+                      : "Size unavailable"}
+                  </p>
+                  <p
+                    className={`inline-flex rounded-control px-2 py-1 text-xs font-semibold ${row.status === "available" ? "bg-[var(--teal-surface)]" : "bg-[var(--warm-surface)]"}`}
                   >
-                    Download verified evidence
-                  </a>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    disabled={busy}
-                    className="min-h-11 underline"
-                    onClick={() => void mutate(row, "unlink")}
-                  >
-                    Unlink evidence
-                  </button>
-                  <button
-                    disabled={
-                      busy ||
-                      row.status === "deleted" ||
-                      row.status === "deleting"
-                    }
-                    className="min-h-11 underline"
-                    onClick={() => void mutate(row, "delete")}
-                  >
-                    Delete stored file
-                  </button>
-                </div>
-              </li>
-            ))}
+                    {row.status.replaceAll("_", " ")}
+                  </p>
+                  {row.status === "available" && (
+                    <a
+                      className="inline-flex min-h-11 items-center text-link underline"
+                      href={`/api/v1/files/${row.id}`}
+                    >
+                      Download verified evidence
+                    </a>
+                  )}
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      disabled={busy || uncertain || mutationUncertain}
+                      className="min-h-11 underline"
+                      onClick={() => void mutate(row, "unlink")}
+                    >
+                      Unlink evidence
+                    </button>
+                    <button
+                      disabled={
+                        busy ||
+                        row.status === "deleted" ||
+                        row.status === "deleting"
+                      }
+                      className="min-h-11 underline"
+                      onClick={() => void mutate(row, "delete")}
+                    >
+                      Delete stored file
+                    </button>
+                  </div>
+                </li>
+              ))}
           </ul>
           {rows[0] && (
             <p className="text-sm">
-              Showing {rows.length} of {rows[0].total} evidence records.
+              Loaded {rows.length} evidence records on this page;{" "}
+              {rows[0].total} at or after this cursor. Filters apply to this
+              page.
             </p>
           )}
         </div>

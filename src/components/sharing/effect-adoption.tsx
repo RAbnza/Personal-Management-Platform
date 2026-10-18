@@ -13,7 +13,7 @@ export function EffectAdoption({
   setup: PrivateSharingSetup;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="mx-auto max-w-4xl space-y-4 rounded-card bg-[var(--blue-surface)] p-5">
       <h1 className="text-2xl font-semibold">
         Review your private {p.sourceKind}
       </h1>

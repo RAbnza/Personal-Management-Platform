@@ -22,7 +22,7 @@ export default async function SpendingDetail({
         Private workspace unavailable. <Link href="/">Retry Dashboard</Link>
       </p>
     );
-  const { user, workspace, preference } = bootstrap;
+  const { user, workspace, preference, modules } = bootstrap;
   let data = null;
   try {
     data = await getSpendingDetail({
@@ -40,6 +40,7 @@ export default async function SpendingDetail({
       activePath="/"
       userName={user.name}
       userEmail={user.email}
+      modules={modules}
       workspaceTheme={preference.theme}
       workspacePreferenceVersion={preference.version}
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
@@ -57,14 +58,26 @@ export default async function SpendingDetail({
             title={`${data.period.startDate} through ${data.period.endDate}`}
             description="Signed posting contributions include original, reversal and replacement evidence. Refunds/waivers use their actual dates; cash principal and internal transfers are excluded."
           >
-            <p className="font-semibold">
-              Gross{" "}
-              {formatMoneyMinorUnits(data.currency, data.summary.grossMinor)} ·
-              Offsets{" "}
-              {formatMoneyMinorUnits(data.currency, data.summary.offsetsMinor)}{" "}
-              · Net{" "}
-              {formatMoneyMinorUnits(data.currency, data.summary.netMinor)}
-            </p>
+            <dl className="grid gap-3 sm:grid-cols-3">
+              {[
+                ["Gross spending", data.summary.grossMinor],
+                ["Offsets", data.summary.offsetsMinor],
+                ["Net recognized spending", data.summary.netMinor],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-card bg-surface-subtle p-5">
+                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dd className="mt-2 text-2xl font-semibold tabular-nums">
+                    {formatMoneyMinorUnits(data.currency, value!)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              className="action-link mt-3"
+              href={`/reports/financial?period=custom&startDate=${data.period.startDate}&endDate=${data.period.endDate}`}
+            >
+              Explore trends and categories for this period
+            </Link>
             <p className="my-3 text-sm text-muted-foreground">
               Tracked records only. Earlier history before account/debt opening
               cutoffs may be missing; consult Dashboard coverage. Financial

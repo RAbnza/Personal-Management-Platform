@@ -3,7 +3,7 @@
 **Prepared:** October 16, 2026, Asia/Manila  
 **Planning baseline (October 16):** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 and M3 implementation is complete on `feat/redesign-m2-m3` from merged M1 `a109b19`. Owner review and M6 acceptance remain pending; M4–M6 have not started.\
+**Status:** M1–M3 are owner-approved. M4 is implemented and checkpointed at `160ce15` on `feat/redesign-m4-m5`. M5 is implemented with focused verification on the same branch; owner visual review remains pending. M6 has not started.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -225,8 +225,8 @@ Use the project's code-output rule when creating or updating code/configuration 
 | M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
 | M2 | Implemented; owner review/M6 acceptance pending | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
 | M3 | Implemented; owner review/M6 acceptance pending | [Combined inventory and checks](REDESIGN_M2_M3_HANDOFF.md) |
-| M4        | Not started                               | No implementation claimed     |
-| M5        | Not started                               | No implementation claimed     |
+| M4 | Implemented and checkpointed (`160ce15`) | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
+| M5 | Implemented; focused checks passed; owner review pending | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
 | M6        | Not started                               | No acceptance results claimed |
 
-Next step: owner review of the actual M2/M3 implementation on `feat/redesign-m2-m3`. Both implementation/documentation checkpoints are complete. The branch is pushed for review only; no PR, merge or M4–M6 implementation is authorized by this checkpoint. Historical M1 evidence remains intact; no unperformed manual accessibility/device checks or broader acceptance are implied.
+Next step: owner visual review of the combined M4/M5 implementation on `feat/redesign-m4-m5`. The combined assignment authorizes M4 and M5 only; no merge, M6, production deployment or native/offline work is included. Historical evidence remains intact; no unperformed acceptance checks are implied.

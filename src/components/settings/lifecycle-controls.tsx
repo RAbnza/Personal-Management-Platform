@@ -175,10 +175,35 @@ export function LifecycleControls({
     time: "Calendar and reminder records",
     core: "Preferences, categories and save receipts",
     audit: "Private audit and activity history",
-    ops: "CSV export history",
+    ops: "Imports, exports and recovery records",
+    files: "Private attachment records",
+    planning: "Planning and forecast records",
+    tracker: "Trackers and immutable revisions",
   };
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
+      <ol
+        aria-label="Deletion review steps"
+        className="grid gap-2 sm:grid-cols-3"
+      >
+        {["Review scope", "Verify identity", "Explicit confirmation"].map(
+          (label, i) => (
+            <li
+              key={label}
+              aria-current={
+                (i === 0 && !review) ||
+                (i === 1 && review && !verified) ||
+                (i === 2 && verified)
+                  ? "step"
+                  : undefined
+              }
+              className="rounded-control bg-surface-subtle p-3 text-sm font-semibold"
+            >
+              {i + 1}. {label}
+            </li>
+          ),
+        )}
+      </ol>
       <Panel
         title="Account lifecycle"
         description="Workspace deletion also deletes this personal sign-in account after grace. Archive, correction and module hiding are separate actions."
@@ -253,12 +278,11 @@ export function LifecycleControls({
                   ))}
                 </dl>
               </details>
-              <p className="mt-4">
-                Also included: your profile, settings, credentials, recovery
-                tokens and every session. No uploaded files or server-stored CSV
-                files exist in this V1 release. There is no shared workspace
-                history in this release.
-              </p>
+              <div className="mt-4 space-y-3 rounded-card border border-warning bg-[var(--warm-surface)] p-4">
+                <p>{preview.manifest.identity}</p>
+                <p>{preview.manifest.files}</p>
+                <p>{preview.manifest.sharedHistory}</p>
+              </div>
               <p className="mt-3">
                 The seven-day grace period begins when the request commits. All
                 ordinary sessions are revoked. After signing in again, only

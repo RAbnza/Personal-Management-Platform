@@ -48,14 +48,15 @@ export default async function BillPage({
         Back to group
       </Link>
       {history.map((b, i) => (
-        <section
+        <details
+          open={i === 0}
           key={b.revisionId}
           className="space-y-3 rounded-card border border-border p-4"
         >
-          <h2 className="text-xl font-semibold">
+          <summary className="min-h-11 cursor-pointer text-xl font-semibold">
             {i === 0 ? "Current bill" : "Historical bill"} · Revision{" "}
             {b.revisionNo}
-          </h2>
+          </summary>
           <p>
             {b.expenseDate} · {formatMoneyMinorUnits("PHP", b.totalMinor)} ·{" "}
             {b.splitMethod} shares
@@ -63,16 +64,22 @@ export default async function BillPage({
           <h3 className="font-semibold">Payer contributions</h3>
           <ul>
             {b.contributions.map((p) => (
-              <li key={p.participantId}>
+              <li
+                key={p.participantId}
+                className="rounded-control bg-[var(--teal-surface)] p-3"
+              >
                 {name(p.participantId)}:{" "}
                 {formatMoneyMinorUnits("PHP", p.amountMinor)}
               </li>
             ))}
           </ul>
           <h3 className="font-semibold">Participant shares</h3>
-          <ul>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {b.shares.map((p) => (
-              <li key={p.participantId}>
+              <li
+                key={p.participantId}
+                className="rounded-control bg-[var(--teal-surface)] p-3"
+              >
                 {name(p.participantId)}:{" "}
                 {formatMoneyMinorUnits("PHP", p.amountMinor)}
                 {p.roundingExtraMinor ? " · extra centavo" : ""}
@@ -84,7 +91,10 @@ export default async function BillPage({
           </h3>
           <ul>
             {b.positions.map((p) => (
-              <li key={p.participantId}>
+              <li
+                key={p.participantId}
+                className="rounded-control bg-[var(--teal-surface)] p-3"
+              >
                 {name(p.participantId)}:{" "}
                 {formatMoneyMinorUnits("PHP", p.netMinor)} · positive gets back,
                 negative owes
@@ -93,7 +103,7 @@ export default async function BillPage({
           </ul>
           {b.reason && <p>Revision reason: {b.reason}</p>}
           {b.notes && <p className="whitespace-pre-wrap">{b.notes}</p>}
-        </section>
+        </details>
       ))}
       <RefundPanel
         data={data}

@@ -37,7 +37,7 @@ export function InvitationReviewForm() {
     }
   }
   return (
-    <section className="space-y-5">
+    <section className="mx-auto max-w-4xl space-y-5 rounded-card bg-surface-subtle p-5">
       <h1 className="text-2xl font-semibold">Review group invitation</h1>
       <p>
         Sign in with the verified email that received this invitation. Display

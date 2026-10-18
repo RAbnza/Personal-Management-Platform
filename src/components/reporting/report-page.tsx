@@ -112,6 +112,7 @@ export async function ReportPage({
       activePath="/reports"
       userName={user.name}
       userEmail={user.email}
+      modules={modules}
       workspaceTheme={preference.theme}
       workspacePreferenceVersion={preference.version}
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
