@@ -59,6 +59,7 @@ const agendaCursorSchema = z
     endDate: calendarDateSchema,
 
     modules: agendaModulesSchema,
+    overlap: z.boolean().default(false),
   })
   .strict()
   .superRefine((cursor, context) => {
@@ -96,6 +97,7 @@ const listAgendaItemsInputSchema = z
     ]),
 
     pageSize: z.number().int().min(1).max(200).default(100),
+    overlap: z.boolean().default(false),
 
     cursor: z.string().min(1).max(4096).optional(),
   })
@@ -217,6 +219,7 @@ export class AgendaWorkspaceUnavailableError extends Error {
 }
 
 type NormalizedListAgendaItemsInput = {
+  overlap: boolean;
   userId: string;
   workspaceId: string;
 
@@ -231,6 +234,7 @@ type NormalizedListAgendaItemsInput = {
 };
 
 type AgendaCursorFilters = {
+  overlap: boolean;
   startDate: CalendarDate;
   endDate: CalendarDate;
 
@@ -276,6 +280,7 @@ function encodeAgendaCursor(
       endDate: filters.endDate,
 
       modules: filters.modules,
+      overlap: filters.overlap,
     }),
     "utf8",
   ).toString("base64url");
@@ -297,6 +302,7 @@ function decodeAgendaCursor(
     if (
       parsed.startDate !== filters.startDate ||
       parsed.endDate !== filters.endDate ||
+      parsed.overlap !== filters.overlap ||
       !sameModules(parsedModules, filters.modules)
     ) {
       throw new InvalidAgendaCursorError();
@@ -330,6 +336,13 @@ function normalizeListAgendaItemsInput(
 
   const endDate = parseCalendarDate(parsed.endDate);
 
+  if (
+    parsed.overlap &&
+    (Date.parse(endDate) - Date.parse(startDate)) / 86400000 > 62
+  ) {
+    throw new RangeError("Calendar overlap reads are limited to 63 days.");
+  }
+
   if (compareCalendarDates(startDate, endDate) > 0) {
     throw new RangeError(
       "Agenda end date cannot be earlier than the start date.",
@@ -339,6 +352,7 @@ function normalizeListAgendaItemsInput(
   const modules = normalizeModules(parsed.modules);
 
   const filters: AgendaCursorFilters = {
+    overlap: parsed.overlap,
     startDate,
     endDate,
     modules,
@@ -346,6 +360,7 @@ function normalizeListAgendaItemsInput(
 
   return {
     userId: parsed.userId,
+    overlap: parsed.overlap,
     workspaceId: parsed.workspaceId,
 
     startDate,
@@ -524,6 +539,7 @@ async function executeListAgendaItems(
     modules: input.modules,
 
     limit: input.pageSize + 1,
+    overlap: input.overlap,
 
     cursor: input.cursor,
   });
@@ -667,6 +683,7 @@ async function executeListAgendaItems(
         endDate: input.endDate,
 
         modules: input.modules,
+        overlap: input.overlap,
       },
     );
   }

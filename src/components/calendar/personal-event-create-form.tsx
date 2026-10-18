@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TZDate } from "@date-fns/tz";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -252,10 +252,16 @@ async function postPersonalEvent(
 
 export interface PersonalEventCreateFormProps {
   workspaceTimezone: string;
+  initialDate?: string;
+  onCreated?: () => void;
+  onLockChange?: (locked: boolean) => void;
 }
 
 export function PersonalEventCreateForm({
   workspaceTimezone,
+  initialDate = "",
+  onCreated,
+  onLockChange,
 }: PersonalEventCreateFormProps) {
   const router = useRouter();
 
@@ -265,6 +271,9 @@ export function PersonalEventCreateForm({
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
   const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => {
+    onLockChange?.(saveState === "saving" || saveState === "unconfirmed");
+  }, [saveState, onLockChange]);
 
   const {
     register,
@@ -280,11 +289,11 @@ export function PersonalEventCreateForm({
 
       temporalKind: "date",
 
-      eventDate: "",
+      eventDate: initialDate,
 
       endDateExclusive: "",
 
-      startsLocal: "",
+      startsLocal: initialDate ? `${initialDate}T09:00` : "",
 
       endsLocal: "",
 
@@ -321,6 +330,7 @@ export function PersonalEventCreateForm({
         setSaveState("saved");
 
         router.refresh();
+        onCreated?.();
 
         return;
       }
@@ -554,116 +564,130 @@ export function PersonalEventCreateForm({
               />
             </FormField>
           )}
-
-          {temporalKind === "date" ? (
-            <FormField
-              htmlFor="personal-event-end-date"
-              label="Ends before"
-              description="Optional. For a multi-day event, enter the first date that is not part of the event."
-              descriptionId="personal-event-end-date-description"
-              error={errors.endDateExclusive?.message}
-              errorId="personal-event-end-date-error"
-            >
-              <Input
-                {...register("endDateExclusive")}
-                id="personal-event-end-date"
-                type="date"
-                disabled={fieldsDisabled}
-                aria-invalid={Boolean(errors.endDateExclusive)}
-                aria-describedby={[
-                  "personal-event-end-date-description",
-                  errors.endDateExclusive
-                    ? "personal-event-end-date-error"
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              />
-            </FormField>
-          ) : (
-            <FormField
-              htmlFor="personal-event-end"
-              label="End"
-              description="Optional."
-              descriptionId="personal-event-end-description"
-              error={errors.endsLocal?.message}
-              errorId="personal-event-end-error"
-            >
-              <Input
-                {...register("endsLocal")}
-                id="personal-event-end"
-                type="datetime-local"
-                disabled={fieldsDisabled}
-                aria-invalid={Boolean(errors.endsLocal)}
-                aria-describedby={[
-                  "personal-event-end-description",
-                  errors.endsLocal ? "personal-event-end-error" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              />
-            </FormField>
+        </div>
+        <details
+          className="rounded-control border border-border p-3"
+          open={Boolean(
+            errors.endDateExclusive ||
+            errors.endsLocal ||
+            errors.referenceUrl ||
+            errors.description,
           )}
+        >
+          <summary className="min-h-11 cursor-pointer text-sm font-semibold">
+            End time, location and notes
+          </summary>
+          <div className="grid gap-5 md:grid-cols-2">
+            {temporalKind === "date" ? (
+              <FormField
+                htmlFor="personal-event-end-date"
+                label="Ends before"
+                description="Optional. For a multi-day event, enter the first date that is not part of the event."
+                descriptionId="personal-event-end-date-description"
+                error={errors.endDateExclusive?.message}
+                errorId="personal-event-end-date-error"
+              >
+                <Input
+                  {...register("endDateExclusive")}
+                  id="personal-event-end-date"
+                  type="date"
+                  disabled={fieldsDisabled}
+                  aria-invalid={Boolean(errors.endDateExclusive)}
+                  aria-describedby={[
+                    "personal-event-end-date-description",
+                    errors.endDateExclusive
+                      ? "personal-event-end-date-error"
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                />
+              </FormField>
+            ) : (
+              <FormField
+                htmlFor="personal-event-end"
+                label="End"
+                description="Optional."
+                descriptionId="personal-event-end-description"
+                error={errors.endsLocal?.message}
+                errorId="personal-event-end-error"
+              >
+                <Input
+                  {...register("endsLocal")}
+                  id="personal-event-end"
+                  type="datetime-local"
+                  disabled={fieldsDisabled}
+                  aria-invalid={Boolean(errors.endsLocal)}
+                  aria-describedby={[
+                    "personal-event-end-description",
+                    errors.endsLocal ? "personal-event-end-error" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                />
+              </FormField>
+            )}
+
+            <FormField
+              htmlFor="personal-event-location"
+              label="Location"
+              description="Optional."
+              descriptionId="personal-event-location-description"
+            >
+              <Input
+                {...register("location")}
+                id="personal-event-location"
+                disabled={fieldsDisabled}
+                aria-describedby="personal-event-location-description"
+              />
+            </FormField>
+
+            <FormField
+              htmlFor="personal-event-reference"
+              label="Reference URL"
+              description="Optional HTTP or HTTPS link related to this event."
+              descriptionId="personal-event-reference-description"
+              error={errors.referenceUrl?.message}
+              errorId="personal-event-reference-error"
+            >
+              <Input
+                {...register("referenceUrl")}
+                id="personal-event-reference"
+                type="url"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.referenceUrl)}
+                aria-describedby={[
+                  "personal-event-reference-description",
+                  errors.referenceUrl ? "personal-event-reference-error" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+          </div>
 
           <FormField
-            htmlFor="personal-event-location"
-            label="Location"
-            description="Optional."
-            descriptionId="personal-event-location-description"
+            htmlFor="personal-event-description"
+            label="Description"
+            description="Optional context, preparation, or reminder details."
+            descriptionId="personal-event-description-description"
+            error={errors.description?.message}
+            errorId="personal-event-description-error"
           >
-            <Input
-              {...register("location")}
-              id="personal-event-location"
+            <Textarea
+              {...register("description")}
+              id="personal-event-description"
               disabled={fieldsDisabled}
-              aria-describedby="personal-event-location-description"
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="personal-event-reference"
-            label="Reference URL"
-            description="Optional HTTP or HTTPS link related to this event."
-            descriptionId="personal-event-reference-description"
-            error={errors.referenceUrl?.message}
-            errorId="personal-event-reference-error"
-          >
-            <Input
-              {...register("referenceUrl")}
-              id="personal-event-reference"
-              type="url"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.referenceUrl)}
+              aria-invalid={Boolean(errors.description)}
               aria-describedby={[
-                "personal-event-reference-description",
-                errors.referenceUrl ? "personal-event-reference-error" : null,
+                "personal-event-description-description",
+                errors.description ? "personal-event-description-error" : null,
               ]
                 .filter(Boolean)
                 .join(" ")}
             />
           </FormField>
-        </div>
-
-        <FormField
-          htmlFor="personal-event-description"
-          label="Description"
-          description="Optional context, preparation, or reminder details."
-          descriptionId="personal-event-description-description"
-          error={errors.description?.message}
-          errorId="personal-event-description-error"
-        >
-          <Textarea
-            {...register("description")}
-            id="personal-event-description"
-            disabled={fieldsDisabled}
-            aria-invalid={Boolean(errors.description)}
-            aria-describedby={[
-              "personal-event-description-description",
-              errors.description ? "personal-event-description-error" : null,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          />
-        </FormField>
+        </details>
 
         {saveState === "unconfirmed" ? (
           <div

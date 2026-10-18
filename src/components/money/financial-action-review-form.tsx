@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useClientReady } from "@/shared/use-client-ready";
+import { ScreenHeader } from "@/components/patterns/work-area";
+import { TaskStage } from "./task-stage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
@@ -235,6 +237,8 @@ export function FinancialActionReviewForm({
   categories: Category[];
   today: string;
 }) {
+  const taskTrigger = useRef<HTMLElement | null>(null);
+  const [taskOpen, setTaskOpen] = useState(false);
   const [accounts] = useState(() => structuredClone(providedAccounts)),
     [categories] = useState(() => structuredClone(providedCategories)),
     [detail] = useState(() => structuredClone(provided)),
@@ -285,6 +289,11 @@ export function FinancialActionReviewForm({
     };
   }, [stage]);
   function selectMode(value: typeof mode) {
+    taskTrigger.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setTaskOpen(true);
     setMode(value);
     setReason("");
     setAck(false);
@@ -326,12 +335,35 @@ export function FinancialActionReviewForm({
     value: Draft,
     onChange: (v: Draft) => void,
     prefix: string,
+    readOnly = false,
   ) {
     return Object.entries(value)
       .filter(([key]) => !hidden.has(key) && key !== "purchaseActionId")
       .map(([key, v]) => {
         const name = labels[key] ?? key,
           id = `${prefix}-${key}`;
+        if (readOnly && Array.isArray(v))
+          return (
+            <section
+              key={key}
+              className="space-y-3 border-t border-border pt-3"
+            >
+              <h5 className="font-semibold">{name}</h5>
+              {v.map((row, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 border-l-2 border-border pl-3"
+                >
+                  {renderFields(
+                    row as Draft,
+                    () => {},
+                    `${prefix}-${key}-${index}`,
+                    true,
+                  )}
+                </div>
+              ))}
+            </section>
+          );
         if (Array.isArray(v))
           return (
             <fieldset
@@ -480,6 +512,22 @@ export function FinancialActionReviewForm({
                           id: o,
                           name: o.replaceAll("_", " "),
                         }));
+        if (readOnly)
+          return (
+            <dl key={key}>
+              <div className="flex flex-wrap justify-between gap-x-5 gap-y-1 border-b border-border py-2 text-sm">
+                <dt className="text-muted-foreground">{name}</dt>
+                <dd className="min-w-0 whitespace-pre-wrap font-medium">
+                  {choices?.find((c) => c.id === v)?.name ??
+                    (v === null || v === ""
+                      ? category
+                        ? "Uncategorized"
+                        : "None"
+                      : `${key.endsWith("Minor") ? detail.current.currency + " " : ""}${String(v)}`)}
+                </dd>
+              </div>
+            </dl>
+          );
         return (
           <label key={key} htmlFor={id} className="block space-y-1 text-sm">
             <span>{name}</span>
@@ -670,324 +718,375 @@ export function FinancialActionReviewForm({
         })
         .filter((r) => r.old !== 0n || r.next !== 0n)
     : [];
+  function closeTask() {
+    setTaskOpen(false);
+    requestAnimationFrame(() =>
+      taskTrigger.current?.focus({ preventScroll: true }),
+    );
+  }
   return (
-    <Panel
-      title="Review financial evidence"
-      description="Corrections preserve originals, reverse their signed classifications at their original dates, and post replacement economics at the corrected dates. Genuine refunds retain the purchase and use their actual later date."
-    >
-      {changed && (
-        <p role="alert">
-          Financial evidence changed. Reload this page before reviewing another
-          command.
-        </p>
+    <div data-financial-task={taskOpen} className="space-y-5">
+      {taskOpen && (
+        <ScreenHeader
+          scope={`Money / ${mode === "correct" ? "Correct entry" : mode === "reverse" ? "Reverse entry" : mode === "refund" ? "Genuine refund" : "Resolve payment clearing"}`}
+          title={detail.current.description}
+        />
       )}
-      <div className="space-y-5">
-        <div className="flex flex-wrap gap-3">
-          {detail.replacement && (
+      <Panel
+        title="Review financial evidence"
+        description="Corrections preserve originals, reverse their signed classifications at their original dates, and post replacement economics at the corrected dates. Genuine refunds retain the purchase and use their actual later date."
+      >
+        {changed && (
+          <p role="alert">
+            Financial evidence changed. Reload this page before reviewing
+            another command.
+          </p>
+        )}
+        <div className="space-y-5">
+          <div className="flex flex-wrap gap-3">
+            {detail.replacement && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={locked || Boolean(detail.correctionUnavailableReason)}
+                onClick={() => selectMode("correct")}
+              >
+                Correct entry
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
-              disabled={locked || Boolean(detail.correctionUnavailableReason)}
-              onClick={() => selectMode("correct")}
+              disabled={locked || Boolean(detail.reversalUnavailableReason)}
+              onClick={() => selectMode("reverse")}
             >
-              Correct entry
+              Reverse entry
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={locked || Boolean(detail.reversalUnavailableReason)}
-            onClick={() => selectMode("reverse")}
-          >
-            Reverse entry
-          </Button>
-          {detail.current.actionKind !== "refund" &&
-            detail.refundSources.length > 0 && (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={locked}
-                onClick={() => selectMode("refund")}
-              >
-                Record genuine refund
-              </Button>
-            )}
-          {detail.current.actionKind === "debt_payment" &&
-            detail.clearingSources.some(
-              (c) => BigInt(c.remainingMinor) > 0n,
-            ) && (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={locked}
-                onClick={() => selectMode("resolve")}
-              >
-                Resolve payment clearing
-              </Button>
-            )}
-        </div>
-        {(detail.correctionUnavailableReason ||
-          detail.reversalUnavailableReason) && (
-          <p role="status">
-            {detail.correctionUnavailableReason ??
-              detail.reversalUnavailableReason}
-          </p>
-        )}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            review();
-          }}
-          className="space-y-4"
-        >
-          <p>
-            Selected action:{" "}
-            {mode === "resolve"
-              ? "Later provider-confirmed classification with zero cash movement"
-              : mode === "refund"
-                ? "Genuine later refund"
-                : mode === "reverse"
-                  ? "Explicit reversal"
-                  : "Correction and replacement"}
-          </p>
-          {draft.actionKind === "debt_payment" &&
-            detail.current.evidence.scheduleVersionId !==
-              draft.scheduleVersionId && (
-              <p>
-                Review every contractual allocation below. Changing this mapped
-                payment amount or allocation creates an allocation-correction
-                schedule version with the same obligations, dates and terms.
-                Previous schedules and allocation maps remain in history.
-              </p>
-            )}
-          {mode !== "reverse" && renderFields(draft, edit, "financial-edit")}
-          {mode !== "refund" && (
-            <label className="block">
-              Required reason
-              <Input
-                disabled={locked}
-                value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                  setAck(false);
-                }}
-              />
-            </label>
-          )}
-          <label className="flex items-start gap-3 rounded-md border border-warning p-3">
-            <input
-              type="checkbox"
-              disabled={locked}
-              checked={ack}
-              onChange={(e) => setAck(e.target.checked)}
-            />
-            <span>
-              I explicitly acknowledge that this genuine command may create a
-              negative tracked balance, including in a historical period. This
-              acknowledgement is preserved with the command.
-            </span>
-          </label>
-          {stage === "editing" && (
-            <Button
-              type="submit"
-              disabled={
-                !clientReady ||
-                changed ||
-                (mode === "correct" &&
-                  (!detail.replacement ||
-                    Boolean(detail.correctionUnavailableReason))) ||
-                (mode === "reverse" &&
-                  Boolean(detail.reversalUnavailableReason))
-              }
-            >
-              Review exact changes
-            </Button>
-          )}
-        </form>
-        {pending && (
-          <section
-            aria-label="Exact financial review"
-            className="space-y-4 rounded-md border border-border p-4"
-          >
-            <h3 className="font-semibold">Exact financial review</h3>
-            <p>
-              {mode === "resolve"
-                ? `Original payment remains on ${detail.current.effectiveDate}; this classification creates no cash movement.`
-                : mode === "refund"
-                  ? `Original purchase remains on ${detail.current.effectiveDate}.`
-                  : `Cancel the current economics at their original dates, including ${detail.current.effectiveDate}.`}{" "}
-              {mode !== "reverse" &&
-                `New effective date: ${String(draft.paymentDate ?? draft.effectiveDate)}.`}
-            </p>
-            <p>Reason: {reason || "Genuine later refund"}</p>
-            {detail.current.actionKind === "card_purchase" && (
-              <div className="space-y-2 rounded-md border border-border p-3">
-                <p>
-                  Cash movement:{" "}
-                  {formatMoneyMinorUnits(detail.current.currency, "0")}. Card
-                  liability and category spending change together.
-                </p>
-                <p>
-                  Original purchase:{" "}
-                  {formatMoneyMinorUnits(
-                    detail.current.currency,
-                    String(detail.current.evidence.purchaseMinor),
-                  )}{" "}
-                  · Provider posted{" "}
-                  {String(detail.current.evidence.postingDate)}.
-                </p>
-                <p>
-                  {mode === "reverse"
-                    ? "Reverse the original purchase amount in full."
-                    : `Replacement purchase: ${String(draft.purchaseMinor)} ${detail.current.currency} · Provider posted ${String(draft.postingDate)} · Card ${cards.find((c) => c.cardId === draft.cardId)?.name ?? "Unavailable"}.`}
-                </p>
-              </div>
-            )}
-            <p>
-              Backdated changes affect historical balances, category spending
-              and reconciliation comparisons. Previously verified affected
-              comparisons will need review.
-            </p>
-            <table className="w-full text-left text-sm">
-              <caption>Current account balance after this command</caption>
-              <thead>
-                <tr>
-                  <th>Account</th>
-                  <th>Before</th>
-                  <th>After</th>
-                </tr>
-              </thead>
-              <tbody>
-                {balances.map((r) => (
-                  <tr key={r.account.accountId}>
-                    <td>{r.account.name}</td>
-                    <td>
-                      {formatMoneyMinorUnits(
-                        r.account.currency,
-                        r.account.currentBalanceMinor,
-                      )}
-                    </td>
-                    <td>
-                      {formatMoneyMinorUnits(
-                        r.account.currency,
-                        r.after.toString(),
-                      )}
-                      {r.after < 0n ? " — negative balance" : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <ul>
-              {pending.effects.map((e, i) => (
-                <li key={i}>
-                  {accounts.find((a) => a.accountId === e.accountId)?.name ??
-                    "Account"}
-                  :{" "}
-                  {formatMoneyMinorUnits(
-                    detail.current.currency,
-                    e.signedMinor,
-                  )}{" "}
-                  effective {e.effectiveDate}
-                </li>
-              ))}
-            </ul>
-            {detail.replacement && (
-              <div
-                aria-label="Before accounting and current contractual allocation"
-                className="space-y-2 rounded-md border border-border p-3"
-              >
-                <h4 className="font-semibold">
-                  Before accounting and current contractual allocation
-                </h4>
-                {renderFields(
-                  transform(detail.replacement, false) as Draft,
-                  () => {},
-                  "financial-before",
-                )}
-              </div>
-            )}
-            {mode !== "reverse" && (
-              <div
-                aria-label="Reviewed replacement or later action"
-                className="space-y-2 rounded-md border border-border p-3"
-              >
-                <h4 className="font-semibold">
-                  {mode === "correct" ? "Replacement" : "New later action"}
-                </h4>
-                {renderFields(draft, () => {}, "financial-review")}
-              </div>
-            )}
-            <p>
-              Principal repayment is not spending. Only newly recognized
-              interest and fees are expenses. A purchase or fee refund offsets
-              spending and creates no income.
-            </p>
-            {(draft.actionKind === "payment_reclassification" ||
-              draft.actionKind === "debt_charge") && (
-              <p>
-                Confirm that the provider supplied the amounts and accounting
-                classification shown above.
-              </p>
-            )}
-            <label className="flex gap-3">
-              <input
-                type="checkbox"
-                disabled={stage !== "reviewing"}
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              <span>
-                I confirm the exact dates, account effects, category and
-                accounting components, and all visible contractual allocations
-                and explicit unapplied amounts.
-              </span>
-            </label>
-            {stage === "reviewing" && (
-              <div className="flex gap-3">
+            {detail.current.actionKind !== "refund" &&
+              detail.refundSources.length > 0 && (
                 <Button
-                  disabled={
-                    !confirmed || (balances.some((r) => r.after < 0n) && !ack)
-                  }
-                  onClick={() => void save()}
-                >
-                  Confirm and save
-                </Button>
-                <Button
+                  type="button"
                   variant="secondary"
-                  onClick={() => {
-                    setStage("editing");
-                    setPending(null);
-                    setAck(false);
-                    setConfirmed(false);
-                  }}
+                  disabled={locked}
+                  onClick={() => selectMode("refund")}
                 >
-                  Edit review
+                  Record genuine refund
                 </Button>
-              </div>
-            )}
-            {stage === "unconfirmed" && (
-              <Button onClick={() => void save()}>
-                Retry identical command
+              )}
+            {detail.current.actionKind === "debt_payment" &&
+              detail.clearingSources.some(
+                (c) => BigInt(c.remainingMinor) > 0n,
+              ) && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={locked}
+                  onClick={() => selectMode("resolve")}
+                >
+                  Resolve payment clearing
+                </Button>
+              )}
+          </div>
+          {(detail.correctionUnavailableReason ||
+            detail.reversalUnavailableReason) && (
+            <p role="status">
+              {detail.correctionUnavailableReason ??
+                detail.reversalUnavailableReason}
+            </p>
+          )}
+          <div hidden={!taskOpen} className="space-y-5">
+            {stage === "editing" && (
+              <Button type="button" variant="secondary" onClick={closeTask}>
+                Back to action details
               </Button>
             )}
-          </section>
-        )}
-        {error && <p role="alert">{error}</p>}
-        {stage === "saving" && <p role="status">Saving financial command…</p>}
-        {stage === "saved" && (
-          <p role="status">
-            Financial command saved. Reload to view the current revision and
-            preserved history.
-          </p>
-        )}
-        {stage === "stale" && (
-          <p role="status">
-            Reload and review current financial evidence before issuing a new
-            command.
-          </p>
-        )}
-      </div>
-    </Panel>
+            <TaskStage active={taskOpen} reviewing={stage !== "editing"} />
+            <form
+              hidden={stage !== "editing"}
+              data-financial-entry=""
+              onSubmit={(e) => {
+                e.preventDefault();
+                review();
+              }}
+              className="space-y-4"
+            >
+              <p>
+                Selected action:{" "}
+                {mode === "resolve"
+                  ? "Later provider-confirmed classification with zero cash movement"
+                  : mode === "refund"
+                    ? "Genuine later refund"
+                    : mode === "reverse"
+                      ? "Explicit reversal"
+                      : "Correction and replacement"}
+              </p>
+              {draft.actionKind === "debt_payment" &&
+                detail.current.evidence.scheduleVersionId !==
+                  draft.scheduleVersionId && (
+                  <p>
+                    Review every contractual allocation below. Changing this
+                    mapped payment amount or allocation creates an
+                    allocation-correction schedule version with the same
+                    obligations, dates and terms. Previous schedules and
+                    allocation maps remain in history.
+                  </p>
+                )}
+              {mode !== "reverse" &&
+                renderFields(draft, edit, "financial-edit")}
+              {mode !== "refund" && (
+                <label className="block">
+                  Required reason
+                  <Input
+                    disabled={locked}
+                    value={reason}
+                    onChange={(e) => {
+                      setReason(e.target.value);
+                      setAck(false);
+                    }}
+                  />
+                </label>
+              )}
+              <label className="flex items-start gap-3 rounded-md border border-warning p-3">
+                <input
+                  type="checkbox"
+                  disabled={locked}
+                  checked={ack}
+                  onChange={(e) => setAck(e.target.checked)}
+                />
+                <span>
+                  I explicitly acknowledge that this genuine command may create
+                  a negative tracked balance, including in a historical period.
+                  This acknowledgement is preserved with the command.
+                </span>
+              </label>
+              {stage === "editing" && (
+                <Button
+                  type="submit"
+                  disabled={
+                    !clientReady ||
+                    changed ||
+                    (mode === "correct" &&
+                      (!detail.replacement ||
+                        Boolean(detail.correctionUnavailableReason))) ||
+                    (mode === "reverse" &&
+                      Boolean(detail.reversalUnavailableReason))
+                  }
+                >
+                  Review exact changes
+                </Button>
+              )}
+            </form>
+            {pending && (
+              <section
+                aria-label="Exact financial review"
+                className="space-y-4 rounded-md border border-border p-4"
+              >
+                <h3 className="font-semibold">Exact financial review</h3>
+                <p>
+                  {mode === "resolve"
+                    ? `Original payment remains on ${detail.current.effectiveDate}; this classification creates no cash movement.`
+                    : mode === "refund"
+                      ? `Original purchase remains on ${detail.current.effectiveDate}.`
+                      : `Cancel the current economics at their original dates, including ${detail.current.effectiveDate}.`}{" "}
+                  {mode !== "reverse" &&
+                    `New effective date: ${String(draft.paymentDate ?? draft.effectiveDate)}.`}
+                </p>
+                <p>Reason: {reason || "Genuine later refund"}</p>
+                {detail.current.actionKind === "card_purchase" && (
+                  <div className="space-y-2 rounded-md border border-border p-3">
+                    <p>
+                      Cash movement:{" "}
+                      {formatMoneyMinorUnits(detail.current.currency, "0")}.
+                      Card liability and category spending change together.
+                    </p>
+                    <p>
+                      Original purchase:{" "}
+                      {formatMoneyMinorUnits(
+                        detail.current.currency,
+                        String(detail.current.evidence.purchaseMinor),
+                      )}{" "}
+                      · Provider posted{" "}
+                      {String(detail.current.evidence.postingDate)}.
+                    </p>
+                    <p>
+                      {mode === "reverse"
+                        ? "Reverse the original purchase amount in full."
+                        : `Replacement purchase: ${String(draft.purchaseMinor)} ${detail.current.currency} · Provider posted ${String(draft.postingDate)} · Card ${cards.find((c) => c.cardId === draft.cardId)?.name ?? "Unavailable"}.`}
+                    </p>
+                  </div>
+                )}
+                <p>
+                  Backdated changes affect historical balances, category
+                  spending and reconciliation comparisons. Previously verified
+                  affected comparisons will need review.
+                </p>
+                <div
+                  role="region"
+                  aria-label="Financial evidence table"
+                  tabIndex={0}
+                  className="max-w-full overflow-x-auto rounded-panel border border-border"
+                >
+                  <table className="w-full text-left text-sm">
+                    <caption>
+                      Current account balance after this command
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th>Account</th>
+                        <th>Before</th>
+                        <th>After</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {balances.map((r) => (
+                        <tr key={r.account.accountId}>
+                          <td>{r.account.name}</td>
+                          <td>
+                            {formatMoneyMinorUnits(
+                              r.account.currency,
+                              r.account.currentBalanceMinor,
+                            )}
+                          </td>
+                          <td>
+                            {formatMoneyMinorUnits(
+                              r.account.currency,
+                              r.after.toString(),
+                            )}
+                            {r.after < 0n ? " — negative balance" : ""}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <ul>
+                  {pending.effects.map((e, i) => (
+                    <li key={i}>
+                      {accounts.find((a) => a.accountId === e.accountId)
+                        ?.name ?? "Account"}
+                      :{" "}
+                      {formatMoneyMinorUnits(
+                        detail.current.currency,
+                        e.signedMinor,
+                      )}{" "}
+                      effective {e.effectiveDate}
+                    </li>
+                  ))}
+                </ul>
+                {detail.replacement && (
+                  <div
+                    aria-label="Before accounting and current contractual allocation"
+                    className="space-y-2 rounded-md border border-border p-3"
+                  >
+                    <h4 className="font-semibold">
+                      Before accounting and current contractual allocation
+                    </h4>
+                    {renderFields(
+                      transform(detail.replacement, false) as Draft,
+                      () => {},
+                      "financial-before",
+                      true,
+                    )}
+                  </div>
+                )}
+                {mode !== "reverse" && (
+                  <div
+                    aria-label="Reviewed replacement or later action"
+                    className="space-y-2 rounded-md border border-border p-3"
+                  >
+                    <h4 className="font-semibold">
+                      {mode === "correct" ? "Replacement" : "New later action"}
+                    </h4>
+                    {renderFields(draft, () => {}, "financial-review", true)}
+                  </div>
+                )}
+                <p>
+                  Principal repayment is not spending. Only newly recognized
+                  interest and fees are expenses. A purchase or fee refund
+                  offsets spending and creates no income.
+                </p>
+                {(draft.actionKind === "payment_reclassification" ||
+                  draft.actionKind === "debt_charge") && (
+                  <p>
+                    Confirm that the provider supplied the amounts and
+                    accounting classification shown above.
+                  </p>
+                )}
+                <label className="flex gap-3">
+                  <input
+                    type="checkbox"
+                    disabled={stage !== "reviewing"}
+                    checked={confirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                  />
+                  <span>
+                    I confirm the exact dates, account effects, category and
+                    accounting components, and all visible contractual
+                    allocations and explicit unapplied amounts.
+                  </span>
+                </label>
+                {stage === "reviewing" && (
+                  <div className="flex gap-3">
+                    <Button
+                      disabled={
+                        !confirmed ||
+                        (balances.some((r) => r.after < 0n) && !ack)
+                      }
+                      onClick={() => void save()}
+                    >
+                      Confirm and save
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setStage("editing");
+                        setPending(null);
+                        setAck(false);
+                        setConfirmed(false);
+                      }}
+                    >
+                      Edit review
+                    </Button>
+                  </div>
+                )}
+                {stage === "unconfirmed" && (
+                  <Button onClick={() => void save()}>
+                    Retry identical command
+                  </Button>
+                )}
+              </section>
+            )}
+            {error && <p role="alert">{error}</p>}
+            {stage === "saving" && (
+              <p role="status">Saving financial command…</p>
+            )}
+            {stage === "saved" && (
+              <p role="status">
+                Financial command saved. Reload to view the current revision and
+                preserved history.{" "}
+                <a
+                  className="action-link"
+                  href={`/money/actions/${detail.current.actionId}`}
+                >
+                  View updated action
+                </a>
+              </p>
+            )}
+            {stage === "stale" && (
+              <p role="status">
+                Reload and review current financial evidence before issuing a
+                new command.{" "}
+                <a
+                  className="action-link"
+                  href={`/money/actions/${detail.current.actionId}`}
+                >
+                  Reload current evidence
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+      </Panel>
+    </div>
   );
 }

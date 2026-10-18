@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -40,7 +42,7 @@ export default async function OccurrencePage({
       <Panel title="Recurring occurrence unavailable">
         <Link
           href={`/money/recurring/occurrences/${occurrenceId}`}
-          className="text-link underline"
+          className="action-link"
         >
           Retry this occurrence
         </Link>
@@ -51,15 +53,25 @@ export default async function OccurrencePage({
     editable = o.state === "planned" || o.state === "linked";
   return (
     <div className="space-y-6">
-      <Link
-        href={`/money/recurring/${data.root.id}`}
-        className="inline-block min-h-11 max-w-full break-words text-link underline"
-      >
+      <Link href={`/money/recurring/${data.root.id}`} className="action-link">
         Back to {data.root.name}
       </Link>
-      <h1 className="text-2xl font-semibold">
-        {data.root.name} · {o.due_date}
-      </h1>
+      <BreadcrumbRecords
+        path={`/money/recurring/occurrences/${occurrenceId}`}
+        labels={{
+          [`/money/recurring/occurrences/${occurrenceId}`]: o.due_date,
+        }}
+        parents={[
+          { label: "Home", href: "/" },
+          { label: "Money", href: "/money/actions" },
+          { label: "Recurring", href: "/money/recurring" },
+          { label: data.root.name, href: `/money/recurring/${data.root.id}` },
+        ]}
+      />
+      <ScreenHeader
+        scope="Money / Recurring"
+        title={`${data.root.name} · ${o.due_date}`}
+      />
       <Panel
         title="Planned occurrence"
         description="Expected evidence does not move money."
@@ -103,7 +115,7 @@ export default async function OccurrencePage({
           Choose an eligible existing actual transaction below, or{" "}
           <Link
             href={`/money/transactions?recurringOccurrenceId=${occurrenceId}`}
-            className="text-link underline"
+            className="action-link"
           >
             Record actual payment or receipt
           </Link>
@@ -115,7 +127,7 @@ export default async function OccurrencePage({
       <p>
         <Link
           href={`/calendar/reminders/expected_occurrence/${occurrenceId}`}
-          className="inline-flex min-h-11 items-center text-link underline"
+          className="action-link"
         >
           Manage occurrence reminders
         </Link>
@@ -128,7 +140,7 @@ export default async function OccurrencePage({
         {data.nextActualCursor && (
           <Link
             href={`/money/recurring/occurrences/${occurrenceId}?actualCursor=${data.nextActualCursor}${q.preferredActionId ? `&preferredActionId=${q.preferredActionId}` : ""}`}
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Next eligible actual transactions
           </Link>
@@ -150,7 +162,7 @@ export default async function OccurrencePage({
               ·{" "}
               <Link
                 href={`/money/actions/${l.actionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 Actual transaction history
               </Link>

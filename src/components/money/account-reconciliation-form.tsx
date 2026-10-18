@@ -327,7 +327,7 @@ export function AccountReconciliationForm({
         stage !== "saved" ? (
           <p role="alert" className="mt-4">
             The account snapshot changed.{" "}
-            <Link href={page} className="text-link underline">
+            <Link href={page} className="action-link">
               Reload and review fresh information
             </Link>
             .
@@ -340,15 +340,12 @@ export function AccountReconciliationForm({
                 ? "Adjustment recorded. Compare again to verify the observed balance."
                 : "Comparison recorded. No balance adjustment was made."}
             </p>
-            <Link
-              href={page}
-              className="inline-flex min-h-11 text-link underline"
-            >
+            <Link href={page} className="action-link">
               Load current comparison history
             </Link>
             <Link
               href={`/money/accounts/${setup.account.financialAccountId}/history`}
-              className="ml-4 inline-flex min-h-11 text-link underline"
+              className="action-link"
             >
               View account activity
             </Link>
@@ -674,10 +671,7 @@ export function AccountReconciliationForm({
                 {pending.body.clientCommandId}.
               </p>
               {stage === "stale" ? (
-                <Link
-                  href={page}
-                  className="inline-flex min-h-11 text-link underline"
-                >
+                <Link href={page} className="action-link">
                   Reload and review fresh information
                 </Link>
               ) : (
@@ -713,10 +707,7 @@ export function AccountReconciliationForm({
             </section>
           ) : null}
           {stage === "stale" && !pending ? (
-            <Link
-              href={page}
-              className="inline-flex min-h-11 text-link underline"
-            >
+            <Link href={page} className="action-link">
               Reload and review fresh information
             </Link>
           ) : null}
@@ -727,10 +718,7 @@ export function AccountReconciliationForm({
           title="Refresh comparison history"
           description="A save or source change may have affected comparison statuses."
         >
-          <Link
-            href={page}
-            className="inline-flex min-h-11 text-link underline"
-          >
+          <Link href={page} className="action-link">
             Load current history
           </Link>
         </Panel>

@@ -82,33 +82,35 @@ export function SessionControls() {
         <p>No active sessions were returned. Sign in again.</p>
       ) : (
         <ul className="divide-y divide-border">
-          {sessions.map((s) => (
-            <li
-              key={s.id}
-              className="flex flex-wrap items-start justify-between gap-3 py-4"
-            >
-              <div>
-                <p className="font-semibold">
-                  {s.device}
-                  {s.current ? " · Current session" : ""}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Signed in {new Date(s.createdAt).toLocaleString()}
-                  <br />
-                  Last active {new Date(s.lastActiveAt).toLocaleString()}
-                  <br />
-                  Expires {new Date(s.expiresAt).toLocaleString()}
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() => setReview({ kind: "one", sessionId: s.id })}
+          {[...sessions]
+            .sort((a, b) => Number(b.current) - Number(a.current))
+            .map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-start justify-between gap-3 py-4"
               >
-                {s.current ? "Sign out this session" : `Revoke ${s.device}`}
-              </Button>
-            </li>
-          ))}
+                <div>
+                  <p className="font-semibold">
+                    {s.device}
+                    {s.current ? " · Current session" : ""}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Signed in {new Date(s.createdAt).toLocaleString()}
+                    <br />
+                    Last active {new Date(s.lastActiveAt).toLocaleString()}
+                    <br />
+                    Expires {new Date(s.expiresAt).toLocaleString()}
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => setReview({ kind: "one", sessionId: s.id })}
+                >
+                  {s.current ? "Sign out this session" : `Revoke ${s.device}`}
+                </Button>
+              </li>
+            ))}
         </ul>
       )}
       <div className="mt-4 flex flex-wrap gap-3">

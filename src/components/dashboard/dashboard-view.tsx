@@ -1,17 +1,31 @@
-import { SavingsGoalsSurface } from "@/components/money/savings-goal-comparison";
-import { CardSurfacePanel } from "@/components/money/card-surface-panel";
-import { BudgetSurfacePanel } from "@/components/money/budget-comparison";
 import Link from "next/link";
-import { Panel } from "@/components/ui/panel";
-import { AgendaList } from "@/components/calendar/agenda-list";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  ArrowRightLeft,
+  Wallet,
+  Smartphone,
+  Landmark,
+  Plus,
+  CreditCard,
+  BriefcaseBusiness,
+  CalendarDays,
+  CheckCheck,
+  ChevronRight,
+  CircleAlert,
+  Layers3,
+} from "lucide-react";
+import type { DashboardResult } from "@/modules/dashboard/services/get-dashboard";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { spendingHref } from "@/modules/reporting/domain/period";
-import { reportDates } from "@/modules/reporting/domain/reports";
-import type { DashboardResult } from "@/modules/dashboard/services/get-dashboard";
+import { InfoTip } from "@/components/ui/info-tip";
 import { DashboardFilters } from "./dashboard-filters";
+import { SpendingCharts } from "./spending-charts";
+import { FinancialCoverage } from "./financial-coverage";
+import { PlanHighlights } from "./plan-highlights";
+import { HorizontalCollection } from "@/components/patterns/horizontal-collection";
+import styles from "./home.module.css";
 
-const linkClass =
-  "inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline";
 export function DashboardView({
   data,
   moduleEnabled,
@@ -27,453 +41,452 @@ export function DashboardView({
   const f = data.finance,
     money = (v: string) => formatMoneyMinorUnits(data.currency, v);
   const calendar = `/calendar?${new URLSearchParams({ startDate: data.today, endDate: data.horizon, source: data.filters.source })}`;
+  const attentionItem = (item: DashboardResult["attention"][number]) => (
+    <li key={item.key}>
+      <Link href={item.href} className={styles.attentionLink}>
+        <CircleAlert size={17} aria-hidden="true" />
+        <span>
+          {item.title}
+          <small>{item.detail}</small>
+        </span>
+        <ChevronRight size={16} aria-hidden="true" />
+      </Link>
+    </li>
+  );
+  const activityItem = (item: DashboardResult["activity"][number]) => (
+    <li key={item.key}>
+      <Link href={item.href} className={styles.activityLink}>
+        <span className={styles.activityIcon}>
+          <ArrowUpRight size={18} aria-hidden="true" />
+        </span>
+        <span>
+          <strong>{item.title}</strong>
+          <small>{item.detail}</small>
+        </span>
+        <time dateTime={item.recordedAt}>
+          {new Intl.DateTimeFormat("en-PH", {
+            timeZone: data.timezone,
+            month: "short",
+            day: "numeric",
+          }).format(new Date(item.recordedAt))}
+        </time>
+        <ChevronRight size={16} aria-hidden="true" />
+      </Link>
+    </li>
+  );
   return (
-    <div className="space-y-6">
-      <Panel
-        title="What needs your attention?"
-        description="Overdue commitments, upcoming Career activity and incomplete financial records."
-      >
-        {data.attention.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No attention items in your tracked records. Unrecorded obligations
-            remain unknown.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {data.attention.map((item) => (
-              <li key={item.key} className="py-3">
-                <Link href={item.href} className={linkClass}>
-                  {item.title}
+    <div className={styles.homeGrid}>
+      <div className={styles.toolbar}>
+        <p className={styles.eyebrow}>A LITTLE CLARITY, EVERY DAY</p>
+        <details className={styles.filters}>
+          <summary>
+            View:{" "}
+            {data.period.kind === "custom"
+              ? "Custom dates"
+              : `This ${data.period.kind}`}{" "}
+            <CalendarDays size={15} />
+          </summary>
+          <DashboardFilters
+            key={`${data.period.kind}:${data.period.startDate}:${data.filters.source}`}
+            period={data.period.kind}
+            startDate={data.period.startDate}
+            endDate={data.period.endDate}
+            source={data.filters.source}
+          />
+        </details>
+      </div>
+      <div className={styles.balanceCollection}>
+        <HorizontalCollection label="account overview" mode="single">
+          <section className={styles.balance} aria-labelledby="balance-title">
+            <div className={styles.sectionHeading}>
+              <span className={styles.iconTile}>
+                <Wallet size={22} />
+              </span>
+              <span className={styles.liveLabel}>Current balances</span>
+              <InfoTip title="Available in accounts">
+                All tracked cash balances, including archived accounts and
+                negative balances. Goal reservations and upcoming bills have not
+                been deducted. Credit limits are not cash.
+              </InfoTip>
+            </div>
+            <h2 id="balance-title">Available in accounts</h2>
+            <p className={styles.balanceValue}>
+              {data.coverage.noAccounts
+                ? "No accounts tracked"
+                : money(f.liquidMinor)}
+            </p>
+            <Link className={styles.balanceLink} href="/money/accounts">
+              {f.accounts.length} tracked accounts <ArrowUpRight size={17} />
+            </Link>
+            <div className={styles.balanceFoot}>
+              <div>
+                <span>
+                  Tracked net position{" "}
+                  <InfoTip title="Tracked net position">
+                    {data.coverage.scope}
+                  </InfoTip>
+                </span>
+                <strong>
+                  {data.coverage.noAccounts && data.coverage.noDebts
+                    ? "Coverage not established"
+                    : money(f.trackedNetMinor)}
+                </strong>
+              </div>
+              <div>
+                <span>Debts & cards</span>
+                <Link href="/money/debts" className={styles.balanceLink}>
+                  {data.coverage.noDebts
+                    ? "None tracked"
+                    : money(f.liabilitiesMinor)}
+                  <ChevronRight size={15} />
                 </Link>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {item.detail}
+              </div>
+            </div>
+          </section>
+          {f.accounts.map((account) => {
+            const Icon =
+              account.account_type === "e_wallet"
+                ? Smartphone
+                : account.account_type === "cash"
+                  ? Wallet
+                  : Landmark;
+            return (
+              <section
+                key={account.account_id}
+                className={styles.balance}
+                data-account-type={account.account_type}
+              >
+                <div className={styles.sectionHeading}>
+                  <span className={styles.iconTile}>
+                    <Icon size={22} />
+                  </span>
+                  <span className={styles.liveLabel}>
+                    {account.archived ? "Archived account" : "Current balance"}
+                  </span>
+                </div>
+                <h2>{account.name}</h2>
+                <p className={styles.balanceValue}>
+                  {money(account.current_balance_minor)}
                 </p>
-              </li>
-            ))}
-          </ul>
+                <Link
+                  className={styles.balanceLink}
+                  href={`/money/accounts/${account.account_id}/history`}
+                >
+                  Account history <ArrowUpRight size={17} />
+                </Link>
+                <div className={styles.balanceFoot}>
+                  <div>
+                    <span>
+                      {account.institution_name ??
+                        account.account_type?.replaceAll("_", " ")}
+                    </span>
+                    <strong>{account.currency ?? data.currency}</strong>
+                  </div>
+                  <div>
+                    <span>Tracked after</span>
+                    <strong>
+                      {account.opening_cutoff_date ?? "Unknown cutoff"}
+                    </strong>
+                  </div>
+                </div>
+                {BigInt(account.current_balance_minor) < 0n && (
+                  <p className="mt-3 text-sm font-semibold">
+                    Negative recorded balance
+                  </p>
+                )}
+              </section>
+            );
+          })}
+        </HorizontalCollection>
+      </div>
+      <section
+        className={styles.spending}
+        aria-labelledby="period-spending-title"
+      >
+        <div className={styles.sectionHeading}>
+          <span className={styles.iconTile}>
+            <ArrowUpRight size={22} />
+          </span>
+          <InfoTip title="Net spending">
+            Gross {money(f.spending.grossMinor)} less offsets{" "}
+            {money(f.spending.offsetsMinor)}. Includes posted refunds and
+            corrections; excludes transfers and debt principal payments.
+          </InfoTip>
+        </div>
+        <h2 id="period-spending-title">
+          Spent this{" "}
+          {data.period.kind === "custom" ? "period" : data.period.kind}
+        </h2>
+        <Link
+          className={styles.spendingValue}
+          href={spendingHref(data.period)}
+          aria-label={`Net recognized spending: ${money(f.spending.netMinor)}`}
+        >
+          {money(f.spending.netMinor)}
+          <ArrowUpRight size={20} />
+        </Link>
+        <span className={styles.periodLabel}>
+          {data.period.startDate} · {data.period.endDate}
+        </span>
+        <div className={styles.spendingFoot}>
+          <span>
+            Before offsets <strong>{money(f.spending.grossMinor)}</strong>
+          </span>
+          <span>
+            Refunds & offsets <strong>{money(f.spending.offsetsMinor)}</strong>
+          </span>
+        </div>
+      </section>
+      <nav className={styles.actions} aria-label="Home quick actions">
+        {moduleEnabled.money && (
+          <>
+            <Link
+              href="/money/transactions?kind=expense"
+              className={styles.primaryAction}
+            >
+              <Plus size={20} />
+              Add expense
+            </Link>
+            <Link href="/money/transactions?kind=income">
+              <ArrowDownLeft size={20} />
+              Add income
+            </Link>
+            <Link href="/money/transfers">
+              <ArrowRightLeft size={20} />
+              Transfer
+            </Link>
+            <Link href="/money/debts">
+              <CreditCard size={20} />
+              Pay a debt
+            </Link>
+          </>
+        )}
+        {!moduleEnabled.money && (
+          <Link href="/onboarding">
+            <Wallet size={20} />
+            Set up Money
+          </Link>
+        )}
+        <Link href={calendar}>
+          <CalendarDays size={20} />
+          Calendar
+        </Link>
+      </nav>
+      <div className={styles.coverageWarnings}>
+        {!moduleEnabled.money && (
+          <p>
+            Money is hidden in navigation. Your existing records are included.
+          </p>
+        )}
+        {data.coverage.incompleteLiabilities && (
+          <p>
+            <CircleAlert size={16} />
+            Some debt breakdowns or payments need clarification. This is not a
+            complete net worth.
+          </p>
+        )}
+        {data.coverage.periodBeforeCutoff && (
+          <p>
+            <CircleAlert size={16} />
+            Earlier history is missing before an opening balance; spending
+            coverage is incomplete.
+          </p>
+        )}
+        {data.coverage.unknownSchedules > 0 && (
+          <p>
+            <CircleAlert size={16} />
+            {data.coverage.unknownSchedules} debt schedule(s) have unknown dues.
+          </p>
+        )}
+      </div>
+      <SpendingCharts
+        finance={f}
+        currency={data.currency}
+        period={data.period}
+      />
+      <section className={styles.attention} aria-labelledby="attention-title">
+        <div className={styles.sectionHeading}>
+          <h2 id="attention-title">On your radar</h2>
+          <span className={styles.count}>{data.attention.length}</span>
+        </div>
+        {data.attention.length ? (
+          <>
+            <ul>{data.attention.slice(0, 3).map(attentionItem)}</ul>
+            {data.attention.length > 3 && (
+              <details className={styles.dataDisclosure}>
+                <summary>
+                  {data.attention.length - 3} more items to review
+                </summary>
+                <ul>{data.attention.slice(3).map(attentionItem)}</ul>
+              </details>
+            )}
+          </>
+        ) : (
+          <div className={styles.quietState}>
+            <CheckCheck size={24} />
+            <p>
+              You&apos;re all caught up.
+              <small>No attention items in your tracked records.</small>
+            </p>
+          </div>
         )}
         {data.overdueHasMore && (
           <Link
-            className={linkClass}
+            className={styles.smallAction}
             href={`/calendar?startDate=0001-01-01&endDate=${data.today}`}
           >
-            Review all overdue Agenda sources
+            All overdue items <ArrowUpRight size={16} />
           </Link>
         )}
-      </Panel>
-      {moduleEnabled.trackers !== false &&
-        data.trackers?.enabled &&
-        data.filters.source === "all" && (
-          <Panel
-            title="Private tracker progress"
-            description="Current active records; recorded period activity is available in Tracker reports."
-          >
-            <p>
-              {data.trackers.active} open ? {data.trackers.completed} completed
-              ? {data.trackers.overdue} overdue
-            </p>
-            <Link className={linkClass} href="/trackers">
-              Open Trackers
-            </Link>
-            <Link className={linkClass} href="/trackers/reports">
-              Tracker reports
-            </Link>
-          </Panel>
-        )}
-      <DashboardFilters
-        key={`${data.period.kind}:${data.period.startDate}:${data.filters.source}`}
-        period={data.period.kind}
-        startDate={data.period.startDate}
-        endDate={data.period.endDate}
-        source={data.filters.source}
-      />
-      <Panel
-        title="Financial snapshot"
-        description={`Current tracked balances; recognized spending from ${data.period.startDate} through ${data.period.endDate}.`}
-      >
-        {!moduleEnabled.money && (
-          <p className="mb-4 text-sm text-muted-foreground">
-            Money is hidden in navigation. Its owned records remain included.{" "}
-            <Link className="text-link underline" href="/onboarding">
-              Review module settings
-            </Link>
-            .
-          </p>
-        )}
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Metric
-            title="Tracked liquid funds"
-            value={
-              data.coverage.noAccounts
-                ? "No accounts tracked"
-                : money(f.liquidMinor)
-            }
-            href="#tracked-accounts"
-            note="All tracked cash accounts, including archived and negative balances."
-          />
-          <Metric
-            title="Outstanding recognized liabilities"
-            value={
-              data.coverage.noDebts
-                ? "No debts tracked"
-                : money(f.liabilitiesMinor)
-            }
-            href="#tracked-debts"
-            note="Posted liability balances. Available credit is never cash."
-          />
-          <Metric
-            title="Net recognized spending"
-            value={money(f.spending.netMinor)}
-            href={spendingHref(data.period)}
-            note={`Gross ${money(f.spending.grossMinor)} less offsets ${money(f.spending.offsetsMinor)}. Transfers and principal repayments excluded.`}
-          />
-          <Metric
-            title="Tracked net position"
-            value={
-              data.coverage.noAccounts && data.coverage.noDebts
-                ? "Coverage not established"
-                : money(f.trackedNetMinor)
-            }
-            href="#financial-coverage"
-            note="Liquid funds plus recorded debt/card credits less recognized liabilities; limited coverage."
-          />
-          <Metric
-            title="Upcoming contractual payments"
-            value={`${money(f.upcomingMinor)}${data.coverage.unknownSchedules ? " + unknown dues" : ""}`}
-            href="#tracked-debts"
-            note={`${data.today} through ${data.horizon}. Current due allocations, separate from recognized liability.`}
-          />
-          <Metric
-            title="Remaining scheduled payable"
-            value={`${money(f.scheduledMinor)}${data.coverage.unknownSchedules ? " + unknown dues" : ""}`}
-            href="#tracked-debts"
-            note={
-              data.coverage.unknownSchedules
-                ? `${data.coverage.unknownSchedules} debt schedule(s) unknown; total covers supplied schedules only.`
-                : "Supplied active schedules after opening, direct and mapped satisfaction."
-            }
-          />
-        </dl>
-        <div
-          id="financial-coverage"
-          className="mt-5 space-y-2 rounded-control border border-border bg-muted p-4 text-sm leading-6"
-        >
-          <h3 className="font-semibold">Coverage and uncertainty</h3>
-          <p>{data.coverage.scope}</p>
-          <p>
-            Excluded payment clearing: {money(f.clearingMinor)}. Recognized debt
-            credit balances: {money(f.liabilityCreditMinor)}.
-          </p>
-          {data.coverage.incompleteLiabilities && (
-            <p className="font-medium text-warning">
-              Liability information is incomplete. Unknown principal breakdown
-              and unresolved clearing are shown in attention items; this is not
-              a complete net worth.
-            </p>
-          )}
-          {data.coverage.periodBeforeCutoff && (
-            <p className="font-medium text-warning">
-              This period reaches an opening cutoff. Earlier activity is not
-              supplied; spending coverage is incomplete.
-            </p>
-          )}
-          {f.spending.baselineMinor !== "0" && (
-            <p>
-              Opening baseline additions in this period:{" "}
-              {money(f.spending.baselineMinor)}; excluded from income and
-              spending.
-            </p>
-          )}
-          <p>
-            Opening/import cutoffs are listed with each record below. A debt
-            with no import cutoff was tracked from origination.
-          </p>
+      </section>
+      <PlanHighlights finance={f} currency={data.currency} />
+      <section className={styles.activity} aria-labelledby="activity-title">
+        <div className={styles.sectionHeading}>
+          <h2 id="activity-title">Recent activity</h2>
+          <InfoTip title="Recent activity">
+            Latest changes to financial actions and Career/Calendar records.
+            Corrections update the original action. Dates are shown in{" "}
+            {data.timezone}.
+          </InfoTip>
         </div>
-        <details id="tracked-accounts" className="mt-4">
-          <summary className="min-h-11 cursor-pointer font-semibold">
-            Supporting cash accounts
-          </summary>
-          {f.accounts.length === 0 ? (
-            <p>No cash accounts tracked. Add an account when you are ready.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {f.accounts.map((a) => (
-                <li key={a.account_id} className="py-2">
-                  <Link
-                    className="block min-h-11 max-w-full break-words text-sm font-semibold text-link underline-offset-4 hover:underline"
-                    href={`/money/accounts/${a.account_id}/history`}
-                  >
-                    {a.name}: {money(a.current_balance_minor)}
-                  </Link>
-                  <p className="text-sm text-muted-foreground">
-                    Opening cutoff {a.opening_cutoff_date}
-                    {a.archived ? " · Archived" : ""}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </details>
-        <details id="tracked-debts" className="mt-4">
-          <summary className="min-h-11 cursor-pointer font-semibold">
-            Supporting debt liabilities and schedules
-          </summary>
-          {f.debts.length === 0 ? (
-            <p>No debt records tracked. Other liabilities remain unknown.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {f.debts.map((d) => (
-                <li key={d.debtId} className="py-2">
-                  <Link className={linkClass} href={`/money/debts/${d.debtId}`}>
-                    {d.name}
-                  </Link>
-                  <p className="text-sm leading-6">
-                    Recognized balance {money(d.liabilityMinor)} · Remaining
-                    schedule{" "}
-                    {d.scheduledMinor === null
-                      ? "Not supplied / no active dues"
-                      : money(d.scheduledMinor)}{" "}
-                    · Upcoming {money(d.upcomingMinor)} · Overdue{" "}
-                    {money(d.overdueMinor)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {d.cutoffDate
-                      ? `Import cutoff ${d.cutoffDate}`
-                      : "Tracked from origination"}{" "}
-                    · Breakdown {d.breakdownStatus}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </details>
-        <details className="mt-4">
-          <summary className="min-h-11 cursor-pointer font-semibold">
-            Supporting credit card liabilities
-          </summary>
-          <ul className="divide-y divide-border">
-            {f.cards.map((c) => (
-              <li key={c.cardId} className="py-3">
-                <Link href={`/money/cards/${c.cardId}`} className={linkClass}>
-                  {c.name}: {money(c.liabilityMinor)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {!f.cards.length && <p>No tracked cards.</p>}
-        </details>
-      </Panel>
-      <CardSurfacePanel
-        data={data.finance.cardSurface}
-        currency={data.currency}
-      />
-      <SavingsGoalsSurface
-        data={data.finance.savingsGoals}
-        today={data.today}
-      />
-      <BudgetSurfacePanel data={data.finance.budgets} period={data.period} />
-      <Panel
-        title="Career snapshot"
-        description={`Open, unarchived attempts and scheduled events from ${data.today} through ${data.horizon}. Event counts are separate from application counts.`}
-      >
-        {!moduleEnabled.career && (
-          <p className="mb-3 text-sm text-muted-foreground">
-            Career is hidden in navigation. Preserved source records can still
-            be reviewed.
+        {data.activity.length ? (
+          <>
+            <ol>{data.activity.slice(0, 5).map(activityItem)}</ol>
+            {data.activity.length > 5 && (
+              <details className={styles.dataDisclosure}>
+                <summary>More recent activity</summary>
+                <ol>{data.activity.slice(5).map(activityItem)}</ol>
+              </details>
+            )}
+          </>
+        ) : (
+          <p className={styles.emptyCopy}>
+            Your next step starts the story. Recorded activity will appear here.
           </p>
         )}
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric
-            title="Active applications"
-            value={String(data.career.activeCount)}
-            href="#active-applications"
-            note="Submitted/open attempts; saved and terminal outcomes excluded."
-          />
-          <Metric
-            title="Interviews"
-            value={String(data.career.interviews)}
-            href="#career-events"
-            note="Scheduled interview events."
-          />
-          <Metric
-            title="Assessments"
-            value={String(data.career.assessments)}
-            href="#career-events"
-            note="Scheduled assessment events."
-          />
-          <Metric
-            title="Follow-ups"
-            value={String(data.career.followUps)}
-            href="#career-events"
-            note="Scheduled follow-up events."
-          />
-        </dl>
-        <Link
-          className={linkClass}
-          href={`/reports/career?${reportDates(data.period, data.today)}`}
-        >
-          Explore submission-cohort analytics for this period
+        <Link href="/money/actions" className={styles.smallAction}>
+          Financial activity <ArrowUpRight size={15} />
         </Link>
-        <p className="text-sm text-muted-foreground">
-          Active applications and upcoming scheduled events above are
-          operational counts; submission-cohort conversions use recorded
-          milestones and their own dated scope.
+      </section>
+      <section className={styles.agenda} aria-labelledby="agenda-title">
+        <div className={styles.sectionHeading}>
+          <h2 id="agenda-title">Coming up</h2>
+          <Link className={styles.smallAction} href={calendar}>
+            Calendar <ArrowUpRight size={15} />
+          </Link>
+        </div>
+        <p className={styles.periodLabel}>
+          {data.today} — {data.horizon} ·{" "}
+          {data.filters.source === "all" ? "All sources" : data.filters.source}
         </p>
-        <details id="active-applications" className="mt-4">
-          <summary className="min-h-11 cursor-pointer font-semibold">
-            Supporting applications ({data.career.activeCount} active,{" "}
-            {data.career.savedCount} saved)
-          </summary>
-          {data.career.applications.length === 0 ? (
-            <p>No open applications yet.</p>
-          ) : (
-            <ul>
-              {data.career.applications.map((a) => (
-                <li key={a.applicationId}>
-                  <Link
-                    href={`/career/applications/${a.applicationId}`}
-                    className={linkClass}
-                  >
-                    {a.company} · {a.role} · {a.stage.replaceAll("_", " ")}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </details>
-        <details id="career-events" className="mt-3">
-          <summary className="min-h-11 cursor-pointer font-semibold">
-            Supporting interviews, assessments and follow-ups
-          </summary>
-          {data.career.events.length === 0 ? (
-            <p>No scheduled Career events in this range.</p>
-          ) : (
-            <ul>
-              {data.career.events.map((e) => (
-                <li key={e.eventId}>
-                  <Link
-                    className={linkClass}
-                    href={`/career/applications/${e.applicationId}`}
-                  >
-                    {e.date} · {e.title} · {e.kind.replaceAll("_", " ")}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </details>
-      </Panel>
-      <div>
-        <AgendaList agenda={data.agenda} moduleEnabled={moduleEnabled} />
-        <Link className={linkClass} href={calendar}>
-          {data.agenda.nextCursor
-            ? "View all commitments in this range"
-            : "Open Calendar in this range"}
-        </Link>
-      </div>
-      <Panel
-        title="Recent activity"
-        description="Latest changes to logical financial actions and Career/Calendar source records. Correction revisions do not create duplicate financial actions."
-      >
-        {data.activity.length === 0 ? (
-          <p>No recorded activity yet.</p>
-        ) : (
-          <ol className="divide-y divide-border">
-            {data.activity.map((a) => (
-              <li key={a.key} className="py-2">
-                <Link
-                  className="block min-h-11 max-w-full break-words text-sm font-semibold text-link underline-offset-4 hover:underline"
-                  href={a.href}
-                >
-                  {a.title}
-                </Link>
-                <p className="text-sm text-muted-foreground">
-                  {a.detail} ·{" "}
-                  {new Intl.DateTimeFormat("en-PH", {
-                    timeZone: data.timezone,
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(a.recordedAt))}
-                </p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </Panel>
-      <Panel title="Quick actions">
-        <nav
-          aria-label="Dashboard quick actions"
-          className="flex flex-wrap gap-x-6 gap-y-2"
-        >
-          {moduleEnabled.money && (
-            <>
-              <Link
-                className={linkClass}
-                href="/money/transactions?kind=expense"
+        <ul>
+          {data.agenda.items.slice(0, 4).map((item) => {
+            const href =
+              data.agenda.sourceRoutes[`${item.sourceKind}:${item.sourceId}`];
+            return (
+              <li
+                key={`${item.sourceKind}:${item.sourceId}:${item.occurrenceKey}`}
+                className={styles.agendaItem}
               >
-                Add expense
-              </Link>
-              <Link className={linkClass} href="/money/transfers">
-                Transfer money
-              </Link>
-              <Link className={linkClass} href="/money/forecasts">
-                Explore cash-flow forecasts
-              </Link>
-              <Link className={linkClass} href="/money/debts">
-                Choose debt to record payment
-              </Link>
-              <Link className={linkClass} href="/money/accounts">
-                Review accounts / reconciliation
-              </Link>
-            </>
-          )}
-          {moduleEnabled.career && (
-            <Link className={linkClass} href="/career/applications/new">
-              Add application
+                <span className={styles.dateTile}>
+                  {item.agendaDate.slice(8)}
+                  <small>
+                    {new Intl.DateTimeFormat("en", {
+                      month: "short",
+                      timeZone: "UTC",
+                    }).format(new Date(`${item.agendaDate}T12:00:00Z`))}
+                  </small>
+                </span>
+                <div>
+                  {href ? (
+                    <Link href={href} className={styles.smallAction}>
+                      {item.title}
+                      <ChevronRight size={14} />
+                    </Link>
+                  ) : (
+                    <strong>{item.title}</strong>
+                  )}
+                  <small>
+                    {item.displayModule} · {item.timingState}
+                  </small>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {!data.agenda.items.length && (
+          <p className={styles.emptyCopy}>
+            A little breathing room. No commitments in this range.
+          </p>
+        )}
+        {(data.agenda.items.length > 4 || data.agenda.nextCursor) && (
+          <Link className={styles.smallAction} href={calendar}>
+            All upcoming commitments <ChevronRight size={14} />
+          </Link>
+        )}
+      </section>
+      <div className={styles.modules}>
+        <section className={styles.career}>
+          <div className={styles.sectionHeading}>
+            <BriefcaseBusiness size={21} />
+            <Link className={styles.smallAction} href="/career/applications">
+              Career <ArrowUpRight size={16} />
             </Link>
+          </div>
+          <div className={styles.moduleNumbers}>
+            <div>
+              <strong>{data.career.activeCount}</strong>
+              <span>active applications</span>
+            </div>
+            <div>
+              <strong>{data.career.interviews}</strong>
+              <span>upcoming interviews</span>
+            </div>
+          </div>
+          <p>
+            {data.career.savedCount} saved · {data.career.assessments}{" "}
+            assessments · {data.career.followUps} follow-ups
+          </p>
+          {!moduleEnabled.career && (
+            <small>Module hidden · existing records included</small>
           )}
-          <Link className={linkClass} href="/calendar">
-            {moduleEnabled.time
-              ? "Create event / open Calendar"
-              : "Open Calendar"}
-          </Link>
-          <Link className={linkClass} href="/onboarding">
-            Getting Started / module settings
-          </Link>
-        </nav>
-      </Panel>
-      <p className="text-xs leading-5 text-muted-foreground">
-        {data.currency} · {data.timezone} · Generated {data.generatedAt} ·
-        Financial revision {data.financialRevision} · Definition{" "}
-        {data.definitionVersion}. Live queries include backdated corrections.
-      </p>
-    </div>
-  );
-}
-function Metric({
-  title,
-  value,
-  href,
-  note,
-}: {
-  title: string;
-  value: string;
-  href: string;
-  note: string;
-}) {
-  return (
-    <div className="min-w-0 rounded-control border border-border p-4">
-      <dt className="text-sm text-muted-foreground">{title}</dt>
-      <dd>
-        <Link
-          href={href}
-          aria-label={`${title}: ${value}`}
-          className="inline-flex min-h-11 items-center break-words text-xl font-semibold text-link underline-offset-4 hover:underline"
-        >
-          {value}
-        </Link>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">{note}</p>
-      </dd>
+        </section>
+        {moduleEnabled.trackers !== false &&
+          data.trackers?.enabled &&
+          data.filters.source === "all" && (
+            <section className={styles.trackers}>
+              <div className={styles.sectionHeading}>
+                <Layers3 size={21} />
+                <Link className={styles.smallAction} href="/trackers">
+                  Trackers <ArrowUpRight size={16} />
+                </Link>
+              </div>
+              <div className={styles.moduleNumbers}>
+                <div>
+                  <strong>{data.trackers.active}</strong>
+                  <span>open records</span>
+                </div>
+                <div>
+                  <strong>{data.trackers.completed}</strong>
+                  <span>completed</span>
+                </div>
+              </div>
+              <p>{data.trackers.overdue} overdue</p>
+            </section>
+          )}
+      </div>
+      <div className={styles.provenance}>
+        <FinancialCoverage data={data} />
+        <details className={styles.dataDisclosure}>
+          <summary>About this snapshot</summary>
+          <p>
+            {data.currency} · {data.timezone} · Generated {data.generatedAt} ·
+            Financial revision {data.financialRevision} · Definition{" "}
+            {data.definitionVersion}. Live queries include backdated
+            corrections.
+          </p>
+        </details>
+      </div>
     </div>
   );
 }

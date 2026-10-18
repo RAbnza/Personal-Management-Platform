@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -47,10 +49,7 @@ export default async function RecurringDetailPage({
     if (e instanceof PlanningUnavailableError) notFound();
     return (
       <Panel title="Recurring definition unavailable">
-        <Link
-          href={`/money/recurring/${obligationId}`}
-          className="text-link underline"
-        >
+        <Link href={`/money/recurring/${obligationId}`} className="action-link">
           Retry this definition
         </Link>
       </Panel>
@@ -59,13 +58,14 @@ export default async function RecurringDetailPage({
   const current = data.versions.at(-1)!;
   return (
     <div className="space-y-6">
-      <Link
-        href="/money/recurring"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href="/money/recurring" className="action-link">
         All recurring obligations
       </Link>
-      <h1 className="text-2xl font-semibold">{data.root.name}</h1>
+      <BreadcrumbRecords
+        path={`/money/recurring/${obligationId}`}
+        labels={{ [`/money/recurring/${obligationId}`]: data.root.name }}
+      />
+      <ScreenHeader scope="Money" title={data.root.name} />
       <p>
         {data.root.kind} ·{" "}
         {formatMoneyMinorUnits("PHP", current.rule.expectedMinor)} expected ·{" "}
@@ -83,7 +83,7 @@ export default async function RecurringDetailPage({
             <li key={o.id} className="py-3">
               <Link
                 href={`/money/recurring/occurrences/${o.id}`}
-                className="inline-flex min-h-11 items-center text-link underline"
+                className="action-link"
               >
                 {o.dueDate} · {o.state} ·{" "}
                 {formatMoneyMinorUnits("PHP", o.expectedMinor)} expected
@@ -106,7 +106,7 @@ export default async function RecurringDetailPage({
         {data.occurrences.nextCursor && (
           <Link
             href={`/money/recurring/${obligationId}?cursor=${data.occurrences.nextCursor}`}
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Next occurrences
           </Link>

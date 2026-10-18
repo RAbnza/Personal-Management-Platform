@@ -6,11 +6,9 @@ import { NotificationSettings } from "@/components/settings/notification-setting
 import { defaultNotificationPreferences } from "@/modules/time/domain/notification";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 beforeEach(() => vi.unstubAllGlobals());
-it("defaults to unchecked consent and progressively discloses paired quiet hours and due-date opt-in", async () => {
-  const user = userEvent.setup();
+it("defaults to unchecked consent and shows paired quiet hours and due-date opt-in", async () => {
   render(<NotificationSettings preferences={defaultNotificationPreferences} />);
-  expect(screen.getByRole("checkbox", { name: /I opt in/ })).not.toBeChecked();
-  await user.click(screen.getByText("Quiet hours and content"));
+  expect(screen.getByRole("switch", { name: /I opt in/ })).not.toBeChecked();
   expect(screen.getByLabelText("Quiet hours start")).toBeVisible();
   expect(
     screen.getByRole("checkbox", { name: /Include the recorded/ }),
@@ -24,12 +22,12 @@ it("freezes uncertain changes and retries byte-identical commands", async () => 
     .mockResolvedValue(new Response("{}", { status: 200 }));
   vi.stubGlobal("fetch", fetch);
   render(<NotificationSettings preferences={defaultNotificationPreferences} />);
-  await user.click(screen.getByRole("checkbox", { name: /I opt in/ }));
+  await user.click(screen.getByRole("switch", { name: /I opt in/ }));
   await user.click(
     screen.getByRole("button", { name: "Save notification preferences" }),
   );
   await screen.findByRole("alert");
-  expect(screen.getByRole("checkbox", { name: /I opt in/ })).toBeDisabled();
+  expect(screen.getByRole("switch", { name: /I opt in/ })).toBeDisabled();
   await user.click(
     screen.getByRole("button", { name: "Retry identical save" }),
   );

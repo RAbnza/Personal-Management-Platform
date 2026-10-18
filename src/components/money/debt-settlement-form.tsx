@@ -384,10 +384,7 @@ export function DebtSettlementForm({
           The verified liability is zero. The closing schedule and payment
           evidence are preserved; future unpaid reminders are cancelled.
         </p>
-        <Link
-          className="inline-flex min-h-11 items-center text-link underline"
-          href={`/money/debts/${debt.debtId}`}
-        >
+        <Link className="action-link" href={`/money/debts/${debt.debtId}`}>
           View debt and settlement history
         </Link>
       </section>
@@ -551,7 +548,7 @@ export function DebtSettlementForm({
         <div className="flex flex-wrap gap-3">
           {stage === "stale" ? (
             <a
-              className="inline-flex min-h-11 items-center text-link underline"
+              className="action-link"
               href={`/money/debts/${debt.debtId}/settle`}
             >
               Reload current settlement information
@@ -593,7 +590,7 @@ export function DebtSettlementForm({
         {snapshotChanged && stage === "reviewing" ? (
           <a
             href={`/money/debts/${debt.debtId}/settle`}
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Reload changed settlement information
           </a>
@@ -620,10 +617,7 @@ export function DebtSettlementForm({
         </p>
       ) : null}
       {snapshotChanged ? (
-        <a
-          href={`/money/debts/${debt.debtId}/settle`}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <a href={`/money/debts/${debt.debtId}/settle`} className="action-link">
           Reload changed settlement information
         </a>
       ) : null}

@@ -100,6 +100,10 @@ test("reviewed budget creation and committed response-loss replay preserve spend
   await page.goto("/money/budgets");
   await ready(page, "Category budgets");
   await page
+    .locator("summary")
+    .filter({ hasText: "Create category budget" })
+    .click();
+  await page
     .getByRole("combobox", { name: "Expense category", exact: true })
     .selectOption(c.categoryId);
   await page
@@ -125,7 +129,7 @@ test("reviewed budget creation and committed response-loss replay preserve spend
     page.getByRole("button", { name: "Retry identical command", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("textbox", { name: "Spending limit (PHP)", exact: true }),
+    page.getByLabel("Spending limit (PHP)", { exact: true }),
   ).toBeDisabled();
   await page
     .getByRole("button", { name: "Retry identical command", exact: true })
@@ -195,7 +199,7 @@ test("reviewed budget creation and committed response-loss replay preserve spend
   await ready(page, "Category budgets");
   await allowance(page, "PHP 1.00");
   await page.goto("/?period=custom&startDate=2026-10-01&endDate=2026-10-31");
-  await ready(page, "Dashboard");
+  await ready(page, "Home");
   await expect(page.getByRole("main")).toContainText("Category budgets");
 });
 test("archive, restore, period conflicts and foreign access preserve private audited budget history", async ({

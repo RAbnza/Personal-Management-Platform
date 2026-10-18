@@ -1,3 +1,10 @@
+import styles from "@/components/money/money-workspace.module.css";
+import { ArrowUpRight, CreditCard } from "lucide-react";
+import { ScreenHeader } from "@/components/patterns/work-area";
+import {
+  MoneyColumns,
+  MoneyCreation,
+} from "@/components/money/money-workspace";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { getCardSurface } from "@/modules/finance/services/read-card-surface";
 import Link from "next/link";
@@ -20,7 +27,7 @@ export default async function CardsPage() {
         title="Credit cards unavailable"
         description="Your private cards could not be loaded safely."
       >
-        <Link href="/money/cards" className="text-link underline">
+        <Link href="/money/cards" className="action-link">
           Retry loading cards
         </Link>
       </Panel>
@@ -28,46 +35,59 @@ export default async function CardsPage() {
   }
   return (
     <div className="space-y-6 break-words">
-      <h1 className="text-2xl font-semibold">Credit cards</h1>
-      <Link
-        href="/money/transactions"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <ScreenHeader scope="Money" title="Credit cards" />
+      <Link href="/money/transactions" className="action-link">
         Add Expense
       </Link>
       <CardSurfacePanel data={surface} currency={workspace.currency} />
-      <Panel
-        title="Recorded cards"
-        description="Outstanding comes from posted activity. Unrecorded provider history remains unknown. Available credit is excluded from liquid funds."
-      >
-        <ul className="divide-y divide-border">
-          {surface.cards.slice(0, 100).map((c) => (
-            <li key={c.cardId} className="py-3">
-              <Link
-                href={`/money/cards/${c.cardId}`}
-                className="text-link underline"
-              >
-                {c.name}
-              </Link>
-              <p>
-                {c.issuerName}
-                {c.archived ? " · Archived" : ""} · Posted outstanding{" "}
-                {formatMoneyMinorUnits(c.currency, c.postedOutstandingMinor)} ·
-                Card credit{" "}
-                {formatMoneyMinorUnits(c.currency, c.cardCreditMinor)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        {!surface.cards.length && <p>No cards yet.</p>}
-        {surface.cards.length > 100 && <p>Showing the first 100 cards.</p>}
-      </Panel>
-      <Panel
-        title="Add credit card"
-        description="Give the card a recognizable name and identify its issuer."
-      >
-        <CardCreateForm />
-      </Panel>
+      <MoneyColumns>
+        <Panel
+          title="Recorded cards"
+          descriptionAsHelp
+          description="Outstanding comes from posted activity. Unrecorded provider history remains unknown. Available credit is excluded from liquid funds."
+        >
+          <ul className={styles.creditCards}>
+            {surface.cards.slice(0, 100).map((c) => (
+              <li key={c.cardId} className={styles.creditCard}>
+                <div className="flex items-center justify-between gap-3">
+                  <CreditCard size={25} />
+                  <small>
+                    {c.issuerName}
+                    {c.archived ? " \u00b7 Archived" : ""}
+                  </small>
+                </div>
+                <div>
+                  <small>Posted outstanding</small>
+                  <strong>
+                    {formatMoneyMinorUnits(
+                      c.currency,
+                      c.postedOutstandingMinor,
+                    )}
+                  </strong>
+                  {c.cardCreditMinor !== "0" && (
+                    <small>
+                      Card credit{" "}
+                      {formatMoneyMinorUnits(c.currency, c.cardCreditMinor)}
+                    </small>
+                  )}
+                </div>
+                <Link href={`/money/cards/${c.cardId}`}>
+                  {c.name}
+                  <ArrowUpRight size={18} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {!surface.cards.length && <p>No cards yet.</p>}
+          {surface.cards.length > 100 && <p>Showing the first 100 cards.</p>}
+        </Panel>
+        <MoneyCreation title="Add credit card">
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            Give the card a recognizable name and identify its issuer.
+          </p>
+          <CardCreateForm />
+        </MoneyCreation>
+      </MoneyColumns>
     </div>
   );
 }

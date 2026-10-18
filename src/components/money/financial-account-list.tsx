@@ -1,3 +1,5 @@
+import { HorizontalCollection } from "@/components/patterns/horizontal-collection";
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import {
   ArrowRightLeft,
@@ -85,7 +87,8 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
   return (
     <Panel
       title="Your accounts"
-      description="Balances are derived from finalized ledger activity rather than a manually edited balance field."
+      descriptionAsHelp
+      description="Balances come from recorded transactions. Use Check balance to compare against a statement; adjustments retain their history."
       action={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <span className="text-sm font-medium text-muted-foreground">
@@ -131,7 +134,7 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
         </div>
       }
     >
-      <div className="grid gap-3 md:grid-cols-2">
+      <HorizontalCollection label="financial accounts">
         {accounts.items.map((account) => {
           const type = accountTypeContent[account.accountType];
 
@@ -140,84 +143,64 @@ export function FinancialAccountList({ accounts }: FinancialAccountListProps) {
           return (
             <article
               key={account.accountId}
-              className="rounded-control border border-border bg-surface p-4"
+              className={styles.accountCard}
+              data-account-type={account.accountType}
             >
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent text-accent-foreground">
-                  <Icon
-                    aria-hidden="true"
-                    className="size-5"
-                    strokeWidth={1.8}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold text-foreground">
-                        {account.name}
-                      </h3>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {type.label}
-                        {account.institutionName
-                          ? ` · ${account.institutionName}`
-                          : ""}
-                      </p>
-                    </div>
-
-                    {account.archived ? (
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Archived
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <p className="numeric-value mt-4 text-xl font-semibold tracking-[-0.02em] text-foreground">
-                    {formatMoneyMinorUnits(
-                      account.currency,
-                      account.currentBalanceMinor,
-                    )}
+              <div className={styles.accountIdentity}>
+                <span className={styles.accountIcon}>
+                  <Icon aria-hidden="true" size={21} />
+                </span>
+                <div className="min-w-0">
+                  <h3 title={account.name}>{account.name}</h3>
+                  <p className={styles.accountType}>
+                    {type.label}
+                    {account.institutionName
+                      ? ` \u00b7 ${account.institutionName}`
+                      : ""}
                   </p>
-
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Opening balance date:{" "}
-                    <span className="font-medium text-foreground">
-                      {account.openingCutoffDate}
-                    </span>
-                  </p>
-
-                  {account.notes ? (
-                    <p className="mt-3 border-t border-border pt-3 text-sm leading-5 text-muted-foreground">
-                      {account.notes}
-                    </p>
-                  ) : null}
-
-                  <div className="mt-4 border-t border-border pt-3">
-                    <Link
-                      href={`/money/accounts/${account.accountId}/history`}
-                      className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-                    >
-                      <History
-                        aria-hidden="true"
-                        className="size-4"
-                        strokeWidth={1.9}
-                      />
-                      View history
-                    </Link>
-                    <Link
-                      href={`/money/accounts/${account.accountId}/reconcile`}
-                      className="ml-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                    >
-                      Reconcile balance
-                    </Link>
-                  </div>
                 </div>
               </div>
+              <div className={styles.accountBody}>
+                <p className={styles.accountBalance}>
+                  {formatMoneyMinorUnits(
+                    account.currency,
+                    account.currentBalanceMinor,
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Tracked after {account.openingCutoffDate}
+                </p>
+                {account.archived && (
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    Archived account
+                  </p>
+                )}
+                {account.notes && (
+                  <details className={styles.accountNotes}>
+                    <summary>Account notes</summary>
+                    <p>{account.notes}</p>
+                  </details>
+                )}
+              </div>
+              <footer className={styles.cardActions}>
+                <Link
+                  href={`/money/accounts/${account.accountId}/history`}
+                  className="action-link"
+                >
+                  <History aria-hidden="true" size={16} />
+                  View history
+                </Link>
+                <Link
+                  href={`/money/accounts/${account.accountId}/reconcile`}
+                  className="action-link"
+                >
+                  Check balance
+                </Link>
+              </footer>
             </article>
           );
         })}
-      </div>
+      </HorizontalCollection>
     </Panel>
   );
 }

@@ -449,7 +449,11 @@ export function BorrowingCreateForm({ currency, accounts, categories }: Props) {
           },
         )}
       >
-        <fieldset disabled={fieldsDisabled} className="space-y-6">
+        <fieldset
+          hidden={stage !== "editing"}
+          disabled={fieldsDisabled}
+          className="space-y-6"
+        >
           <legend className="sr-only">Borrowing details</legend>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -874,7 +878,7 @@ export function BorrowingCreateForm({ currency, accounts, categories }: Props) {
           </div>
         ) : null}
 
-        {stage === "reviewing" && pending !== null && plan !== null ? (
+        {stage !== "editing" && pending !== null && plan !== null ? (
           <div
             ref={reviewRef}
             tabIndex={-1}

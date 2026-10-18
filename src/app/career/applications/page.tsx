@@ -26,6 +26,7 @@ type CareerApplicationsPageProps = {
     search?: string | string[] | undefined;
     stage?: string | string[] | undefined;
     cursor?: string | string[] | undefined;
+    archive?: string | string[] | undefined;
   }>;
 };
 
@@ -100,6 +101,7 @@ export default async function CareerApplicationsPage({
       <AppShell
         pageTitle="Job applications"
         activePath="/career/applications"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -152,6 +154,9 @@ export default async function CareerApplicationsPage({
   const stage = isCareerApplicationStage(rawStage) ? rawStage : null;
 
   const cursor = firstQueryValue(resolvedSearchParams.cursor);
+  const rawArchive = firstQueryValue(resolvedSearchParams.archive);
+  const archive =
+    rawArchive === "all" || rawArchive === "archived" ? rawArchive : "active";
 
   let applications: ListJobApplicationsResult | null = null;
 
@@ -162,7 +167,7 @@ export default async function CareerApplicationsPage({
       userId: user.id,
       workspaceId: workspace.id,
 
-      archive: "active",
+      archive,
 
       pageSize: 25,
 
@@ -186,6 +191,7 @@ export default async function CareerApplicationsPage({
     <AppShell
       pageTitle="Job applications"
       activePath="/career/applications"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}
@@ -231,7 +237,7 @@ export default async function CareerApplicationsPage({
           <form
             method="get"
             action="/career/applications"
-            className="grid gap-4 md:grid-cols-[minmax(0,1fr)_15rem_auto]"
+            className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_auto]"
           >
             <div>
               <label
@@ -289,6 +295,18 @@ export default async function CareerApplicationsPage({
               </select>
             </div>
 
+            <label className="grid gap-2 text-sm font-medium">
+              Lifecycle
+              <select
+                name="archive"
+                defaultValue={archive}
+                className="min-h-11 w-full rounded-control border border-input bg-surface px-3 py-2"
+              >
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+                <option value="all">All attempts</option>
+              </select>
+            </label>
             <div className="flex flex-wrap items-end gap-3">
               <Button type="submit" variant="secondary">
                 Apply filters
@@ -311,6 +329,7 @@ export default async function CareerApplicationsPage({
             applications={applications}
             search={search}
             stage={stage}
+            archive={archive}
             paginatedView={cursor !== undefined}
           />
         ) : invalidCursor ? (

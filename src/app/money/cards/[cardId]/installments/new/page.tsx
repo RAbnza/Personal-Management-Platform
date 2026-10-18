@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { statementIdentifierSchema as id } from "@/modules/finance/domain/card-statement";
@@ -37,12 +39,14 @@ export default async function NewInstallmentPage({
   const base = `/money/cards/${scope.cardId}/installments`;
   return (
     <div className="space-y-6 break-words">
-      <Link className="text-link underline" href={base}>
+      <Link className="action-link" href={base}>
         Provider installment plans
       </Link>
-      <h1 className="text-2xl font-semibold">
-        Record provider installment plan
-      </h1>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/new`}
+        labels={{ [`/money/cards/${scope.cardId}`]: setup.card.name }}
+      />
+      <ScreenHeader scope="Money" title="Record provider installment plan" />
       {parsed?.success ? (
         <CardInstallmentPlanForm
           key={setup.purchases[0]!.actionRevisionId}
@@ -61,7 +65,7 @@ export default async function NewInstallmentPage({
             {setup.purchases.map((p) => (
               <li key={p.actionId}>
                 <Link
-                  className="inline-flex min-h-11 text-link underline"
+                  className="action-link"
                   href={`${base}/new?purchaseActionId=${p.actionId}`}
                 >
                   {p.description} — provider posted {p.postingDate}
@@ -70,10 +74,7 @@ export default async function NewInstallmentPage({
             ))}
           </ul>
           {setup.hasMore && (
-            <Link
-              className="inline-flex min-h-11 text-link underline"
-              href={`?offset=${offset + 100}`}
-            >
+            <Link className="action-link" href={`?offset=${offset + 100}`}>
               Older recognized purchase choices
             </Link>
           )}

@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { MoneyColumns } from "@/components/money/money-workspace";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { z } from "zod";
@@ -44,12 +46,19 @@ export default async function StatementPage({
     money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-6 break-words">
-      <Link href={base} className="text-link underline">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/${scope.statementId}`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: data.card.name,
+          [`/money/cards/${scope.cardId}/statements/${scope.statementId}`]: `Statement ${data.snapshot.statementDate}`,
+        }}
+      />
+      <Link href={base} className="action-link">
         Statements for {data.card.name}
       </Link>
       <Link
         href={`/calendar/reminders/card_statement/${scope.statementId}`}
-        className="inline-flex min-h-11 items-center text-link underline"
+        className="action-link"
       >
         Current statement reminder controls
       </Link>
@@ -60,111 +69,113 @@ export default async function StatementPage({
           ? "Current verified evidence"
           : "Preserved historical evidence"}
       </p>
-      <Panel
-        title="Provider snapshot"
-        description="Historical values remain immutable. Corrections create a new verified revision."
-      >
-        <dl className="space-y-2">
-          <div>
-            <dt>Billing cycle</dt>
-            <dd>
-              {s.cycleStart} to {s.cycleEnd}
-            </dd>
-          </div>
-          <div>
-            <dt>Due date</dt>
-            <dd>{s.dueDate}</dd>
-          </div>
-          <div>
-            <dt>Historical statement balance</dt>
-            <dd>{money(s.balanceMinor)}</dd>
-          </div>
-          <div>
-            <dt>Minimum due</dt>
-            <dd>{money(s.minimumDueMinor)}</dd>
-          </div>
-          <div>
-            <dt>Provider opening balance</dt>
-            <dd>
-              {s.openingBalanceMinor === null
-                ? "Unknown"
-                : money(s.openingBalanceMinor)}
-            </dd>
-          </div>
-          <div>
-            <dt>Provider reference</dt>
-            <dd>{s.providerReference ?? "Not supplied"}</dd>
-          </div>
-          <div>
-            <dt>Verification</dt>
-            <dd>
-              {s.verificationSource} · {s.verifiedDate}
-            </dd>
-          </div>
-          <div>
-            <dt>Recorded at</dt>
-            <dd>{s.createdAt}</dd>
-          </div>
-        </dl>
-        {s.reason && <p className="mt-3">Correction reason: {s.reason}</p>}
-      </Panel>
-      <Panel
-        title="Statement reconciliation"
-        description="Provider evidence and recognized activity are compared without automatic financial adjustments."
-      >
-        <p>Recorded remaining due: {money(r.recordedRemainingDueMinor)}</p>
-        <p>
-          Effective recorded allocations: {money(r.effectiveAllocatedMinor)}.
-          Unrecorded provider payments or credits are not assumed.
-        </p>
-        <p>
-          Superseded unresolved allocations:{" "}
-          {money(r.unresolvedAllocationMinor)}. Provider credit evidence:{" "}
-          {money(r.providerCreditMinor)}. Excess allocated credit:{" "}
-          {money(r.excessCreditMinor)}.
-        </p>
-        <Link
-          href={`${base}/${s.statementId}/allocations${data.isCurrent ? "" : `?revisionId=${s.revisionId}`}`}
-          className="inline-flex min-h-11 text-link underline"
+      <MoneyColumns>
+        <Panel
+          title="Provider snapshot"
+          description="Historical values remain immutable. Corrections create a new verified revision."
         >
-          Confirm allocations and review reversal history
-        </Link>
-        <p>Known provider lines: {money(r.knownProviderLinesMinor)}</p>
-        <p>
-          Unexplained provider difference:{" "}
-          {r.unexplainedDifferenceMinor === null
-            ? "Unknown until the provider opening balance and all line amounts are supplied"
-            : money(r.unexplainedDifferenceMinor)}
-        </p>
-        <p>
-          Linked card activity: {r.linkedCount} · Unlinked provider lines:{" "}
-          {r.unlinkedProviderCount} · Incomplete provider lines:{" "}
-          {r.incompleteProviderCount} · Linked activity corrected since
-          association: {r.changedLinkedCount}
-        </p>
-        <p>
-          Unlinked recognized card activity within the recorded cycle:{" "}
-          {data.unlinkedRecognizedCount}
-          {data.candidatesHaveMore
-            ? " (showing matches from the first 100 cycle choices)"
-            : ""}
-          . Cycle dates suggest candidates only; membership requires provider
-          confirmation.
-        </p>
-        <ul>
-          {data.unlinkedRecognized.map((c) => (
-            <li key={c.actionRevisionId}>
-              <Link
-                href={`/money/actions/${c.actionId}`}
-                className="text-link underline"
-              >
-                {c.description}
-              </Link>{" "}
-              · {c.postingDate} · {money(c.amountMinor)}
-            </li>
-          ))}
-        </ul>
-      </Panel>
+          <dl className="space-y-2">
+            <div>
+              <dt>Billing cycle</dt>
+              <dd>
+                {s.cycleStart} to {s.cycleEnd}
+              </dd>
+            </div>
+            <div>
+              <dt>Due date</dt>
+              <dd>{s.dueDate}</dd>
+            </div>
+            <div>
+              <dt>Historical statement balance</dt>
+              <dd>{money(s.balanceMinor)}</dd>
+            </div>
+            <div>
+              <dt>Minimum due</dt>
+              <dd>{money(s.minimumDueMinor)}</dd>
+            </div>
+            <div>
+              <dt>Provider opening balance</dt>
+              <dd>
+                {s.openingBalanceMinor === null
+                  ? "Unknown"
+                  : money(s.openingBalanceMinor)}
+              </dd>
+            </div>
+            <div>
+              <dt>Provider reference</dt>
+              <dd>{s.providerReference ?? "Not supplied"}</dd>
+            </div>
+            <div>
+              <dt>Verification</dt>
+              <dd>
+                {s.verificationSource} · {s.verifiedDate}
+              </dd>
+            </div>
+            <div>
+              <dt>Recorded at</dt>
+              <dd>{s.createdAt}</dd>
+            </div>
+          </dl>
+          {s.reason && <p className="mt-3">Correction reason: {s.reason}</p>}
+        </Panel>
+        <Panel
+          title="Statement reconciliation"
+          description="Provider evidence and recognized activity are compared without automatic financial adjustments."
+        >
+          <p>Recorded remaining due: {money(r.recordedRemainingDueMinor)}</p>
+          <p>
+            Effective recorded allocations: {money(r.effectiveAllocatedMinor)}.
+            Unrecorded provider payments or credits are not assumed.
+          </p>
+          <p>
+            Superseded unresolved allocations:{" "}
+            {money(r.unresolvedAllocationMinor)}. Provider credit evidence:{" "}
+            {money(r.providerCreditMinor)}. Excess allocated credit:{" "}
+            {money(r.excessCreditMinor)}.
+          </p>
+          <Link
+            href={`${base}/${s.statementId}/allocations${data.isCurrent ? "" : `?revisionId=${s.revisionId}`}`}
+            className="action-link"
+          >
+            Confirm allocations and review reversal history
+          </Link>
+          <p>Known provider lines: {money(r.knownProviderLinesMinor)}</p>
+          <p>
+            Unexplained provider difference:{" "}
+            {r.unexplainedDifferenceMinor === null
+              ? "Unknown until the provider opening balance and all line amounts are supplied"
+              : money(r.unexplainedDifferenceMinor)}
+          </p>
+          <p>
+            Linked card activity: {r.linkedCount} · Unlinked provider lines:{" "}
+            {r.unlinkedProviderCount} · Incomplete provider lines:{" "}
+            {r.incompleteProviderCount} · Linked activity corrected since
+            association: {r.changedLinkedCount}
+          </p>
+          <p>
+            Unlinked recognized card activity within the recorded cycle:{" "}
+            {data.unlinkedRecognizedCount}
+            {data.candidatesHaveMore
+              ? " (showing matches from the first 100 cycle choices)"
+              : ""}
+            . Cycle dates suggest candidates only; membership requires provider
+            confirmation.
+          </p>
+          <ul>
+            {data.unlinkedRecognized.map((c) => (
+              <li key={c.actionRevisionId}>
+                <Link
+                  href={`/money/actions/${c.actionId}`}
+                  className="action-link"
+                >
+                  {c.description}
+                </Link>{" "}
+                · {c.postingDate} · {money(c.amountMinor)}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </MoneyColumns>
       <Panel
         title="Preserved provider lines"
         description="Links retain the exact recognized card activity revision and provider posting date."
@@ -186,7 +197,7 @@ export default async function StatementPage({
                   <>
                     <Link
                       href={`/money/actions/${link.actionId}`}
-                      className="text-link underline"
+                      className="action-link"
                     >
                       Linked card activity
                     </Link>
@@ -213,10 +224,7 @@ export default async function StatementPage({
         )}
       </Panel>
       {data.isCurrent && (
-        <Link
-          href={`${base}/${s.statementId}/revise`}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+        <Link href={`${base}/${s.statementId}/revise`} className="action-link">
           Correct statement evidence
         </Link>
       )}
@@ -229,7 +237,7 @@ export default async function StatementPage({
             <li key={h.revisionId}>
               <Link
                 href={`${base}/${s.statementId}?revisionId=${h.revisionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 Revision {h.version}
               </Link>
@@ -242,10 +250,7 @@ export default async function StatementPage({
           ))}
         </ol>
         {data.historyHasMore && (
-          <Link
-            href={`?offset=${historyOffset + 25}`}
-            className="text-link underline"
-          >
+          <Link href={`?offset=${historyOffset + 25}`} className="action-link">
             Older revisions
           </Link>
         )}

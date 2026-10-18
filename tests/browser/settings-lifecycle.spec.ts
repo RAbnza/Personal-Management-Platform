@@ -79,7 +79,7 @@ async function signIn(page: Page, owner: BrowserOwner, pending = false) {
   expect(response.status()).toBe(200);
   await expect(
     page.getByRole("heading", {
-      name: pending ? "Workspace deletion is pending" : "Dashboard",
+      name: pending ? "Workspace deletion is pending" : "Home",
       exact: true,
     }),
   ).toBeVisible();

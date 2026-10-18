@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ForecastChart } from "./forecast-chart";
 import { useEffect, useId, useRef, useState } from "react";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
@@ -112,6 +113,7 @@ export function ForecastExplorer({ initial }: { initial: Forecast }) {
         and optional what-if assumptions remain separate. No money, obligations
         or reservations are changed.
       </p>
+      <ForecastChart data={data} />
       <Panel
         title="Forecast assumptions"
         description="Review cash expectations, card payment basis and optional what-if entries. No scenario is saved."
@@ -415,118 +417,129 @@ export function ForecastExplorer({ initial }: { initial: Forecast }) {
           with unresolved reconciliation evidence.
         </p>
       </Panel>
-      <Panel
-        title="Dated contributing sources"
-        description="Every source has a date, source version and inclusion explanation. Exclusions apply only to expectations, never recorded cash."
-      >
-        <div className="space-y-4">
-          <ol className="divide-y divide-border">
-            {data.sources
-              .slice(sourcePage * 100, (sourcePage + 1) * 100)
-              .map((s, i) => (
-                <li key={s.key} className="min-w-0 space-y-2 py-3">
-                  <Link
-                    className="block min-h-11 max-w-full break-words text-link underline"
-                    href={s.href}
-                  >
-                    {s.title}
-                  </Link>
-                  <p>
-                    {s.kind} · {s.date ?? "Date unknown"} ·{" "}
-                    {s.amountMinor === null
-                      ? "Amount unknown"
-                      : money(s.amountMinor)}{" "}
-                    ·{" "}
-                    {s.included
-                      ? "Included expectation/recorded evidence"
-                      : s.excludedReason}
-                  </p>
-                  <p className="break-all text-xs text-muted-foreground">
-                    {s.provenance}
-                    {s.timezone ? `; source calendar ${s.timezone}` : ""}
-                  </p>
-                  {s.kind !== "recorded_cash" && (
-                    <label className="flex min-h-11 items-start gap-3">
-                      <input
-                        type="checkbox"
-                        className="mt-1 h-5 w-5 shrink-0"
-                        disabled={pending}
-                        checked={exclusions.includes(s.key)}
-                        onChange={(e) =>
-                          setExclusions(
-                            e.target.checked
-                              ? [...exclusions, s.key]
-                              : exclusions.filter((k) => k !== s.key),
-                          )
-                        }
-                      />
-                      <span>
-                        Exclude source {sourcePage * 100 + i + 1} from scenario
-                      </span>
-                    </label>
-                  )}
-                </li>
-              ))}
+      <details>
+        <summary className="action-link">
+          Review source evidence and exclusions
+        </summary>
+        <Panel
+          title="Dated contributing sources"
+          description="Every source has a date, source version and inclusion explanation. Exclusions apply only to expectations, never recorded cash."
+        >
+          <div className="space-y-4">
+            <ol className="divide-y divide-border">
+              {data.sources
+                .slice(sourcePage * 100, (sourcePage + 1) * 100)
+                .map((s, i) => (
+                  <li key={s.key} className="min-w-0 space-y-2 py-3">
+                    <Link
+                      className="block min-h-11 max-w-full break-words text-link underline"
+                      href={s.href}
+                    >
+                      {s.title}
+                    </Link>
+                    <p>
+                      {s.kind} · {s.date ?? "Date unknown"} ·{" "}
+                      {s.amountMinor === null
+                        ? "Amount unknown"
+                        : money(s.amountMinor)}{" "}
+                      ·{" "}
+                      {s.included
+                        ? "Included expectation/recorded evidence"
+                        : s.excludedReason}
+                    </p>
+                    <p className="break-all text-xs text-muted-foreground">
+                      {s.provenance}
+                      {s.timezone ? `; source calendar ${s.timezone}` : ""}
+                    </p>
+                    {s.kind !== "recorded_cash" && (
+                      <label className="flex min-h-11 items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-5 w-5 shrink-0"
+                          disabled={pending}
+                          checked={exclusions.includes(s.key)}
+                          onChange={(e) =>
+                            setExclusions(
+                              e.target.checked
+                                ? [...exclusions, s.key]
+                                : exclusions.filter((k) => k !== s.key),
+                            )
+                          }
+                        />
+                        <span>
+                          Exclude source {sourcePage * 100 + i + 1} from
+                          scenario
+                        </span>
+                      </label>
+                    )}
+                  </li>
+                ))}
+            </ol>
+            {!data.sources.length && (
+              <p>
+                No supported dated sources. Unrecorded activity remains unknown.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                disabled={sourcePage === 0}
+                onClick={() => setSourcePage((p) => p - 1)}
+              >
+                Previous sources
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={(sourcePage + 1) * 100 >= data.sources.length}
+                onClick={() => setSourcePage((p) => p + 1)}
+              >
+                Next sources
+              </Button>
+            </div>
+            {data.scenario.adjustments.map((a, i) => (
+              <p key={i}>
+                What-if: {a.label}, {a.date}, {a.direction},{" "}
+                {money(a.amountMinor)}.
+              </p>
+            ))}
+          </div>
+        </Panel>
+      </details>
+      <details>
+        <summary className="action-link">
+          Exact daily projected balances
+        </summary>
+        <Panel
+          title="Daily projected path"
+          description="Balances retain negatives and distinguish the bridge from the selected window."
+        >
+          <ol className="space-y-2">
+            {data.daily.slice(dailyPage * 31, (dailyPage + 1) * 31).map((d) => (
+              <li key={d.date}>
+                {d.date}
+                {d.bridge ? " (bridge)" : ""}: movement {money(d.movementMinor)}
+                , closing {money(d.closingMinor)}
+              </li>
+            ))}
           </ol>
-          {!data.sources.length && (
-            <p>
-              No supported dated sources. Unrecorded activity remains unknown.
-            </p>
-          )}
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button
               variant="secondary"
-              disabled={sourcePage === 0}
-              onClick={() => setSourcePage((p) => p - 1)}
+              disabled={dailyPage === 0}
+              onClick={() => setDailyPage((p) => p - 1)}
             >
-              Previous sources
+              Previous days
             </Button>
             <Button
               variant="secondary"
-              disabled={(sourcePage + 1) * 100 >= data.sources.length}
-              onClick={() => setSourcePage((p) => p + 1)}
+              disabled={(dailyPage + 1) * 31 >= data.daily.length}
+              onClick={() => setDailyPage((p) => p + 1)}
             >
-              Next sources
+              Next days
             </Button>
           </div>
-          {data.scenario.adjustments.map((a, i) => (
-            <p key={i}>
-              What-if: {a.label}, {a.date}, {a.direction},{" "}
-              {money(a.amountMinor)}.
-            </p>
-          ))}
-        </div>
-      </Panel>
-      <Panel
-        title="Daily projected path"
-        description="Balances retain negatives and distinguish the bridge from the selected window."
-      >
-        <ol className="space-y-2">
-          {data.daily.slice(dailyPage * 31, (dailyPage + 1) * 31).map((d) => (
-            <li key={d.date}>
-              {d.date}
-              {d.bridge ? " (bridge)" : ""}: movement {money(d.movementMinor)},
-              closing {money(d.closingMinor)}
-            </li>
-          ))}
-        </ol>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button
-            variant="secondary"
-            disabled={dailyPage === 0}
-            onClick={() => setDailyPage((p) => p - 1)}
-          >
-            Previous days
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={(dailyPage + 1) * 31 >= data.daily.length}
-            onClick={() => setDailyPage((p) => p + 1)}
-          >
-            Next days
-          </Button>
-        </div>
-      </Panel>
+        </Panel>
+      </details>
       <Panel
         title="Current savings reservations"
         description="Current supported funding is separate from physical and projected cash. Aggregate comparisons do not allocate future account cash."

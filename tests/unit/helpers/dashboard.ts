@@ -26,6 +26,7 @@ export function dashboardFixture(): DashboardResult {
       scheduledMinor: "0",
       upcomingMinor: "0",
       trackedNetMinor: "0",
+      breakdowns: { categories: [], trend: [], cash: [] },
       spending: {
         grossMinor: "0",
         offsetsMinor: "0",

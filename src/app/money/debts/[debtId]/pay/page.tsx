@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { DebtPaymentForm } from "@/components/money/debt-payment-form";
@@ -30,21 +32,22 @@ export default async function PayDebtPage({
     : "/money/debts";
   return (
     <div className="space-y-6">
-      <header>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-sm font-medium text-link hover:underline"
-        >
+      <div>
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-          Record debt payment
-        </h1>
+        {setup && (
+          <BreadcrumbRecords
+            path={`${back}/pay`}
+            labels={{ [back]: setup.detail.debt.name }}
+          />
+        )}
+        <ScreenHeader scope="Money" title="Record debt payment" />
         <p className="mt-3 text-muted-foreground">
           Record an actual payment with explicit accounting and contractual
           allocations.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"
@@ -58,10 +61,7 @@ export default async function PayDebtPage({
           <p className="text-sm">
             No payment has been submitted. Retry loading before recording it.
           </p>
-          <Link
-            href={`${back}/pay`}
-            className="mt-3 inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`${back}/pay`} className="action-link">
             Retry payment setup
           </Link>
         </Panel>
@@ -76,10 +76,7 @@ export default async function PayDebtPage({
           title="Add a paying account first"
           description="A debt payment must identify the tracked account where cash was actually paid."
         >
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             Add financial account
           </Link>
         </Panel>

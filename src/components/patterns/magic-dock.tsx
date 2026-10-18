@@ -23,15 +23,17 @@ const DockContext = createContext<MotionValue<number> | null>(null);
 export function MagicDock({
   children,
   compact = false,
+  label = "Product navigation prototype",
 }: {
   children: ReactNode;
   compact?: boolean;
+  label?: string;
 }) {
   const mouseX = useMotionValue(Infinity);
   return (
     <DockContext.Provider value={mouseX}>
       <nav
-        aria-label="Product navigation prototype"
+        aria-label={label}
         className={`${styles.dock} ${compact ? styles.compactDock : ""}`}
         onPointerMove={(event) => {
           if (!compact && event.pointerType === "mouse")

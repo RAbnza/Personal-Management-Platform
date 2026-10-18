@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { listCardStatements } from "@/modules/finance/services/read-card-statements";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -26,30 +28,25 @@ export default async function StatementsPage({
     money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-5 break-words">
-      <Link
-        href={`/money/cards/${scope.cardId}`}
-        className="text-link underline"
-      >
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements`}
+        labels={{ [`/money/cards/${scope.cardId}`]: data.card.name }}
+      />
+      <Link href={`/money/cards/${scope.cardId}`} className="action-link">
         {data.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">Provider statements</h1>
+      <ScreenHeader scope="Money" title="Provider statements" />
       <p>
         Verified historical evidence. Statements do not change spending, cash or
         card liability.
       </p>
-      <Link
-        href={`${base}/new`}
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href={`${base}/new`} className="action-link">
         Record verified statement
       </Link>
       <ol className="divide-y divide-border">
         {data.items.map((s) => (
           <li key={s.statementId} className="space-y-2 py-4">
-            <Link
-              href={`${base}/${s.statementId}`}
-              className="text-link underline"
-            >
+            <Link href={`${base}/${s.statementId}`} className="action-link">
               Statement {s.statementDate} · Revision {s.version}
             </Link>
             <p>
@@ -67,7 +64,7 @@ export default async function StatementsPage({
       </ol>
       {!data.items.length && <p>No verified statements recorded.</p>}
       {data.hasMore && (
-        <Link href={`?offset=${offset + 25}`} className="text-link underline">
+        <Link href={`?offset=${offset + 25}`} className="action-link">
           Older statements
         </Link>
       )}

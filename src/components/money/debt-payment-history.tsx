@@ -100,7 +100,7 @@ export function DebtPaymentHistory({
               <p className="text-sm wrap-break-word">
                 <Link
                   href={`/money/actions/${item.actionId}`}
-                  className="text-link underline"
+                  className="action-link"
                 >
                   {item.description}
                 </Link>

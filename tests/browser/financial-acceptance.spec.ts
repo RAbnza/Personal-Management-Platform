@@ -400,10 +400,15 @@ test("salary and gift use selected accounts; transfer fee and category splits re
   await page
     .getByLabel("Description", { exact: true })
     .fill("Transfer with external fee");
-  await expect(page.getByLabel("Transfer preview")).toContainText("PHP 515.00");
+  await page
+    .getByRole("button", { name: "Continue to review", exact: true })
+    .click();
+  await expect(page.getByLabel("Completed transfer preview")).toContainText(
+    "PHP 515.00",
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page
-    .getByRole("button", { name: "Save completed transfer", exact: true })
+    .getByRole("button", { name: "Confirm completed transfer", exact: true })
     .click();
   await expect(page).toHaveURL(/\/money\/accounts$/);
   const afterTransfer = await (

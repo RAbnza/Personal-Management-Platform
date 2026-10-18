@@ -31,7 +31,7 @@ async function signIn(page: Page, owner: BrowserOwner) {
   }
   expect(response.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true }),
+    page.getByRole("heading", { name: "Home", exact: true }),
   ).toBeVisible();
 }
 test("empty tracking remains unknown and quick actions are usable on mobile", async ({
@@ -142,7 +142,7 @@ test("period selection drills into exact spending and owned account history", as
     ),
   );
   await expect(
-    page.getByRole("heading", { name: "Dashboard", level: 1, exact: true }),
+    page.getByRole("heading", { name: "Home", level: 1, exact: true }),
   ).toBeVisible();
   const hideMoney = await page.request.patch(
     "/api/v1/module-preferences/money",
@@ -165,6 +165,9 @@ test("period selection drills into exact spending and owned account history", as
   });
   await page.reload();
   await expect(page.getByText(/Money is hidden in navigation/)).toBeVisible();
+  await page
+    .getByText("Financial details and coverage", { exact: true })
+    .click();
   await page.getByText("Supporting cash accounts", { exact: true }).click();
   await page
     .getByRole("link", { name: "Browser cash: PHP 95.00", exact: true })

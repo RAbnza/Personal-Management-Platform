@@ -217,16 +217,67 @@ export function EntryForm({
         <legend className="mb-3 text-lg font-semibold">
           {entry ? "Edit entry" : "New entry"}
         </legend>
-        {definition.fields
-          .filter((f) => !f.retired)
-          .map((f) => (
-            <FieldInput
-              key={f.key}
-              field={f}
-              value={values[f.key]}
-              set={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
-            />
-          ))}
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          {definition.fields
+            .filter(
+              (f) =>
+                !f.retired &&
+                (f.required ||
+                  [
+                    definition.titleKey,
+                    definition.statusKey,
+                    definition.deadlineKey,
+                    definition.completionKey,
+                  ].includes(f.key)),
+            )
+            .map((f) => (
+              <FieldInput
+                key={f.key}
+                field={f}
+                value={values[f.key]}
+                set={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
+              />
+            ))}
+        </div>
+        {definition.fields.some(
+          (f) =>
+            !f.retired &&
+            !f.required &&
+            ![
+              definition.titleKey,
+              definition.statusKey,
+              definition.deadlineKey,
+              definition.completionKey,
+            ].includes(f.key),
+        ) ? (
+          <details className="rounded-control border border-border p-3">
+            <summary className="min-h-11 cursor-pointer font-semibold">
+              More fields
+            </summary>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {definition.fields
+                .filter(
+                  (f) =>
+                    !f.retired &&
+                    !f.required &&
+                    ![
+                      definition.titleKey,
+                      definition.statusKey,
+                      definition.deadlineKey,
+                      definition.completionKey,
+                    ].includes(f.key),
+                )
+                .map((f) => (
+                  <FieldInput
+                    key={f.key}
+                    field={f}
+                    value={values[f.key]}
+                    set={(v) => setValues((old) => ({ ...old, [f.key]: v }))}
+                  />
+                ))}
+            </div>
+          </details>
+        ) : null}
         <Label title="Reason for this revision">
           <input
             className={control}
@@ -407,6 +458,10 @@ export function TemplateBuilder({
           completedStatusKeys: [],
         },
     ),
+    [selectedField, setSelectedField] = useState(
+      initial?.fields[0]?.key ?? "title",
+    ),
+    [previewValues, setPreviewValues] = useState<Record<string, Value>>({}),
     [reason, setReason] = useState(""),
     [review, setReview] = useState(false),
     [localError, setLocalError] = useState("");
@@ -448,6 +503,7 @@ export function TemplateBuilder({
   );
   return (
     <form
+      noValidate
       className="space-y-5"
       onSubmit={(e) => {
         e.preventDefault();
@@ -494,287 +550,378 @@ export function TemplateBuilder({
             }}
           />
         </Label>
-        {d.fields.map((f, i) => (
-          <fieldset
-            key={f.key}
-            className="min-w-0 space-y-3 rounded-card border border-border p-4"
+        <div className="grid items-start gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] 2xl:grid-cols-[13rem_minmax(0,1fr)_20rem]">
+          <nav
+            aria-label="Template fields"
+            className="rounded-card bg-surface-subtle p-3"
           >
-            <legend className="px-1 font-semibold">
-              Field {i + 1}: {f.label}
-            </legend>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Label title="Label">
-                <input
-                  className={control}
-                  value={f.label}
-                  required
-                  maxLength={120}
-                  onChange={(e) => update(i, { label: e.target.value })}
-                />
-              </Label>
-              <Label title="Field identifier (fixed after creation)">
-                <input className={control} value={f.key} readOnly />
-              </Label>
-              <Label title="Field type">
-                <select
-                  className={control}
-                  value={f.type}
-                  onChange={(e) =>
-                    update(i, {
-                      type: e.target.value as Field["type"],
-                      validation: {},
-                      default: null,
-                      options: [],
-                    })
-                  }
-                >
-                  {["text", "number", "date", "checkbox", "single_select"].map(
-                    (type) => (
-                      <option key={type}>{type}</option>
-                    ),
-                  )}
-                </select>
-              </Label>
-              <Label title="Default">
-                {f.type === "checkbox" || f.type === "single_select" ? (
-                  <select
-                    className={control}
-                    value={
-                      f.default === undefined || f.default === null
-                        ? ""
-                        : String(f.default)
-                    }
-                    onChange={(e) =>
-                      update(i, {
-                        default:
-                          e.target.value === ""
-                            ? null
-                            : f.type === "checkbox"
-                              ? e.target.value === "true"
-                              : e.target.value,
-                      })
-                    }
+            <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider">
+              Compose · {d.fields.length} fields
+            </p>
+            <ol className="space-y-2">
+              {d.fields.map((field, index) => (
+                <li key={field.key}>
+                  <button
+                    type="button"
+                    aria-pressed={selectedField === field.key}
+                    onClick={() => setSelectedField(field.key)}
+                    className={`min-h-11 w-full rounded-control p-3 text-left text-sm ${selectedField === field.key ? "bg-primary text-primary-foreground" : "bg-card"}`}
                   >
-                    <option value="">No default</option>
-                    {f.type === "checkbox" ? (
-                      <>
-                        <option value="true">Checked</option>
-                        <option value="false">Unchecked</option>
-                      </>
-                    ) : (
-                      f.options
-                        .filter((o) => !o.retired)
-                        .map((o) => (
-                          <option key={o.key} value={o.key}>
-                            {o.label}
-                          </option>
-                        ))
-                    )}
-                  </select>
-                ) : (
-                  <input
-                    className={control}
-                    value={
-                      typeof f.default === "boolean"
-                        ? String(f.default)
-                        : (f.default ?? "")
-                    }
-                    placeholder="Leave empty for no default"
-                    onChange={(e) =>
-                      update(i, {
-                        default: e.target.value === "" ? null : e.target.value,
-                      })
-                    }
-                  />
-                )}
-              </Label>
-            </div>
-            <div className="flex flex-wrap gap-5">
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={f.required}
-                  onChange={(e) => update(i, { required: e.target.checked })}
-                />
-                Required
-              </label>
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={f.retired}
-                  onChange={(e) => update(i, { retired: e.target.checked })}
-                />
-                Retired
-              </label>
-              <Button
-                variant="secondary"
-                disabled={i === 0}
-                onClick={() => {
-                  const fields = [...d.fields];
-                  [fields[i - 1], fields[i]] = [fields[i]!, fields[i - 1]!];
-                  setD({ ...d, fields });
-                  setReview(false);
-                }}
-              >
-                Move up
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={i === d.fields.length - 1}
-                onClick={() => {
-                  const fields = [...d.fields];
-                  [fields[i], fields[i + 1]] = [fields[i + 1]!, fields[i]!];
-                  setD({ ...d, fields });
-                  setReview(false);
-                }}
-              >
-                Move down
-              </Button>
-            </div>
-            {["text", "number", "date"].includes(f.type) && (
-              <div className="grid gap-3 md:grid-cols-2">
-                {(f.type === "text"
-                  ? ["minLength", "maxLength"]
-                  : f.type === "number"
-                    ? ["min", "max"]
-                    : ["earliest", "latest"]
-                ).map((key) => (
-                  <Label key={key} title={key}>
-                    <input
-                      className={control}
-                      value={String(
-                        f.validation[key as keyof Field["validation"]] ?? "",
-                      )}
-                      onChange={(e) => {
-                        const validation = { ...f.validation };
-                        if (!e.target.value)
-                          delete validation[key as keyof typeof validation];
-                        else
-                          Object.assign(validation, {
-                            [key]:
-                              f.type === "text"
-                                ? Number(e.target.value)
-                                : e.target.value,
-                          });
-                        update(i, { validation });
-                      }}
-                    />
-                  </Label>
-                ))}
-              </div>
-            )}
-            {f.type === "single_select" && (
-              <fieldset className="space-y-3">
-                <legend>Choices</legend>
-                {f.options.map((o, n) => (
-                  <div key={o.key} className="grid gap-2 md:grid-cols-3">
-                    <Label title={`Choice ${n + 1} identifier`}>
-                      <input className={control} value={o.key} readOnly />
-                    </Label>
-                    <Label title={`Choice ${n + 1} label`}>
+                    <span className="font-semibold">
+                      {index + 1}. {field.label}
+                    </span>
+                    <span className="mt-1 block text-xs opacity-80">
+                      {field.type.replaceAll("_", " ")}
+                      {field.retired
+                        ? " · retired"
+                        : field.required
+                          ? " · required"
+                          : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <Button
+              className="mt-3 w-full"
+              variant="secondary"
+              disabled={d.fields.length >= 30}
+              onClick={() => {
+                const field = newField(
+                  `field_${crypto.randomUUID().slice(0, 8)}`,
+                  "New field",
+                );
+                setD({ ...d, fields: [...d.fields, field] });
+                setSelectedField(field.key);
+                setReview(false);
+              }}
+            >
+              Add field
+            </Button>
+          </nav>
+          <div className="min-w-0">
+            {d.fields.map((f, i) =>
+              selectedField === f.key ? (
+                <fieldset
+                  key={f.key}
+                  className="min-w-0 space-y-3 rounded-card border border-border p-4"
+                >
+                  <legend className="px-1 font-semibold">
+                    Field {i + 1}: {f.label}
+                  </legend>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Label title="Label">
                       <input
                         className={control}
-                        value={o.label}
+                        value={f.label}
                         required
                         maxLength={120}
-                        onChange={(e) =>
-                          update(i, {
-                            options: f.options.map((x, j) =>
-                              j === n ? { ...x, label: e.target.value } : x,
-                            ),
-                          })
-                        }
+                        onChange={(e) => update(i, { label: e.target.value })}
                       />
                     </Label>
+                    <Label title="Field identifier (fixed after creation)">
+                      <input className={control} value={f.key} readOnly />
+                    </Label>
+                    <Label title="Field type">
+                      <select
+                        className={control}
+                        value={f.type}
+                        onChange={(e) =>
+                          update(i, {
+                            type: e.target.value as Field["type"],
+                            validation: {},
+                            default: null,
+                            options: [],
+                          })
+                        }
+                      >
+                        {[
+                          "text",
+                          "number",
+                          "date",
+                          "checkbox",
+                          "single_select",
+                        ].map((type) => (
+                          <option key={type}>{type}</option>
+                        ))}
+                      </select>
+                    </Label>
+                    <Label title="Default">
+                      {f.type === "checkbox" || f.type === "single_select" ? (
+                        <select
+                          className={control}
+                          value={
+                            f.default === undefined || f.default === null
+                              ? ""
+                              : String(f.default)
+                          }
+                          onChange={(e) =>
+                            update(i, {
+                              default:
+                                e.target.value === ""
+                                  ? null
+                                  : f.type === "checkbox"
+                                    ? e.target.value === "true"
+                                    : e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">No default</option>
+                          {f.type === "checkbox" ? (
+                            <>
+                              <option value="true">Checked</option>
+                              <option value="false">Unchecked</option>
+                            </>
+                          ) : (
+                            f.options
+                              .filter((o) => !o.retired)
+                              .map((o) => (
+                                <option key={o.key} value={o.key}>
+                                  {o.label}
+                                </option>
+                              ))
+                          )}
+                        </select>
+                      ) : (
+                        <input
+                          className={control}
+                          value={
+                            typeof f.default === "boolean"
+                              ? String(f.default)
+                              : (f.default ?? "")
+                          }
+                          placeholder="Leave empty for no default"
+                          onChange={(e) =>
+                            update(i, {
+                              default:
+                                e.target.value === "" ? null : e.target.value,
+                            })
+                          }
+                        />
+                      )}
+                    </Label>
+                  </div>
+                  <div className="flex flex-wrap gap-5">
                     <label className="flex min-h-11 items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={o.retired}
+                        checked={f.required}
                         onChange={(e) =>
-                          update(i, {
-                            options: f.options.map((x, j) =>
-                              j === n ? { ...x, retired: e.target.checked } : x,
-                            ),
-                          })
+                          update(i, { required: e.target.checked })
                         }
                       />
-                      Retired choice
+                      Required
                     </label>
+                    <label className="flex min-h-11 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={f.retired}
+                        onChange={(e) =>
+                          update(i, { retired: e.target.checked })
+                        }
+                      />
+                      Retired
+                    </label>
+                    <Button
+                      variant="secondary"
+                      disabled={i === 0}
+                      onClick={() => {
+                        const fields = [...d.fields];
+                        [fields[i - 1], fields[i]] = [
+                          fields[i]!,
+                          fields[i - 1]!,
+                        ];
+                        setD({ ...d, fields });
+                        setReview(false);
+                      }}
+                    >
+                      Move up
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={i === d.fields.length - 1}
+                      onClick={() => {
+                        const fields = [...d.fields];
+                        [fields[i], fields[i + 1]] = [
+                          fields[i + 1]!,
+                          fields[i]!,
+                        ];
+                        setD({ ...d, fields });
+                        setReview(false);
+                      }}
+                    >
+                      Move down
+                    </Button>
                   </div>
-                ))}
-                <Button
-                  variant="secondary"
-                  disabled={f.options.length >= 40}
-                  onClick={() =>
-                    update(i, {
-                      options: [
-                        ...f.options,
-                        {
-                          key: `choice_${crypto.randomUUID().slice(0, 8)}`,
-                          label: "New choice",
-                          retired: false,
-                        },
-                      ],
-                    })
-                  }
-                >
-                  Add choice
-                </Button>
-              </fieldset>
+                  {["text", "number", "date"].includes(f.type) && (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {(f.type === "text"
+                        ? ["minLength", "maxLength"]
+                        : f.type === "number"
+                          ? ["min", "max"]
+                          : ["earliest", "latest"]
+                      ).map((key) => (
+                        <Label key={key} title={key}>
+                          <input
+                            className={control}
+                            value={String(
+                              f.validation[key as keyof Field["validation"]] ??
+                                "",
+                            )}
+                            onChange={(e) => {
+                              const validation = { ...f.validation };
+                              if (!e.target.value)
+                                delete validation[
+                                  key as keyof typeof validation
+                                ];
+                              else
+                                Object.assign(validation, {
+                                  [key]:
+                                    f.type === "text"
+                                      ? Number(e.target.value)
+                                      : e.target.value,
+                                });
+                              update(i, { validation });
+                            }}
+                          />
+                        </Label>
+                      ))}
+                    </div>
+                  )}
+                  {f.type === "single_select" && (
+                    <fieldset className="space-y-3">
+                      <legend>Choices</legend>
+                      {f.options.map((o, n) => (
+                        <div key={o.key} className="grid gap-2 md:grid-cols-3">
+                          <Label title={`Choice ${n + 1} identifier`}>
+                            <input className={control} value={o.key} readOnly />
+                          </Label>
+                          <Label title={`Choice ${n + 1} label`}>
+                            <input
+                              className={control}
+                              value={o.label}
+                              required
+                              maxLength={120}
+                              onChange={(e) =>
+                                update(i, {
+                                  options: f.options.map((x, j) =>
+                                    j === n
+                                      ? { ...x, label: e.target.value }
+                                      : x,
+                                  ),
+                                })
+                              }
+                            />
+                          </Label>
+                          <label className="flex min-h-11 items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={o.retired}
+                              onChange={(e) =>
+                                update(i, {
+                                  options: f.options.map((x, j) =>
+                                    j === n
+                                      ? { ...x, retired: e.target.checked }
+                                      : x,
+                                  ),
+                                })
+                              }
+                            />
+                            Retired choice
+                          </label>
+                        </div>
+                      ))}
+                      <Button
+                        variant="secondary"
+                        disabled={f.options.length >= 40}
+                        onClick={() =>
+                          update(i, {
+                            options: [
+                              ...f.options,
+                              {
+                                key: `choice_${crypto.randomUUID().slice(0, 8)}`,
+                                label: "New choice",
+                                retired: false,
+                              },
+                            ],
+                          })
+                        }
+                      >
+                        Add choice
+                      </Button>
+                    </fieldset>
+                  )}
+                </fieldset>
+              ) : null,
             )}
-          </fieldset>
-        ))}
-        <Button
-          variant="secondary"
-          disabled={d.fields.length >= 30}
-          onClick={() => {
-            setD({
-              ...d,
-              fields: [
-                ...d.fields,
-                newField(
-                  `field_${crypto.randomUUID().slice(0, 8)}`,
-                  "New field",
-                ),
-              ],
-            });
-            setReview(false);
-          }}
-        >
-          Add field
-        </Button>
-        <div className="grid gap-3 md:grid-cols-2">
-          {mapping("titleKey", "Title field", "text")}
-          {mapping("statusKey", "Status field", "single_select")}
-          {mapping("deadlineKey", "Deadline field", "date")}
-          {mapping("completionKey", "Completed checkbox", "checkbox")}
-        </div>
-        {d.statusKey && (
-          <fieldset>
-            <legend>Statuses that mean completed</legend>
-            {d.fields
-              .find((f) => f.key === d.statusKey)
-              ?.options.filter((o) => !o.retired)
-              .map((o) => (
-                <label key={o.key} className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={d.completedStatusKeys.includes(o.key)}
-                    onChange={(e) => {
-                      setD({
-                        ...d,
-                        completedStatusKeys: e.target.checked
-                          ? [...d.completedStatusKeys, o.key]
-                          : d.completedStatusKeys.filter((k) => k !== o.key),
-                      });
-                      setReview(false);
-                    }}
+          </div>
+          <aside className="min-w-0 space-y-4 rounded-card bg-(--teal-surface) p-5 lg:col-span-2 2xl:col-span-1">
+            <p className="text-xs font-semibold uppercase tracking-wider">
+              Live entry preview
+            </p>
+            <h2 className="text-xl font-semibold">{d.name}</h2>
+            <p className="text-xs text-muted-foreground">
+              Try the controls. Preview values are never saved.
+            </p>
+            <div className="max-h-[38rem] space-y-4 overflow-y-auto pr-1">
+              {d.fields
+                .filter((field) => !field.retired)
+                .map((field) => (
+                  <FieldInput
+                    key={`${field.key}:${field.type}`}
+                    field={field}
+                    value={previewValues[field.key] ?? field.default}
+                    set={(value) =>
+                      setPreviewValues((old) => ({
+                        ...old,
+                        [field.key]: value,
+                      }))
+                    }
                   />
-                  {o.label}
-                </label>
-              ))}
-          </fieldset>
-        )}
+                ))}
+            </div>
+          </aside>
+        </div>
+        <details className="rounded-card border border-border p-4">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Connect title, status, deadline and completion
+          </summary>
+          <div className="grid gap-3 md:grid-cols-2">
+            {mapping("titleKey", "Title field", "text")}
+            {mapping("statusKey", "Status field", "single_select")}
+            {mapping("deadlineKey", "Deadline field", "date")}
+            {mapping("completionKey", "Completed checkbox", "checkbox")}
+          </div>
+          {d.statusKey && (
+            <fieldset>
+              <legend>Statuses that mean completed</legend>
+              {d.fields
+                .find((f) => f.key === d.statusKey)
+                ?.options.filter((o) => !o.retired)
+                .map((o) => (
+                  <label
+                    key={o.key}
+                    className="flex min-h-11 items-center gap-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={d.completedStatusKeys.includes(o.key)}
+                      onChange={(e) => {
+                        setD({
+                          ...d,
+                          completedStatusKeys: e.target.checked
+                            ? [...d.completedStatusKeys, o.key]
+                            : d.completedStatusKeys.filter((k) => k !== o.key),
+                        });
+                        setReview(false);
+                      }}
+                    />
+                    {o.label}
+                  </label>
+                ))}
+            </fieldset>
+          )}
+        </details>
         <Label title="Reason for publishing">
           <input
             className={control}

@@ -642,122 +642,7 @@ export function JobApplicationCreateForm({
                 }
               />
             </FormField>
-
-            <FormField
-              htmlFor="career-posting-url"
-              label="Posting URL"
-              description="Optional. The saved role-description snapshot below remains useful if this link later expires."
-              descriptionId="career-posting-url-description"
-              error={errors.postingUrl?.message}
-              errorId="career-posting-url-error"
-            >
-              <Input
-                {...register("postingUrl")}
-                id="career-posting-url"
-                type="url"
-                autoComplete="url"
-                disabled={fieldsDisabled}
-                aria-invalid={Boolean(errors.postingUrl)}
-                aria-describedby={[
-                  "career-posting-url-description",
-                  errors.postingUrl ? "career-posting-url-error" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              />
-            </FormField>
-
-            <FormField
-              htmlFor="career-source"
-              label="Source"
-              description="Optional, such as LinkedIn, JobStreet, referral, or the company careers page."
-              descriptionId="career-source-description"
-            >
-              <Input
-                {...register("sourceName")}
-                id="career-source"
-                autoComplete="off"
-                disabled={fieldsDisabled}
-                aria-describedby="career-source-description"
-              />
-            </FormField>
-
-            <FormField htmlFor="career-location" label="Location">
-              <Input
-                {...register("location")}
-                id="career-location"
-                autoComplete="off"
-                disabled={fieldsDisabled}
-              />
-            </FormField>
-
-            <FormField
-              htmlFor="career-work-arrangement"
-              label="Work arrangement"
-            >
-              <select
-                {...register("workArrangement")}
-                id="career-work-arrangement"
-                disabled={fieldsDisabled}
-                className={selectClassName}
-              >
-                <option value="">Not specified</option>
-
-                {CAREER_WORK_ARRANGEMENTS.map((arrangement) => (
-                  <option key={arrangement} value={arrangement}>
-                    {workArrangementLabels[arrangement]}
-                  </option>
-                ))}
-              </select>
-            </FormField>
           </div>
-
-          <FormField
-            htmlFor="career-role-description"
-            label="Role description snapshot"
-            description="Optional. Save key requirements or the description you actually applied against rather than relying only on an external URL."
-            descriptionId="career-role-description-description"
-            error={errors.roleDescriptionSnapshot?.message}
-            errorId="career-role-description-error"
-          >
-            <Textarea
-              {...register("roleDescriptionSnapshot")}
-              id="career-role-description"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.roleDescriptionSnapshot)}
-              aria-describedby={[
-                "career-role-description-description",
-                errors.roleDescriptionSnapshot
-                  ? "career-role-description-error"
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="career-technologies"
-            label="Technologies"
-            description="Optional comma-separated tags, for example TypeScript, React, PostgreSQL."
-            descriptionId="career-technologies-description"
-            error={errors.technologyTags?.message}
-            errorId="career-technologies-error"
-          >
-            <Input
-              {...register("technologyTags")}
-              id="career-technologies"
-              autoComplete="off"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.technologyTags)}
-              aria-describedby={[
-                "career-technologies-description",
-                errors.technologyTags ? "career-technologies-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
         </fieldset>
 
         <fieldset
@@ -910,36 +795,174 @@ export function JobApplicationCreateForm({
           </FormField>
         </fieldset>
 
-        <fieldset
-          disabled={fieldsDisabled}
-          className="space-y-5 border-t border-border pt-6"
+        <details
+          className="rounded-control border border-border p-4"
+          open={Boolean(
+            errors.postingUrl ||
+            errors.roleDescriptionSnapshot ||
+            errors.technologyTags,
+          )}
         >
-          <legend className="text-sm font-semibold text-foreground">
-            Notes
-          </legend>
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Posting, location and role context
+          </summary>
+          <fieldset disabled={fieldsDisabled} className="space-y-5">
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField
+                htmlFor="career-posting-url"
+                label="Posting URL"
+                description="Optional. The saved role-description snapshot below remains useful if this link later expires."
+                descriptionId="career-posting-url-description"
+                error={errors.postingUrl?.message}
+                errorId="career-posting-url-error"
+              >
+                <Input
+                  {...register("postingUrl")}
+                  id="career-posting-url"
+                  type="url"
+                  autoComplete="url"
+                  disabled={fieldsDisabled}
+                  aria-invalid={Boolean(errors.postingUrl)}
+                  aria-describedby={[
+                    "career-posting-url-description",
+                    errors.postingUrl ? "career-posting-url-error" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                />
+              </FormField>
 
-          <FormField
-            htmlFor="career-notes"
-            label="Application notes"
-            description={`Optional private notes. Your workspace currency is ${workspaceCurrency}; salary details are not required for this first application workflow.`}
-            descriptionId="career-notes-description"
-            error={errors.notes?.message}
-            errorId="career-notes-error"
+              <FormField
+                htmlFor="career-source"
+                label="Source"
+                description="Optional, such as LinkedIn, JobStreet, referral, or the company careers page."
+                descriptionId="career-source-description"
+              >
+                <Input
+                  {...register("sourceName")}
+                  id="career-source"
+                  autoComplete="off"
+                  disabled={fieldsDisabled}
+                  aria-describedby="career-source-description"
+                />
+              </FormField>
+
+              <FormField htmlFor="career-location" label="Location">
+                <Input
+                  {...register("location")}
+                  id="career-location"
+                  autoComplete="off"
+                  disabled={fieldsDisabled}
+                />
+              </FormField>
+
+              <FormField
+                htmlFor="career-work-arrangement"
+                label="Work arrangement"
+              >
+                <select
+                  {...register("workArrangement")}
+                  id="career-work-arrangement"
+                  disabled={fieldsDisabled}
+                  className={selectClassName}
+                >
+                  <option value="">Not specified</option>
+
+                  {CAREER_WORK_ARRANGEMENTS.map((arrangement) => (
+                    <option key={arrangement} value={arrangement}>
+                      {workArrangementLabels[arrangement]}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+
+            <FormField
+              htmlFor="career-role-description"
+              label="Role description snapshot"
+              description="Optional. Save key requirements or the description you actually applied against rather than relying only on an external URL."
+              descriptionId="career-role-description-description"
+              error={errors.roleDescriptionSnapshot?.message}
+              errorId="career-role-description-error"
+            >
+              <Textarea
+                {...register("roleDescriptionSnapshot")}
+                id="career-role-description"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.roleDescriptionSnapshot)}
+                aria-describedby={[
+                  "career-role-description-description",
+                  errors.roleDescriptionSnapshot
+                    ? "career-role-description-error"
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+
+            <FormField
+              htmlFor="career-technologies"
+              label="Technologies"
+              description="Optional comma-separated tags, for example TypeScript, React, PostgreSQL."
+              descriptionId="career-technologies-description"
+              error={errors.technologyTags?.message}
+              errorId="career-technologies-error"
+            >
+              <Input
+                {...register("technologyTags")}
+                id="career-technologies"
+                autoComplete="off"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.technologyTags)}
+                aria-describedby={[
+                  "career-technologies-description",
+                  errors.technologyTags ? "career-technologies-error" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+          </fieldset>
+        </details>
+        <details
+          className="rounded-control border border-border p-4"
+          open={Boolean(errors.notes)}
+        >
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Private notes
+          </summary>
+          <fieldset
+            disabled={fieldsDisabled}
+            className="space-y-5 border-t border-border pt-6"
           >
-            <Textarea
-              {...register("notes")}
-              id="career-notes"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.notes)}
-              aria-describedby={[
-                "career-notes-description",
-                errors.notes ? "career-notes-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
-        </fieldset>
+            <legend className="text-sm font-semibold text-foreground">
+              Notes
+            </legend>
+
+            <FormField
+              htmlFor="career-notes"
+              label="Application notes"
+              description={`Optional private notes. Your workspace currency is ${workspaceCurrency}; salary details are not required for this first application workflow.`}
+              descriptionId="career-notes-description"
+              error={errors.notes?.message}
+              errorId="career-notes-error"
+            >
+              <Textarea
+                {...register("notes")}
+                id="career-notes"
+                disabled={fieldsDisabled}
+                aria-invalid={Boolean(errors.notes)}
+                aria-describedby={[
+                  "career-notes-description",
+                  errors.notes ? "career-notes-error" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+            </FormField>
+          </fieldset>
+        </details>
 
         {saveState === "duplicate" ? (
           <div

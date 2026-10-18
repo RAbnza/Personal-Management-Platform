@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
@@ -27,7 +28,7 @@ import { getPrivateSharingSetup } from "@/modules/finance/services/private-shari
 export default async function MoneyTransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recurringOccurrenceId?: string }>;
+  searchParams: Promise<{ recurringOccurrenceId?: string; kind?: string }>;
 }) {
   const bootstrap = await resolvePrivateAppBootstrap(await headers());
 
@@ -62,7 +63,7 @@ export default async function MoneyTransactionsPage({
   }
 
   const { user, workspace, preference, modules } = bootstrap;
-  const { recurringOccurrenceId } = await searchParams;
+  const { recurringOccurrenceId, kind } = await searchParams;
   let planningSuggestion;
   if (recurringOccurrenceId) {
     if (!z.uuid().safeParse(recurringOccurrenceId).success) notFound();
@@ -100,6 +101,7 @@ export default async function MoneyTransactionsPage({
       <AppShell
         pageTitle="Transactions"
         activePath="/money/transactions"
+        modules={modules}
         userName={user.name}
         userEmail={user.email}
         workspaceTheme={preference.theme}
@@ -110,10 +112,7 @@ export default async function MoneyTransactionsPage({
           title="Money is currently disabled"
           description="Existing financial data remains preserved."
         >
-          <Link
-            href="/onboarding"
-            className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/onboarding" className="action-link">
             Enable Money from Getting Started
           </Link>
         </Panel>
@@ -178,6 +177,7 @@ export default async function MoneyTransactionsPage({
     <AppShell
       pageTitle="Transactions"
       activePath="/money/transactions"
+      modules={modules}
       userName={user.name}
       userEmail={user.email}
       workspaceTheme={preference.theme}
@@ -185,11 +185,8 @@ export default async function MoneyTransactionsPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-8">
-        <header>
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-          >
+        <div>
+          <Link href="/money/accounts" className="action-link">
             <ArrowLeft
               aria-hidden="true"
               className="size-4"
@@ -198,17 +195,13 @@ export default async function MoneyTransactionsPage({
             Back to accounts
           </Link>
 
-          <p className="mt-3 text-sm font-medium text-link">Money</p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
-            Record transaction
-          </h1>
+          <ScreenHeader scope="Money" title="Record transaction" />
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
             Record actual income or a purchase paid from an account or credit
             card.
           </p>
-        </header>
+        </div>
 
         {transactionSetup === null ? (
           <Panel
@@ -220,10 +213,7 @@ export default async function MoneyTransactionsPage({
               financial transaction.
             </p>
 
-            <Link
-              href="/money/transactions"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/transactions" className="action-link">
               <RotateCcw
                 aria-hidden="true"
                 className="size-4"
@@ -243,27 +233,28 @@ export default async function MoneyTransactionsPage({
               transaction&apos;s cash effect belongs.
             </p>
 
-            <Link
-              href="/money/accounts"
-              className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
+            <Link href="/money/accounts" className="action-link">
               Add financial account
             </Link>
-            <Link
-              href="/money/cards"
-              className="ml-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline"
-            >
+            <Link href="/money/cards" className="action-link">
               Add credit card
             </Link>
           </Panel>
         ) : (
           <TransactionCreateForm
+            today={new Intl.DateTimeFormat("en-CA", {
+              timeZone: workspace.timezone,
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(new Date())}
             {...(sharing ? { sharing } : {})}
             key={
               planningSuggestion
                 ? `${planningSuggestion.occurrenceId}:${planningSuggestion.occurrenceVersion}`
                 : "ordinary-transaction"
             }
+            initialKind={kind === "income" ? "income" : "expense"}
             currency={workspace.currency}
             accounts={transactionSetup.accounts.items}
             categories={transactionSetup.categories.items}

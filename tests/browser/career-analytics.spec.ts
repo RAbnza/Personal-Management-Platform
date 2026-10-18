@@ -186,7 +186,7 @@ test("Career cohorts, completed progression, timing, source comparisons and CSV 
   ).toBeVisible();
   await page.goto("/");
   await expect(
-    main(page).getByRole("heading", { name: "Dashboard", exact: true }),
+    main(page).getByRole("heading", { name: "Home", exact: true }),
   ).toBeVisible();
   await main(page)
     .getByRole("link", {

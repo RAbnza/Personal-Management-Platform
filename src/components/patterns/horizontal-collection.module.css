@@ -1,0 +1,66 @@
+.collection {
+  min-width: 0;
+  max-width: 100%;
+}
+.viewport {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding-bottom: 0.25rem;
+  border-radius: 1rem;
+}
+.slide {
+  flex: 0 0 min(88%, 22rem);
+  min-width: 0;
+  scroll-snap-align: start;
+  overflow-wrap: anywhere;
+}
+.viewport[data-mode="single"] .slide {
+  flex-basis: 100%;
+}
+.slide > * {
+  height: 100%;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.controls > div {
+  display: flex;
+  gap: 0.5rem;
+}
+.controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--input);
+  background: var(--surface);
+  color: var(--foreground);
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+.controls button:disabled {
+  color: var(--disabled-foreground);
+  border-color: var(--disabled-border);
+  cursor: default;
+}
+.controls button:not(:disabled):hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewport {
+    scroll-behavior: auto;
+  }
+}

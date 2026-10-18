@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import { BriefcaseBusiness, CalendarClock, MapPin, Plus } from "lucide-react";
 
@@ -77,6 +79,7 @@ function createOlderPageHref(input: {
   cursor: string;
   search: string;
   stage: CareerApplicationStage | null;
+  archive?: "active" | "archived" | "all";
 }): string {
   const query = new URLSearchParams();
 
@@ -89,6 +92,7 @@ function createOlderPageHref(input: {
   }
 
   query.set("cursor", input.cursor);
+  query.set("archive", input.archive ?? "active");
 
   return `/career/applications?${query.toString()}`;
 }
@@ -98,6 +102,7 @@ export interface JobApplicationListProps {
 
   search: string;
   stage: CareerApplicationStage | null;
+  archive?: "active" | "archived" | "all";
 
   paginatedView?: boolean;
 }
@@ -107,12 +112,66 @@ export function JobApplicationList({
   search,
   stage,
   paginatedView = false,
+  archive = "active",
 }: JobApplicationListProps) {
+  const [mode, setMode] = useState("cards");
+  const groups = [
+    ...new Set(
+      applications.items.map((item) =>
+        item.currentOutcome
+          ? `outcome:${item.currentOutcome}`
+          : item.currentStage,
+      ),
+    ),
+  ];
+  const card = (application: JobApplicationListItem) => (
+    <article
+      key={application.applicationId}
+      className="flex h-full min-w-0 flex-col rounded-card border border-border bg-card p-5"
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-(--plum-surface) text-lg font-semibold text-(--plum)">
+          {application.companyName.slice(0, 1)}
+        </span>
+        <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold">
+          {stageLabels[application.currentStage]}
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground">{application.companyName}</p>
+      <Link
+        className="mt-1 inline-flex min-h-11 text-lg font-semibold text-link"
+        href={`/career/applications/${application.applicationId}`}
+      >
+        {application.roleTitle}
+      </Link>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {application.location ?? "Location not recorded"}
+        {application.workArrangement
+          ? ` · ${workArrangementLabels[application.workArrangement]}`
+          : ""}
+      </p>
+      <p className="mt-2 text-xs">
+        {application.currentOutcome
+          ? outcomeLabels[application.currentOutcome]
+          : application.appliedDate
+            ? `Applied ${application.appliedDate}`
+            : "Saved opportunity · not submitted"}
+        {application.archived ? " · Archived" : ""}
+      </p>
+      <div className="mt-auto pt-5">
+        <p className="flex gap-2 rounded-control bg-surface-subtle p-3 text-sm">
+          <CalendarClock className="size-4 shrink-0" aria-hidden="true" />
+          {formatNextAction(application) ?? "No next action scheduled"}
+        </p>
+      </div>
+    </article>
+  );
   return (
     <div className="space-y-5">
       <Panel
         title="Applications"
-        description="Each row represents one application attempt. A later application to the same company and role remains a separate attempt."
+        description="Every opportunity has its own story. Each card is a separate application attempt."
+        descriptionAsHelp
         action={
           <Link
             href="/career/applications/new"
@@ -131,6 +190,36 @@ export function JobApplicationList({
           </Link>
         }
       >
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {applications.items.length} attempts on this page ·{" "}
+            {
+              applications.items.filter(
+                (item) => item.currentStage === "saved" && !item.currentOutcome,
+              ).length
+            }{" "}
+            saved ·{" "}
+            {applications.items.filter((item) => item.nextAction).length} with a
+            next action
+          </p>
+          <div
+            role="group"
+            aria-label="Application view"
+            className="flex rounded-full bg-surface-subtle p-1"
+          >
+            {["cards", "grouped", "table"].map((value) => (
+              <button
+                type="button"
+                key={value}
+                aria-pressed={mode === value}
+                onClick={() => setMode(value)}
+                className={`min-h-11 rounded-full px-4 text-sm capitalize ${mode === value ? "bg-primary text-primary-foreground" : ""}`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
         {applications.items.length === 0 ? (
           <div className="flex gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent text-accent-foreground">
@@ -152,6 +241,33 @@ export function JobApplicationList({
                   : "Add a saved opportunity or an application you have already submitted."}
               </p>
             </div>
+          </div>
+        ) : mode === "cards" ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {applications.items.map(card)}
+          </div>
+        ) : mode === "grouped" ? (
+          <div className="flex snap-x gap-4 overflow-x-auto pb-4">
+            {groups.map((group) => {
+              const items = applications.items.filter(
+                (item) =>
+                  (item.currentOutcome
+                    ? `outcome:${item.currentOutcome}`
+                    : item.currentStage) === group,
+              );
+              return (
+                <section
+                  key={group}
+                  className="w-[min(85vw,21rem)] shrink-0 snap-start rounded-card bg-surface-subtle p-3"
+                >
+                  <h3 className="mb-3 flex justify-between px-2 font-semibold capitalize">
+                    {group.replace("outcome:", "").replaceAll("_", " ")}{" "}
+                    <span>{items.length}</span>
+                  </h3>
+                  <div className="space-y-3">{items.map(card)}</div>
+                </section>
+              );
+            })}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -288,8 +404,9 @@ export function JobApplicationList({
         {paginatedView ? (
           <Link
             href={
-              search || stage
+              search || stage || archive !== "active"
                 ? `/career/applications?${new URLSearchParams({
+                    archive,
                     ...(search
                       ? {
                           search,
@@ -317,6 +434,7 @@ export function JobApplicationList({
               cursor: applications.nextCursor,
               search,
               stage,
+              archive,
             })}
             className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
           >

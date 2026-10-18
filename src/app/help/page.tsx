@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Panel } from "@/components/ui/panel";
+import { ArrowUpRight } from "lucide-react";
 import { GuideTour } from "@/components/help/guide-tour";
 import { getSettingsBootstrap, SettingsShell } from "../settings/_lib";
 const topics = [
@@ -39,26 +39,46 @@ export default async function HelpPage() {
   return (
     <SettingsShell bootstrap={b} title="Help and guides" path="/help">
       <GuideTour />
-      <div className="grid gap-5 md:grid-cols-2">
-        {topics.map(([title, description, href]) => (
-          <Panel key={title} title={title!} description={description!}>
-            <Link
-              className="inline-flex min-h-11 items-center text-link underline"
-              href={href!}
+      <section aria-label="Task guides">
+        <div className="mb-5">
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+            A LITTLE GUIDANCE
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            What would you like to do?
+          </h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {topics.map(([title, description, href], index) => (
+            <details
+              key={title}
+              className="rounded-panel border border-border bg-surface p-5"
             >
-              Open supporting workflow
-            </Link>
-          </Panel>
-        ))}
-      </div>
+              <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+                <span className="mr-3 text-sm text-muted-foreground">
+                  0{index + 1}
+                </span>
+                {title}
+              </summary>
+              <p className="py-4 text-sm leading-7 text-muted-foreground">
+                {description}
+              </p>
+              <Link href={href!} className="action-link">
+                Open {title!.split(" and ")[0]!.toLowerCase()}
+                <ArrowUpRight size={16} />
+              </Link>
+            </details>
+          ))}
+        </div>
+      </section>
       <div className="flex flex-wrap gap-5">
-        <Link href="/onboarding" className="text-link underline">
+        <Link href="/onboarding" className="action-link">
           Resume Getting Started
         </Link>
-        <Link href="/settings" className="text-link underline">
+        <Link href="/settings" className="action-link">
           Manage Settings
         </Link>
-        <Link href="/help/support" className="text-link underline">
+        <Link href="/help/support" className="action-link">
           Support and feedback
         </Link>
       </div>

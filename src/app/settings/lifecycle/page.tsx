@@ -38,7 +38,7 @@ export default async function LifecyclePage() {
         access while deletion is pending.
       </p>
       {preview ? (
-        <Link href="/settings" className="text-link underline">
+        <Link href="/settings" className="action-link">
           Back to Settings
         </Link>
       ) : null}

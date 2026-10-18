@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @import "./tokens.css";
 
+/* A shared, visible affordance for destinations outside prose. */
+.action-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--geometry-radius-button);
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.action-link:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--primary);
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 html {
@@ -151,4 +174,10 @@ svg {
     background: #ffffff;
     color: #000000;
   }
+}
+
+/* Document scrolling reserves dock clearance in the app and design proofs. */
+html:has(.workspace-shell),
+html:has(.design-proof) {
+  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
 }

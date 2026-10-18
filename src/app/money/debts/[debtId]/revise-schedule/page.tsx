@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { Panel } from "@/components/ui/panel";
@@ -35,19 +37,22 @@ export default async function ReviseSchedulePage({
   }).format(new Date());
   return (
     <div className="space-y-6">
-      <header>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+      <div>
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Revise debt schedule</h1>
+        {setup && (
+          <BreadcrumbRecords
+            path={`${back}/revise-schedule`}
+            labels={{ [back]: setup.detail.debt.name }}
+          />
+        )}
+        <ScreenHeader scope="Money" title="Revise debt schedule" />
         <p className="mt-3 text-muted-foreground">
           Review contractual terms, carried payment satisfaction and affected
           Agenda dates. Every finalized version stays in history.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"
@@ -58,10 +63,7 @@ export default async function ReviseSchedulePage({
           title="Schedule revision temporarily unavailable"
           description="The current schedule and allocation snapshot could not be loaded safely."
         >
-          <Link
-            href={`${back}/revise-schedule`}
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`${back}/revise-schedule`} className="action-link">
             Retry loading schedule
           </Link>
         </Panel>

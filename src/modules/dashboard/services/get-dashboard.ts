@@ -15,6 +15,7 @@ import {
   type DashboardQuery,
 } from "@/modules/reporting/domain/period";
 import { readSpendingSummary } from "@/modules/reporting/repositories/financial-report-repository";
+import { readFinancialBreakdowns } from "@/modules/reporting/repositories/financial-overview-repository";
 import {
   readCareerSnapshot,
   readDashboardDebts,
@@ -54,6 +55,11 @@ export async function getDashboardInTransaction(
     endDate: horizon,
   });
   const spending = await readSpendingSummary(t, input.workspaceId, period);
+  const breakdowns = await readFinancialBreakdowns(
+    t,
+    input.workspaceId,
+    period,
+  );
   const reconciliations = await readReconciliationAttention(
     t,
     input.workspaceId,
@@ -238,6 +244,7 @@ export async function getDashboardInTransaction(
         BigInt(liabilitiesMinor)
       ).toString(),
       spending,
+      breakdowns,
       accounts,
       debts,
       cards,

@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
 import { z } from "zod";
@@ -67,10 +69,7 @@ export default async function FinancialActionPage({
         title="Financial evidence unavailable"
         description="Current evidence could not be loaded safely."
       >
-        <Link
-          href={`/money/actions/${id.data}`}
-          className="text-link underline"
-        >
+        <Link href={`/money/actions/${id.data}`} className="action-link">
           Retry loading evidence
         </Link>
       </Panel>
@@ -78,10 +77,14 @@ export default async function FinancialActionPage({
   }
   return (
     <div className="space-y-6">
-      <Link href="/money/actions" className="text-link underline">
+      <Link href="/money/actions" className="action-link">
         Financial activity
       </Link>
-      <h1 className="text-2xl font-semibold">{detail.current.description}</h1>
+      <BreadcrumbRecords
+        path={`/money/actions/${id.data}`}
+        labels={{ [`/money/actions/${id.data}`]: detail.current.description }}
+      />
+      <ScreenHeader scope="Money" title={detail.current.description} />
       <Panel
         title="Current logical action"
         description="One business action with its current revision and complete correction history."
@@ -120,7 +123,7 @@ export default async function FinancialActionPage({
               <li key={link.occurrenceId}>
                 <Link
                   href={`/money/recurring/occurrences/${link.occurrenceId}`}
-                  className="inline-block min-h-11 max-w-full break-words text-link underline"
+                  className="action-link"
                 >
                   {link.name} · {link.dueDate} ·{" "}
                   {formatMoneyMinorUnits(workspace.currency, link.linkedMinor)}{" "}
@@ -151,13 +154,13 @@ export default async function FinancialActionPage({
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`/money/cards/${detail.current.evidence.cardId}/installments/new?purchaseActionId=${id.data}`}
               >
                 Record provider installment schedule
               </Link>
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`/money/cards/${detail.current.evidence.cardId}/installments`}
               >
                 View provider installment plans
@@ -188,7 +191,7 @@ export default async function FinancialActionPage({
             </p>
           )}
           <Link
-            className="text-link underline"
+            className="action-link"
             href={
               detail.privateGroupLink.expenseId
                 ? `/sharing/${detail.privateGroupLink.groupId}/expenses/${detail.privateGroupLink.expenseId}`

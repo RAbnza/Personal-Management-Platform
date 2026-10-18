@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { CardCreateForm } from "@/components/money/card-create-form";
 import Link from "next/link";
@@ -43,34 +45,63 @@ export default async function CardPage({
   const money = (n: string) => formatMoneyMinorUnits(data.card.currency, n);
   return (
     <div className="space-y-6 break-words">
-      <Link href="/money/cards" className="text-link underline">
+      <Link href="/money/cards" className="action-link">
         Credit cards
       </Link>
-      <h1 className="text-2xl font-semibold">{data.card.name}</h1>
+      <BreadcrumbRecords
+        path={`/money/cards/${id.data}`}
+        labels={{ [`/money/cards/${id.data}`]: data.card.name }}
+      />
+      <ScreenHeader scope="Money" title={data.card.name} />
       <p>
         {data.card.issuerName} · Posted outstanding{" "}
         {money(data.card.postedOutstandingMinor)} · Card credit{" "}
         {money(data.card.cardCreditMinor)}
       </p>
-      <Link
-        href="/money/transactions"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href="/money/transactions" className="action-link">
         Add Expense
       </Link>
-      <Link
-        href={`/money/actions?cardId=${id.data}`}
-        className="ml-4 inline-flex min-h-11 items-center text-link underline"
-      >
+      <Link href={`/money/actions?cardId=${id.data}`} className="action-link">
         Financial history for this card
       </Link>
-      <Link
-        href={`/money/cards/${id.data}/statements`}
-        className="block min-h-11 text-link underline"
-      >
+      <Link href={`/money/cards/${id.data}/statements`} className="action-link">
         Provider statements and reconciliation
       </Link>
-      <CardSurfacePanel data={data.cardSurface} currency={data.card.currency} />
+      <nav
+        aria-label="Card views"
+        className="flex flex-wrap gap-2 border-b border-border pb-3 text-sm font-semibold text-link"
+      >
+        <a
+          href="#card-overview"
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Overview
+        </a>
+        <a
+          href="#card-activity"
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Activity
+        </a>
+        <Link
+          href={`/money/cards/${id.data}/statements`}
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Statements
+        </Link>
+        <Link
+          href={`/money/cards/${id.data}/installments`}
+          className="inline-flex min-h-11 items-center px-3"
+        >
+          Installments
+        </Link>
+      </nav>
+      <div id="card-overview">
+        <CardSurfacePanel
+          data={data.cardSurface}
+          currency={data.card.currency}
+        />
+      </div>
       <Panel
         title="Installment details"
         description="Optional provider schedules for already recognized purchases."
@@ -81,7 +112,7 @@ export default async function CardPage({
           </summary>
           <Link
             href={`/money/cards/${id.data}/installments`}
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
           >
             Manage provider schedules and confirmed applications
           </Link>
@@ -93,7 +124,7 @@ export default async function CardPage({
       >
         <Link
           href={`/money/cards/${id.data}/commands/new`}
-          className="inline-flex min-h-11 text-link underline"
+          className="action-link"
         >
           Record payment, fee, interest or refund
         </Link>
@@ -110,6 +141,7 @@ export default async function CardPage({
         </details>
       </Panel>
       <Panel
+        id="card-activity"
         title="Card activity history"
         description="Every preserved purchase, payment, fee, interest and refund revision. Transaction dates determine reporting periods; provider posting dates retain evidence. Liability changes include reversals and replacements."
       >
@@ -118,7 +150,7 @@ export default async function CardPage({
             <li key={i.actionRevisionId} className="space-y-1 py-4">
               <Link
                 href={`/money/actions/${i.actionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 {i.description}
               </Link>
@@ -146,18 +178,12 @@ export default async function CardPage({
         </ol>
         {!data.items.length && <p>No posted card activity yet.</p>}
         {data.hasMore && (
-          <Link
-            href={`?offset=${page.data + 100}`}
-            className="inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href={`?offset=${page.data + 100}`} className="action-link">
             Older activity
           </Link>
         )}
         {page.data > 0 && (
-          <Link
-            href="?offset=0"
-            className="ml-4 inline-flex min-h-11 items-center text-link underline"
-          >
+          <Link href="?offset=0" className="action-link">
             Latest activity
           </Link>
         )}

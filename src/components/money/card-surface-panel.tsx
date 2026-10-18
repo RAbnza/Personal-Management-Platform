@@ -1,3 +1,5 @@
+import styles from "./money-workspace.module.css";
+import { InfoTip } from "@/components/ui/info-tip";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -17,9 +19,10 @@ export function CardSurfacePanel({
     <Panel
       className="break-words"
       title="Credit card overview"
+      descriptionAsHelp
       description={`Current posted balances and provider evidence as of ${data.basisDate}. Projections cover ${data.projectionStart} through ${data.projectionEnd}.`}
     >
-      <dl className="grid gap-4 sm:grid-cols-2">
+      <dl className={styles.cardMetrics}>
         <div>
           <dt>Posted card outstanding</dt>
           <dd>{money(data.totals.postedOutstandingMinor)}</dd>
@@ -42,97 +45,120 @@ export function CardSurfacePanel({
           </dd>
         </div>
       </dl>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Available credit is an estimate from verified limits and posted
-        outstanding. Pending authorizations and provider credit rules are
-        unknown. Card credit does not increase this estimate.
-      </p>
-      <ul className="mt-4 divide-y divide-border">
-        {data.cards.slice(0, 10).map((c) => (
-          <li key={c.cardId} className="space-y-2 py-4">
-            <Link
-              href={`/money/cards/${c.cardId}`}
-              className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
-            >
-              {c.name}
-              {c.archived ? " (archived)" : ""}
-            </Link>
-            <p>
-              Posted outstanding {money(c.postedOutstandingMinor)} · Card credit{" "}
-              {money(c.cardCreditMinor)}
-            </p>
-            <p>
-              Available credit estimate {money(c.availableCreditEstimateMinor)}{" "}
-              · Utilization {c.utilizationPercent ?? "Unavailable"} · Limit{" "}
-              {c.limitStatus}
-              {c.limitVerifiedDate ? ` (${c.limitVerifiedDate})` : ""}
-            </p>
-            {c.latestStatement ? (
-              <div>
-                <Link
-                  className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
-                  href={`/money/cards/${c.cardId}/statements/${c.latestStatement.statementId}`}
-                >
-                  Latest verified statement: {c.latestStatement.statementDate}
-                </Link>
-                <p>
-                  Provider balance {money(c.latestStatement.balanceMinor)} ·
-                  Remaining due {money(c.latestStatement.remainingDueMinor)} ·
-                  Recorded minimum due{" "}
-                  {money(c.latestStatement.minimumDueMinor)} · Due{" "}
-                  {c.latestStatement.dueDate}
-                </p>
-                <p>
-                  Confirmed allocated {money(c.latestStatement.allocatedMinor)}{" "}
-                  · Statement credit{" "}
-                  {money(c.latestStatement.statementCreditMinor)}
-                </p>
-                {(c.latestStatement.unresolvedAllocationMinor !== "0" ||
-                  c.latestStatement.unresolvedEntryCount !== "0") && (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        Estimated credit availability{" "}
+        <InfoTip title="Available credit">
+          {" "}
+          <p className="mt-4 text-sm text-muted-foreground">
+            Available credit is an estimate from verified limits and posted
+            outstanding. Pending authorizations and provider credit rules are
+            unknown. Card credit does not increase this estimate.
+          </p>
+        </InfoTip>
+      </div>
+      {data.cards.some((c) => !c.latestStatement) && (
+        <p className="mt-3 text-sm text-warning">
+          Some cards have no verified statement. Their provider dues remain
+          unknown.
+        </p>
+      )}
+      {data.cards.some(
+        (c) =>
+          c.latestStatement &&
+          (c.latestStatement.unresolvedAllocationMinor !== "0" ||
+            c.latestStatement.unresolvedEntryCount !== "0" ||
+            c.latestStatement.unexplainedDifferenceMinor !== "0"),
+      ) && (
+        <p className="mt-3 text-sm text-warning">
+          Some statements have unresolved differences. Review statement details
+          before relying on totals.
+        </p>
+      )}
+      <details className={styles.options}>
+        <summary>
+          Statements and card details <span>{data.cards.length} tracked</span>
+        </summary>{" "}
+        <ul className="mt-4 divide-y divide-border">
+          {data.cards.slice(0, 10).map((c) => (
+            <li key={c.cardId} className="space-y-2 py-4">
+              <Link href={`/money/cards/${c.cardId}`} className="action-link">
+                {c.name}
+                {c.archived ? " (archived)" : ""}
+              </Link>
+              <p>
+                Posted outstanding {money(c.postedOutstandingMinor)} · Card
+                credit {money(c.cardCreditMinor)}
+              </p>
+              <p>
+                Available credit estimate{" "}
+                {money(c.availableCreditEstimateMinor)} · Utilization{" "}
+                {c.utilizationPercent ?? "Unavailable"} · Limit {c.limitStatus}
+                {c.limitVerifiedDate ? ` (${c.limitVerifiedDate})` : ""}
+              </p>
+              {c.latestStatement ? (
+                <div>
+                  <Link
+                    className="action-link"
+                    href={`/money/cards/${c.cardId}/statements/${c.latestStatement.statementId}`}
+                  >
+                    Latest verified statement: {c.latestStatement.statementDate}
+                  </Link>
                   <p>
-                    Review reconciliation: unresolved allocations{" "}
-                    {money(c.latestStatement.unresolvedAllocationMinor)};
-                    unresolved provider lines{" "}
-                    {c.latestStatement.unresolvedEntryCount}.
+                    Provider balance {money(c.latestStatement.balanceMinor)} ·
+                    Remaining due {money(c.latestStatement.remainingDueMinor)} ·
+                    Recorded minimum due{" "}
+                    {money(c.latestStatement.minimumDueMinor)} · Due{" "}
+                    {c.latestStatement.dueDate}
                   </p>
-                )}
+                  <p>
+                    Confirmed allocated{" "}
+                    {money(c.latestStatement.allocatedMinor)} · Statement credit{" "}
+                    {money(c.latestStatement.statementCreditMinor)}
+                  </p>
+                  {(c.latestStatement.unresolvedAllocationMinor !== "0" ||
+                    c.latestStatement.unresolvedEntryCount !== "0") && (
+                    <p>
+                      Review reconciliation: unresolved allocations{" "}
+                      {money(c.latestStatement.unresolvedAllocationMinor)};
+                      unresolved provider lines{" "}
+                      {c.latestStatement.unresolvedEntryCount}.
+                    </p>
+                  )}
+                  <p>
+                    Unexplained provider difference{" "}
+                    {money(c.latestStatement.unexplainedDifferenceMinor)} ·
+                    Unlinked recognized activity{" "}
+                    {c.latestStatement.unlinkedRecognizedCount}
+                  </p>
+                  <Link
+                    href={`/calendar/reminders/card_statement/${c.latestStatement.statementId}`}
+                    className="action-link"
+                  >
+                    Statement reminder controls
+                  </Link>
+                </div>
+              ) : (
                 <p>
-                  Unexplained provider difference{" "}
-                  {money(c.latestStatement.unexplainedDifferenceMinor)} ·
-                  Unlinked recognized activity{" "}
-                  {c.latestStatement.unlinkedRecognizedCount}
+                  No verified statement recorded. Provider dues remain unknown.
                 </p>
-                <Link
-                  href={`/calendar/reminders/card_statement/${c.latestStatement.statementId}`}
-                  className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
-                >
-                  Statement reminder controls
-                </Link>
-              </div>
-            ) : (
-              <p>
-                No verified statement recorded. Provider dues remain unknown.
-              </p>
-            )}
-            {c.olderUnpaidStatementCount > 0 && (
-              <p>
-                {c.olderUnpaidStatementCount} older recorded statements have
-                remaining amounts; review for carried balances before combining
-                dues.
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+              )}
+              {c.olderUnpaidStatementCount > 0 && (
+                <p>
+                  {c.olderUnpaidStatementCount} older recorded statements have
+                  remaining amounts; review for carried balances before
+                  combining dues.
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </details>
       {!data.cards.length && <p className="mt-4">No tracked cards.</p>}
       {data.cards.length > 10 && (
         <p>
           Showing 10 of {data.cards.length} cards. Totals include all owned
           cards.{" "}
-          <Link
-            className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
-            href="/money/cards"
-          >
+          <Link className="action-link" href="/money/cards">
             Manage recorded cards
           </Link>
         </p>
@@ -156,7 +182,7 @@ export function CardSurfacePanel({
           {data.installments.slice(0, 20).map((i) => (
             <li key={i.installmentId} className="space-y-1 py-3">
               <Link
-                className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
+                className="action-link"
                 href={`/money/cards/${i.cardId}/installments/${i.planId}`}
               >
                 {names.get(i.cardId)} · Installment {i.sequenceNo} · Due{" "}
@@ -169,7 +195,7 @@ export function CardSurfacePanel({
                 {money(i.remainingTotalMinor)}
               </p>
               <Link
-                className="inline-block min-h-11 max-w-full break-words py-2 text-link underline"
+                className="action-link"
                 href={`/calendar/reminders/card_installment/${i.installmentId}`}
               >
                 Installment reminder controls

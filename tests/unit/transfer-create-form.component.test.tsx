@@ -158,7 +158,53 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+async function reviewAndConfirm(user: ReturnType<typeof userEvent.setup>) {
+  const calls = fetchMock.mock.calls.length;
+  await user.click(screen.getByRole("button", { name: "Continue to review" }));
+  const confirm = screen.queryByRole("button", {
+    name: "Confirm completed transfer",
+  });
+  expect(fetchMock.mock.calls.length).toBe(calls);
+  if (confirm) await user.click(confirm);
+}
 describe("TransferCreateForm", () => {
+  it("uses the visible account-based description and server date for a minimal transfer", async () => {
+    fetchMock.mockResolvedValueOnce(createSuccessResponse());
+    render(
+      <TransferCreateForm
+        currency="PHP"
+        accounts={accounts}
+        categories={categories}
+        today="2026-10-08"
+      />,
+    );
+    const user = userEvent.setup();
+    expect(screen.getByLabelText("Transfer date")).toHaveValue("2026-10-08");
+    expect(screen.getByLabelText("Description")).toHaveAttribute(
+      "placeholder",
+      "Transfer from GCash to MariBank",
+    );
+    await user.type(
+      screen.getByLabelText("Amount destination receives (PHP)"),
+      "25.01",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Continue to review" }),
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Transfer from GCash to MariBank")).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Confirm completed transfer" }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toMatchObject({
+      description: "Transfer from GCash to MariBank",
+      effectiveDate: "2026-10-08",
+      destinationPrincipalMinor: "2501",
+      fees: [],
+    });
+  });
+
   it("records an exact fee-free completed transfer", async () => {
     fetchMock.mockResolvedValueOnce(createSuccessResponse());
 
@@ -188,11 +234,7 @@ describe("TransferCreateForm", () => {
       "Move money to savings",
     );
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save completed transfer",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledOnce();
@@ -249,6 +291,9 @@ describe("TransferCreateForm", () => {
     );
 
     await user.click(
+      screen.getByText(/^Transfer fees/, { selector: "summary" }),
+    );
+    await user.click(
       screen.getByRole("button", {
         name: "Add fee",
       }),
@@ -261,6 +306,16 @@ describe("TransferCreateForm", () => {
       "15.00",
     );
 
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Description",
+      }),
+      "GCash to MariBank",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Continue to review" }),
+    );
     const preview = screen.getByRole("region", {
       name: "Completed transfer preview",
     });
@@ -277,17 +332,9 @@ describe("TransferCreateForm", () => {
       within(preview).getAllByText("PHP 15.00").length,
     ).toBeGreaterThanOrEqual(1);
 
-    await user.type(
-      screen.getByRole("textbox", {
-        name: "Description",
-      }),
-      "GCash to MariBank",
-    );
-
+    expect(fetchMock).not.toHaveBeenCalled();
     await user.click(
-      screen.getByRole("button", {
-        name: "Save completed transfer",
-      }),
+      screen.getByRole("button", { name: "Confirm completed transfer" }),
     );
 
     await waitFor(() => {
@@ -359,6 +406,9 @@ describe("TransferCreateForm", () => {
     );
 
     await user.click(
+      screen.getByText(/^Transfer fees/, { selector: "summary" }),
+    );
+    await user.click(
       screen.getByRole("button", {
         name: "Add fee",
       }),
@@ -394,11 +444,7 @@ describe("TransferCreateForm", () => {
       "Transfer with separate fee",
     );
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save completed transfer",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledOnce();
@@ -459,11 +505,7 @@ describe("TransferCreateForm", () => {
       "Invalid transfer",
     );
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save completed transfer",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     expect(
       await screen.findByText(
@@ -520,11 +562,7 @@ describe("TransferCreateForm", () => {
       "Retry transfer",
     );
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "Save completed transfer",
-      }),
-    );
+    await reviewAndConfirm(user);
 
     expect(
       await screen.findByText("Save outcome unconfirmed"),

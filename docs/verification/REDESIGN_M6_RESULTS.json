@@ -1,0 +1,396 @@
+{
+  "baseline": "1cab7e29b3ecb6c5c0f5f5b58abf015debd522c0",
+  "visualApproval": "M1-M5; 2026-10-18 Asia/Manila",
+  "browser": {
+    "startTime": "2026-10-18T15:31:16.011Z",
+    "duration": 142329.536,
+    "expected": 10,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "coverage": {
+    "sourcePageFiles": 71,
+    "visitedPaths": 76,
+    "missing": [],
+    "inventory": [
+      {
+        "route": "/auth/forgot-password",
+        "covered": true
+      },
+      {
+        "route": "/auth/reset-password",
+        "covered": true
+      },
+      {
+        "route": "/auth/sign-in",
+        "covered": true
+      },
+      {
+        "route": "/auth/sign-up",
+        "covered": true
+      },
+      {
+        "route": "/auth/verify-email",
+        "covered": true
+      },
+      {
+        "route": "/calendar/events/[eventId]",
+        "covered": true
+      },
+      {
+        "route": "/calendar",
+        "covered": true
+      },
+      {
+        "route": "/calendar/reminders/[sourceKind]/[sourceId]",
+        "covered": true
+      },
+      {
+        "route": "/career/applications/new",
+        "covered": true
+      },
+      {
+        "route": "/career/applications",
+        "covered": true
+      },
+      {
+        "route": "/career/applications/[applicationId]",
+        "covered": true
+      },
+      {
+        "route": "/dashboard/spending",
+        "covered": true
+      },
+      {
+        "route": "/dev/design",
+        "covered": "production-404"
+      },
+      {
+        "route": "/help",
+        "covered": true
+      },
+      {
+        "route": "/help/support",
+        "covered": true
+      },
+      {
+        "route": "/money/accounts",
+        "covered": true
+      },
+      {
+        "route": "/money/accounts/[accountId]/history",
+        "covered": true
+      },
+      {
+        "route": "/money/accounts/[accountId]/reconcile",
+        "covered": true
+      },
+      {
+        "route": "/money/actions",
+        "covered": true
+      },
+      {
+        "route": "/money/actions/[actionId]",
+        "covered": true
+      },
+      {
+        "route": "/money/budgets",
+        "covered": true
+      },
+      {
+        "route": "/money/budgets/[budgetId]",
+        "covered": true
+      },
+      {
+        "route": "/money/cards",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/commands/new",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/installments/new",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/installments",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/installments/[planId]/applications",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/installments/[planId]",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/installments/[planId]/revise",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/statements/new",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/statements",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/statements/[statementId]/allocations",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/statements/[statementId]",
+        "covered": true
+      },
+      {
+        "route": "/money/cards/[cardId]/statements/[statementId]/revise",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/borrow",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/import",
+        "covered": true
+      },
+      {
+        "route": "/money/debts",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/[debtId]",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/[debtId]/pay",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/[debtId]/revise-schedule",
+        "covered": true
+      },
+      {
+        "route": "/money/debts/[debtId]/settle",
+        "covered": true
+      },
+      {
+        "route": "/money/forecasts",
+        "covered": true
+      },
+      {
+        "route": "/money/goals",
+        "covered": true
+      },
+      {
+        "route": "/money/goals/[goalId]",
+        "covered": true
+      },
+      {
+        "route": "/money/recurring/occurrences/[occurrenceId]",
+        "covered": true
+      },
+      {
+        "route": "/money/recurring",
+        "covered": true
+      },
+      {
+        "route": "/money/recurring/[obligationId]",
+        "covered": true
+      },
+      {
+        "route": "/money/transactions",
+        "covered": true
+      },
+      {
+        "route": "/money/transfers",
+        "covered": true
+      },
+      {
+        "route": "/onboarding",
+        "covered": true
+      },
+      {
+        "route": "/",
+        "covered": true
+      },
+      {
+        "route": "/reports/career",
+        "covered": true
+      },
+      {
+        "route": "/reports/financial/detail",
+        "covered": true
+      },
+      {
+        "route": "/reports/financial",
+        "covered": true
+      },
+      {
+        "route": "/reports",
+        "covered": true
+      },
+      {
+        "route": "/settings/files",
+        "covered": true
+      },
+      {
+        "route": "/settings/lifecycle",
+        "covered": true
+      },
+      {
+        "route": "/settings/notifications",
+        "covered": true
+      },
+      {
+        "route": "/settings",
+        "covered": true
+      },
+      {
+        "route": "/settings/portability",
+        "covered": true
+      },
+      {
+        "route": "/settings/sessions",
+        "covered": true
+      },
+      {
+        "route": "/sharing/invitations",
+        "covered": true
+      },
+      {
+        "route": "/sharing",
+        "covered": true
+      },
+      {
+        "route": "/sharing/[groupId]/effects/[sourceKind]/[sourceId]",
+        "covered": true
+      },
+      {
+        "route": "/sharing/[groupId]/expenses/new",
+        "covered": true
+      },
+      {
+        "route": "/sharing/[groupId]/expenses/[expenseId]",
+        "covered": true
+      },
+      {
+        "route": "/sharing/[groupId]",
+        "covered": true
+      },
+      {
+        "route": "/sharing/[groupId]/people/[participantId]",
+        "covered": true
+      },
+      {
+        "route": "/trackers/reports",
+        "covered": true
+      },
+      {
+        "route": "/trackers/[[...path]]",
+        "covered": true
+      }
+    ]
+  },
+  "accessibility": {
+    "axeAudits": 25,
+    "violations": 0,
+    "responsiveCases": 70,
+    "textEnlargement": [
+      {
+        "route": "/settings/portability",
+        "textScale": 2,
+        "width": 320,
+        "overflow": false
+      },
+      {
+        "route": "/settings/portability",
+        "textScale": 4,
+        "width": 320,
+        "overflow": false
+      }
+    ],
+    "pageErrors": []
+  },
+  "performance": {
+    "environment": "Headless installed Chrome; local Linux production container; small isolated synthetic profile; loopback network",
+    "routeSamples": 67,
+    "medianMs": 413,
+    "observedP95Ms": 512,
+    "maxMs": 1143,
+    "cpu4": [
+      {
+        "route": "/calendar",
+        "cpuThrottle": 4,
+        "readyMs": 754
+      }
+    ],
+    "bundles": {
+      "buildId": "5RoboEJQAup3irqTwLMbX",
+      "definition": "Unique client-reference JS chunks gzipped individually; not network or hydration",
+      "results": [
+        {
+          "route": "/auth/sign-in",
+          "chunks": 7,
+          "rawBytes": 536426,
+          "gzipBytes": 140580
+        },
+        {
+          "route": "/",
+          "chunks": 13,
+          "rawBytes": 1235546,
+          "gzipBytes": 355494
+        },
+        {
+          "route": "/calendar",
+          "chunks": 13,
+          "rawBytes": 1132343,
+          "gzipBytes": 323362
+        },
+        {
+          "route": "/reports/financial",
+          "chunks": 12,
+          "rawBytes": 795549,
+          "gzipBytes": 249134
+        },
+        {
+          "route": "/reports/career",
+          "chunks": 12,
+          "rawBytes": 795549,
+          "gzipBytes": 249134
+        },
+        {
+          "route": "/money/forecasts",
+          "chunks": 12,
+          "rawBytes": 781143,
+          "gzipBytes": 246304
+        },
+        {
+          "route": "/trackers/reports",
+          "chunks": 12,
+          "rawBytes": 764283,
+          "gzipBytes": 240350
+        }
+      ]
+    }
+  },
+  "tests": {
+    "distinctUnitComponentChecks": 68,
+    "selectedIntegrationChecks": 26,
+    "browserJourneys": 10
+  },
+  "limitations": [
+    "No manual screen-reader or physical Android session",
+    "Text enlargement and reflow do not certify native browser-UI zoom",
+    "Large-profile throughput, CLS and operational provider certification not rerun",
+    "Existing broad filesystem tracing warning retained"
+  ]
+}

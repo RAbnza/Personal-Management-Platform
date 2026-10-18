@@ -1,0 +1,75 @@
+.calendar-workspace {
+  --fc-monarch-primary: var(--primary);
+  --fc-monarch-primary-foreground: var(--primary-foreground);
+  --fc-monarch-primary-over: var(--primary-hover);
+  --fc-monarch-primary-down: var(--primary-pressed);
+  --fc-monarch-secondary: var(--accent);
+  --fc-monarch-secondary-foreground: var(--accent-foreground);
+  --fc-monarch-secondary-over: var(--surface-subtle);
+  --fc-monarch-secondary-down: var(--accent);
+  --fc-monarch-tertiary: var(--primary);
+  --fc-monarch-tertiary-foreground: var(--primary-foreground);
+  --fc-monarch-selected: var(--primary);
+  --fc-monarch-selected-foreground: var(--primary-foreground);
+  --fc-monarch-selected-over: var(--primary-hover);
+  --fc-monarch-selected-down: var(--primary-pressed);
+  --fc-monarch-outline: var(--ring);
+  --fc-monarch-event: var(--primary);
+  --fc-monarch-event-contrast: var(--primary-foreground);
+  --fc-monarch-highlight: var(--accent);
+  --fc-monarch-now: var(--danger);
+  --fc-monarch-background: var(--card);
+  --fc-monarch-popover: var(--popover);
+  --fc-monarch-foreground: var(--foreground);
+  --fc-monarch-faint-foreground: var(--muted-foreground);
+  --fc-monarch-muted-foreground: var(--muted-foreground);
+  --fc-monarch-faint: var(--surface-subtle);
+  --fc-monarch-muted: var(--accent);
+  --fc-monarch-strong: var(--border);
+  --fc-monarch-stronger: var(--input);
+  --fc-monarch-strongest: var(--ring);
+  --fc-monarch-border: var(--border);
+  --fc-monarch-strong-border: var(--input);
+}
+.calendar-source-money {
+  --source-color: var(--chart-1);
+}
+.calendar-source-career {
+  --source-color: var(--chart-3);
+}
+.calendar-source-time {
+  --source-color: var(--chart-2);
+}
+.calendar-source-trackers {
+  --source-color: var(--chart-4);
+}
+.calendar-source-all {
+  --source-color: var(--primary);
+}
+.source-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.45rem;
+  border-radius: 50%;
+  background: var(--source-color);
+}
+.calendar-canvas [class*="calendar-source-"] {
+  border-inline-start: 4px solid var(--source-color);
+}
+.calendar-canvas a {
+  cursor: pointer;
+}
+.calendar-canvas button:focus-visible,
+.calendar-canvas a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (max-width: 639px) {
+  .calendar-canvas {
+    font-size: 12px;
+  }
+  .calendar-canvas [class*="calendar-source-"] {
+    font-size: 10px;
+  }
+}

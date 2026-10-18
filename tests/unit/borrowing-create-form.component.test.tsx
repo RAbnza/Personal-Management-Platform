@@ -544,11 +544,7 @@ describe("BorrowingCreateForm", () => {
 
     expect(routerMocks.push).not.toHaveBeenCalled();
 
-    expect(
-      screen.getByRole("textbox", {
-        name: "Debt name",
-      }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText("Debt name")).toBeDisabled();
 
     await user.click(
       screen.getByRole("button", {

@@ -1,3 +1,4 @@
+import { WorkspaceViews } from "@/components/ui/workspace-views";
 import { SavingsGoalsSurface } from "@/components/money/savings-goal-comparison";
 import { CardSurfacePanel } from "@/components/money/card-surface-panel";
 import { BudgetSurfacePanel } from "@/components/money/budget-comparison";
@@ -64,42 +65,14 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
   ];
   return (
     <div className="space-y-6">
-      {data.sharing?.length > 0 && (
-        <Panel title="Your adopted shared positions at period end">
-          <p>
-            Private coverage includes only your approved group sources. Group
-            totals and pending projections remain separate from spending and
-            from the existing limited tracked-net metric.
-          </p>
-          <ul>
-            {data.sharing.map((g) => (
-              <li key={g.groupId}>
-                <Link
-                  href={`/sharing/${g.groupId}`}
-                  className="text-link underline"
-                >
-                  Shared group report
-                </Link>{" "}
-                · Receivable {money(g.receivableMinor)} · Payable signed balance{" "}
-                {money(g.payableMinor)} · Unresolved clearing{" "}
-                {money(g.clearingMinor)}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
-      <CardSurfacePanel data={data.cardSurface} currency={data.currency} />
-      <Link
-        className="inline-flex min-h-11 items-center text-link underline"
-        href="/money/forecasts"
-      >
-        Explore cash-flow forecasts
-      </Link>
-      <SavingsGoalsSurface data={data.savingsGoals} today={data.today} />
-      <BudgetSurfacePanel data={data.budgets} period={data.period} />
       <Panel title="Coverage and definitions">
-        <p>{data.coverage.note}</p>
-        <p className="mt-2">{data.coverage.scope}</p>
+        <details>
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Read report scope and definitions
+          </summary>
+          <p>{data.coverage.note}</p>
+          <p className="mt-2">{data.coverage.scope}</p>
+        </details>
         {data.coverage.periodBeforeCutoff && (
           <p className="mt-2 text-warning">
             This period reaches an opening cutoff. Earlier financial history was
@@ -154,499 +127,634 @@ export function FinancialReportView({ data }: { data: FinancialReport }) {
           </ul>
         </details>
       </Panel>
-      {sections.map((section) => (
-        <Panel key={section.title} title={section.title}>
-          <div
-            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            tabIndex={0}
-            role="region"
-            aria-label={`${section.title} table`}
-          >
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">
-                {section.title} for {data.period.startDate} through{" "}
-                {data.period.endDate}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="p-3">
-                    Metric and drilldown
-                  </th>
-                  <th scope="col" className="p-3 text-right">
-                    {data.currency}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {section.metrics.map((metric) => {
-                  const value =
-                    data.coverage.noAccounts &&
-                    ["opening_cash", "closing_cash"].includes(metric)
-                      ? "No tracked accounts"
-                      : data.coverage.noAccounts && metric === "tracked_net"
-                        ? "Coverage not established"
-                        : money(data.metrics[metric]);
-                  return (
-                    <tr key={metric} className="border-t border-border">
-                      <th scope="row" className="p-3 font-medium">
-                        <Link
-                          href={href(metric)}
-                          className="inline-flex min-h-11 items-center text-link underline"
-                          aria-label={`${financialMetrics[metric]}: ${value}; view contributions`}
-                        >
-                          {financialMetrics[metric]}
-                        </Link>
-                      </th>
-                      <td className="p-3 text-right tabular-nums">{value}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      ))}
-      <Panel
-        title="Reconciliation identities"
-        description="Complementary accounting views, never one combined total."
-      >
-        <p>
-          Closing liquid funds = opening liquid funds + external inflows −
-          external outflows + baseline changes + explicit balance adjustments.
-        </p>
-        <p className="mt-2">
-          {money(data.metrics.closing_cash)} ={" "}
-          {money(data.metrics.opening_cash)} + {money(data.metrics.cash_in)} −{" "}
-          {money(data.metrics.cash_out)} + {money(data.metrics.baseline)} +{" "}
-          {money(data.metrics.adjustments)}.
-        </p>
-        <p className="mt-2">
-          Liability closing = opening + recognized increases/baselines −
-          recognized reductions.
-        </p>
-        <p className="mt-2">
-          {money(data.metrics.closing_liability)} ={" "}
-          {money(data.metrics.opening_liability)} +{" "}
-          {money(data.metrics.liability_increases)} −{" "}
-          {money(data.metrics.liability_reductions)}.
-        </p>
-        <p className="mt-2 font-medium">
-          {data.identities.cashMatches && data.identities.liabilityMatches
-            ? "Both identities reconcile to signed postings."
-            : "An identity needs review; inspect contributions before relying on this report."}
-        </p>
-      </Panel>
-      <Panel
-        title={`Spending by category · ${data.period.startDate}–${data.period.endDate}`}
-        description="Category grain: each categorized posting contributes once. Uncategorized entries remain explicit."
-      >
-        {data.categories.length > 0 && (
-          <>
-            <LazyCategoryChart
-              rows={data.categories.slice(0, 20)}
-              currency={data.currency}
-            />
-            <p className="text-sm text-muted-foreground">
-              Top 20 net-spending categories; approximate chart coordinates. The
-              table contains all exact category contributions, including
-              negative offsets.
-            </p>
-          </>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(["income", "net", "cash_out", "closing_liability"] as const).map(
+          (metric) => (
+            <Link
+              key={metric}
+              href={href(metric)}
+              className="rounded-card bg-surface-subtle p-5"
+            >
+              <p className="text-sm text-muted-foreground">
+                {financialMetrics[metric]}
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">
+                {money(data.metrics[metric])}
+              </p>
+              <p className="mt-2 text-xs text-link">Inspect contributions</p>
+            </Link>
+          ),
         )}
-        {data.categories.length ? (
-          <div
-            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            tabIndex={0}
-            role="region"
-            aria-label="Spending by category table"
-          >
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>
-                  {["Category", "Gross", "Offsets", "Net"].map((h) => (
-                    <th key={h} scope="col" className="p-3">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.categories.map((c) => (
-                  <tr
-                    key={c.categoryId ?? "uncategorized"}
-                    className="border-t border-border"
-                  >
-                    <th scope="row" className="p-3 font-medium">
-                      {c.category}
-                    </th>
-                    {(["gross", "offsets", "net"] as const).map((m) => (
-                      <td key={m} className="p-3 tabular-nums">
-                        <Link
-                          className="inline-flex min-h-11 items-center text-link underline"
-                          href={href(m, c.categoryId ?? "uncategorized")}
-                          aria-label={`${c.category} ${m}: ${money(c[`${m}Minor`])}`}
-                        >
-                          {money(c[`${m}Minor`])}
-                        </Link>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p>No recognized spending contributions in this period.</p>
-        )}
-      </Panel>
-      <Panel
-        title={`Daily activity · ${data.period.startDate}–${data.period.endDate}`}
-        description={`Recognized income, net spending and external cash outflows; ${data.currency}. Dates with no posted activity are absent; earlier missing history is not inferred.`}
-      >
-        {data.trend.length ? (
-          <>
-            <LazyReportChart rows={data.trend} currency={data.currency} />
-            <details open className="mt-3">
-              <summary className="min-h-11 cursor-pointer font-medium">
-                View exact daily data
-              </summary>
-              <div
-                className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                tabIndex={0}
-                role="region"
-                aria-label="Daily activity table"
+      </div>
+      <WorkspaceViews
+        label="Financial analysis views"
+        views={[
+          {
+            label: "Daily activity",
+            content: (
+              <Panel
+                title={`Daily activity · ${data.period.startDate}–${data.period.endDate}`}
+                description={`Recognized income, net spending and external cash outflows; ${data.currency}. Dates with no posted activity are absent; earlier missing history is not inferred.`}
               >
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr>
-                      {[
-                        "Effective date",
-                        "Income",
-                        "Net spending",
-                        "External outflow",
-                      ].map((h) => (
-                        <th key={h} scope="col" className="p-3">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.trend.map((r) => (
-                      <tr key={r.date} className="border-t border-border">
-                        <th scope="row" className="p-3">
-                          {r.date}
-                        </th>
-                        {(["income", "net", "cash_out"] as const).map(
-                          (m, i) => (
-                            <td key={m} className="p-3 tabular-nums">
+                {data.trend.length ? (
+                  <>
+                    <LazyReportChart
+                      rows={data.trend}
+                      currency={data.currency}
+                    />
+                    <details className="mt-3">
+                      <summary className="min-h-11 cursor-pointer font-medium">
+                        View exact daily data
+                      </summary>
+                      <div
+                        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        tabIndex={0}
+                        role="region"
+                        aria-label="Daily activity table"
+                      >
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr>
+                              {[
+                                "Effective date",
+                                "Income",
+                                "Net spending",
+                                "External outflow",
+                              ].map((h) => (
+                                <th key={h} scope="col" className="p-3">
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.trend.map((r) => (
+                              <tr
+                                key={r.date}
+                                className="border-t border-border"
+                              >
+                                <th scope="row" className="p-3">
+                                  {r.date}
+                                </th>
+                                {(["income", "net", "cash_out"] as const).map(
+                                  (m, i) => (
+                                    <td key={m} className="p-3 tabular-nums">
+                                      <Link
+                                        href={`/reports/financial/detail?period=custom&startDate=${r.date}&endDate=${r.date}&metric=${m}`}
+                                        className="inline-flex min-h-11 items-center text-link underline"
+                                      >
+                                        {money(
+                                          [
+                                            r.incomeMinor,
+                                            r.netMinor,
+                                            r.cashOutMinor,
+                                          ][i]!,
+                                        )}
+                                      </Link>
+                                    </td>
+                                  ),
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  </>
+                ) : (
+                  <p>
+                    No posted daily activity. Missing coverage remains unknown.
+                  </p>
+                )}
+              </Panel>
+            ),
+          },
+          {
+            label: "Categories",
+            content: (
+              <Panel
+                title={`Spending by category · ${data.period.startDate}–${data.period.endDate}`}
+                description="Category grain: each categorized posting contributes once. Uncategorized entries remain explicit."
+              >
+                {data.categories.length > 0 && (
+                  <>
+                    <LazyCategoryChart
+                      rows={data.categories.slice(0, 20)}
+                      currency={data.currency}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Top 20 net-spending categories; approximate chart
+                      coordinates. The table contains all exact category
+                      contributions, including negative offsets.
+                    </p>
+                  </>
+                )}
+                {data.categories.length ? (
+                  <div
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Spending by category table"
+                  >
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr>
+                          {["Category", "Gross", "Offsets", "Net"].map((h) => (
+                            <th key={h} scope="col" className="p-3">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.categories.map((c) => (
+                          <tr
+                            key={c.categoryId ?? "uncategorized"}
+                            className="border-t border-border"
+                          >
+                            <th scope="row" className="p-3 font-medium">
+                              {c.category}
+                            </th>
+                            {(["gross", "offsets", "net"] as const).map((m) => (
+                              <td key={m} className="p-3 tabular-nums">
+                                <Link
+                                  className="inline-flex min-h-11 items-center text-link underline"
+                                  href={href(
+                                    m,
+                                    c.categoryId ?? "uncategorized",
+                                  )}
+                                  aria-label={`${c.category} ${m}: ${money(c[`${m}Minor`])}`}
+                                >
+                                  {money(c[`${m}Minor`])}
+                                </Link>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p>No recognized spending contributions in this period.</p>
+                )}
+              </Panel>
+            ),
+          },
+          {
+            label: "Exact metrics",
+            content: (
+              <>
+                {" "}
+                {sections.map((section) => (
+                  <Panel key={section.title} title={section.title}>
+                    <div
+                      className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      tabIndex={0}
+                      role="region"
+                      aria-label={`${section.title} table`}
+                    >
+                      <table className="w-full text-left text-sm">
+                        <caption className="sr-only">
+                          {section.title} for {data.period.startDate} through{" "}
+                          {data.period.endDate}
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col" className="p-3">
+                              Metric and drilldown
+                            </th>
+                            <th scope="col" className="p-3 text-right">
+                              {data.currency}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {section.metrics.map((metric) => {
+                            const value =
+                              data.coverage.noAccounts &&
+                              ["opening_cash", "closing_cash"].includes(metric)
+                                ? "No tracked accounts"
+                                : data.coverage.noAccounts &&
+                                    metric === "tracked_net"
+                                  ? "Coverage not established"
+                                  : money(data.metrics[metric]);
+                            return (
+                              <tr
+                                key={metric}
+                                className="border-t border-border"
+                              >
+                                <th scope="row" className="p-3 font-medium">
+                                  <Link
+                                    href={href(metric)}
+                                    className="inline-flex min-h-11 items-center text-link underline"
+                                    aria-label={`${financialMetrics[metric]}: ${value}; view contributions`}
+                                  >
+                                    {financialMetrics[metric]}
+                                  </Link>
+                                </th>
+                                <td className="p-3 text-right tabular-nums">
+                                  {value}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Panel>
+                ))}
+                <Panel
+                  title="Reconciliation identities"
+                  description="Complementary accounting views, never one combined total."
+                >
+                  <p>
+                    Closing liquid funds = opening liquid funds + external
+                    inflows − external outflows + baseline changes + explicit
+                    balance adjustments.
+                  </p>
+                  <p className="mt-2">
+                    {money(data.metrics.closing_cash)} ={" "}
+                    {money(data.metrics.opening_cash)} +{" "}
+                    {money(data.metrics.cash_in)} −{" "}
+                    {money(data.metrics.cash_out)} +{" "}
+                    {money(data.metrics.baseline)} +{" "}
+                    {money(data.metrics.adjustments)}.
+                  </p>
+                  <p className="mt-2">
+                    Liability closing = opening + recognized increases/baselines
+                    − recognized reductions.
+                  </p>
+                  <p className="mt-2">
+                    {money(data.metrics.closing_liability)} ={" "}
+                    {money(data.metrics.opening_liability)} +{" "}
+                    {money(data.metrics.liability_increases)} −{" "}
+                    {money(data.metrics.liability_reductions)}.
+                  </p>
+                  <p className="mt-2 font-medium">
+                    {data.identities.cashMatches &&
+                    data.identities.liabilityMatches
+                      ? "Both identities reconcile to signed postings."
+                      : "An identity needs review; inspect contributions before relying on this report."}
+                  </p>
+                </Panel>
+              </>
+            ),
+          },
+          {
+            label: "Accounts and obligations",
+            content: (
+              <>
+                {" "}
+                <Panel
+                  title="Current scheduled payable in the selected due-date period"
+                  description="Current version and actual current allocations at generation time; includes future contractual charges. Separate from recognized liability."
+                >
+                  <p className="font-semibold">
+                    Known remaining: {money(data.scheduledMinor)}
+                    {data.coverage.unknownSchedules
+                      ? ` + ${data.coverage.unknownSchedules} debts with unknown schedules`
+                      : ""}
+                  </p>
+                  {data.schedule.length ? (
+                    <div
+                      className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      tabIndex={0}
+                      role="region"
+                      aria-label="Current scheduled payable table"
+                    >
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr>
+                            {[
+                              "Debt / due",
+                              "Contractual",
+                              "Opening satisfaction",
+                              "Total satisfaction",
+                              "Remaining",
+                            ].map((h) => (
+                              <th scope="col" key={h} className="p-3">
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.schedule.map((s) => (
+                            <tr
+                              key={s.installmentId}
+                              className="border-t border-border"
+                            >
+                              <th scope="row" className="p-3">
+                                <Link
+                                  className="inline-flex min-h-11 items-center text-link underline"
+                                  href={`/money/debts/${s.debtId}`}
+                                >
+                                  {s.name} · {s.dueDate}
+                                </Link>
+                              </th>
+                              {[
+                                s.contractualMinor,
+                                s.openingSatisfiedMinor,
+                                s.satisfiedMinor,
+                                s.remainingMinor,
+                              ].map((v, i) => (
+                                <td key={i} className="p-3 tabular-nums">
+                                  {money(v)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="mt-2">
+                      No supplied active schedule entries in this due-date
+                      period.
+                    </p>
+                  )}
+                </Panel>
+                <Panel
+                  title="Cash movement by meaning"
+                  description="Cash posting grain; inherited directions preserve correction signs. Internal legs net to zero in consolidated scope."
+                >
+                  <div
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Cash movement by meaning table"
+                  >
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="p-3">
+                            Meaning / direction
+                          </th>
+                          <th scope="col" className="p-3">
+                            Exact contribution
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.cash.map((c) => {
+                          const metric =
+                            c.direction === "in"
+                              ? "cash_in"
+                              : c.direction === "out"
+                                ? "cash_out"
+                                : c.direction === "internal"
+                                  ? "internal_cash_net"
+                                  : c.direction === "baseline"
+                                    ? "baseline"
+                                    : "adjustments";
+                          return (
+                            <tr
+                              key={`${c.kind}:${c.direction}`}
+                              className="border-t border-border"
+                            >
+                              <th scope="row" className="p-3 font-medium">
+                                {c.kind} · {c.direction}
+                              </th>
+                              <td className="p-3">
+                                <Link
+                                  href={`${href(metric)}&flowKind=${c.kind}`}
+                                  className="inline-flex min-h-11 items-center text-link underline"
+                                >
+                                  {money(c.amountMinor)}
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {!data.cash.length && (
+                    <p>No supplied cash movements in this period.</p>
+                  )}
+                </Panel>
+                <Panel
+                  title="Debt liability component roll-forward"
+                  description="Debt posting components only. Card purchase balances are shown separately below. Unclassified debt remains explicit."
+                >
+                  <div
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Liability component roll-forward table"
+                  >
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr>
+                          {[
+                            "Component",
+                            "Opening",
+                            "Increases / baselines",
+                            "Reductions",
+                            "Closing",
+                          ].map((h) => (
+                            <th scope="col" key={h} className="p-3">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.liabilityComponents.map((c) => (
+                          <tr
+                            key={c.component}
+                            className="border-t border-border"
+                          >
+                            <th scope="row" className="p-3 font-medium">
+                              {c.component}
+                            </th>
+                            {(
+                              [
+                                "opening_liability",
+                                "liability_increases",
+                                "liability_reductions",
+                                "closing_liability",
+                              ] as const
+                            ).map((m, i) => (
+                              <td key={m} className="p-3">
+                                <Link
+                                  className="inline-flex min-h-11 items-center text-link underline"
+                                  href={`${href(m)}&liabilityComponent=${c.component}`}
+                                >
+                                  {money(
+                                    [
+                                      c.openingMinor,
+                                      c.increasesMinor,
+                                      c.reductionsMinor,
+                                      c.closingMinor,
+                                    ][i]!,
+                                  )}
+                                </Link>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Panel>
+                <Panel
+                  title="Supporting recognized debt balances"
+                  description="Period-end credit-normal balances. Negative values are recognized debt credit states, separately visible here; future schedules are not counted as liability."
+                >
+                  <div
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Supporting recognized debt balances table"
+                  >
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr>
+                          {["Debt", "Opening", "Closing / credit state"].map(
+                            (h) => (
+                              <th scope="col" key={h} className="p-3">
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.liabilityRecords.map((d) => (
+                          <tr key={d.debtId} className="border-t border-border">
+                            <th scope="row" className="p-3">
                               <Link
-                                href={`/reports/financial/detail?period=custom&startDate=${r.date}&endDate=${r.date}&metric=${m}`}
+                                href={`/money/debts/${d.debtId}`}
                                 className="inline-flex min-h-11 items-center text-link underline"
                               >
-                                {money(
-                                  [r.incomeMinor, r.netMinor, r.cashOutMinor][
-                                    i
-                                  ]!,
-                                )}
+                                {d.name}
+                              </Link>
+                            </th>
+                            <td className="p-3">
+                              <Link
+                                href={`${href("opening_liability")}&ledgerId=${d.ledgerId}`}
+                                className="inline-flex min-h-11 items-center text-link underline"
+                              >
+                                {money(d.openingMinor)}
                               </Link>
                             </td>
-                          ),
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          </>
-        ) : (
-          <p>No posted daily activity. Missing coverage remains unknown.</p>
-        )}
-      </Panel>
-      <Panel
-        title="Current scheduled payable in the selected due-date period"
-        description="Current version and actual current allocations at generation time; includes future contractual charges. Separate from recognized liability."
-      >
-        <p className="font-semibold">
-          Known remaining: {money(data.scheduledMinor)}
-          {data.coverage.unknownSchedules
-            ? ` + ${data.coverage.unknownSchedules} debts with unknown schedules`
-            : ""}
-        </p>
-        {data.schedule.length ? (
-          <div
-            className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            tabIndex={0}
-            role="region"
-            aria-label="Current scheduled payable table"
-          >
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>
-                  {[
-                    "Debt / due",
-                    "Contractual",
-                    "Opening satisfaction",
-                    "Total satisfaction",
-                    "Remaining",
-                  ].map((h) => (
-                    <th scope="col" key={h} className="p-3">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.schedule.map((s) => (
-                  <tr key={s.installmentId} className="border-t border-border">
-                    <th scope="row" className="p-3">
-                      <Link
-                        className="inline-flex min-h-11 items-center text-link underline"
-                        href={`/money/debts/${s.debtId}`}
-                      >
-                        {s.name} · {s.dueDate}
-                      </Link>
-                    </th>
-                    {[
-                      s.contractualMinor,
-                      s.openingSatisfiedMinor,
-                      s.satisfiedMinor,
-                      s.remainingMinor,
-                    ].map((v, i) => (
-                      <td key={i} className="p-3 tabular-nums">
-                        {money(v)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="mt-2">
-            No supplied active schedule entries in this due-date period.
-          </p>
-        )}
-      </Panel>
-      <Panel
-        title="Cash movement by meaning"
-        description="Cash posting grain; inherited directions preserve correction signs. Internal legs net to zero in consolidated scope."
-      >
-        <div
-          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          tabIndex={0}
-          role="region"
-          aria-label="Cash movement by meaning table"
-        >
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr>
-                <th scope="col" className="p-3">
-                  Meaning / direction
-                </th>
-                <th scope="col" className="p-3">
-                  Exact contribution
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.cash.map((c) => {
-                const metric =
-                  c.direction === "in"
-                    ? "cash_in"
-                    : c.direction === "out"
-                      ? "cash_out"
-                      : c.direction === "internal"
-                        ? "internal_cash_net"
-                        : c.direction === "baseline"
-                          ? "baseline"
-                          : "adjustments";
-                return (
-                  <tr
-                    key={`${c.kind}:${c.direction}`}
-                    className="border-t border-border"
-                  >
-                    <th scope="row" className="p-3 font-medium">
-                      {c.kind} · {c.direction}
-                    </th>
-                    <td className="p-3">
-                      <Link
-                        href={`${href(metric)}&flowKind=${c.kind}`}
-                        className="inline-flex min-h-11 items-center text-link underline"
-                      >
-                        {money(c.amountMinor)}
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {!data.cash.length && <p>No supplied cash movements in this period.</p>}
-      </Panel>
-      <Panel
-        title="Debt liability component roll-forward"
-        description="Debt posting components only. Card purchase balances are shown separately below. Unclassified debt remains explicit."
-      >
-        <div
-          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          tabIndex={0}
-          role="region"
-          aria-label="Liability component roll-forward table"
-        >
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr>
-                {[
-                  "Component",
-                  "Opening",
-                  "Increases / baselines",
-                  "Reductions",
-                  "Closing",
-                ].map((h) => (
-                  <th scope="col" key={h} className="p-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.liabilityComponents.map((c) => (
-                <tr key={c.component} className="border-t border-border">
-                  <th scope="row" className="p-3 font-medium">
-                    {c.component}
-                  </th>
-                  {(
-                    [
-                      "opening_liability",
-                      "liability_increases",
-                      "liability_reductions",
-                      "closing_liability",
-                    ] as const
-                  ).map((m, i) => (
-                    <td key={m} className="p-3">
-                      <Link
-                        className="inline-flex min-h-11 items-center text-link underline"
-                        href={`${href(m)}&liabilityComponent=${c.component}`}
-                      >
-                        {money(
-                          [
-                            c.openingMinor,
-                            c.increasesMinor,
-                            c.reductionsMinor,
-                            c.closingMinor,
-                          ][i]!,
-                        )}
-                      </Link>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
-      <Panel
-        title="Supporting recognized debt balances"
-        description="Period-end credit-normal balances. Negative values are recognized debt credit states, separately visible here; future schedules are not counted as liability."
-      >
-        <div
-          className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          tabIndex={0}
-          role="region"
-          aria-label="Supporting recognized debt balances table"
-        >
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr>
-                {["Debt", "Opening", "Closing / credit state"].map((h) => (
-                  <th scope="col" key={h} className="p-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.liabilityRecords.map((d) => (
-                <tr key={d.debtId} className="border-t border-border">
-                  <th scope="row" className="p-3">
-                    <Link
-                      href={`/money/debts/${d.debtId}`}
-                      className="inline-flex min-h-11 items-center text-link underline"
-                    >
-                      {d.name}
-                    </Link>
-                  </th>
-                  <td className="p-3">
-                    <Link
-                      href={`${href("opening_liability")}&ledgerId=${d.ledgerId}`}
-                      className="inline-flex min-h-11 items-center text-link underline"
-                    >
-                      {money(d.openingMinor)}
-                    </Link>
-                  </td>
-                  <td className="p-3">
-                    <Link
-                      href={`${href("closing_liability")}&ledgerId=${d.ledgerId}`}
-                      className="inline-flex min-h-11 items-center text-link underline"
-                    >
-                      {money(d.closingMinor)}
-                      {d.closingMinor.startsWith("-") ? " · debt credit" : ""}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
-      <Panel
-        title="Period card activity and recorded liability"
-        description="Card purchases count once in category spending. Purchases create no cash movement; card payments are separate cash transfers. Periods follow transaction dates; provider posting dates remain separate evidence."
-      >
-        <ul className="divide-y divide-border">
-          {data.cardRecords.map((c) => (
-            <li key={c.cardId} className="space-y-2 py-3">
-              <Link
-                href={`/money/cards/${c.cardId}`}
-                className="text-link underline"
-              >
-                {c.name}
-              </Link>
-              <p>
-                <Link
-                  href={`${href("net")}&cardId=${c.cardId}`}
-                  className="inline-flex min-h-11 items-center text-link underline"
+                            <td className="p-3">
+                              <Link
+                                href={`${href("closing_liability")}&ledgerId=${d.ledgerId}`}
+                                className="inline-flex min-h-11 items-center text-link underline"
+                              >
+                                {money(d.closingMinor)}
+                                {d.closingMinor.startsWith("-")
+                                  ? " · debt credit"
+                                  : ""}
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Panel>
+                <Panel
+                  title="Period card activity and recorded liability"
+                  description="Card purchases count once in category spending. Purchases create no cash movement; card payments are separate cash transfers. Periods follow transaction dates; provider posting dates remain separate evidence."
                 >
-                  Net spending {money(c.spendingMinor)}
-                </Link>
-              </p>
-              <p>
-                Opening recorded liability {money(c.openingMinor)} ·{" "}
+                  <ul className="divide-y divide-border">
+                    {data.cardRecords.map((c) => (
+                      <li key={c.cardId} className="space-y-2 py-3">
+                        <Link
+                          href={`/money/cards/${c.cardId}`}
+                          className="text-link underline"
+                        >
+                          {c.name}
+                        </Link>
+                        <p>
+                          <Link
+                            href={`${href("net")}&cardId=${c.cardId}`}
+                            className="inline-flex min-h-11 items-center text-link underline"
+                          >
+                            Net spending {money(c.spendingMinor)}
+                          </Link>
+                        </p>
+                        <p>
+                          Opening recorded liability {money(c.openingMinor)} ·{" "}
+                          <Link
+                            href={`${href("closing_liability")}&ledgerId=${c.ledgerId}`}
+                            className="inline-flex min-h-11 items-center text-link underline"
+                          >
+                            Closing recorded liability {money(c.closingMinor)}
+                          </Link>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  <ul className="mt-4 space-y-3">
+                    {data.cardRecords.map((c) => (
+                      <li key={c.cardId}>
+                        {c.name}: recognized fees {money(c.feesMinor)} ·
+                        interest {money(c.interestMinor)} · refunds{" "}
+                        {money(c.refundsMinor)} · cash payments{" "}
+                        {money(c.paymentsMinor)}. Fees and interest are already
+                        included in spending; refunds offset it.
+                      </li>
+                    ))}
+                  </ul>
+                  {!data.cardRecords.length && <p>No tracked cards.</p>}
+                </Panel>
+              </>
+            ),
+          },
+          {
+            label: "Plans and shared positions",
+            content: (
+              <>
+                {" "}
+                {data.sharing?.length > 0 && (
+                  <Panel title="Your adopted shared positions at period end">
+                    <p>
+                      Private coverage includes only your approved group
+                      sources. Group totals and pending projections remain
+                      separate from spending and from the existing limited
+                      tracked-net metric.
+                    </p>
+                    <ul>
+                      {data.sharing.map((g) => (
+                        <li key={g.groupId}>
+                          <Link
+                            href={`/sharing/${g.groupId}`}
+                            className="text-link underline"
+                          >
+                            Shared group report
+                          </Link>{" "}
+                          · Receivable {money(g.receivableMinor)} · Payable
+                          signed balance {money(g.payableMinor)} · Unresolved
+                          clearing {money(g.clearingMinor)}
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
+                )}
+                <CardSurfacePanel
+                  data={data.cardSurface}
+                  currency={data.currency}
+                />
                 <Link
-                  href={`${href("closing_liability")}&ledgerId=${c.ledgerId}`}
                   className="inline-flex min-h-11 items-center text-link underline"
+                  href="/money/forecasts"
                 >
-                  Closing recorded liability {money(c.closingMinor)}
+                  Explore cash-flow forecasts
                 </Link>
-              </p>
-            </li>
-          ))}
-        </ul>
-        <ul className="mt-4 space-y-3">
-          {data.cardRecords.map((c) => (
-            <li key={c.cardId}>
-              {c.name}: recognized fees {money(c.feesMinor)} · interest{" "}
-              {money(c.interestMinor)} · refunds {money(c.refundsMinor)} · cash
-              payments {money(c.paymentsMinor)}. Fees and interest are already
-              included in spending; refunds offset it.
-            </li>
-          ))}
-        </ul>
-        {!data.cardRecords.length && <p>No tracked cards.</p>}
-      </Panel>
+                <SavingsGoalsSurface
+                  data={data.savingsGoals}
+                  today={data.today}
+                />
+                <BudgetSurfacePanel data={data.budgets} period={data.period} />
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

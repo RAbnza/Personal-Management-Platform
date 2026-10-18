@@ -6,13 +6,13 @@ import { cn } from "@/lib/cn";
 export const buttonVariants = cva(
   [
     "relative inline-flex min-h-12 items-center justify-center gap-2 sm:min-h-11 pointer-coarse:min-h-12",
-    "rounded-button border px-4 py-2.5 text-center",
+    "min-w-0 max-w-full rounded-button border px-[min(1rem,16px)] py-2.5 text-center",
     "text-sm font-semibold",
     "cursor-pointer select-none",
-    "transition-colors",
+    "transition-shadow",
     "duration-(--motion-duration-fast) ease-state",
     "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-disabled-border disabled:bg-surface-subtle disabled:text-disabled-foreground",
-    "motion-reduce:transition-none",
+    "disabled:transition-none motion-reduce:transition-none",
   ],
   {
     variants: {
@@ -80,7 +80,7 @@ export function Button({
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center gap-2",
+          "inline-flex min-w-0 items-center justify-center gap-2",
           loading && "invisible",
         )}
         aria-hidden={loading || undefined}

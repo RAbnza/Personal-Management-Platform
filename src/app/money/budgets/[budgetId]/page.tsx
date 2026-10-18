@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -45,11 +47,8 @@ export default async function BudgetPage({
     if (e instanceof BudgetUnavailableError) notFound();
     return (
       <div>
-        <h1 className="text-2xl font-semibold">Budget unavailable</h1>
-        <Link
-          href={`/money/budgets/${budgetId}`}
-          className="text-link underline"
-        >
+        <ScreenHeader scope="Money" title="Budget unavailable" />
+        <Link href={`/money/budgets/${budgetId}`} className="action-link">
           Retry this budget
         </Link>
       </div>
@@ -61,10 +60,11 @@ export default async function BudgetPage({
       `${base}?${new URLSearchParams(Object.entries({ ...q.data, ...extra }).filter((entry): entry is [string, string] => entry[1] !== undefined))}`;
   return (
     <div className="space-y-6">
-      <Link
-        href="/money/budgets"
-        className="inline-flex min-h-11 items-center text-link underline"
-      >
+      <BreadcrumbRecords
+        path={`/money/budgets/${budgetId}`}
+        labels={{ [`/money/budgets/${budgetId}`]: b.categoryName }}
+      />
+      <Link href="/money/budgets" className="action-link">
         All budgets
       </Link>
       <h1 className="text-2xl font-semibold">{b.categoryName} budget</h1>
@@ -132,7 +132,7 @@ export default async function BudgetPage({
         {data.history.nextCursor && (
           <Link
             href={pages({ historyCursor: data.history.nextCursor })}
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Earlier budget history
           </Link>
@@ -147,7 +147,7 @@ export default async function BudgetPage({
             <li key={p.postingId}>
               <Link
                 href={`/money/actions/${p.actionId}`}
-                className="text-link underline"
+                className="action-link"
               >
                 {p.description}
               </Link>
@@ -165,7 +165,7 @@ export default async function BudgetPage({
         {data.contributions.nextCursor && (
           <Link
             href={pages({ contributionCursor: data.contributions.nextCursor })}
-            className="inline-flex min-h-11 items-center text-link underline"
+            className="action-link"
           >
             Earlier spending evidence
           </Link>

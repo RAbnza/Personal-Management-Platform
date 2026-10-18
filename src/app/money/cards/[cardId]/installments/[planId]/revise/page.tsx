@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { getCardInstallmentPlan } from "@/modules/finance/services/read-card-installments";
 import { CardInstallmentPlanForm } from "@/components/money/card-installment-form";
@@ -36,14 +38,20 @@ export default async function ReviseInstallmentPage({
   return (
     <div className="space-y-6 break-words">
       <Link
-        className="text-link underline"
+        className="action-link"
         href={`/money/cards/${scope.cardId}/installments/${d.planId}`}
       >
         Current provider plan
       </Link>
-      <h1 className="text-2xl font-semibold">
-        Revise or cancel provider schedule
-      </h1>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/${scope.planId}/revise`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: d.card.name,
+          [`/money/cards/${scope.cardId}/installments/${scope.planId}`]:
+            d.currentPurchase?.description ?? "Installment plan",
+        }}
+      />
+      <ScreenHeader scope="Money" title="Revise or cancel provider schedule" />
       <p>
         This command creates a new immutable provider revision. Existing
         application confirmations tied to the old revision require fresh

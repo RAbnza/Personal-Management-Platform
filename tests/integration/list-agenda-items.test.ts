@@ -195,6 +195,69 @@ afterAll(async () => {
 });
 
 describe("list Agenda items", () => {
+  it("reads spanning events only in overlap mode and binds cursors to that mode", async () => {
+    const user = await createTestUser("CalendarOverlap");
+    try {
+      await runTimeTestAndRollback(user, async (transaction, client) => {
+        await client.query(
+          "UPDATE core.workspace SET timezone='America/New_York' WHERE id=$1",
+          [user.workspaceId],
+        );
+        const dateId = await insertPersonalEvent(client, user, {
+          title: "Spanning civil event",
+          temporalKind: "date",
+          eventDate: "2026-10-30",
+          endDateExclusive: "2026-11-02",
+        });
+        const timedId = await insertPersonalEvent(client, user, {
+          title: "Spanning DST event",
+          temporalKind: "timed",
+          startsAt: "2026-11-01T03:30:00Z",
+          endsAt: "2026-11-02T05:00:00Z",
+          timezone: "America/New_York",
+        });
+        await insertPersonalEvent(client, user, {
+          title: "Ends at boundary",
+          temporalKind: "date",
+          eventDate: "2026-10-30",
+          endDateExclusive: "2026-11-01",
+        });
+        const input = {
+          ...user,
+          startDate: "2026-11-01",
+          endDate: "2026-11-01",
+          pageSize: 1,
+        };
+        expect(
+          (await listAgendaItemsInTransaction(transaction, input)).items,
+        ).toHaveLength(0);
+        const first = await listAgendaItemsInTransaction(transaction, {
+          ...input,
+          overlap: true,
+        });
+        expect(first.items[0]?.sourceId).toBe(dateId);
+        expect(first.nextCursor).not.toBeNull();
+        const second = await listAgendaItemsInTransaction(transaction, {
+          ...input,
+          overlap: true,
+          cursor: first.nextCursor!,
+        });
+        expect(second.items.map((event) => event.sourceId)).toEqual([timedId]);
+        expect(second.nextCursor).toBeNull();
+        await expect(
+          listAgendaItemsInTransaction(transaction, {
+            ...input,
+            cursor: first.nextCursor!,
+          }),
+        ).rejects.toBeInstanceOf(InvalidAgendaCursorError);
+      });
+    } finally {
+      await removeProvisionedTestUser(
+        user,
+        "pmp-calendar-overlap-test-cleanup",
+      );
+    }
+  });
   it("orders sources by workspace-local date and preserves native date/timed shapes", async () => {
     const user = await createTestUser("AgendaOrdering");
 

@@ -262,7 +262,11 @@ export function DebtImportForm({ currency }: { currency: string }) {
           },
         )}
       >
-        <fieldset disabled={disabled} className="space-y-6">
+        <fieldset
+          hidden={stage !== "editing"}
+          disabled={disabled}
+          className="space-y-6"
+        >
           <legend className="sr-only">Debt and opening liability</legend>
           <div className="grid gap-5 sm:grid-cols-2">
             {field("name", "Debt name")}

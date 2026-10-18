@@ -6,27 +6,53 @@ export function ReviewSummary({
   title,
   rows,
   children,
+  detailKeys = [],
 }: {
   title: string;
   rows: readonly SummaryRow[];
   children?: ReactNode;
+  detailKeys?: readonly string[];
 }) {
   return (
     <section className="rounded-panel border border-border bg-surface p-4 sm:p-5">
       <h2 className="text-section font-semibold">{title}</h2>
       <dl className="mt-4 divide-y divide-border">
-        {rows.map((row) => (
-          <div
-            key={row.key}
-            className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm"
-          >
-            <dt className="text-muted-foreground">{row.label}</dt>
-            <dd className="numeric-value min-w-0 wrap-anywhere font-medium">
-              {row.value}
-            </dd>
-          </div>
-        ))}
+        {rows
+          .filter((row) => !detailKeys.includes(row.key))
+          .map((row) => (
+            <div
+              key={row.key}
+              className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm"
+            >
+              <dt className="text-muted-foreground">{row.label}</dt>
+              <dd className="numeric-value min-w-0 wrap-anywhere font-medium">
+                {row.value}
+              </dd>
+            </div>
+          ))}
       </dl>
+      {detailKeys.length > 0 && (
+        <details className="mt-3 border-t border-border">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">
+            More transaction details
+          </summary>
+          <dl>
+            {rows
+              .filter((row) => detailKeys.includes(row.key))
+              .map((row) => (
+                <div
+                  key={row.key}
+                  className="flex flex-wrap justify-between gap-3 py-2 text-sm"
+                >
+                  <dt className="text-muted-foreground">{row.label}</dt>
+                  <dd className="numeric-value min-w-0 wrap-anywhere font-medium">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+          </dl>
+        </details>
+      )}
       {children ? <div className="mt-4">{children}</div> : null}
     </section>
   );

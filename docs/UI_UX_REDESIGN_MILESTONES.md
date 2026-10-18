@@ -1,9 +1,9 @@
 # UI/UX Redesign Milestones
 
 **Prepared:** October 16, 2026, Asia/Manila  
-**Baseline:** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`  
+**Planning baseline (October 16):** `main`, `239c360c0b4a094ae8244d0b42f55a7dcfc6b530`
 **Owner approval:** October 17, 2026, Asia/Manila — six-milestone roadmap approved.\
-**Status:** M1 completed and explicitly owner-approved October 17, 2026 (Asia/Manila). M2 is ready for separate assignment; M2–M6 have not started.\
+**Status:** M1–M5 implementation and owner visual approval are complete (October 18, 2026, Asia/Manila). M6 consolidated technical acceptance passed with documented limitations on `feat/redesign-m6-acceptance`; see the acceptance record.\
 **Authority:** [Comprehensive plan](COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) · [Decision register](UI_UX_REDESIGN_DECISIONS_REQUIRED.md)
 
 ## 1. Scope and sequencing
@@ -57,6 +57,8 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 ## 3. M2 — Application frame, navigation and first-use experience
 
+**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M2 implemented on `feat/redesign-m2-m3`, following merged M1 `a109b19`. Production dock/discovery/command navigation, Home, current access/setup/settings/security/help surfaces and targeted verification are recorded in [combined handoff](REDESIGN_M2_M3_HANDOFF.md). Owner review and consolidated acceptance remain pending. Continue directly into M3.
+
 **Objective:** make every current module discoverable and give the application a coherent, native-oriented work area.
 
 **Scope/inventory ownership:** AU1–AU2, HO1, ON1, ST1–ST2, HP1 and shared SY1 states. Shell/navigation and current Home composition; no offline/native access behavior. Follow Plan Sections 3, 6, 7.1–7.2 and 10.
@@ -84,6 +86,8 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 **Expected deliverables:** complete frame/navigation, redesigned current access/setup/settings/help/Home screens, route/state evidence and focused regression report.
 
 ## 4. M3 — Money workspaces and reviewed financial tasks
+
+**Implementation checkpoint — October 17, 2026 (Asia/Manila):** M3 implemented in `0187f11` on `feat/redesign-m2-m3`: Money workspaces, existing financial task capabilities, distinct mobile expense entry/review, retained drafts, exact confirmation and original recovery contracts. [Combined inventory, constraints and actual checks](REDESIGN_M2_M3_HANDOFF.md). Targeted component/static checks and an isolated screenshot-free browser smoke passed; owner visual review and consolidated M6 acceptance remain pending. No M4–M6, PR or merge is started.
 
 **Objective:** make daily financial entry and complex debt/card work clear without changing any financial effect.
 
@@ -121,14 +125,14 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 **Specific tasks:**
 
 1. Redesign application list/new/detail, stage/outcome transitions, dated observations, events, timeline and files placement. Preserve separate attempts and duplicate warning.
-2. Recompose Calendar around the existing Agenda with date/source controls, reminder attention, bounded pages and Add event. Keep source editing in its authoritative module.
+2. Recompose Calendar as a real month/week/day/agenda workspace, with direct date navigation, source filters, selected-day details, reminder attention and contextual Add event. Read actual authorized sources with explicit pagination coverage. Keep source editing in its authoritative module.
 3. Redesign personal-event detail and reminder controls, including inherit/override/off, snooze/dismiss/restore, current source generation and hidden-module context.
 4. Separate My trackers from Templates while preserving independent pagination, presets and create-from-template.
 5. Redesign tracker/entry lists, typed forms, mapped values, archive/restore, immutable revision detail and reminder links.
 6. Create the template editor composition and review/publication view without adding draft autosave or executable fields. Keep stable IDs, required/default/retirement/validation rules and all mappings.
 7. Create migration mapping/review/progress/cancel/resume views with actual batch counts, invalid links and sample limits; preserve partial locks and full completion conditions.
 
-**Required components/libraries:** existing forms/validation, M1 list/history/editor layouts and Radix disclosure/help/dialog primitives. Native date controls remain a valid default. No FullCalendar, drag board, formula engine or separate tour framework is required.
+**Required components/libraries:** existing forms/validation, M1 list/history/editor layouts and Radix disclosure/help/dialog primitives. FullCalendar month/week/day/list views are mandatory under the combined M4/M5 owner brief. Native date inputs remain supporting controls. No drag mutation, formula engine or separate tour framework is required.
 
 **Dependencies:** M2 frame; M1 components; M3 source routes remain stable. M4 does not depend on native calendar providers, sync, local profiles or background native scheduling.
 
@@ -195,7 +199,7 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 
 **Acceptance criteria:** all inventory IDs verified; no unresolved critical financial/privacy/accessibility regression; all required gates pass or a material limitation is explicitly accepted by the owner; measured performance is within agreed budgets; ordinary and advanced workflows remain discoverable; current V3 remains functional throughout adoption.
 
-**Expected deliverables:** finished current redesign, coverage/verification report, final screenshots and measured performance/accessibility evidence, updated handoff with any remaining limitations. No native/offline implementation or production launch.
+**Expected deliverables:** finished current redesign, coverage/verification report and measured performance/accessibility evidence without image artifacts, updated handoff with any remaining limitations. No native/offline implementation or production launch.
 
 ## 8. Coverage and responsibility ledger
 
@@ -218,11 +222,11 @@ Use the project's code-output rule when creating or updating code/configuration 
 
 | Milestone | Current state                | Evidence                      |
 | --------- | ----------------------------------------- | ----------------------------- |
-| M1 | Completed; final owner visual approval October 17, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
-| M2        | Ready for separate assignment; not started                               | No implementation claimed     |
-| M3        | Not started                               | No implementation claimed     |
-| M4        | Not started                               | No implementation claimed     |
-| M5        | Not started                               | No implementation claimed     |
-| M6        | Not started                               | No acceptance results claimed |
+| M1 | Completed; first approval October 17; cumulative M1-M5 visual approval October 18, 2026 (Asia/Manila) | [Handoff, tests and rendered proofs](REDESIGN_M1_HANDOFF.md) |
+| M2 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined handoff and checks](REDESIGN_M2_M3_HANDOFF.md) |
+| M3 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined inventory and checks](REDESIGN_M2_M3_HANDOFF.md) |
+| M4 | Implemented and checkpointed (`160ce15`) | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
+| M5 | Implemented; owner visual approval October 18; M6 technical acceptance separate | [Combined handoff and checks](REDESIGN_M4_M5_HANDOFF.md) |
+| M6 | Passed with documented limitations | [Actual acceptance results](REDESIGN_M6_ACCEPTANCE.md) |
 
-Next step: finish the authorized M1 integration into `main`, verify its remote SHA and CI status, then assign M2 separately from that merged baseline. M1 visual sign-off is complete; no unperformed accessibility/device checks are implied. M2–M6 and future platform decisions remain outside this delivery.
+Next step: review `feat/redesign-m6-acceptance` for eventual integration, retaining the manual/device and operational limitations in the M6 record. Visual approval is granted for M1–M5; test completion is a separate recorded gate. No merge, deployment or native/offline work is authorized.

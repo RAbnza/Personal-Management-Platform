@@ -78,6 +78,7 @@ export function BudgetDefinitionForm({
   return (
     <div className="space-y-4">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (ready && !(!!command.pending || command.phase === "confirmed"))
@@ -219,6 +220,7 @@ export function BudgetLifecycleForm({
   return (
     <div className="space-y-4">
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           if (!ready || !!command.pending || command.phase === "confirmed")

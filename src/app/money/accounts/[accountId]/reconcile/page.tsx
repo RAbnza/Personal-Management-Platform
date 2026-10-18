@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -24,10 +26,7 @@ export default async function ReconcileAccountPage({
         title="Workspace unavailable"
         description="Your private workspace could not be prepared safely."
       >
-        <Link
-          href="/money/accounts"
-          className="inline-flex min-h-11 text-link underline"
-        >
+        <Link href="/money/accounts" className="action-link">
           Return to accounts
         </Link>
       </AuthCard>
@@ -63,21 +62,25 @@ export default async function ReconcileAccountPage({
       gettingStartedDismissed={preference.gettingStartedDismissedAt !== null}
     >
       <div className="space-y-6">
-        <header>
-          <Link
-            href="/money/accounts"
-            className="inline-flex min-h-11 text-link underline"
-          >
+        <div>
+          <Link href="/money/accounts" className="action-link">
             Back to accounts
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold">
-            Account reconciliation
-          </h1>
+          {setup && (
+            <BreadcrumbRecords
+              path={`/money/accounts/${setup.account.financialAccountId}/reconcile`}
+              labels={{
+                [`/money/accounts/${setup.account.financialAccountId}`]:
+                  setup.account.name,
+              }}
+            />
+          )}
+          <ScreenHeader scope="Money" title="Account reconciliation" />
           <p className="mt-3 text-muted-foreground">
             Compare an observed balance, investigate differences, and review any
             explicit correction before saving.
           </p>
-        </header>
+        </div>
         {unavailable ? (
           <Panel
             title="Account unavailable"
@@ -95,7 +98,7 @@ export default async function ReconcileAccountPage({
                   ? `/money/accounts/${parsed.data.accountId}/reconcile`
                   : "/money/accounts"
               }
-              className="inline-flex min-h-11 text-link underline"
+              className="action-link"
             >
               Retry account setup
             </Link>

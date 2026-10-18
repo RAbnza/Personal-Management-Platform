@@ -1,3 +1,4 @@
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
@@ -18,22 +19,44 @@ export function BudgetComparison({
         basis{b.archived_at ? " · Archived" : ""}
         {b.categoryArchived ? " · Category archived" : ""}
       </p>
-      <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          ["Budget limit", b.limit_minor],
-          ["Gross recognized spending", b.grossMinor],
-          ["Spending offsets", b.offsetsMinor],
-          ["Net recognized spending", b.netMinor],
-          ["Compared spending", b.spendingMinor],
-          ["Remaining allowance", b.remainingMinor],
-          ["Overspending", b.overspentMinor],
-        ].map(([label, amount]) => (
-          <div key={label}>
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="font-semibold">{money(amount!)}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className={styles.planSummary}>
+        <div>
+          <span>Spent</span>
+          <strong>{money(b.spendingMinor)}</strong>
+          <small>of {money(b.limit_minor)}</small>
+        </div>
+        <div>
+          <span>
+            {b.status === "overspent" ? "Over budget" : "Left to spend"}
+          </span>
+          <strong
+            className={b.status === "overspent" ? "text-danger" : "text-teal"}
+          >
+            {money(
+              b.status === "overspent" ? b.overspentMinor : b.remainingMinor,
+            )}
+          </strong>
+        </div>
+      </div>
+      <details className={styles.options}>
+        <summary>Spending breakdown</summary>{" "}
+        <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Budget limit", b.limit_minor],
+            ["Gross recognized spending", b.grossMinor],
+            ["Spending offsets", b.offsetsMinor],
+            ["Net recognized spending", b.netMinor],
+            ["Compared spending", b.spendingMinor],
+            ["Remaining allowance", b.remainingMinor],
+            ["Overspending", b.overspentMinor],
+          ].map(([label, amount]) => (
+            <div key={label}>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="font-semibold">{money(amount!)}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
       <p
         className={
           b.status === "overspent"
@@ -55,7 +78,7 @@ export function BudgetComparison({
             className="h-3 w-full max-w-full"
             aria-label={`${b.categoryName} budget progress`}
             max={10000}
-            value={Number(bp > 10000n ? 10000n : bp)}
+            value={Number(bp < 0n ? 0n : bp > 10000n ? 10000n : bp)}
           />
           <p>
             {bp / 100n}.{(bp % 100n).toString().padStart(2, "0")}% of the limit
@@ -77,6 +100,7 @@ export function BudgetSurfacePanel({
     <Panel
       className="min-w-0 break-words"
       title="Category budgets"
+      descriptionAsHelp
       description="Each comparison covers its budget's complete labelled period, including actual-period refunds. Budgets never change balances."
     >
       <div className="space-y-5">
@@ -86,7 +110,7 @@ export function BudgetSurfacePanel({
               <Link
                 href={`/money/budgets/${b.id}`}
                 aria-label={`${b.categoryName} budget ${b.start_date} through ${budgetEndDate(b.end_date_exclusive)}`}
-                className="text-link underline"
+                className="action-link"
               >
                 {b.categoryName}
               </Link>
@@ -106,7 +130,7 @@ export function BudgetSurfacePanel({
               ? `/money/budgets?${new URLSearchParams({ startDate: period.startDate, endDate: budgetEndDate(period.endDateExclusive) })}`
               : "/money/budgets"
           }
-          className="inline-flex min-h-11 items-center text-link underline"
+          className="action-link"
         >
           Manage category budgets
         </Link>

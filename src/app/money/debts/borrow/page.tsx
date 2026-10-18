@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 
@@ -53,27 +54,22 @@ export default async function BorrowDebtPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <Link
-          href="/money/debts"
-          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link underline-offset-4 hover:underline"
-        >
+      <div>
+        <Link href="/money/debts" className="action-link">
           <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={1.9} />
           Back to debts
         </Link>
 
         <p className="mt-3 text-sm font-medium text-link">Money</p>
 
-        <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-          Record new borrowing
-        </h1>
+        <ScreenHeader scope="Money" title="Record new borrowing" />
 
         <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
           Record a loan or obligation that begins during your tracked history.
           The actual proceeds increase the selected account, while the debt
           liability and any provider fees remain separately identifiable.
         </p>
-      </header>
+      </div>
 
       {setup === null ? (
         <Panel
@@ -85,10 +81,7 @@ export default async function BorrowDebtPage() {
             borrowing.
           </p>
 
-          <Link
-            href="/money/debts/borrow"
-            className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/money/debts/borrow" className="action-link">
             <RotateCcw
               aria-hidden="true"
               className="size-4"
@@ -107,10 +100,7 @@ export default async function BorrowDebtPage() {
             provider deposited the money.
           </p>
 
-          <Link
-            href="/money/accounts"
-            className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-          >
+          <Link href="/money/accounts" className="action-link">
             Add financial account
           </Link>
         </Panel>

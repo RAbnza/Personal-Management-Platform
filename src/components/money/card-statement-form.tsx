@@ -234,6 +234,7 @@ export function CardStatementForm({
       }}
     >
       <fieldset
+        hidden={review !== null}
         disabled={
           !ready || saving || pending !== null || saved || review !== null
         }

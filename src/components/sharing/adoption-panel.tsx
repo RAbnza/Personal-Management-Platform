@@ -126,7 +126,7 @@ export function AdoptionPanel({
       </section>
     );
   return (
-    <section className="space-y-4 rounded-card border border-border p-4">
+    <section className="space-y-4 rounded-card border border-border bg-[var(--blue-surface)] p-5">
       <h2 className="text-xl font-semibold">Adopt into your private ledger</h2>
       <p>
         This is your private approval. Other people&apos;s accounts and private

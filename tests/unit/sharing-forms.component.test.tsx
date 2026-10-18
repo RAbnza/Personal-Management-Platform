@@ -253,9 +253,7 @@ describe("sharing forms", () => {
     fireEvent.change(screen.getByLabelText("Friend paid (PHP)"), {
       target: { value: "25" },
     });
-    fireEvent.change(screen.getByLabelText("Split method"), {
-      target: { value: "exact" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "Set exact amounts" }));
     for (const name of ["You", "Friend", "Manual person"])
       fireEvent.change(screen.getByLabelText(`${name} share (PHP)`), {
         target: { value: name === "You" ? "20" : "10" },

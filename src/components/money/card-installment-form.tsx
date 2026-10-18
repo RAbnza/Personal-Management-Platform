@@ -112,6 +112,7 @@ export function CardInstallmentPlanForm({
         spending, card liability or cash.
       </p>
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           try {
@@ -375,6 +376,7 @@ export function CardInstallmentApplicationForm({ detail }: { detail: Detail }) {
         recognize spending.
       </p>
       <form
+        hidden={command.pending !== null}
         onSubmit={(e) => {
           e.preventDefault();
           try {

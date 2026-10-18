@@ -1,3 +1,7 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { MoneyColumns } from "@/components/money/money-workspace";
+import { Panel } from "@/components/ui/panel";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { getCardInstallmentPlan } from "@/modules/finance/services/read-card-installments";
 import { statementIdentifierSchema as id } from "@/modules/finance/domain/card-statement";
@@ -44,77 +48,91 @@ export default async function InstallmentDetailPage({
   return (
     <div className="space-y-6 break-words">
       <Link
-        className="text-link underline"
+        className="action-link"
         href={`/money/cards/${scope.cardId}/installments`}
       >
         Provider installment plans
       </Link>
-      <h1 className="text-2xl font-semibold">Installment plan details</h1>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/installments/${scope.planId}`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: d.card.name,
+          [`/money/cards/${scope.cardId}/installments/${scope.planId}`]:
+            d.currentPurchase?.description ?? "Installment plan",
+        }}
+      />
+      <ScreenHeader scope="Money" title="Installment plan details" />
       <p>
         Revision {d.version} —{" "}
         {d.isCurrent
           ? "Current provider evidence"
           : "Preserved historical evidence"}
       </p>
-      <p>
-        Status: {d.status.kind}. Provider reference:{" "}
-        {d.snapshot.providerReference ?? "Not supplied"}. Verified{" "}
-        {d.snapshot.verifiedDate}: {d.snapshot.verificationSource}.
-      </p>
-      {d.status.kind === "reconciliation required" && (
-        <p role="status">
-          Purchase or linked refund evidence changed. Projections are suspended
-          until the provider arrangement is reconciled. Original schedule
-          history is preserved.
-        </p>
-      )}
-      <p>
-        Remaining scheduled principal: {money(d.totals.remainingPrincipalMinor)}
-      </p>
-      <p>
-        Remaining scheduled interest: {money(d.totals.remainingInterestMinor)};
-        fees: {money(d.totals.remainingFeeMinor)}; total obligations:{" "}
-        {money(d.totals.remainingTotalMinor)}.
-      </p>
-      <p>
-        Unknown provider due dates: {d.totals.unknownDueDateCount}. Unresolved
-        prior applications: {money(d.applications.unresolvedMinor)}. Statement
-        payments and unallocated credits are not automatically applied to
-        installments.
-      </p>
-      <p>
-        Current recorded card outstanding {money(d.card.postedOutstandingMinor)}
-        ; card credit {money(d.card.cardCreditMinor)}. Schedule amounts are
-        projections and do not change these financial balances.
-      </p>
-      <Link
-        className="inline-flex min-h-11 text-link underline"
-        href={`/money/actions/${d.snapshot.purchaseActionId}`}
-      >
-        Original purchase and correction history
-      </Link>
+      <MoneyColumns>
+        <Panel title="Provider schedule and status">
+          <p>
+            Status: {d.status.kind}. Provider reference:{" "}
+            {d.snapshot.providerReference ?? "Not supplied"}. Verified{" "}
+            {d.snapshot.verifiedDate}: {d.snapshot.verificationSource}.
+          </p>
+          {d.status.kind === "reconciliation required" && (
+            <p role="status">
+              Purchase or linked refund evidence changed. Projections are
+              suspended until the provider arrangement is reconciled. Original
+              schedule history is preserved.
+            </p>
+          )}
+          <p>
+            Remaining scheduled principal:{" "}
+            {money(d.totals.remainingPrincipalMinor)}
+          </p>
+          <p>
+            Remaining scheduled interest:{" "}
+            {money(d.totals.remainingInterestMinor)}; fees:{" "}
+            {money(d.totals.remainingFeeMinor)}; total obligations:{" "}
+            {money(d.totals.remainingTotalMinor)}.
+          </p>
+          <p>
+            Unknown provider due dates: {d.totals.unknownDueDateCount}.
+            Unresolved prior applications:{" "}
+            {money(d.applications.unresolvedMinor)}. Statement payments and
+            unallocated credits are not automatically applied to installments.
+          </p>
+        </Panel>
+        <Panel
+          title="Recognized card position"
+          description="Provider schedules do not post an additional purchase, liability or payment."
+        >
+          <p>
+            Current recorded card outstanding{" "}
+            {money(d.card.postedOutstandingMinor)}; card credit{" "}
+            {money(d.card.cardCreditMinor)}. Schedule amounts are projections
+            and do not change these financial balances.
+          </p>
+          <Link
+            className="action-link"
+            href={`/money/actions/${d.snapshot.purchaseActionId}`}
+          >
+            Original purchase and correction history
+          </Link>
+        </Panel>
+      </MoneyColumns>
       {d.isCurrent && (
         <div className="flex flex-wrap gap-3">
-          <Link
-            className="inline-flex min-h-11 text-link underline"
-            href={`${base}/revise`}
-          >
+          <Link className="action-link" href={`${base}/revise`}>
             Revise or cancel provider schedule
           </Link>
-          <Link
-            className="inline-flex min-h-11 text-link underline"
-            href={`${base}/applications`}
-          >
+          <Link className="action-link" href={`${base}/applications`}>
             Confirm installment applications
           </Link>
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`/money/cards/${scope.cardId}/commands/new`}
           >
             Record actual card payment or charge
           </Link>
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`/money/cards/${scope.cardId}/statements`}
           >
             Verified statements and allocations
@@ -184,7 +202,7 @@ export default async function InstallmentDetailPage({
           {d.history.map((h) => (
             <li key={h.revisionId}>
               <Link
-                className="inline-flex min-h-11 text-link underline"
+                className="action-link"
                 href={`${base}?revisionId=${h.revisionId}`}
               >
                 Revision {h.version}
@@ -196,7 +214,7 @@ export default async function InstallmentDetailPage({
         </ul>
         {d.historyHasMore && (
           <Link
-            className="inline-flex min-h-11 text-link underline"
+            className="action-link"
             href={`?offset=${historyOffset + 25}${rev?.success ? `&revisionId=${rev.data}` : ""}`}
           >
             Older provider revisions

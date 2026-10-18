@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { z } from "zod";
 import { DebtSettlementForm } from "@/components/money/debt-settlement-form";
@@ -35,19 +37,22 @@ export default async function SettleDebtPage({
   }).format(new Date());
   return (
     <div className="space-y-6">
-      <header>
-        <Link
-          href={back}
-          className="inline-flex min-h-11 items-center text-link underline"
-        >
+      <div>
+        <Link href={back} className="action-link">
           Back to debt
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Settle debt</h1>
+        {setup && (
+          <BreadcrumbRecords
+            path={`${back}/settle`}
+            labels={{ [back]: setup.detail.debt.name }}
+          />
+        )}
+        <ScreenHeader scope="Money" title="Settle debt" />
         <p className="mt-3 text-muted-foreground">
           Record an explicit provider-confirmed payoff and verify accounting
           resolution before closing the debt.
         </p>
-      </header>
+      </div>
       {unavailable ? (
         <Panel
           title="Debt unavailable"
@@ -59,10 +64,7 @@ export default async function SettleDebtPage({
           description="Current settlement information could not be loaded safely."
         >
           <p>No settlement has been submitted.</p>
-          <Link
-            className="inline-flex min-h-11 items-center text-link underline"
-            href={`${back}/settle`}
-          >
+          <Link className="action-link" href={`${back}/settle`}>
             Retry settlement setup
           </Link>
         </Panel>

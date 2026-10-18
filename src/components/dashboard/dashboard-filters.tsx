@@ -96,7 +96,7 @@ export function DashboardFilters({
       >
         {pending
           ? "Updating dashboard…"
-          : "Expense filters change the selected period. Balances are current; commitments show today through the next 14 days."}
+          : "Balances are current. Agenda covers the next 14 days."}
       </p>
     </form>
   );

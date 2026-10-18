@@ -1,0 +1,506 @@
+.workspace {
+  min-width: 0;
+}
+.workspace[data-money-task="true"] {
+  max-width: 54rem;
+  margin-inline: auto;
+}
+.workspace [hidden] {
+  display: none !important;
+}
+.workspace h1 {
+  font-size: clamp(1.5rem, 3vw, 2.125rem);
+  letter-spacing: -0.035em;
+}
+.workspace :is(h2, h3, legend) {
+  text-wrap: balance;
+}
+.workspace :is(form, fieldset, section, article) {
+  min-width: 0;
+}
+.workspace :is(input, textarea, select) {
+  max-width: 100%;
+}
+.workspace :is(th, td) {
+  padding: 0.75rem;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.workspace th {
+  color: var(--muted-foreground);
+  font-weight: 600;
+  background: var(--surface-subtle);
+}
+.workspace tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+.workspace dl > div {
+  min-width: 0;
+}
+.workspace :is([role="alert"], [role="status"]) {
+  scroll-margin-block: 2rem;
+}
+.columns {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 1.5rem;
+}
+.columns > * {
+  min-width: 0;
+  width: 100%;
+}
+.creation {
+  order: -1;
+  border: 1px solid var(--border);
+  border-radius: var(--geometry-radius-panel);
+  padding: 0.5rem 1.25rem;
+  background: var(--surface-subtle);
+}
+.creation > summary {
+  min-height: 2.75rem;
+  padding-block: 0.625rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--link);
+}
+.creation > summary::marker {
+  color: var(--primary);
+}
+.creation[open] > div {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding-bottom: 1.25rem;
+}
+.steps {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-block: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.steps [aria-current] {
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+.task {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+.entryHeading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.entryMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.entryFields {
+  display: grid;
+  gap: 1.5rem;
+}
+.intentSwitch {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--surface-subtle);
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+}
+.intentSwitch label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.intentSwitch label:has(:checked) {
+  background: var(--surface);
+  color: var(--accent-foreground);
+  box-shadow: var(--elevation-level-1);
+}
+.intentSwitch input {
+  accent-color: var(--primary);
+}
+.amountEntry {
+  background: var(--focal-background);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: var(--focal-foreground);
+}
+.amountEntry input {
+  min-height: 4rem;
+  background: var(--surface);
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  line-height: 1.25;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--input);
+  border-radius: var(--geometry-radius-control);
+  background: var(--surface);
+  color: var(--foreground);
+}
+.splitRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.splitRow > button {
+  grid-column: 1/-1;
+  justify-self: end;
+}
+.options {
+  border-block: 1px solid var(--border);
+  padding-block: 0.5rem;
+}
+.options > summary {
+  min-height: 2.75rem;
+  padding: 0.75rem 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.options > summary span {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin-left: 0.75rem;
+}
+.contextBox {
+  display: grid;
+  gap: 1rem;
+  background: var(--blue-surface);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.task [hidden] {
+  display: none !important;
+}
+.task h3:focus {
+  outline-offset: 0.5rem;
+}
+.taskActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.records {
+  display: grid;
+  gap: 0;
+}
+.accountCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+}
+.accountCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--focal-background);
+}
+.accountCard[data-account-type="savings"] {
+  background: var(--blue-surface);
+}
+.accountCard[data-account-type="checking"] {
+  background: var(--teal-surface);
+}
+.accountCard h3 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.accountCard a {
+  margin: 0.25rem 0.25rem 0.25rem 0;
+}
+.planSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: end;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: var(--focal-background);
+}
+.planSummary > div {
+  flex: 1;
+  min-width: 0;
+}
+.planSummary span,
+.planSummary small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.planSummary strong {
+  display: block;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 0.3rem 0;
+  overflow-wrap: anywhere;
+}
+.cardMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cardMetrics > div {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--surface-subtle);
+}
+.cardMetrics > div:first-child {
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.cardMetrics > div:first-child dt {
+  color: var(--focal-muted);
+}
+.cardMetrics dt {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.cardMetrics dd {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.5rem;
+}
+.cardMetrics dd + dd {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.creditCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+.creditCard {
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--rail-background);
+  color: var(--rail-foreground);
+  display: grid;
+  gap: 1.5rem;
+}
+.creditCard:nth-child(even) {
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.creditCard strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.creditCard small {
+  font-size: 0.75rem;
+}
+.creditCard a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid currentColor;
+  min-height: 2.75rem;
+  font-weight: 600;
+}
+.records > article {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 1.25rem 0;
+}
+.tableScroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+@media (min-width: 1100px) {
+  .columns {
+    gap: 1.25rem;
+  }
+}
+@media (max-width: 767px) {
+  .workspace[data-money-task="true"] > div > header {
+    margin-bottom: 1rem;
+  }
+}
+
+.workspace:has([data-financial-task="true"])
+  > div
+  > :not([data-financial-task="true"]):not(:has([data-financial-task="true"])) {
+  display: none;
+}
+.accountSummary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.accountSummary > div {
+  min-width: 0;
+  border-left: 2px solid var(--border);
+  padding: 1rem;
+}
+.accountSummary > div:first-child {
+  border: 0;
+  border-radius: var(--geometry-radius-panel);
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.accountSummary > div:first-child p {
+  color: inherit;
+}
+@media (min-width: 768px) {
+  .accountSummary {
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  }
+}
+
+.debtMetrics {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.debtMetrics > div {
+  border-left: 2px solid var(--border);
+  padding: 1rem;
+}
+.debtMetrics > div:first-child {
+  border: 0;
+  border-radius: var(--geometry-radius-panel);
+  background: var(--focal-background);
+  color: var(--focal-foreground);
+}
+.debtMetrics > div:first-child :is(dt, dd) {
+  color: inherit;
+}
+.debtMetrics > div:first-child dd {
+  font-size: 1.5rem;
+}
+@media (min-width: 768px) {
+  .debtMetrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.workspace:has([data-financial-task="true"]) {
+  max-width: 54rem;
+  margin-inline: auto;
+}
+
+.accountIdentity {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+.accountIcon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: var(--surface);
+  color: var(--accent-foreground);
+}
+.accountIdentity h3 {
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.45;
+  min-height: 2.9em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.accountType {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  min-height: 2.8em;
+  line-height: 1.4;
+}
+.accountBody {
+  padding-block: 1rem;
+}
+.accountBalance {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  letter-spacing: -0.04em;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.accountNotes {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.accountNotes summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  padding-block: 0.75rem;
+}
+.accountNotes p {
+  max-height: 8rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-block: 0.5rem;
+}
+.cardActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.85rem;
+  margin-top: auto;
+}
+.cardActions a {
+  margin: 0;
+  min-width: 0;
+  padding: 0.55rem 0.4rem;
+  font-size: 0.7rem;
+  text-align: center;
+  line-height: 1.35;
+}
+.creditCard {
+  grid-template-rows: minmax(2.75rem, auto) 1fr auto;
+}
+.creditCard > :last-child {
+  align-self: end;
+}

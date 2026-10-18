@@ -1,3 +1,5 @@
+import { CountChart } from "@/components/reporting/count-chart";
+import { WorkspaceViews } from "@/components/ui/workspace-views";
 import Link from "next/link";
 import { trackerActor } from "../_actor";
 import {
@@ -105,6 +107,61 @@ function reportContent(
           </div>
         ))}
       </section>
+      <WorkspaceViews
+        label="Tracker analysis"
+        views={[
+          {
+            label: "Current snapshot",
+            content: (
+              <>
+                <h2 className="text-xl font-semibold">
+                  Current status distribution
+                </h2>
+                <p className="text-sm">
+                  Status labels group current records only, across the selected
+                  trackers. This is not a reconstruction at the period end.
+                </p>
+                <CountChart
+                  label="Current entries by status"
+                  rows={Object.entries(
+                    r.current.reduce<Record<string, number>>((counts, e) => {
+                      counts[e.statusLabel] = (counts[e.statusLabel] ?? 0) + 1;
+                      return counts;
+                    }, {}),
+                  ).map(([label, count]) => ({ label, count }))}
+                />
+              </>
+            ),
+          },
+          {
+            label: "Recorded activity",
+            content: (
+              <>
+                <h2 className="text-xl font-semibold">
+                  Recorded transitions during this period
+                </h2>
+                <CountChart
+                  label="Recorded activity by kind"
+                  rows={Object.entries(
+                    r.events.reduce<Record<string, number>>((counts, e) => {
+                      counts[e.kind] = (counts[e.kind] ?? 0) + 1;
+                      return counts;
+                    }, {}),
+                  ).map(([label, count]) => ({
+                    label: label.replaceAll("_", " "),
+                    count,
+                  }))}
+                />
+                <p className="text-sm">
+                  Creation, completion transitions and migration revisions are
+                  distinct events. Entered completion dates are not recorded
+                  transitions.
+                </p>
+              </>
+            ),
+          },
+        ]}
+      />
       <Link
         className="inline-flex min-h-11 items-center text-link underline"
         href={`/api/v1/trackers/reports?${url}&format=csv`}
@@ -134,7 +191,10 @@ function reportContent(
           ))}
         </ul>
       </section>
-      <section className="space-y-3">
+      <details className="space-y-3">
+        <summary className="action-link">
+          Inspect current entry evidence
+        </summary>
         <h2 className="text-xl font-semibold">Current entries and status</h2>
         <ul className="space-y-2">
           {r.current.map((e) => (
@@ -152,8 +212,11 @@ function reportContent(
           ))}
         </ul>
         {!r.current.length && <p>No entries match this selection.</p>}
-      </section>
-      <section>
+      </details>
+      <details>
+        <summary className="action-link">
+          Inspect recorded activity evidence
+        </summary>
         <h2 className="text-xl font-semibold">Recorded period activity</h2>
         <ul>
           {r.events.map((e) => (
@@ -169,7 +232,7 @@ function reportContent(
           ))}
         </ul>
         {!r.events.length && <p>No recorded activity in this period.</p>}
-      </section>
+      </details>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { notFound } from "next/navigation";
 import { sharingActor } from "../../../_actor";
 import { getGroup } from "@/modules/sharing/services/read-groups";
@@ -17,5 +18,13 @@ export default async function NewBillPage({
     getPrivateSharingSetup(actor),
   ]);
   if (!data.group.active || data.group.archived) notFound();
-  return <SharedBillForm data={data} setup={setup} />;
+  return (
+    <>
+      <BreadcrumbRecords
+        path={`/sharing/${groupId}/expenses/new`}
+        labels={{ [`/sharing/${groupId}`]: data.group.name }}
+      />
+      <SharedBillForm data={data} setup={setup} />
+    </>
+  );
 }

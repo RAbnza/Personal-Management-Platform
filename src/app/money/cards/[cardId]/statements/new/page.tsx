@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
 import { getStatementEntrySetup } from "@/modules/finance/services/read-card-statements";
@@ -26,18 +28,19 @@ export default async function NewStatementPage({
   }
   return (
     <div className="space-y-5">
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/new`}
+        labels={{ [`/money/cards/${scope.cardId}`]: data.card.name }}
+      />
       <Link
         href={`/money/cards/${scope.cardId}/statements`}
-        className="text-link underline"
+        className="action-link"
       >
         Statements for {data.card.name}
       </Link>
-      <h1 className="text-2xl font-semibold">Record verified statement</h1>
+      <ScreenHeader scope="Money" title="Record verified statement" />
       {data.hasMore && (
-        <Link
-          href={`?candidateOffset=${offset + 100}`}
-          className="text-link underline"
-        >
+        <Link href={`?candidateOffset=${offset + 100}`} className="action-link">
           Load older purchase choices before entering statement
         </Link>
       )}

@@ -1,3 +1,4 @@
+import styles from "./money-workspace.module.css";
 import Link from "next/link";
 import {
   ArrowDownLeft,
@@ -127,8 +128,8 @@ export function AccountHistoryList({
         title={account.name}
         description="Current balance and account identity are derived from the same ledger-backed history projection."
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+        <div className={styles.accountSummary}>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Current balance
             </p>
@@ -141,7 +142,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Account type
             </p>
@@ -159,7 +160,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">
               Opening balance date
             </p>
@@ -171,7 +172,7 @@ export function AccountHistoryList({
             </p>
           </div>
 
-          <div className="rounded-control border border-border bg-surface-subtle px-4 py-3">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Status</p>
 
             <p className="mt-1 text-sm font-semibold text-foreground">
@@ -248,7 +249,7 @@ export function AccountHistoryList({
                           <p className="text-sm font-semibold text-foreground">
                             <Link
                               href={`/money/actions/${entry.actionId}`}
-                              className="text-link underline-offset-4 hover:underline"
+                              className="action-link"
                             >
                               {entry.description}
                             </Link>
@@ -327,7 +328,7 @@ export function AccountHistoryList({
         {paginatedView ? (
           <Link
             href={`/money/accounts/${account.accountId}/history`}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+            className="action-link"
           >
             <ArrowLeft
               aria-hidden="true"
@@ -348,7 +349,7 @@ export function AccountHistoryList({
                 cursor: nextCursor,
               },
             }}
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+            className="action-link"
           >
             Older activity
             <ArrowRight

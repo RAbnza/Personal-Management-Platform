@@ -12,9 +12,6 @@
   scroll-margin-top: 1rem;
   overflow-wrap: anywhere;
 }
-:global(html:has(.design-proof)) {
-  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
-}
 .proof > footer {
   display: none;
 }

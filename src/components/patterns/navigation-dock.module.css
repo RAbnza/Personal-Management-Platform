@@ -339,3 +339,13 @@
     }
   }
 }
+
+@media (max-width: 767px) {
+  .dock {
+    gap: min(0.25rem, 4px);
+    padding: min(0.375rem, 6px);
+  }
+  .item {
+    padding: min(0.25rem, 4px);
+  }
+}

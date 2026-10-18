@@ -123,6 +123,7 @@ export async function readAgendaPage(
     modules: readonly AgendaDisplayModule[];
 
     limit: number;
+    overlap?: boolean;
 
     cursor: AgendaCursorPosition | null;
   },
@@ -258,8 +259,11 @@ export async function readAgendaPage(
           (
             agenda."temporal_kind" = 'date'
 
-            AND agenda."event_date" >=
-              ${input.startDate}::date
+            AND (
+              agenda."event_date" >= ${input.startDate}::date
+              OR (${input.overlap ?? false}::boolean
+                AND agenda."end_date_exclusive" > ${input.startDate}::date)
+            )
 
             AND agenda."event_date" <=
               ${input.endDate}::date
@@ -270,8 +274,11 @@ export async function readAgendaPage(
           (
             agenda."temporal_kind" = 'timed'
 
-            AND agenda."starts_at" >=
-              context."range_start"
+            AND (
+              agenda."starts_at" >= context."range_start"
+              OR (${input.overlap ?? false}::boolean
+                AND agenda."ends_at" > context."range_start")
+            )
 
             AND agenda."starts_at" <
               context."range_end"

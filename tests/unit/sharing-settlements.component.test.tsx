@@ -186,6 +186,7 @@ describe("settlement review workflows", () => {
       .mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetch);
     render(<SettlementPanel data={data(true, true)} />);
+    fireEvent.click(screen.getByText("Review payment and record a decision"));
     expect(
       screen.getByText(/Recipient cannot authenticate/),
     ).toBeInTheDocument();

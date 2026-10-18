@@ -1,3 +1,5 @@
+import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
+import { ScreenHeader } from "@/components/patterns/work-area";
 import Link from "next/link";
 import { CardStatementForm } from "@/components/money/card-statement-form";
 import {
@@ -42,11 +44,18 @@ export default async function ReviseStatementPage({
     <div className="space-y-5">
       <Link
         href={`/money/cards/${scope.cardId}/statements/${scope.statementId}`}
-        className="text-link underline"
+        className="action-link"
       >
         Statement history
       </Link>
-      <h1 className="text-2xl font-semibold">Correct statement evidence</h1>
+      <BreadcrumbRecords
+        path={`/money/cards/${scope.cardId}/statements/${scope.statementId}/revise`}
+        labels={{
+          [`/money/cards/${scope.cardId}`]: data.card.name,
+          [`/money/cards/${scope.cardId}/statements/${scope.statementId}`]: `Statement ${data.snapshot.statementDate}`,
+        }}
+      />
+      <ScreenHeader scope="Money" title="Correct statement evidence" />
       <p>
         Revision {data.snapshot.version} will remain preserved. Review provider
         changes and supply a reason for the next revision.
@@ -59,10 +68,7 @@ export default async function ReviseStatementPage({
         </p>
       )}
       {setup.hasMore && (
-        <Link
-          href={`?candidateOffset=${offset + 100}`}
-          className="text-link underline"
-        >
+        <Link href={`?candidateOffset=${offset + 100}`} className="action-link">
           Load older purchase choices before editing statement
         </Link>
       )}

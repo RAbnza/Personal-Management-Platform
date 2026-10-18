@@ -7,6 +7,10 @@ import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import { ReviewSummary } from "@/components/patterns/review";
+import { TaskStage } from "./task-stage";
+import taskStyles from "./money-workspace.module.css";
+import { useClientReady } from "@/shared/use-client-ready";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -273,7 +277,9 @@ async function postFinancialAction(
 export interface TransactionCreateFormProps {
   sharing?: { groups: GroupSummary[]; setup: PrivateSharingSetup };
   currency: string;
+  today?: string;
   cards?: readonly CreditCardReadModel[];
+  initialKind?: "income" | "expense";
 
   accounts: readonly FinancialAccountListItem[];
 
@@ -291,14 +297,21 @@ export interface TransactionCreateFormProps {
 
 export function TransactionCreateForm({
   currency,
+  today = "",
   accounts,
   categories,
   cards = [],
   planningSuggestion,
+  initialKind = "expense",
   sharing,
 }: TransactionCreateFormProps) {
   const router = useRouter();
+  const clientReady = useClientReady();
   const [sharedMode, setSharedMode] = useState(false);
+  const [reviewDraft, setReviewDraft] = useState<Omit<
+    PendingFinancialCommand,
+    "clientCommandId"
+  > | null>(null);
 
   const [acknowledgeNegativeBalance, setAcknowledgeNegativeBalance] =
     useState(false);
@@ -323,14 +336,18 @@ export function TransactionCreateForm({
     resolver: zodResolver(transactionFormSchema),
 
     defaultValues: {
-      actionKind: planningSuggestion?.kind === "income" ? "income" : "expense",
+      actionKind: planningSuggestion
+        ? planningSuggestion.kind === "income"
+          ? "income"
+          : "expense"
+        : initialKind,
 
       accountId: planningSuggestion
         ? (accounts.find((a) => a.accountId === planningSuggestion.accountId)
             ?.accountId ?? "")
         : (accounts[0]?.accountId ?? cards[0]?.cardId ?? ""),
 
-      effectiveDate: "",
+      effectiveDate: today,
 
       amount: planningSuggestion
         ? exactDecimal(planningSuggestion.remainingMinor)
@@ -518,6 +535,7 @@ export function TransactionCreateForm({
     };
   }, [saveState]);
   const fieldsDisabled =
+    !clientReady ||
     saveState === "saving" ||
     saveState === "unconfirmed" ||
     saveState === "saved";
@@ -712,16 +730,30 @@ export function TransactionCreateForm({
       };
     }
 
+    setReviewDraft({ accountId: values.accountId, payload });
+    setSaveError(null);
+  }
+
+  async function confirmReviewedTransaction() {
+    if (
+      !reviewDraft ||
+      savingRef.current ||
+      fieldsDisabled ||
+      (expenseExceedsLoadedBalance && !acknowledgeNegativeBalance)
+    )
+      return;
     const command: PendingFinancialCommand = {
+      ...reviewDraft,
       clientCommandId: crypto.randomUUID(),
-
-      accountId: values.accountId,
-
-      payload,
+      payload: {
+        ...reviewDraft.payload,
+        acknowledgeNegativeBalance:
+          reviewDraft.payload.actionKind === "card_purchase"
+            ? false
+            : acknowledgeNegativeBalance,
+      },
     };
-
     setPendingCommand(command);
-
     await executeFinancialCommand(command);
   }
 
@@ -759,646 +791,585 @@ export function TransactionCreateForm({
   return (
     <section
       aria-labelledby="record-transaction-title"
-      className="rounded-card border border-border bg-card p-5 text-card-foreground sm:p-6"
+      className={`${taskStyles.task} rounded-panel border border-border bg-surface p-4 sm:p-6`}
     >
-      <div>
-        <p className="text-xs font-medium text-link">Money</p>
-
-        <h2
-          id="record-transaction-title"
-          className="mt-1 text-lg font-semibold text-foreground"
-        >
-          Record a transaction
-        </h2>
-        {sharing && actionKind === "expense" && !planningSuggestion && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={fieldsDisabled}
-            onClick={() => setSharedMode(true)}
+      <div className={taskStyles.entryHeading}>
+        <span className={taskStyles.entryMark}>
+          <Plus size={22} aria-hidden="true" />
+        </span>
+        <div>
+          <p className="text-xs text-muted-foreground">MAKE IT A HABIT</p>
+          <h2
+            id="record-transaction-title"
+            className="mt-1 text-xl font-semibold"
           >
-            Split with people
-          </Button>
-        )}
-
-        <p className="mt-2 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-          Record money that was actually received or spent. Planned or expected
-          amounts do not belong here until the real financial activity occurs.
-        </p>
+            {actionKind === "income" ? "Money in" : "Add an expense"}
+          </h2>
+        </div>
       </div>
-
+      <TaskStage reviewing={reviewDraft !== null} />
       <form
         noValidate
         className="mt-6 space-y-6"
-        onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+        onSubmit={(event) => {
+          if (reviewDraft) event.preventDefault();
+          else void handleSubmit(onSubmit)(event);
+        }}
         onChangeCapture={(event) => {
           if (!(event.target as HTMLElement).hasAttribute("data-negative-ack"))
             setAcknowledgeNegativeBalance(false);
         }}
         onClickCapture={(event) => {
           if (
+            !reviewDraft &&
             saveState === "idle" &&
             (event.target as Element).closest('button[type="button"]')
           )
             setAcknowledgeNegativeBalance(false);
         }}
       >
-        <fieldset disabled={fieldsDisabled} className="space-y-3">
-          <legend className="text-sm font-semibold text-foreground">
-            Transaction type
-          </legend>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-border bg-surface px-4 py-3">
-              <input {...register("actionKind")} type="radio" value="expense" />
-
-              <span>
-                <span className="block text-sm font-semibold text-foreground">
-                  Expense
-                </span>
-
-                <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                  A purchase paid from an account or credit card.
-                </span>
-              </span>
-            </label>
-
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-border bg-surface px-4 py-3">
-              <input {...register("actionKind")} type="radio" value="income" />
-
-              <span>
-                <span className="block text-sm font-semibold text-foreground">
-                  Income
-                </span>
-
-                <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                  Money actually received into one account.
-                </span>
-              </span>
-            </label>
-          </div>
-        </fieldset>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <FormField
-            htmlFor="transaction-account"
-            label={
-              actionKind === "income"
-                ? "Receiving account"
-                : cards.length
-                  ? "Paid with"
-                  : "Funding account"
-            }
-            description={
-              actionKind === "income"
-                ? "Choose where the money was actually received."
-                : "Choose the account or credit card that paid for the expense."
-            }
-            descriptionId="transaction-account-description"
-            error={errors.accountId?.message}
-            errorId="transaction-account-error"
-          >
-            <select
-              {...register("accountId")}
-              id="transaction-account"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.accountId)}
-              aria-describedby={[
-                "transaction-account-description",
-                errors.accountId ? "transaction-account-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              className={[
-                "min-h-11 w-full rounded-control border border-input",
-                "bg-surface px-3 py-2 text-base text-foreground",
-                "transition-colors duration-(--motion-duration-fast) ease-state",
-                "hover:border-ring",
-                "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                "motion-reduce:transition-none",
-              ].join(" ")}
-            >
-              {accounts.map((account) => (
-                <option key={account.accountId} value={account.accountId}>
-                  {account.name} —{" "}
-                  {formatMoneyMinorUnits(
-                    account.currency,
-                    account.currentBalanceMinor,
-                  )}
-                </option>
-              ))}
-              {actionKind === "expense" &&
-                cards.map((card) => (
-                  <option key={card.cardId} value={card.cardId}>
-                    {card.name} — Credit card
-                  </option>
-                ))}
-            </select>
-          </FormField>
-
-          <FormField
-            htmlFor="transaction-date"
-            label="Transaction date"
-            description={
-              selectedAccount
-                ? `Must be after ${selectedAccount.openingCutoffDate}, the account's opening balance date.`
-                : undefined
-            }
-            descriptionId="transaction-date-description"
-            error={errors.effectiveDate?.message}
-            errorId="transaction-date-error"
-          >
-            <Input
-              {...register("effectiveDate")}
-              id="transaction-date"
-              type="date"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.effectiveDate)}
-              aria-describedby={[
-                selectedAccount ? "transaction-date-description" : null,
-                errors.effectiveDate ? "transaction-date-error" : null,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            />
-          </FormField>
-
-          <FormField
-            htmlFor="transaction-amount"
-            label={`Amount (${currency})`}
-            error={errors.amount?.message}
-            errorId="transaction-amount-error"
-          >
-            <Input
-              {...register("amount")}
-              id="transaction-amount"
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="0.00"
-              disabled={fieldsDisabled}
-              aria-invalid={Boolean(errors.amount)}
-              aria-describedby={
-                errors.amount ? "transaction-amount-error" : undefined
-              }
-              className="numeric-value"
-            />
-          </FormField>
-
-          {actionKind === "income" ? (
-            <FormField
-              htmlFor="transaction-category"
-              label="Category"
-              description="Optional. Categories affect reporting, not the account balance itself."
-              descriptionId="transaction-category-description"
-              error={errors.categoryId?.message}
-              errorId="transaction-category-error"
-            >
-              <select
-                {...register("categoryId")}
-                id="transaction-category"
-                disabled={fieldsDisabled}
-                aria-invalid={Boolean(errors.categoryId)}
-                aria-describedby={[
-                  "transaction-category-description",
-                  errors.categoryId ? "transaction-category-error" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                className={[
-                  "min-h-11 w-full rounded-control border border-input",
-                  "bg-surface px-3 py-2 text-base text-foreground",
-                  "transition-colors duration-(--motion-duration-fast) ease-state",
-                  "hover:border-ring",
-                  "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                  "motion-reduce:transition-none",
-                ].join(" ")}
-              >
-                <option value="">Uncategorized</option>
-
-                {incomeCategories.map((category) => (
-                  <option key={category.categoryId} value={category.categoryId}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-          ) : null}
-
-          {actionKind === "income" ? (
-            <FormField
-              htmlFor="transaction-income-class"
-              label="Income type"
-              description="Classify what the receipt means rather than assuming every incoming amount is salary."
-              descriptionId="transaction-income-class-description"
-              error={errors.incomeClass?.message}
-              errorId="transaction-income-class-error"
-            >
-              <select
-                {...register("incomeClass")}
-                id="transaction-income-class"
-                disabled={fieldsDisabled}
-                aria-describedby="transaction-income-class-description"
-                className={[
-                  "min-h-11 w-full rounded-control border border-input",
-                  "bg-surface px-3 py-2 text-base text-foreground",
-                  "transition-colors duration-(--motion-duration-fast) ease-state",
-                  "hover:border-ring",
-                  "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                  "motion-reduce:transition-none",
-                ].join(" ")}
-              >
-                {incomeClassOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-          ) : null}
-
-          <FormField
-            htmlFor="transaction-counterparty"
-            label={actionKind === "income" ? "Sender / source" : "Merchant"}
-            description="Optional descriptive metadata. This does not determine where the money is held."
-            descriptionId="transaction-counterparty-description"
-          >
-            <Input
-              {...register("counterpartyName")}
-              id="transaction-counterparty"
-              type="text"
-              autoComplete="off"
-              disabled={fieldsDisabled}
-              aria-describedby="transaction-counterparty-description"
-            />
-          </FormField>
-        </div>
-
-        {selectedCard && (
-          <section
-            aria-label="Card purchase details"
-            className="space-y-4 rounded-control border border-border p-4"
-          >
-            <p className="text-sm leading-6 text-muted-foreground">
-              Record a posted purchase confirmed by {selectedCard.issuerName}.
-              Spending and card outstanding increase; cash stays unchanged.
-              Pending authorizations cannot be recorded here.
-            </p>
-            <FormField
-              htmlFor="card-posting-date"
-              label="Provider posting date"
-              error={errors.postingDate?.message}
-              errorId="card-posting-date-error"
-            >
-              <Input
-                {...register("postingDate")}
-                id="card-posting-date"
-                type="date"
-                disabled={fieldsDisabled}
-                aria-invalid={Boolean(errors.postingDate)}
-                aria-describedby={
-                  errors.postingDate ? "card-posting-date-error" : undefined
-                }
-              />
-            </FormField>
-            <details>
-              <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">
-                Optional card details
-              </summary>
-              <FormField
-                htmlFor="card-provider-reference"
-                label="Provider reference"
-                error={errors.providerReference?.message}
-                errorId="card-provider-reference-error"
-              >
-                <Input
-                  {...register("providerReference")}
-                  id="card-provider-reference"
-                  disabled={fieldsDisabled}
-                  aria-invalid={Boolean(errors.providerReference)}
-                  aria-describedby={
-                    errors.providerReference
-                      ? "card-provider-reference-error"
-                      : undefined
-                  }
-                />
-              </FormField>
-            </details>
-          </section>
-        )}
-
-        {actionKind === "expense" ? (
+        <div hidden={reviewDraft !== null} className={taskStyles.entryFields}>
           <fieldset
             disabled={fieldsDisabled}
-            className="space-y-4 rounded-control border border-border bg-surface-subtle p-4 sm:p-5"
+            className={taskStyles.intentSwitch}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <legend className="text-sm font-semibold text-foreground">
-                  Expense categories
-                </legend>
-
-                <p className="mt-1 max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Split one purchase across categories without creating another
-                  account deduction. Every portion must add up exactly to the
-                  transaction amount.
-                </p>
-              </div>
-
+            <legend className="sr-only">Transaction type</legend>
+            <label>
+              <input {...register("actionKind")} type="radio" value="expense" />
+              Expense
+            </label>
+            <label>
+              <input {...register("actionKind")} type="radio" value="income" />
+              Income
+            </label>
+          </fieldset>
+          <div className={taskStyles.amountEntry}>
+            <FormField
+              htmlFor="transaction-amount"
+              label={`Amount (${currency})`}
+              error={errors.amount?.message}
+              errorId="transaction-amount-error"
+            >
+              <Input
+                {...register("amount")}
+                id="transaction-amount"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0.00"
+                disabled={fieldsDisabled}
+              />
+            </FormField>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              htmlFor="transaction-account"
+              label={
+                actionKind === "income"
+                  ? "Receiving account"
+                  : cards.length
+                    ? "Paid with"
+                    : "Funding account"
+              }
+              error={errors.accountId?.message}
+            >
+              <select
+                {...register("accountId")}
+                id="transaction-account"
+                disabled={fieldsDisabled}
+                className={taskStyles.select}
+              >
+                {accounts.map((account) => (
+                  <option key={account.accountId} value={account.accountId}>
+                    {account.name} ·{" "}
+                    {formatMoneyMinorUnits(
+                      account.currency,
+                      account.currentBalanceMinor,
+                    )}
+                  </option>
+                ))}
+                {actionKind === "expense" &&
+                  cards.map((card) => (
+                    <option key={card.cardId} value={card.cardId}>
+                      {card.name} · Credit card
+                    </option>
+                  ))}
+              </select>
+            </FormField>
+            <FormField
+              htmlFor="transaction-date"
+              label="Transaction date"
+              error={errors.effectiveDate?.message}
+            >
+              <Input
+                {...register("effectiveDate")}
+                id="transaction-date"
+                type="date"
+                disabled={fieldsDisabled}
+              />
+            </FormField>
+          </div>
+          <FormField
+            htmlFor="transaction-description"
+            label="Description"
+            error={errors.description?.message}
+          >
+            <Input
+              {...register("description")}
+              id="transaction-description"
+              placeholder={
+                actionKind === "income" ? "What came in?" : "What was it for?"
+              }
+              autoComplete="off"
+              disabled={fieldsDisabled}
+            />
+          </FormField>
+          {actionKind === "income" ? (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                htmlFor="transaction-income-class"
+                label="Income type"
+                error={errors.incomeClass?.message}
+              >
+                <select
+                  {...register("incomeClass")}
+                  id="transaction-income-class"
+                  disabled={fieldsDisabled}
+                  className={taskStyles.select}
+                >
+                  {incomeClassOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField
+                htmlFor="transaction-category"
+                label="Category"
+                error={errors.categoryId?.message}
+              >
+                <select
+                  {...register("categoryId")}
+                  id="transaction-category"
+                  disabled={fieldsDisabled}
+                  className={taskStyles.select}
+                >
+                  <option value="">Uncategorized</option>
+                  {incomeCategories.map((category) => (
+                    <option
+                      key={category.categoryId}
+                      value={category.categoryId}
+                    >
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+          ) : (
+            <fieldset disabled={fieldsDisabled} className="space-y-3">
+              <legend className="sr-only">Expense categories</legend>
+              {expenseSplitFields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className={
+                    expenseSplitFields.length > 1
+                      ? taskStyles.splitRow
+                      : undefined
+                  }
+                >
+                  <FormField
+                    htmlFor={`expense-split-category-${index}`}
+                    label={
+                      expenseSplitFields.length > 1
+                        ? `Category ${index + 1}`
+                        : "Category"
+                    }
+                    error={errors.expenseSplits?.[index]?.categoryId?.message}
+                  >
+                    <select
+                      {...register(`expenseSplits.${index}.categoryId`)}
+                      id={`expense-split-category-${index}`}
+                      className={taskStyles.select}
+                    >
+                      <option value="">Uncategorized</option>
+                      {expenseCategories.map((category) => (
+                        <option
+                          key={category.categoryId}
+                          value={category.categoryId}
+                        >
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FormField>
+                  {expenseSplitFields.length > 1 ? (
+                    <>
+                      <FormField
+                        htmlFor={`expense-split-amount-${index}`}
+                        label={`Portion ${index + 1} amount (${currency})`}
+                        error={errors.expenseSplits?.[index]?.amount?.message}
+                      >
+                        <Input
+                          {...register(`expenseSplits.${index}.amount`)}
+                          id={`expense-split-amount-${index}`}
+                          inputMode="decimal"
+                          placeholder="0.00"
+                        />
+                      </FormField>
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove category portion ${index + 1}`}
+                        onClick={() => removeExpenseSplit(index)}
+                      >
+                        <Trash2 size={16} />
+                        Remove
+                      </Button>
+                    </>
+                  ) : (
+                    <input
+                      type="hidden"
+                      disabled={fieldsDisabled}
+                      {...register(`expenseSplits.${index}.amount`)}
+                    />
+                  )}
+                </div>
+              ))}
               <Button
-                type="button"
                 variant="secondary"
                 disabled={fieldsDisabled}
-                onClick={() => {
-                  appendExpenseSplit({
-                    amount: "",
-                    categoryId: "",
-                  });
-                }}
+                onClick={() =>
+                  appendExpenseSplit({ amount: "", categoryId: "" })
+                }
               >
-                <Plus aria-hidden="true" className="size-4" strokeWidth={1.9} />
+                <Plus size={16} />
                 Add category split
               </Button>
-            </div>
-
-            <div className="space-y-3">
-              {expenseSplitFields.map((field, index) => {
-                const amountError =
-                  errors.expenseSplits?.[index]?.amount?.message;
-
-                const categoryError =
-                  errors.expenseSplits?.[index]?.categoryId?.message;
-
-                const hasMultiple = expenseSplitFields.length > 1;
-
-                return (
-                  <div
-                    key={field.id}
-                    className="grid gap-4 rounded-control border border-border bg-surface p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_auto]"
-                  >
-                    <FormField
-                      htmlFor={`expense-split-category-${index}`}
-                      label={hasMultiple ? `Category ${index + 1}` : "Category"}
-                      description={
-                        hasMultiple
-                          ? undefined
-                          : "Optional. Add another category split when one purchase belongs to more than one category."
+              {expenseSplitFields.length > 1 &&
+                purchaseAmountMinor !== null && (
+                  <div role="status" className="text-sm">
+                    <p>
+                      Allocated{" "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        allocatedExpenseMinor.toString(),
+                      )}{" "}
+                      of{" "}
+                      {formatMoneyMinorUnits(
+                        currency,
+                        purchaseAmountMinor.toString(),
+                      )}
+                      .
+                    </p>
+                    <p
+                      className={
+                        remainingExpenseMinor === 0n
+                          ? "text-success"
+                          : "text-warning"
                       }
-                      descriptionId={`expense-split-category-description-${index}`}
-                      error={categoryError}
-                      errorId={`expense-split-category-error-${index}`}
                     >
-                      <select
-                        {...register(`expenseSplits.${index}.categoryId`)}
-                        id={`expense-split-category-${index}`}
-                        disabled={fieldsDisabled}
-                        aria-invalid={Boolean(categoryError)}
-                        aria-describedby={[
-                          !hasMultiple
-                            ? `expense-split-category-description-${index}`
-                            : null,
-                          categoryError
-                            ? `expense-split-category-error-${index}`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        className={[
-                          "min-h-11 w-full rounded-control border border-input",
-                          "bg-surface px-3 py-2 text-base text-foreground",
-                          "transition-colors duration-(--motion-duration-fast) ease-state",
-                          "hover:border-ring",
-                          "disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-disabled-foreground",
-                          "motion-reduce:transition-none",
-                        ].join(" ")}
-                      >
-                        <option value="">Uncategorized</option>
-
-                        {expenseCategories.map((category) => (
-                          <option
-                            key={category.categoryId}
-                            value={category.categoryId}
-                          >
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormField>
-
-                    <FormField
-                      htmlFor={`expense-split-amount-${index}`}
-                      label={
-                        hasMultiple
-                          ? `Portion ${index + 1} amount (${currency})`
-                          : `Category amount (${currency})`
-                      }
-                      description={
-                        hasMultiple
-                          ? undefined
-                          : "With one category, this automatically uses the full transaction amount."
-                      }
-                      descriptionId={`expense-split-amount-description-${index}`}
-                      error={amountError}
-                      errorId={`expense-split-amount-error-${index}`}
-                    >
-                      <Input
-                        {...register(`expenseSplits.${index}.amount`)}
-                        id={`expense-split-amount-${index}`}
-                        type="text"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        placeholder="0.00"
-                        readOnly={!hasMultiple}
-                        disabled={fieldsDisabled}
-                        aria-invalid={Boolean(amountError)}
-                        aria-describedby={[
-                          !hasMultiple
-                            ? `expense-split-amount-description-${index}`
-                            : null,
-                          amountError
-                            ? `expense-split-amount-error-${index}`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        className="numeric-value"
-                      />
-                    </FormField>
-
-                    {hasMultiple ? (
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          disabled={fieldsDisabled}
-                          aria-label={`Remove category portion ${index + 1}`}
-                          onClick={() => {
-                            removeExpenseSplit(index);
-                          }}
-                        >
-                          <Trash2
-                            aria-hidden="true"
-                            className="size-4"
-                            strokeWidth={1.9}
-                          />
-                          Remove
-                        </Button>
-                      </div>
-                    ) : null}
+                      {remainingExpenseMinor === 0n
+                        ? "Category portions match the purchase amount exactly."
+                        : `Remaining: ${formatMoneyMinorUnits(currency, (remainingExpenseMinor ?? 0n).toString())}`}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-
-            {purchaseAmountMinor !== null && purchaseAmountMinor > 0n ? (
-              <div
-                role="status"
-                className="rounded-control border border-border bg-surface px-4 py-3 text-sm leading-6"
-              >
-                <p className="text-muted-foreground">
-                  Allocated{" "}
-                  <span className="numeric-value font-medium text-foreground">
-                    {formatMoneyMinorUnits(
-                      currency,
-                      allocatedExpenseMinor.toString(),
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="numeric-value font-medium text-foreground">
-                    {formatMoneyMinorUnits(
-                      currency,
-                      purchaseAmountMinor.toString(),
-                    )}
-                  </span>
-                  .
-                </p>
-
-                {remainingExpenseMinor === 0n ? (
-                  <p className="mt-1 font-medium text-success">
-                    Category portions match the purchase amount exactly.
-                  </p>
-                ) : remainingExpenseMinor !== null &&
-                  remainingExpenseMinor > 0n ? (
-                  <p className="mt-1 text-muted-foreground">
-                    Remaining:{" "}
-                    <span className="numeric-value font-medium text-foreground">
-                      {formatMoneyMinorUnits(
-                        currency,
-                        remainingExpenseMinor.toString(),
-                      )}
-                    </span>
-                  </p>
-                ) : remainingExpenseMinor !== null ? (
-                  <p className="mt-1 text-danger">
-                    Over by{" "}
-                    <span className="numeric-value font-medium">
-                      {formatMoneyMinorUnits(
-                        currency,
-                        (-remainingExpenseMinor).toString(),
-                      )}
-                    </span>
-                    .
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
-            {errors.root?.splitTotal?.message ? (
-              <p role="alert" className="text-sm leading-5 text-danger">
-                {errors.root.splitTotal.message}
-              </p>
-            ) : null}
-          </fieldset>
-        ) : null}
-
-        {expenseExceedsLoadedBalance && selectedAccount ? (
-          <div
-            role="status"
-            className="rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning"
-          >
-            <div className="flex gap-2">
-              <AlertTriangle
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0"
-                strokeWidth={1.9}
-              />
-
-              <p>
-                This expense is greater than the currently loaded balance of{" "}
-                {formatMoneyMinorUnits(
-                  selectedAccount.currency,
-                  selectedAccount.currentBalanceMinor,
                 )}
-                . The transaction is not blocked because older financial history
-                may be incomplete, but the resulting negative balance should be
-                reviewed.
+              {errors.root?.splitTotal?.message && (
+                <p role="alert" className="text-sm text-danger">
+                  {errors.root.splitTotal.message}
+                </p>
+              )}
+            </fieldset>
+          )}
+          {selectedCard && (
+            <section
+              className={taskStyles.contextBox}
+              aria-label="Card purchase details"
+            >
+              <p className="text-sm">
+                Only record purchases already posted by{" "}
+                {selectedCard.issuerName}. Pending authorizations are not
+                supported.
               </p>
+              <FormField
+                htmlFor="card-posting-date"
+                label="Provider posting date"
+                error={errors.postingDate?.message}
+              >
+                <Input
+                  {...register("postingDate")}
+                  id="card-posting-date"
+                  type="date"
+                  disabled={fieldsDisabled}
+                />
+              </FormField>
+            </section>
+          )}
+          <details
+            className={taskStyles.options}
+            open={errors.notes || errors.providerReference ? true : undefined}
+          >
+            <summary>
+              More details{" "}
+              <span>
+                Notes, receipt,{" "}
+                {actionKind === "income" ? "sender" : "merchant"}
+              </span>
+            </summary>
+            <div className="grid gap-5 pt-4">
+              <FormField
+                htmlFor="transaction-counterparty"
+                label={actionKind === "income" ? "Sender / source" : "Merchant"}
+              >
+                <Input
+                  {...register("counterpartyName")}
+                  id="transaction-counterparty"
+                  disabled={fieldsDisabled}
+                />
+              </FormField>
+              <FormField htmlFor="transaction-reference" label="Reference">
+                <Input
+                  {...register("reference")}
+                  id="transaction-reference"
+                  disabled={fieldsDisabled}
+                />
+              </FormField>
+              {selectedCard && (
+                <FormField
+                  htmlFor="card-provider-reference"
+                  label="Provider reference"
+                  error={errors.providerReference?.message}
+                >
+                  <Input
+                    {...register("providerReference")}
+                    id="card-provider-reference"
+                    disabled={fieldsDisabled}
+                  />
+                </FormField>
+              )}
+              <FormField
+                htmlFor="transaction-notes"
+                label="Notes"
+                error={errors.notes?.message}
+              >
+                <Textarea
+                  {...register("notes")}
+                  id="transaction-notes"
+                  disabled={fieldsDisabled}
+                />
+              </FormField>
+              {sharing && actionKind === "expense" && !planningSuggestion && (
+                <Button
+                  variant="secondary"
+                  disabled={fieldsDisabled}
+                  onClick={() => setSharedMode(true)}
+                >
+                  Split with people
+                </Button>
+              )}
             </div>
-          </div>
-        ) : null}
-
-        <FormField
-          htmlFor="transaction-description"
-          label="Description"
-          description="Describe the real financial activity, such as Grocery purchase or October salary."
-          descriptionId="transaction-description-description"
-          error={errors.description?.message}
-          errorId="transaction-description-error"
-        >
-          <Input
-            {...register("description")}
-            id="transaction-description"
-            type="text"
-            autoComplete="off"
-            disabled={fieldsDisabled}
-            aria-invalid={Boolean(errors.description)}
-            aria-describedby={[
-              "transaction-description-description",
-              errors.description ? "transaction-description-error" : null,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          />
-        </FormField>
-
-        <FormField
-          htmlFor="transaction-reference"
-          label="Reference"
-          description="Optional receipt number, transfer reference, payslip reference, or other identifier."
-          descriptionId="transaction-reference-description"
-        >
-          <Input
-            {...register("reference")}
-            id="transaction-reference"
-            type="text"
-            autoComplete="off"
-            disabled={fieldsDisabled}
-            aria-describedby="transaction-reference-description"
-          />
-        </FormField>
-
-        <FormField
-          htmlFor="transaction-notes"
-          label="Notes"
-          description="Optional context. Do not store passwords, PINs, recovery codes, or other secrets."
-          descriptionId="transaction-notes-description"
-          error={errors.notes?.message}
-          errorId="transaction-notes-error"
-        >
-          <Textarea
-            {...register("notes")}
-            id="transaction-notes"
-            disabled={fieldsDisabled}
-            aria-invalid={Boolean(errors.notes)}
-            aria-describedby={[
-              "transaction-notes-description",
-              errors.notes ? "transaction-notes-error" : null,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          />
-        </FormField>
-
+          </details>
+          {expenseExceedsLoadedBalance && selectedAccount && (
+            <p
+              role="status"
+              className="rounded-control border border-warning bg-warning-surface p-3 text-sm text-warning"
+            >
+              This expense exceeds the loaded balance of{" "}
+              {formatMoneyMinorUnits(
+                currency,
+                selectedAccount.currentBalanceMinor,
+              )}
+              . You can record it after acknowledging the negative balance in
+              review.
+            </p>
+          )}
+        </div>
+        {reviewDraft && (
+          <ReviewSummary
+            detailKeys={[
+              "cash",
+              "spending",
+              "liability",
+              ...(reviewDraft.payload.reference ? [] : ["reference"]),
+              ...(reviewDraft.payload.notes ? [] : ["notes"]),
+            ]}
+            title={
+              reviewDraft.payload.actionKind === "income"
+                ? "Review income"
+                : "Review expense"
+            }
+            rows={[
+              {
+                key: "description",
+                label: "Description",
+                value: reviewDraft.payload.description,
+              },
+              {
+                key: "date",
+                label: "Effective date",
+                value: reviewDraft.payload.effectiveDate,
+              },
+              {
+                key: "funding",
+                label:
+                  reviewDraft.payload.actionKind === "income"
+                    ? "Receiving account"
+                    : "Paid with",
+                value:
+                  selectedCard?.name ?? selectedAccount?.name ?? "Unavailable",
+              },
+              {
+                key: "amount",
+                label:
+                  reviewDraft.payload.actionKind === "income"
+                    ? "Received"
+                    : "Purchase",
+                value: formatMoneyMinorUnits(
+                  currency,
+                  "purchaseMinor" in reviewDraft.payload
+                    ? reviewDraft.payload.purchaseMinor
+                    : reviewDraft.payload.amountMinor,
+                ),
+              },
+              {
+                key: "cash",
+                label: "Cash change",
+                value: formatMoneyMinorUnits(
+                  currency,
+                  reviewDraft.payload.actionKind === "card_purchase"
+                    ? "0"
+                    : reviewDraft.payload.actionKind === "income"
+                      ? reviewDraft.payload.amountMinor
+                      : (-BigInt(reviewDraft.payload.purchaseMinor)).toString(),
+                ),
+              },
+              ...(selectedAccount
+                ? [
+                    {
+                      key: "balance",
+                      label: "Loaded account balance after",
+                      value: formatMoneyMinorUnits(
+                        currency,
+                        (
+                          BigInt(selectedAccount.currentBalanceMinor) +
+                          (reviewDraft.payload.actionKind === "income"
+                            ? BigInt(reviewDraft.payload.amountMinor)
+                            : reviewDraft.payload.actionKind === "expense"
+                              ? -BigInt(reviewDraft.payload.purchaseMinor)
+                              : 0n)
+                        ).toString(),
+                      ),
+                    },
+                  ]
+                : []),
+              {
+                key: "spending",
+                label: "Recognized spending",
+                value: formatMoneyMinorUnits(
+                  currency,
+                  "purchaseMinor" in reviewDraft.payload
+                    ? reviewDraft.payload.purchaseMinor
+                    : "0",
+                ),
+              },
+              {
+                key: "liability",
+                label: "Card liability increase",
+                value: formatMoneyMinorUnits(
+                  currency,
+                  reviewDraft.payload.actionKind === "card_purchase"
+                    ? reviewDraft.payload.purchaseMinor
+                    : "0",
+                ),
+              },
+              ...(reviewDraft.payload.actionKind === "card_purchase"
+                ? [
+                    {
+                      key: "posted",
+                      label: "Provider posted",
+                      value: reviewDraft.payload.postingDate,
+                    },
+                    {
+                      key: "provider",
+                      label: "Provider reference",
+                      value: reviewDraft.payload.providerReference ?? "None",
+                    },
+                  ]
+                : []),
+              {
+                key: "reference",
+                label: "Reference",
+                value: reviewDraft.payload.reference ?? "None",
+              },
+              {
+                key: "notes",
+                label: "Notes",
+                value: (
+                  <span className="whitespace-pre-wrap">
+                    {reviewDraft.payload.notes ?? "None"}
+                  </span>
+                ),
+              },
+            ]}
+          >
+            {expenseExceedsLoadedBalance && (
+              <p
+                role="status"
+                className="mb-3 rounded-control border border-warning bg-warning-surface p-3 text-sm"
+              >
+                This expense exceeds the loaded account balance. Older records
+                may be incomplete. Review the resulting negative balance and
+                explicitly acknowledge it before confirming.
+              </p>
+            )}
+            {"splits" in reviewDraft.payload ? (
+              <ul className="divide-y divide-border">
+                {reviewDraft.payload.splits.map((split, index) => (
+                  <li
+                    key={index}
+                    className="flex flex-wrap justify-between gap-3 py-2 text-sm"
+                  >
+                    <span>
+                      {categories.find((c) => c.categoryId === split.categoryId)
+                        ?.name ?? "Uncategorized"}
+                    </span>
+                    <span className="numeric-value">
+                      {formatMoneyMinorUnits(currency, split.amountMinor)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm">
+                Classification: {reviewDraft.payload.incomeClass} · Category:{" "}
+                {categories.find(
+                  (c) =>
+                    c.categoryId ===
+                    ("categoryId" in reviewDraft.payload
+                      ? reviewDraft.payload.categoryId
+                      : null),
+                )?.name ?? "Uncategorized"}
+              </p>
+            )}
+            <p className="mt-3 text-sm">
+              {reviewDraft.payload.actionKind === "income"
+                ? `Sender: ${reviewDraft.payload.senderName ?? "None"}`
+                : `Merchant: ${reviewDraft.payload.merchantName ?? "None"}`}
+            </p>
+            {planningSuggestion && (
+              <p className="mt-3 text-sm">
+                Recurring context: {planningSuggestion.name}. The existing
+                occurrence confirmation remains a separate explicit step after
+                the actual transaction.
+              </p>
+            )}
+            <p className="mt-3 text-sm text-muted-foreground">
+              Review is based on the loaded records. Saving revalidates the
+              transaction on the server. Read the save outcome below before
+              starting another transaction.
+            </p>
+          </ReviewSummary>
+        )}
         {saveState === "unconfirmed" ? (
           <div
             role="alert"
@@ -1441,7 +1412,7 @@ export function TransactionCreateForm({
           </div>
         ) : null}
 
-        {!selectedCard && (
+        {reviewDraft && !selectedCard && expenseExceedsLoadedBalance && (
           <label className="flex items-start gap-3 rounded-md border border-warning p-3 text-sm">
             <input
               type="checkbox"
@@ -1460,7 +1431,20 @@ export function TransactionCreateForm({
             </span>
           </label>
         )}
-        <div className="flex flex-wrap justify-end gap-3">
+        <div className={taskStyles.taskActions}>
+          {reviewDraft && saveState === "idle" && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setReviewDraft(null);
+                setAcknowledgeNegativeBalance(false);
+                setSaveError(null);
+              }}
+            >
+              Edit details
+            </Button>
+          )}
           {saveState === "unconfirmed" ? (
             <Button
               type="button"
@@ -1474,16 +1458,24 @@ export function TransactionCreateForm({
           ) : null}
 
           <Button
-            type="submit"
+            type={reviewDraft ? "button" : "submit"}
+            onClick={
+              reviewDraft ? () => void confirmReviewedTransaction() : undefined
+            }
             loading={saveState === "saving"}
             loadingLabel="Saving transaction…"
             disabled={
+              !clientReady ||
               saveState === "unconfirmed" ||
               saveState === "saved" ||
-              (expenseExceedsLoadedBalance && !acknowledgeNegativeBalance)
+              (reviewDraft !== null &&
+                expenseExceedsLoadedBalance &&
+                !acknowledgeNegativeBalance)
             }
           >
-            Save transaction
+            {reviewDraft
+              ? "Confirm and save transaction"
+              : "Continue to review"}
           </Button>
         </div>
       </form>
