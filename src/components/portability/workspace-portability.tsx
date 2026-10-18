@@ -4,6 +4,7 @@ import { WorkspaceViews } from "@/components/ui/workspace-views";
 import { inspectCashCsv, cashColumnDefaults } from "./csv-columns";
 import { formatMoneyMinorUnits } from "@/shared/money-display";
 import { Panel } from "@/components/ui/panel";
+import { useClientReady } from "@/shared/use-client-ready";
 type Account = {
   id: string;
   name: string;
@@ -54,6 +55,7 @@ type RestorePreview = {
   };
 };
 export function WorkspacePortability() {
+  const ready = useClientReady();
   const [accounts, setAccounts] = useState<Account[]>([]),
     [accountId, setAccountId] = useState(""),
     [dateMode, setDateMode] = useState(""),
@@ -285,7 +287,7 @@ export function WorkspacePortability() {
       },
     });
   }
-  const disabled = busy || uncertain;
+  const disabled = !ready || busy || uncertain;
   return (
     <div className="space-y-6">
       <p role="status" className="break-words">
@@ -335,7 +337,7 @@ export function WorkspacePortability() {
                   </ol>
                   <div
                     hidden={step !== 0}
-                    className="space-y-4 rounded-card border border-dashed border-border p-5"
+                    className="space-y-4 rounded-card border border-dashed border-border p-[min(1.25rem,20px)]"
                   >
                     <p className="text-sm">
                       UTF-8 cash activity only; 1 MiB, 500 rows, six columns.

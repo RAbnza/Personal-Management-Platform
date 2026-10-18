@@ -406,17 +406,23 @@
 }
 @media (max-width: 767px) {
   .frame {
-    margin-inline: 0.75rem;
-    padding: 0.9rem;
-    gap: 0.8rem;
+    margin-inline: min(0.75rem, 12px);
+    padding: min(0.9rem, 16px);
+    gap: min(0.8rem, 12px);
+    overflow-wrap: anywhere;
   }
   .identity {
     width: 100%;
   }
   .headerTools {
     width: 100%;
+    flex-wrap: wrap;
   }
   .findButton {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    padding: min(0.5rem, 8px) min(0.75rem, 12px);
     flex: 1;
     justify-content: flex-start;
   }
@@ -473,5 +479,14 @@
 @media (prefers-reduced-motion: reduce) {
   .desktopDestination {
     transition: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .main {
+    padding: min(1rem, 16px);
+  }
+  .dockPosition {
+    width: calc(100% - 24px);
   }
 }

@@ -94,7 +94,13 @@ export default async function TrackersPage({
   const actor = await trackerActor(),
     path = (await params).path ?? [],
     raw = await searchParams;
-  if (path.join("/") === "templates/new") return <TemplateBuilder />;
+  if (path.join("/") === "templates/new")
+    return (
+      <>
+        <h1 className="text-2xl font-semibold">Create custom template</h1>
+        <TemplateBuilder />
+      </>
+    );
   const query: TrackerQuery = {};
   for (const key of [
     "cursor",

@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
@@ -30,15 +31,16 @@ test("mapped CSV, exact analytics, forecast and source-file browser retain their
   expect(accountResponse.status()).toBe(201);
   const account = await accountResponse.json();
   await page.goto("/settings/portability");
-  await page
-    .getByLabel("UTF-8 cash CSV", { exact: true })
-    .setInputFiles({
-      name: "mapped-cash.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(
-        `When,Type,Centavos,Class,Memo,Ref\n${today},expense,1001,expense,M5 reviewed purchase,m5-import\n`,
-      ),
-    });
+  await expect(
+    page.getByLabel("UTF-8 cash CSV", { exact: true }),
+  ).toBeEnabled();
+  await page.getByLabel("UTF-8 cash CSV", { exact: true }).setInputFiles({
+    name: "mapped-cash.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      `When,Type,Centavos,Class,Memo,Ref\n${today},expense,1001,expense,M5 reviewed purchase,m5-import\n`,
+    ),
+  });
   await page
     .getByRole("button", { name: "Continue to column mapping" })
     .click();
@@ -312,6 +314,58 @@ test("group views and participant split cards save exact rounded bill shares", a
     await expect(
       page.getByRole("link", { name: "First friend", exact: true }),
     ).toBeVisible();
+    await page.getByRole("link", { name: "First friend", exact: true }).click();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "First friend",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const current = await (
+      await page.request.get(`/api/v1/sharing?groupId=${groupId}`)
+    ).json();
+    const recipient = current.participants.find(
+      (p: { displayName: string }) => p.displayName === "First friend",
+    );
+    const sent = await page.request.post("/api/v1/sharing", {
+      headers,
+      data: {
+        kind: "settlement",
+        groupId,
+        expectedVersion: current.group.version,
+        clientCommandId: randomUUID(),
+        recipientId: recipient.id,
+        mode: "custom",
+        amountMinor: "100",
+        paymentDate: today,
+        note: "Synthetic advance review",
+        allocations: [],
+        acknowledgeAdvance: true,
+      },
+    });
+    expect(sent.status()).toBe(200);
+    const after = await (
+      await page.request.get(`/api/v1/sharing?groupId=${groupId}`)
+    ).json();
+    await page.goto(
+      `/sharing/${groupId}/effects/settlement/${after.ledger.settlements[0].id}`,
+    );
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await writeFile(
+      "out/m6-sharing-routes.json",
+      JSON.stringify(
+        [
+          `/sharing/${groupId}`,
+          `/sharing/${groupId}/expenses/new`,
+          new URL(page.url()).pathname,
+          `/sharing/${groupId}/people/${recipient.id}`,
+          `/sharing/${groupId}/expenses/${after.bills[0].id}`,
+        ],
+        null,
+        2,
+      ),
+    );
   } finally {
     await removeGroup(owner, groupId);
   }

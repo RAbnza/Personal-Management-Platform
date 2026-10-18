@@ -205,6 +205,7 @@ export function SpendingCharts({ finance, currency, period }: Props) {
           <>
             <div
               className={styles.categoryChart}
+              role="group"
               aria-label="Top five categories by signed net spending"
             >
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>

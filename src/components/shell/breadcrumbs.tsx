@@ -58,6 +58,9 @@ export function PageLocationProvider({
       ? [...current.parents, trail[trail.length - 1]!]
       : trail;
   }, [path, location]);
+  useEffect(() => {
+    document.title = `${items.at(-1)?.label ?? "Home"} · Personal workspace`;
+  }, [items]);
   return (
     <LocationContext.Provider value={register}>
       <Breadcrumbs items={items} />

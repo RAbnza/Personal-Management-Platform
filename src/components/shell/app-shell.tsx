@@ -46,7 +46,7 @@ export function AppShell({
       <nav aria-label="Skip navigation" className="contents">
         <a
           href={`#${mainContentId}`}
-          className="fixed top-4 left-4 z-(--z-notice) -translate-y-24 rounded-button border border-primary-border bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-level-2 transition-transform focus:translate-y-0 motion-reduce:transition-none"
+          className="fixed top-4 left-[min(1rem,16px)] max-w-[calc(100%-32px)] [overflow-wrap:anywhere] z-(--z-notice) -translate-y-24 rounded-button border border-primary-border bg-primary px-[min(1rem,16px)] py-2.5 text-sm font-semibold text-primary-foreground shadow-level-2 transition-transform focus:translate-y-0 motion-reduce:transition-none"
         >
           Skip to main content
         </a>

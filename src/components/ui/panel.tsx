@@ -29,12 +29,12 @@ export function Panel({
         description && !descriptionAsHelp ? descriptionId : undefined
       }
       className={cn(
-        "rounded-card border border-border bg-card text-card-foreground",
+        "min-w-0 rounded-card border border-border bg-card text-card-foreground",
         className,
       )}
       {...props}
     >
-      <header className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+      <header className="flex flex-col gap-4 border-b border-border px-[min(1rem,16px)] py-4 sm:flex-row sm:items-start sm:justify-between sm:px-[min(1.25rem,20px)]">
         <div className="min-w-0">
           <h2
             id={titleId}
@@ -59,7 +59,11 @@ export function Panel({
         {action ? <div className="shrink-0">{action}</div> : null}
       </header>
 
-      {children ? <div className="p-4 sm:p-5">{children}</div> : null}
+      {children ? (
+        <div className="p-[min(1rem,16px)] sm:p-[min(1.25rem,20px)]">
+          {children}
+        </div>
+      ) : null}
     </section>
   );
 }
