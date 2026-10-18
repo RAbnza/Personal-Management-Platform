@@ -59,18 +59,18 @@ describe("JobApplicationList", () => {
 
     expect(
       screen.getByRole("link", {
-        name: "Example Technologies",
+        name: "Full Stack Developer",
       }),
     ).toHaveAttribute(
       "href",
       "/career/applications/11111111-1111-4111-8111-111111111111",
     );
 
-    expect(screen.getByText("Full Stack Developer")).toBeInTheDocument();
+    expect(screen.getByText("Example Technologies")).toBeInTheDocument();
 
     expect(screen.getByText("Screening")).toBeInTheDocument();
 
-    expect(screen.getByText("2026-10-05")).toBeInTheDocument();
+    expect(screen.getByText("Applied 2026-10-05")).toBeInTheDocument();
 
     expect(screen.getByText("Follow-up · 2026-10-10")).toBeInTheDocument();
 
@@ -96,7 +96,7 @@ describe("JobApplicationList", () => {
       }),
     ).toHaveAttribute(
       "href",
-      "/career/applications?search=engineer&stage=screening&cursor=cursor-token",
+      "/career/applications?search=engineer&stage=screening&cursor=cursor-token&archive=active",
     );
 
     expect(screen.queryByText(/total applications/i)).not.toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("JobApplicationList", () => {
       }),
     ).toHaveAttribute(
       "href",
-      "/career/applications?search=engineer&stage=screening",
+      "/career/applications?archive=active&search=engineer&stage=screening",
     );
 
     expect(

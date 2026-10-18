@@ -107,6 +107,9 @@ describe("V2-F transparent accessible Career views", () => {
       screen.getByText(/Missing responses are not rejections/),
     ).toBeTruthy();
     rerender(<CareerReportView data={data(61)} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Supporting attempts" }),
+    );
     const section = document.getElementById("submitted-records")!;
     expect(within(section).getAllByRole("link")).toHaveLength(50);
     fireEvent.click(
@@ -118,6 +121,7 @@ describe("V2-F transparent accessible Career views", () => {
     expect(within(section).getByRole("status").textContent).toContain(
       "61 total records",
     );
+    fireEvent.click(screen.getByRole("button", { name: "Milestone reach" }));
     expect(
       screen.getByRole("link", { name: "Submitted attempts 61" }),
     ).toBeTruthy();

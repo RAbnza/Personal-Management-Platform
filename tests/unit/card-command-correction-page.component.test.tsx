@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { replacementIntentSchema } from "@/modules/finance/domain/financial-correction";
 const mocks = vi.hoisted(() => ({
   detail: vi.fn(),
@@ -124,6 +125,9 @@ describe("card correction reference retention", () => {
       mocks.card.mockResolvedValue({ card });
       render(
         await FinancialActionPage({ params: Promise.resolve({ actionId }) }),
+      );
+      await userEvent.click(
+        screen.getByRole("button", { name: "Correct entry" }),
       );
       expect(screen.getByLabelText("Credit card")).toHaveValue(cardId);
       expect(
