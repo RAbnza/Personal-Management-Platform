@@ -346,11 +346,16 @@ export default async function PersonalEventDetailPage({
             </Link>
           </Panel>
         ) : (
-          <PersonalEventActions
-            key={`${event.eventId}:${event.version}`}
-            event={event}
-            workspaceTimezone={workspace.timezone}
-          />
+          <details className="rounded-card border border-border bg-card p-5">
+            <summary className="min-h-11 cursor-pointer font-semibold">
+              Edit, complete or cancel event
+            </summary>
+            <PersonalEventActions
+              key={`${event.eventId}:${event.version}`}
+              event={event}
+              workspaceTimezone={workspace.timezone}
+            />
+          </details>
         )}
 
         <Link
@@ -359,34 +364,39 @@ export default async function PersonalEventDetailPage({
         >
           Reminder controls and history
         </Link>
-        <Panel
-          title="Record metadata"
-          description="These timestamps describe the source record itself, not a duplicated Agenda item."
-        >
-          <dl className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Created
-              </dt>
+        <details className="rounded-card border border-border p-4">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Record history
+          </summary>
+          <Panel
+            title="Record metadata"
+            description="These timestamps describe the source record itself, not a duplicated Agenda item."
+          >
+            <dl className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Created
+                </dt>
 
-              <dd className="mt-1 text-sm text-foreground">
-                {formatInstant(event.createdAt, workspace.timezone)} ·{" "}
-                {workspace.timezone}
-              </dd>
-            </div>
+                <dd className="mt-1 text-sm text-foreground">
+                  {formatInstant(event.createdAt, workspace.timezone)} ·{" "}
+                  {workspace.timezone}
+                </dd>
+              </div>
 
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Last updated
-              </dt>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Last updated
+                </dt>
 
-              <dd className="mt-1 text-sm text-foreground">
-                {formatInstant(event.updatedAt, workspace.timezone)} ·{" "}
-                {workspace.timezone}
-              </dd>
-            </div>
-          </dl>
-        </Panel>
+                <dd className="mt-1 text-sm text-foreground">
+                  {formatInstant(event.updatedAt, workspace.timezone)} ·{" "}
+                  {workspace.timezone}
+                </dd>
+              </div>
+            </dl>
+          </Panel>
+        </details>
       </div>
     </AppShell>
   );

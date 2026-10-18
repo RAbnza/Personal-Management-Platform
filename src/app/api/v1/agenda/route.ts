@@ -47,6 +47,7 @@ const agendaQuerySchema = z
     modules: agendaModulesQuerySchema.optional(),
 
     pageSize: agendaPageSizeQuerySchema.optional(),
+    overlap: z.enum(["true", "false"]).optional(),
 
     cursor: z.string().min(1).max(4096).optional(),
   })
@@ -93,6 +94,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     const query = parseAgendaQuery(request);
+    // Calendar reads cover at most a six-week month plus a boundary buffer.
+    if (
+      query.overlap === "true" &&
+      (Date.parse(query.endDate) - Date.parse(query.startDate)) / 86400000 > 62
+    ) {
+      throw new RangeError("Calendar overlap reads are limited to 63 days.");
+    }
 
     const result = await listAgendaItems({
       userId: actorResolution.actor.userId,
@@ -100,6 +108,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
       startDate: query.startDate,
       endDate: query.endDate,
+      ...(query.overlap ? { overlap: query.overlap === "true" } : {}),
 
       ...(query.modules
         ? {

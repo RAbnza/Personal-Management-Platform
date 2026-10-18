@@ -1,3 +1,4 @@
+import { ApplicationTimeline } from "@/components/career/application-timeline";
 import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import { Attachments } from "@/components/files/attachments";
 import Link from "next/link";
@@ -312,146 +313,187 @@ export default async function JobApplicationDetailPage({
           </div>
         </header>
 
-        <Panel
-          title="Application details"
-          description="This record represents one application attempt. Dates and stage history preserve what actually happened."
-        >
-          {application.appliedDate && (
-            <Link
-              href={`/reports/career?period=month&anchorDate=${application.appliedDate}`}
-              className="inline-flex min-h-11 text-link underline"
-            >
-              View this attempt’s submission cohort
-            </Link>
-          )}
-          <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Applied date
-              </dt>
+        <ApplicationTimeline detail={detail} timezone={workspace.timezone} />
+        <details className="rounded-card border border-border bg-card p-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Role, contacts and supporting information
+          </summary>
+          <Panel
+            title="Application details"
+            description="This record represents one application attempt. Dates and stage history preserve what actually happened."
+          >
+            {application.appliedDate && (
+              <Link
+                href={`/reports/career?period=month&anchorDate=${application.appliedDate}`}
+                className="inline-flex min-h-11 text-link underline"
+              >
+                View this attempt’s submission cohort
+              </Link>
+            )}
+            <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Applied date
+                </dt>
 
-              <dd className="mt-1 text-sm font-semibold text-foreground">
-                {application.appliedDate ?? "Not submitted"}
-              </dd>
-            </div>
+                <dd className="mt-1 text-sm font-semibold text-foreground">
+                  {application.appliedDate ?? "Not submitted"}
+                </dd>
+              </div>
 
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Location
-              </dt>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Location
+                </dt>
 
-              <dd className="mt-1 flex gap-2 text-sm text-foreground">
-                <MapPin
+                <dd className="mt-1 flex gap-2 text-sm text-foreground">
+                  <MapPin
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                    strokeWidth={1.9}
+                  />
+
+                  <span>{application.location ?? "Not recorded"}</span>
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Work arrangement
+                </dt>
+
+                <dd className="mt-1 text-sm font-semibold text-foreground">
+                  {application.workArrangement
+                    ? arrangementLabels[application.workArrangement]
+                    : "Not recorded"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Source
+                </dt>
+
+                <dd className="mt-1 text-sm font-semibold text-foreground">
+                  {application.sourceName ?? "Not recorded"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Salary
+                </dt>
+
+                <dd className="mt-1 text-sm font-semibold text-foreground">
+                  {salary ?? "Not recorded"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Version
+                </dt>
+
+                <dd className="numeric-value mt-1 text-sm font-semibold text-foreground">
+                  {application.version}
+                </dd>
+              </div>
+            </dl>
+
+            {application.contactName ||
+            application.contactEmail ||
+            application.contactPhone ? (
+              <section className="mt-5 rounded-control bg-surface-subtle p-4">
+                <h3 className="text-sm font-semibold">Contact</h3>
+                <p className="mt-2 text-sm">{application.contactName}</p>
+                <p className="break-words text-sm">
+                  {application.contactEmail}
+                </p>
+                <p className="text-sm">{application.contactPhone}</p>
+              </section>
+            ) : null}
+            {application.resumeVersion ? (
+              <section className="mt-5 rounded-control bg-surface-subtle p-4">
+                <h3 className="text-sm font-semibold">Resume reference</h3>
+                <p className="mt-2 text-sm">
+                  {application.resumeVersion.label}
+                  {application.resumeVersion.archived ? " (archived)" : ""}
+                </p>
+                {application.resumeVersion.referenceUrl ? (
+                  <a
+                    className="inline-flex min-h-11 text-link underline"
+                    href={application.resumeVersion.referenceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open resume reference
+                  </a>
+                ) : null}
+                <p className="whitespace-pre-wrap text-sm">
+                  {application.resumeVersion.notes}
+                </p>
+              </section>
+            ) : null}
+            {application.postingUrl ? (
+              <a
+                href={application.postingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+              >
+                Open original posting
+                <ExternalLink
                   aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  className="size-4"
                   strokeWidth={1.9}
                 />
+              </a>
+            ) : null}
 
-                <span>{application.location ?? "Not recorded"}</span>
-              </dd>
-            </div>
+            {application.technologyTags.length > 0 ? (
+              <div className="mt-5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Technologies
+                </p>
 
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Work arrangement
-              </dt>
-
-              <dd className="mt-1 text-sm font-semibold text-foreground">
-                {application.workArrangement
-                  ? arrangementLabels[application.workArrangement]
-                  : "Not recorded"}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Source
-              </dt>
-
-              <dd className="mt-1 text-sm font-semibold text-foreground">
-                {application.sourceName ?? "Not recorded"}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Salary
-              </dt>
-
-              <dd className="mt-1 text-sm font-semibold text-foreground">
-                {salary ?? "Not recorded"}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Version
-              </dt>
-
-              <dd className="numeric-value mt-1 text-sm font-semibold text-foreground">
-                {application.version}
-              </dd>
-            </div>
-          </dl>
-
-          {application.postingUrl ? (
-            <a
-              href={application.postingUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
-              Open original posting
-              <ExternalLink
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.9}
-              />
-            </a>
-          ) : null}
-
-          {application.technologyTags.length > 0 ? (
-            <div className="mt-5">
-              <p className="text-xs font-medium text-muted-foreground">
-                Technologies
-              </p>
-
-              <div className="mt-2 flex flex-wrap gap-2">
-                {application.technologyTags.map((technology) => (
-                  <span
-                    key={technology}
-                    className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-medium text-foreground"
-                  >
-                    {technology}
-                  </span>
-                ))}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {application.technologyTags.map((technology) => (
+                    <span
+                      key={technology}
+                      className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-medium text-foreground"
+                    >
+                      {technology}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {application.roleDescriptionSnapshot ? (
-            <div className="mt-5 border-t border-border pt-5">
-              <p className="text-xs font-medium text-muted-foreground">
-                Role description snapshot
-              </p>
+            {application.roleDescriptionSnapshot ? (
+              <div className="mt-5 border-t border-border pt-5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Role description snapshot
+                </p>
 
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
-                {application.roleDescriptionSnapshot}
-              </p>
-            </div>
-          ) : null}
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
+                  {application.roleDescriptionSnapshot}
+                </p>
+              </div>
+            ) : null}
 
-          {application.notes ? (
-            <div className="mt-5 border-t border-border pt-5">
-              <p className="text-xs font-medium text-muted-foreground">Notes</p>
+            {application.notes ? (
+              <div className="mt-5 border-t border-border pt-5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Notes
+                </p>
 
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
-                {application.notes}
-              </p>
-            </div>
-          ) : null}
-        </Panel>
-
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
+                  {application.notes}
+                </p>
+              </div>
+            ) : null}
+          </Panel>
+        </details>
         {application.archived ? (
           <Panel
             title="Archived application"
@@ -464,90 +506,111 @@ export default async function JobApplicationDetailPage({
           </Panel>
         ) : (
           <div className="grid gap-6 xl:grid-cols-2">
-            <ApplicationStageTransitionForm
-              key={`stage:${application.version}:${application.currentHistoryId}`}
-              applicationId={application.applicationId}
-              applicationVersion={application.version}
-              currentStage={application.currentStage}
-              currentOutcome={application.currentOutcome}
-              appliedDate={application.appliedDate}
-            />
-
-            <ApplicationEventCreateForm
-              key={`event:${application.version}:${application.nextActionEventId ?? "none"}`}
-              applicationId={application.applicationId}
-              applicationVersion={application.version}
-              workspaceTimezone={workspace.timezone}
-            />
-            <CareerObservationForm
-              applicationId={application.applicationId}
-              applicationVersion={application.version}
-            />
+            <details className="rounded-card border border-border p-4">
+              <summary className="min-h-11 cursor-pointer font-semibold">
+                Update stage or outcome
+              </summary>
+              <ApplicationStageTransitionForm
+                key={`stage:${application.version}:${application.currentHistoryId}`}
+                applicationId={application.applicationId}
+                applicationVersion={application.version}
+                currentStage={application.currentStage}
+                currentOutcome={application.currentOutcome}
+                appliedDate={application.appliedDate}
+              />
+            </details>
+            <details className="rounded-card border border-border p-4">
+              <summary className="min-h-11 cursor-pointer font-semibold">
+                Schedule interview, assessment or follow-up
+              </summary>
+              <ApplicationEventCreateForm
+                key={`event:${application.version}:${application.nextActionEventId ?? "none"}`}
+                applicationId={application.applicationId}
+                applicationVersion={application.version}
+                workspaceTimezone={workspace.timezone}
+              />
+            </details>
+            <details className="rounded-card border border-border p-4">
+              <summary className="min-h-11 cursor-pointer font-semibold">
+                Record a dated observation
+              </summary>
+              <CareerObservationForm
+                applicationId={application.applicationId}
+                applicationVersion={application.version}
+              />
+            </details>
           </div>
         )}
 
-        <Panel
-          title="Stage history"
-          description="History records the effective date separately from the time it was entered."
-        >
-          <ol className="divide-y divide-border">
-            {detail.stageHistory.map((history) => (
-              <li key={history.historyId} className="py-4 first:pt-0 last:pb-0">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground">
-                        {stageLabels[history.stage]}
+        <details className="rounded-card border border-border p-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Stage history evidence
+          </summary>
+          <Panel
+            title="Stage history"
+            description="History records the effective date separately from the time it was entered."
+          >
+            <ol className="divide-y divide-border">
+              {detail.stageHistory.map((history) => (
+                <li
+                  key={history.historyId}
+                  className="py-4 first:pt-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">
+                          {stageLabels[history.stage]}
+                        </p>
+
+                        {history.outcome ? (
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {outcomeLabels[history.outcome]}
+                          </span>
+                        ) : null}
+
+                        {history.isCurrent ? (
+                          <span className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                            Current
+                          </span>
+                        ) : null}
+
+                        {history.supersededByHistoryId ? (
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Superseded
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Effective{" "}
+                        <time dateTime={history.effectiveDate}>
+                          {history.effectiveDate}
+                        </time>
                       </p>
 
-                      {history.outcome ? (
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {outcomeLabels[history.outcome]}
-                        </span>
-                      ) : null}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Recorded{" "}
+                        {formatInstant(history.recordedAt, workspace.timezone)}{" "}
+                        · {workspace.timezone}
+                      </p>
 
-                      {history.isCurrent ? (
-                        <span className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
-                          Current
-                        </span>
-                      ) : null}
-
-                      {history.supersededByHistoryId ? (
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Superseded
-                        </span>
+                      {history.reason ? (
+                        <p className="mt-2 max-w-[68ch] text-sm leading-6 text-foreground">
+                          {history.reason}
+                        </p>
                       ) : null}
                     </div>
 
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Effective{" "}
-                      <time dateTime={history.effectiveDate}>
-                        {history.effectiveDate}
-                      </time>
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Recorded{" "}
-                      {formatInstant(history.recordedAt, workspace.timezone)} ·{" "}
-                      {workspace.timezone}
-                    </p>
-
-                    {history.reason ? (
-                      <p className="mt-2 max-w-[68ch] text-sm leading-6 text-foreground">
-                        {history.reason}
-                      </p>
-                    ) : null}
+                    <span className="numeric-value text-xs text-muted-foreground">
+                      #{history.sequenceNo}
+                    </span>
                   </div>
-
-                  <span className="numeric-value text-xs text-muted-foreground">
-                    #{history.sequenceNo}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Panel>
-
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </details>
         <Panel
           title="Career activity"
           description="Scheduled Career activities are source records. Their lifecycle changes remain attached to this application."
@@ -588,7 +651,11 @@ export default async function JobApplicationDetailPage({
                   }));
 
                 return (
-                  <li key={event.eventId} className="py-4 first:pt-0 last:pb-0">
+                  <li
+                    key={event.eventId}
+                    id={`event-${event.eventId}`}
+                    className="py-4 first:pt-0 last:pb-0"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">

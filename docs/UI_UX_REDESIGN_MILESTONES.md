@@ -125,14 +125,14 @@ Each milestone uses owner-approved change-impact verification: changed UI, affec
 **Specific tasks:**
 
 1. Redesign application list/new/detail, stage/outcome transitions, dated observations, events, timeline and files placement. Preserve separate attempts and duplicate warning.
-2. Recompose Calendar around the existing Agenda with date/source controls, reminder attention, bounded pages and Add event. Keep source editing in its authoritative module.
+2. Recompose Calendar as a real month/week/day/agenda workspace, with direct date navigation, source filters, selected-day details, reminder attention and contextual Add event. Read actual authorized sources with explicit pagination coverage. Keep source editing in its authoritative module.
 3. Redesign personal-event detail and reminder controls, including inherit/override/off, snooze/dismiss/restore, current source generation and hidden-module context.
 4. Separate My trackers from Templates while preserving independent pagination, presets and create-from-template.
 5. Redesign tracker/entry lists, typed forms, mapped values, archive/restore, immutable revision detail and reminder links.
 6. Create the template editor composition and review/publication view without adding draft autosave or executable fields. Keep stable IDs, required/default/retirement/validation rules and all mappings.
 7. Create migration mapping/review/progress/cancel/resume views with actual batch counts, invalid links and sample limits; preserve partial locks and full completion conditions.
 
-**Required components/libraries:** existing forms/validation, M1 list/history/editor layouts and Radix disclosure/help/dialog primitives. Native date controls remain a valid default. No FullCalendar, drag board, formula engine or separate tour framework is required.
+**Required components/libraries:** existing forms/validation, M1 list/history/editor layouts and Radix disclosure/help/dialog primitives. FullCalendar month/week/day/list views are mandatory under the combined M4/M5 owner brief. Native date inputs remain supporting controls. No drag mutation, formula engine or separate tour framework is required.
 
 **Dependencies:** M2 frame; M1 components; M3 source routes remain stable. M4 does not depend on native calendar providers, sync, local profiles or background native scheduling.
 

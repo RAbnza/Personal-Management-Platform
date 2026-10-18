@@ -1,3 +1,4 @@
+import { EntryCollection } from "@/components/trackers/entry-collection";
 import { BreadcrumbRecords } from "@/components/shell/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -132,9 +133,20 @@ export default async function TrackersPage({
   });
   if (data.view === "overview")
     return (
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="space-y-4">
-          <h1 className="text-2xl font-semibold">My trackers</h1>
+          <header
+            className="rounded-card p-6"
+            style={{ background: "var(--focal-background)" }}
+          >
+            <p className="text-sm text-muted-foreground">
+              Small steps, visible progress
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold">My trackers</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Keep the things you care about moving.
+            </p>
+          </header>
           <div className="flex flex-wrap gap-4">
             {["active", "archived", "all"].map((a) => (
               <Link className={link} key={a} href={`/trackers?archived=${a}`}>
@@ -142,9 +154,12 @@ export default async function TrackersPage({
               </Link>
             ))}
           </div>
-          <ul className="space-y-3">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {data.trackers.map((t) => (
-              <li key={t.id}>
+              <li
+                key={t.id}
+                className="rounded-card border border-border bg-card p-5"
+              >
                 <Link className={link} href={`/trackers/${t.id}`}>
                   {t.name}
                   {t.archived_at ? " (archived)" : ""}
@@ -161,13 +176,21 @@ export default async function TrackersPage({
               Next trackers
             </Link>
           )}
-          <PresetForm />
+          <details className="rounded-card bg-(--teal-surface) p-5">
+            <summary className="min-h-11 cursor-pointer font-semibold">
+              Start a tracker from a preset
+            </summary>
+            <PresetForm />
+          </details>
         </section>
-        <section className="space-y-4">
+        <section className="space-y-4 rounded-card bg-surface-subtle p-5">
           <h2 className="text-xl font-semibold">My templates</h2>
           <ul>
             {data.templates.map((t) => (
-              <li key={t.id}>
+              <li
+                key={t.id}
+                className="rounded-card border border-border bg-card p-5"
+              >
                 <Link className={link} href={`/trackers/templates/${t.id}`}>
                   {t.name}
                   {t.archived_at ? " (archived)" : ""}
@@ -227,12 +250,17 @@ export default async function TrackersPage({
               versionId={data.current.id}
               name={data.template.name}
             />
-            <TemplateBuilder
-              key={data.current.id}
-              initial={data.current.definition}
-              templateId={data.template.id}
-              versionId={data.current.id}
-            />
+            <details className="rounded-card border border-border p-5">
+              <summary className="min-h-11 cursor-pointer text-lg font-semibold">
+                Design a new template version
+              </summary>
+              <TemplateBuilder
+                key={data.current.id}
+                initial={data.current.definition}
+                templateId={data.template.id}
+                versionId={data.current.id}
+              />
+            </details>
           </>
         )}
       </div>
@@ -240,6 +268,13 @@ export default async function TrackersPage({
   if (data.view === "version")
     return (
       <div className="space-y-6">
+        <BreadcrumbRecords
+          path={"/trackers/" + path.join("/")}
+          labels={{
+            ["/trackers/" + path.join("/")]:
+              `${data.definition.definition.name}, version ${data.definition.versionNo}`,
+          }}
+        />
         <h1 className="text-2xl font-semibold">
           {data.definition.definition.name} — version{" "}
           {data.definition.versionNo}
@@ -304,18 +339,23 @@ export default async function TrackersPage({
             archived={!!data.entry.archived_at}
           />
         )}
-        <EntryForm
-          key={data.entry.current_revision_id}
-          tracker={data.tracker}
-          definition={data.definition.definition}
-          entry={data.entry}
-          disabled={
-            data.locked ||
-            !!data.entry.archived_at ||
-            !!data.tracker.archived_at
-          }
-        />
-        <section className="space-y-4">
+        <details className="rounded-card border border-border p-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Edit this entry
+          </summary>
+          <EntryForm
+            key={data.entry.current_revision_id}
+            tracker={data.tracker}
+            definition={data.definition.definition}
+            entry={data.entry}
+            disabled={
+              data.locked ||
+              !!data.entry.archived_at ||
+              !!data.tracker.archived_at
+            }
+          />
+        </details>
+        <section className="space-y-4 border-l-2 border-border pl-5">
           <h2 className="text-xl font-semibold">Immutable revision history</h2>
           {data.history.map((r) => (
             <article
@@ -352,6 +392,25 @@ export default async function TrackersPage({
   if (data.view === "migration")
     return (
       <div className="space-y-6">
+        <BreadcrumbRecords
+          path={"/trackers/" + path.join("/")}
+          labels={{
+            ["/trackers/" + path.join("/")]:
+              `Migration for ${data.tracker.name}`,
+          }}
+        />
+        <ol
+          aria-label="Migration steps"
+          className="grid grid-cols-3 gap-2 text-sm"
+        >
+          <li className="rounded-control bg-accent p-3">1 · Map fields</li>
+          <li className="rounded-control bg-primary p-3 text-primary-foreground">
+            2 · Review evidence
+          </li>
+          <li className="rounded-control bg-surface-subtle p-3">
+            3 · Process batches
+          </li>
+        </ol>
         <h1 className="text-2xl font-semibold">
           Migration review: {data.tracker.name}
         </h1>
@@ -363,7 +422,12 @@ export default async function TrackersPage({
           entries. The tracker remains on its original version until every entry
           is migrated.
         </p>
-        <DefinitionView d={data.to.definition} />
+        <details className="rounded-card border border-border p-4">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Target template definition
+          </summary>
+          <DefinitionView d={data.to.definition} />
+        </details>
         <section>
           <h2 className="text-lg font-semibold">Reviewed field mappings</h2>
           <ul>
@@ -512,39 +576,12 @@ export default async function TrackersPage({
             Filter entries
           </button>
         </form>
-        <ul className="space-y-2">
-          {data.entries.map((e) => (
-            <li key={e.id} className="rounded-card border border-border p-3">
-              <Link className={link} href={`/trackers/entries/${e.id}`}>
-                {e.title}
-              </Link>
-              <p className="text-sm">
-                {(e.template_version_id === data.candidate?.id
-                  ? data.candidate.definition
-                  : data.definition.definition
-                ).fields
-                  .find(
-                    (f) =>
-                      f.key ===
-                      (e.template_version_id === data.candidate?.id
-                        ? data.candidate.definition
-                        : data.definition.definition
-                      ).statusKey,
-                  )
-                  ?.options.find((o) => o.key === e.status_key)?.label ??
-                  e.status_key ??
-                  "No status"}
-                {e.deadline_date ? ` · Due ${e.deadline_date}` : ""}
-                {e.completed_at ? " · Completed" : ""}
-                {e.archived_at ? " · Archived" : ""}
-                {e.template_version_id !== data.tracker.template_version_id
-                  ? " · Migrated; awaiting tracker completion"
-                  : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-        {!data.entries.length && <p>No entries match this view.</p>}
+        <EntryCollection
+          entries={data.entries}
+          definition={data.definition.definition}
+          versionId={data.tracker.template_version_id}
+          candidate={data.candidate}
+        />
         {data.nextCursor && (
           <Link
             className={link}
@@ -555,10 +592,15 @@ export default async function TrackersPage({
         )}
       </section>
       {!data.locked && !data.tracker.archived_at && (
-        <EntryForm
-          tracker={data.tracker}
-          definition={data.definition.definition}
-        />
+        <details className="rounded-card bg-(--teal-surface) p-5">
+          <summary className="min-h-11 cursor-pointer text-lg font-semibold">
+            Add an entry
+          </summary>
+          <EntryForm
+            tracker={data.tracker}
+            definition={data.definition.definition}
+          />
+        </details>
       )}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Template migrations</h2>

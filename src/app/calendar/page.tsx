@@ -7,7 +7,7 @@ import { resolveOnboardingProgress } from "@/app/_lib/onboarding-progress";
 import { resolvePrivateAppBootstrap } from "@/app/_lib/private-app-bootstrap";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AgendaList } from "@/components/calendar/agenda-list";
-import { PersonalEventCreateForm } from "@/components/calendar/personal-event-create-form";
+import { CalendarWorkspace } from "@/components/calendar/calendar-workspace";
 import { ReminderControls } from "@/components/calendar/reminder-controls";
 import {
   getReminder,
@@ -320,9 +320,8 @@ export default async function CalendarPage({
           </h1>
 
           <p className="mt-3 max-w-[68ch] text-base leading-6 text-muted-foreground">
-            Review upcoming and overdue commitments without creating duplicate
-            editable copies. Career activities stay owned by Career; manual
-            personal events are owned by Calendar.
+            A little space for everything that matters. Browse your commitments,
+            make plans, and open the details when you need them.
           </p>
 
           <p className="mt-3 text-sm text-muted-foreground">
@@ -332,292 +331,315 @@ export default async function CalendarPage({
             </span>
           </p>
         </header>
-        <Panel
-          title="In-app reminder attention"
-          description="Due reminder labels appear on Agenda sources. Today and overdue describe the source date; dismissing a reminder preserves the source commitment."
-        >
-          <p className="text-sm leading-6">
-            Open Reminder controls beside a source to dismiss, snooze, restore,
-            or choose custom reminder times. Module defaults apply to sources
-            using inherited reminders.
-          </p>
-          {reminderAttention ? (
-            <div className="mt-4">
-              <p role="status" className="font-medium">
-                {reminderAttention.total === 0
-                  ? "No in-app reminders due"
-                  : `${reminderAttention.total} source${reminderAttention.total === 1 ? "" : "s"} with due in-app reminders`}
-              </p>
-              <ul className="mt-3 divide-y divide-border">
-                {reminderAttention.items.map((view) =>
-                  "sourceId" in view.target ? (
-                    <li
-                      key={`${view.target.sourceKind}:${view.target.sourceId}`}
-                      className="py-3"
-                    >
-                      <Link
-                        href={reminderHref(view.target)}
-                        className="inline-flex min-h-11 items-center font-semibold text-link underline"
-                      >
-                        {view.title} · {view.dueDate ?? "Scheduled source"}
-                      </Link>
-                      {view.moduleHidden ? (
-                        <span className="ml-2 text-sm">Module hidden</span>
-                      ) : null}
-                    </li>
-                  ) : null,
-                )}
-              </ul>
-              {reminderAttention.total > reminderAttention.items.length ? (
-                <p className="text-sm text-muted-foreground">
-                  Showing the first 25 due sources. Use Agenda source/date
-                  filters to review further commitments.
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-4" role="alert">
-              Due reminder attention is temporarily unavailable. Reload Calendar
-              to retry.
-            </p>
-          )}
-          <details className="mt-4">
-            <summary className="min-h-11 cursor-pointer font-semibold">
-              Module reminder defaults
-            </summary>
-            <div className="mt-4 space-y-5">
-              {reminderDefaults ? (
-                reminderDefaults.map((view) => (
-                  <ReminderControls
-                    key={
-                      "moduleKey" in view.target ? view.target.moduleKey : ""
-                    }
-                    initial={view}
-                  />
-                ))
-              ) : (
-                <p role="alert">
-                  Reminder defaults are temporarily unavailable. Reload Calendar
-                  to retry.
-                </p>
-              )}
-            </div>
-          </details>
-        </Panel>
-
-        <Panel
-          title="Agenda range"
-          description="Agenda reads are bounded by an explicit local calendar-date range and optional source filter."
-        >
-          <form
-            method="GET"
-            action="/calendar"
-            className="grid gap-5 md:grid-cols-3"
+        <CalendarWorkspace
+          today={workspaceToday}
+          timezone={workspace.timezone}
+          timeEnabled={timeEnabled}
+          initialSource={sourceFilter}
+          initialDate={
+            requestedStartDate && isCalendarDate(requestedStartDate)
+              ? requestedStartDate
+              : undefined
+          }
+        />
+        <details className="rounded-card border border-border bg-card p-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Reminders · {reminderAttention?.total ?? "Unavailable"} due
+          </summary>
+          <Panel
+            title="In-app reminder attention"
+            description="Due reminder labels appear on Agenda sources. Today and overdue describe the source date; dismissing a reminder preserves the source commitment."
           >
-            <div>
-              <label
-                htmlFor="agenda-start-date"
-                className="block text-sm font-medium text-foreground"
-              >
-                Start date
-              </label>
-
-              <input
-                id="agenda-start-date"
-                name="startDate"
-                type="date"
-                defaultValue={startDate}
-                className="mt-2 min-h-11 w-full rounded-control border border-input bg-surface px-3 py-2 text-base text-foreground"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="agenda-end-date"
-                className="block text-sm font-medium text-foreground"
-              >
-                End date
-              </label>
-
-              <input
-                id="agenda-end-date"
-                name="endDate"
-                type="date"
-                defaultValue={endDate}
-                className="mt-2 min-h-11 w-full rounded-control border border-input bg-surface px-3 py-2 text-base text-foreground"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="agenda-source"
-                className="block text-sm font-medium text-foreground"
-              >
-                Source
-              </label>
-
-              <select
-                id="agenda-source"
-                name="source"
-                defaultValue={sourceFilter}
-                className={`mt-2 ${selectClassName}`}
-              >
-                <option value="all">All sources</option>
-                <option value="money">Money only</option>
-                <option value="trackers">Trackers only</option>
-
-                <option value="career">Career only</option>
-
-                <option value="time">Calendar only</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-3">
-              <button
-                type="submit"
-                className={[
-                  "inline-flex min-h-11 items-center justify-center",
-                  "rounded-button border border-primary-border",
-                  "bg-primary px-4 py-2.5",
-                  "text-sm font-semibold text-primary-foreground",
-                  "transition-colors duration-(--motion-duration-fast) ease-state",
-                  "hover:bg-primary-hover active:bg-primary-pressed",
-                  "motion-reduce:transition-none",
-                ].join(" ")}
-              >
-                Apply range
-              </button>
-            </div>
-          </form>
-
-          {rangeAdjusted ? (
-            <p className="mt-4 rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning">
-              The requested range was invalid, so Calendar restored its default
-              bounded range.
+            <p className="text-sm leading-6">
+              Open Reminder controls beside a source to dismiss, snooze,
+              restore, or choose custom reminder times. Module defaults apply to
+              sources using inherited reminders.
             </p>
-          ) : null}
-
-          {cursorRecovered ? (
-            <p className="mt-4 rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning">
-              The previous pagination position was no longer valid. Calendar
-              returned to the first page for this range.
-            </p>
-          ) : null}
-        </Panel>
-
-        {agenda ? (
-          <>
-            <AgendaList
-              agenda={agenda}
-              moduleEnabled={{
-                career: careerEnabled,
-                time: timeEnabled,
-                trackers:
-                  modules.find((m) => m.moduleKey === "trackers")?.enabled ??
-                  true,
-                money:
-                  modules.find((module) => module.moduleKey === "money")
-                    ?.enabled ?? false,
-              }}
-            />
-
-            <nav
-              aria-label="Agenda pagination"
-              className="flex flex-wrap items-center justify-between gap-3"
+            {reminderAttention ? (
+              <div className="mt-4">
+                <p role="status" className="font-medium">
+                  {reminderAttention.total === 0
+                    ? "No in-app reminders due"
+                    : `${reminderAttention.total} source${reminderAttention.total === 1 ? "" : "s"} with due in-app reminders`}
+                </p>
+                <ul className="mt-3 divide-y divide-border">
+                  {reminderAttention.items.map((view) =>
+                    "sourceId" in view.target ? (
+                      <li
+                        key={`${view.target.sourceKind}:${view.target.sourceId}`}
+                        className="py-3"
+                      >
+                        <Link
+                          href={reminderHref(view.target)}
+                          className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                        >
+                          {view.title} · {view.dueDate ?? "Scheduled source"}
+                        </Link>
+                        {view.moduleHidden ? (
+                          <span className="ml-2 text-sm">Module hidden</span>
+                        ) : null}
+                      </li>
+                    ) : null,
+                  )}
+                </ul>
+                {reminderAttention.total > reminderAttention.items.length ? (
+                  <p className="text-sm text-muted-foreground">
+                    Showing the first 25 due sources. Use Agenda source/date
+                    filters to review further commitments.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-4" role="alert">
+                Due reminder attention is temporarily unavailable. Reload
+                Calendar to retry.
+              </p>
+            )}
+            <details className="mt-4">
+              <summary className="min-h-11 cursor-pointer font-semibold">
+                Module reminder defaults
+              </summary>
+              <div className="mt-4 space-y-5">
+                {reminderDefaults ? (
+                  reminderDefaults.map((view) => (
+                    <ReminderControls
+                      key={
+                        "moduleKey" in view.target ? view.target.moduleKey : ""
+                      }
+                      initial={view}
+                    />
+                  ))
+                ) : (
+                  <p role="alert">
+                    Reminder defaults are temporarily unavailable. Reload
+                    Calendar to retry.
+                  </p>
+                )}
+              </div>
+            </details>
+          </Panel>
+        </details>
+        <details className="rounded-card border border-border bg-card p-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">
+            Detailed agenda · custom range and pagination
+          </summary>
+          <Panel
+            title="Agenda range"
+            description="Agenda reads are bounded by an explicit local calendar-date range and optional source filter."
+          >
+            <form
+              method="GET"
+              action="/calendar"
+              className="grid gap-5 md:grid-cols-3"
             >
-              {cursor ? (
-                <Link
-                  href={createCalendarHref({
-                    startDate,
-                    endDate,
-                    source: sourceFilter,
-                  })}
-                  className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              <div>
+                <label
+                  htmlFor="agenda-start-date"
+                  className="block text-sm font-medium text-foreground"
                 >
-                  Back to first page
-                </Link>
-              ) : (
-                <span />
-              )}
+                  Start date
+                </label>
 
-              {agenda.nextCursor ? (
-                <Link
-                  href={createCalendarHref({
-                    startDate,
-                    endDate,
-                    source: sourceFilter,
+                <input
+                  id="agenda-start-date"
+                  name="startDate"
+                  type="date"
+                  defaultValue={startDate}
+                  className="mt-2 min-h-11 w-full rounded-control border border-input bg-surface px-3 py-2 text-base text-foreground"
+                />
+              </div>
 
-                    cursor: agenda.nextCursor,
-                  })}
-                  className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+              <div>
+                <label
+                  htmlFor="agenda-end-date"
+                  className="block text-sm font-medium text-foreground"
                 >
-                  Later items
-                </Link>
-              ) : agenda.items.length > 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  End of this Agenda range
-                </span>
-              ) : null}
-            </nav>
+                  End date
+                </label>
 
-            {reviewAgendaStep?.applicable &&
-            reviewAgendaStep.state !== "completed" ? (
-              <Panel
-                title="Finish the Agenda lesson"
-                description="This onboarding step is guidance-only, so reviewing the Agenda requires an explicit confirmation rather than a hidden side effect of opening this page."
-              >
-                <AgendaReviewButton />
-              </Panel>
+                <input
+                  id="agenda-end-date"
+                  name="endDate"
+                  type="date"
+                  defaultValue={endDate}
+                  className="mt-2 min-h-11 w-full rounded-control border border-input bg-surface px-3 py-2 text-base text-foreground"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="agenda-source"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Source
+                </label>
+
+                <select
+                  id="agenda-source"
+                  name="source"
+                  defaultValue={sourceFilter}
+                  className={`mt-2 ${selectClassName}`}
+                >
+                  <option value="all">All sources</option>
+                  <option value="money">Money only</option>
+                  <option value="trackers">Trackers only</option>
+
+                  <option value="career">Career only</option>
+
+                  <option value="time">Calendar only</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-3">
+                <button
+                  type="submit"
+                  className={[
+                    "inline-flex min-h-11 items-center justify-center",
+                    "rounded-button border border-primary-border",
+                    "bg-primary px-4 py-2.5",
+                    "text-sm font-semibold text-primary-foreground",
+                    "transition-colors duration-(--motion-duration-fast) ease-state",
+                    "hover:bg-primary-hover active:bg-primary-pressed",
+                    "motion-reduce:transition-none",
+                  ].join(" ")}
+                >
+                  Apply range
+                </button>
+              </div>
+            </form>
+
+            {rangeAdjusted ? (
+              <p className="mt-4 rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning">
+                The requested range was invalid, so Calendar restored its
+                default bounded range.
+              </p>
             ) : null}
 
-            {timeEnabled ? (
-              <PersonalEventCreateForm workspaceTimezone={workspace.timezone} />
-            ) : (
-              <Panel
-                title="Manual personal events are disabled"
-                description="Calendar can still show agenda-visible source records while the Time module is hidden."
-              >
-                <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-                  Existing personal events remain preserved. Enable Time from
-                  Getting Started before creating another manual Calendar event.
-                </p>
-
-                <Link
-                  href="/onboarding"
-                  className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
-                >
-                  Review Getting Started
-                </Link>
-              </Panel>
-            )}
-          </>
-        ) : (
-          <Panel
-            title="Agenda temporarily unavailable"
-            description="Calendar could not read the source-driven Agenda safely."
-          >
-            <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
-              No Calendar or Career data has been changed. Retry the Agenda read
-              before creating a personal event from this screen.
-            </p>
-
-            <Link
-              href={createCalendarHref({
-                startDate,
-                endDate,
-                source: sourceFilter,
-              })}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
-            >
-              <RotateCcw
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.9}
-              />
-              Retry Agenda
-            </Link>
+            {cursorRecovered ? (
+              <p className="mt-4 rounded-control border border-warning bg-warning-surface px-4 py-3 text-sm leading-6 text-warning">
+                The previous pagination position was no longer valid. Calendar
+                returned to the first page for this range.
+              </p>
+            ) : null}
           </Panel>
-        )}
+
+          {agenda ? (
+            <>
+              <AgendaList
+                agenda={agenda}
+                moduleEnabled={{
+                  career: careerEnabled,
+                  time: timeEnabled,
+                  trackers:
+                    modules.find((m) => m.moduleKey === "trackers")?.enabled ??
+                    true,
+                  money:
+                    modules.find((module) => module.moduleKey === "money")
+                      ?.enabled ?? false,
+                }}
+              />
+
+              <nav
+                aria-label="Agenda pagination"
+                className="flex flex-wrap items-center justify-between gap-3"
+              >
+                {cursor ? (
+                  <Link
+                    href={createCalendarHref({
+                      startDate,
+                      endDate,
+                      source: sourceFilter,
+                    })}
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Back to first page
+                  </Link>
+                ) : (
+                  <span />
+                )}
+
+                {agenda.nextCursor ? (
+                  <Link
+                    href={createCalendarHref({
+                      startDate,
+                      endDate,
+                      source: sourceFilter,
+
+                      cursor: agenda.nextCursor,
+                    })}
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Later items
+                  </Link>
+                ) : agenda.items.length > 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    End of this Agenda range
+                  </span>
+                ) : null}
+              </nav>
+
+              {reviewAgendaStep?.applicable &&
+              reviewAgendaStep.state !== "completed" ? (
+                <Panel
+                  title="Finish the Agenda lesson"
+                  description="This onboarding step is guidance-only, so reviewing the Agenda requires an explicit confirmation rather than a hidden side effect of opening this page."
+                >
+                  <AgendaReviewButton />
+                </Panel>
+              ) : null}
+
+              {timeEnabled ? (
+                <p className="text-sm text-muted-foreground">
+                  Use Add event above to create a personal event.
+                </p>
+              ) : (
+                <Panel
+                  title="Manual personal events are disabled"
+                  description="Calendar can still show agenda-visible source records while the Time module is hidden."
+                >
+                  <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                    Existing personal events remain preserved. Enable Time from
+                    Getting Started before creating another manual Calendar
+                    event.
+                  </p>
+
+                  <Link
+                    href="/onboarding"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-link underline-offset-4 hover:underline"
+                  >
+                    Review Getting Started
+                  </Link>
+                </Panel>
+              )}
+            </>
+          ) : (
+            <Panel
+              title="Agenda temporarily unavailable"
+              description="Calendar could not read the source-driven Agenda safely."
+            >
+              <p className="max-w-[68ch] text-sm leading-6 text-muted-foreground">
+                No Calendar or Career data has been changed. Retry the Agenda
+                read before creating a personal event from this screen.
+              </p>
+
+              <Link
+                href={createCalendarHref({
+                  startDate,
+                  endDate,
+                  source: sourceFilter,
+                })}
+                className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link underline-offset-4 hover:underline"
+              >
+                <RotateCcw
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={1.9}
+                />
+                Retry Agenda
+              </Link>
+            </Panel>
+          )}
+        </details>
       </div>
     </AppShell>
   );

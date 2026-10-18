@@ -453,7 +453,7 @@ Personal event creation opens through Add event. Generated items open the origin
 
 Reminder control view shows source/date/state first, then Inherit / Custom / Off, timing, snooze/dismiss/restore actions and review. Dismiss does not resolve the source; overdue and due reminder are different states. A changed generation requires refresh/review. “Remind me to review this shared payment” remains a private manually dated event; it sends no message to another participant.
 
-Month/week calendar views are an optional later presentation enhancement, not required for completing this redesign. FullCalendar is evaluated in Section 9, but installing it or altering range APIs is not on the six-milestone critical path.
+The combined M4/M5 owner brief supersedes the earlier agenda-first preference: month, week, day and agenda views are required. FullCalendar is the primary Calendar interface, including on mobile. The authorized Agenda API supports a bounded overlap read so multi-day events crossing visible boundaries remain present; incomplete pagination must be explicitly labeled.
 
 ### 7.12 Trackers and entries — TR1, TR2
 
@@ -567,7 +567,7 @@ Radix supports server rendering with modern React; interactive primitives still 
 
 ### 9.2 Evaluated but not selected for current milestones
 
-- **FullCalendar:** useful if month/week scheduling becomes an explicit presentation requirement. Current code has no installed calendar package; Agenda already preserves the real source model. Standard features are MIT, Premium has separate terms ([licensing](https://fullcalendar.io/license)). Native Android reuse is not direct. Defer rather than add calendar/Temporal peers without a concrete accepted view and complete bounded-source loading design.
+- **FullCalendar:** required by the combined M4/M5 brief. Version 7.1.3 uses React 17-19 and temporal-polyfill for named timezones; the standard MIT month/time-grid/list/interaction plugins are installed. No Premium features or generic source mutations are used. The calendar fetches bounded authorized Agenda pages and explicitly labels partial coverage. See [React integration](https://fullcalendar.io/docs/react).
 - **MUI, Ant Design, Mantine, Fluent UI React or an additional primitive family:** capable ecosystems, but would overlap the selected Radix/owned-component approach and increase theming and behavioral migration work. Native-feeling composition does not require a Windows-branded React kit. Do not mix Base UI and Radix opportunistically.
 - **TanStack Virtual:** deferred until measured list rendering warrants it; existing pagination is safer for accessibility and memory. **dnd-kit:** unnecessary for current list-based Career and button-based field ordering. **Driver.js:** existing replayable guides can be redesigned without a second tour engine; evaluate only if positioning/focus needs justify replacement.
 - **GSAP, Anime.js, multiple motion libraries, custom D3 chart infrastructure:** unnecessary for the prescribed productivity interactions and current Recharts data. No 3D/chart animation toolkit.

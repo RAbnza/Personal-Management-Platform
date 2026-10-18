@@ -179,11 +179,14 @@ export function ReminderControls({ initial }: { initial: ReminderView }) {
         ) : (
           <>
             {view.rules.length ? (
-              <ul className="space-y-4" aria-label="Reminder occurrences">
+              <ul
+                className="grid gap-4 md:grid-cols-2"
+                aria-label="Reminder occurrences"
+              >
                 {view.rules.map((rule) => (
                   <li
                     key={rule.key}
-                    className="rounded-control border border-border p-4"
+                    className="rounded-control border border-border bg-(--blue-surface) p-4"
                   >
                     <p className="font-medium">
                       {rule.offsetDays === 0
@@ -288,93 +291,101 @@ export function ReminderControls({ initial }: { initial: ReminderView }) {
                 </p>
               </div>
             ) : null}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const values = offsets.trim()
-                  ? offsets.split(",").map((s) => Number(s.trim()))
-                  : [];
-                if (
-                  values.some(
-                    (n) => !Number.isInteger(n) || n < 0 || n > 365,
-                  ) ||
-                  values.length > 8 ||
-                  new Set(values).size !== values.length ||
-                  !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(localTime)
-                ) {
-                  setMessage(
-                    "Enter up to eight distinct whole-day offsets from 0 to 365 and a valid time.",
-                  );
-                  return;
-                }
-                prepare({
-                  kind: "settings",
-                  mode,
-                  rules:
-                    mode === "override"
-                      ? values.map((offsetDays) => ({ offsetDays, localTime }))
-                      : [],
-                });
-              }}
-              className="space-y-3"
-            >
-              <fieldset disabled={locked} className="space-y-3">
-                <legend className="font-medium">Reminder settings</legend>
-                {"sourceId" in view.target ? (
-                  <div>
-                    <label htmlFor={`${id}-mode`} className="block text-sm">
-                      Reminder mode
-                    </label>
-                    <select
-                      id={`${id}-mode`}
-                      value={mode}
-                      onChange={(e) => setMode(e.target.value as typeof mode)}
-                      className={inputClass}
-                    >
-                      <option value="inherit">Use module defaults</option>
-                      <option value="override">Custom reminders</option>
-                      <option value="off">Disable source reminders</option>
-                    </select>
-                  </div>
-                ) : null}
-                {mode === "override" ? (
-                  <>
+            <details className="rounded-control border border-border p-4">
+              <summary className="min-h-11 cursor-pointer font-semibold">
+                Change reminder timing and defaults
+              </summary>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const values = offsets.trim()
+                    ? offsets.split(",").map((s) => Number(s.trim()))
+                    : [];
+                  if (
+                    values.some(
+                      (n) => !Number.isInteger(n) || n < 0 || n > 365,
+                    ) ||
+                    values.length > 8 ||
+                    new Set(values).size !== values.length ||
+                    !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(localTime)
+                  ) {
+                    setMessage(
+                      "Enter up to eight distinct whole-day offsets from 0 to 365 and a valid time.",
+                    );
+                    return;
+                  }
+                  prepare({
+                    kind: "settings",
+                    mode,
+                    rules:
+                      mode === "override"
+                        ? values.map((offsetDays) => ({
+                            offsetDays,
+                            localTime,
+                          }))
+                        : [],
+                  });
+                }}
+                className="space-y-3"
+              >
+                <fieldset disabled={locked} className="space-y-3">
+                  <legend className="font-medium">Reminder settings</legend>
+                  {"sourceId" in view.target ? (
                     <div>
-                      <label
-                        htmlFor={`${id}-offsets`}
-                        className="block text-sm"
+                      <label htmlFor={`${id}-mode`} className="block text-sm">
+                        Reminder mode
+                      </label>
+                      <select
+                        id={`${id}-mode`}
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value as typeof mode)}
+                        className={inputClass}
                       >
-                        Days before (comma separated)
-                      </label>
-                      <input
-                        id={`${id}-offsets`}
-                        value={offsets}
-                        onChange={(e) => setOffsets(e.target.value)}
-                        className={inputClass}
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        For example: 7, 1, 0. Leave empty for no reminders.
-                      </p>
+                        <option value="inherit">Use module defaults</option>
+                        <option value="override">Custom reminders</option>
+                        <option value="off">Disable source reminders</option>
+                      </select>
                     </div>
-                    <div>
-                      <label htmlFor={`${id}-time`} className="block text-sm">
-                        Local reminder time
-                      </label>
-                      <input
-                        id={`${id}-time`}
-                        type="time"
-                        value={localTime}
-                        onChange={(e) => setLocalTime(e.target.value)}
-                        className={inputClass}
-                      />
-                    </div>
-                  </>
-                ) : null}
-                <Button type="submit" variant="secondary">
-                  Review reminder settings
-                </Button>
-              </fieldset>
-            </form>
+                  ) : null}
+                  {mode === "override" ? (
+                    <>
+                      <div>
+                        <label
+                          htmlFor={`${id}-offsets`}
+                          className="block text-sm"
+                        >
+                          Days before (comma separated)
+                        </label>
+                        <input
+                          id={`${id}-offsets`}
+                          value={offsets}
+                          onChange={(e) => setOffsets(e.target.value)}
+                          className={inputClass}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          For example: 7, 1, 0. Leave empty for no reminders.
+                        </p>
+                      </div>
+                      <div>
+                        <label htmlFor={`${id}-time`} className="block text-sm">
+                          Local reminder time
+                        </label>
+                        <input
+                          id={`${id}-time`}
+                          type="time"
+                          value={localTime}
+                          onChange={(e) => setLocalTime(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                  <Button type="submit" variant="secondary">
+                    Review reminder settings
+                  </Button>
+                </fieldset>
+              </form>
+            </details>
           </>
         )}
         {pending ? (
