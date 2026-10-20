@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
 
   // Override default ignores of eslint-config-next.
   globalIgnores([
+    "apps/salapiya/**",
     ".next/**",
     ".next-release/**",
     "test-results/**",

@@ -1,0 +1,39 @@
+name: Salapiya Flutter validation
+on:
+  push:
+    branches: [main, feat/salapiya-p0-foundation]
+    paths:
+      - "apps/salapiya/**"
+      - ".github/workflows/salapiya-flutter.yml"
+  pull_request:
+    paths:
+      - "apps/salapiya/**"
+      - ".github/workflows/salapiya-flutter.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: salapiya-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/salapiya
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install tested Flutter from the official repository
+        working-directory: ${{ runner.temp }}
+        run: |
+          git clone --depth 1 --branch 3.47.7 https://github.com/flutter/flutter.git flutter
+          test "$(git -C flutter rev-parse HEAD)" = "abaf9c523780a608bd46686fd5e53740a07077f8"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - run: flutter --version
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub

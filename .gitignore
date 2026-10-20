@@ -44,3 +44,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Android emulator state must never enter the repository.
+**/.android/
+**/*.avd/

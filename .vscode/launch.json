@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Salapiya: Windows",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/salapiya",
+      "program": "lib/main.dart",
+      "deviceId": "windows",
+      "flutterMode": "debug"
+    },
+    {
+      "name": "Salapiya: selected Android emulator",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/salapiya",
+      "program": "lib/main.dart",
+      "flutterMode": "debug"
+    }
+  ]
+}

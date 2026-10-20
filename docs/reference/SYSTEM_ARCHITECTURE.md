@@ -1,5 +1,11 @@
 # System Architecture
 
+**Native continuation (October 20, 2026):** The [Salapiya blueprint](../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md)
+governs the new Windows/Android direction. See the [P0 foundation](../salapiya/P0_FOUNDATION.md)
+and [actual native verification](../salapiya/P0_VERIFICATION.md). This document
+retains historical web contracts/evidence; its web architecture and earlier stop
+instructions do not select or accept the native implementation. G0-G4 remain open.
+
 **Project:** Personal Management Platform (working name)  
 **Architecture version:** 1.0  
 **Date:** October 5, 2026  

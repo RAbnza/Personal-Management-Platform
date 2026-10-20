@@ -16,6 +16,16 @@ Private personal management application with exact PHP financial workflows, acco
 
 [ADR 0005](docs/reference/adr/0005-v3-scope-and-platform-transition.md) keeps the existing web application as the implementation/verification environment through redesign. Current web production deployment/readiness completion is no longer planned. Local and CI evidence do not establish production readiness, real cloud/provider activation, or human/hosted product acceptance. Historical handoffs retain their original phase boundaries; follow their latest accepted sections and the current approved roadmap.
 
+## Salapiya native development
+
+The P0 development foundation lives in [`apps/salapiya/`](apps/salapiya/README.md).
+See the [Windows/Android and VS Code guide](docs/salapiya/P0_FOUNDATION.md),
+[actual verification evidence](docs/salapiya/P0_VERIFICATION.md), and
+[remaining P0 assignments](docs/salapiya/P0_NEXT_ASSIGNMENTS.md).
+This technical startup application has no product workflows; architecture gates
+G0-G4 remain open. The completed web application and its setup below remain an
+executable reference.
+
 ## Project documentation
 
 The [Salapiya blueprint](docs/SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) is the current planning starting point. Earlier documents live in the [reference library](docs/reference/README.md) and preserve product and technical contracts within their documented scope. The blueprint explains which future-product decisions it supersedes.
