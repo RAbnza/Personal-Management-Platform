@@ -1,8 +1,9 @@
 # Prototype architecture, milestones and review gates
 
-**Status:** D0 proposal, ready for owner review. D1–D5 are design milestones,
-separate from P0–P6 engineering. D0 completion authorizes no automatic prototype
-implementation. Subsequent work needs the owner's milestone assignment.
+**Status:** D1–D5 sequence approved. D1 implemented for owner visual review;
+see [implementation and verification](D1_IMPLEMENTATION.md) and
+[review artifacts](review/d1/README.md). D1–D5 are design milestones, separate
+from P0–P6 engineering. D2 requires the next owner assignment; it has not started.
 
 ## Architecture for reusable presentation
 

@@ -1,5 +1,5 @@
 name: salapiya
-description: Salapiya native development foundation.
+description: Salapiya Woven Calm interactive design gallery.
 publish_to: none
 version: 0.1.0+1
 
@@ -8,6 +8,7 @@ environment:
   flutter: '>=3.47.7'
 
 dependencies:
+  flutter_svg: 2.3.0
   flutter:
     sdk: flutter
 
@@ -20,3 +21,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/branding/source/
+    - assets/branding/mark/
+    - assets/branding/horizontal/
+    - assets/branding/vertical/
+    - assets/branding/display/
+    - assets/fonts/nunitosans/OFL.txt
+    - assets/fonts/geist/OFL.txt
+    - assets/fonts/sourcesans3/OFL.txt
+  fonts:
+    - family: Nunito Sans
+      fonts:
+        - asset: assets/fonts/nunitosans/regular.ttf
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/geist/regular.ttf
+    - family: Source Sans 3
+      fonts:
+        - asset: assets/fonts/sourcesans3/regular.ttf

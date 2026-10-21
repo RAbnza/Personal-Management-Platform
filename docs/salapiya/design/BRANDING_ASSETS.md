@@ -92,10 +92,35 @@ are a separate later assignment.
   substitute without a label, or currency icon. No pulsing pearl or wing-flap
   animation is planned.
 
-The application pubspec does not yet declare these branding assets. D1 should
-bundle only the runtime files it uses after rendering validation; retain the
-source in Git. File existence is not proof of app bundling or correct runtime
-display.
+### D1 rendering decision
+
+D1 bundles the six unchanged SVGs for the comparison switch and six transparent
+PNG display exports for normal use. `flutter_svg: 2.3.0` was exercised on actual
+Windows and Android runtimes. Both emitted `unhandled element <filter/>`; the
+vector result has visibly different edge treatment from the source export.
+It is useful for comparison, but does not establish full fidelity for these
+particular filter-bearing files. Normal branding therefore uses the authorized
+browser-rendered PNG fallback, with no recoloring, stretching or simplification.
+
+`scripts/salapiya/export-branding.cjs` renders the unmodified SVG with Microsoft
+Edge and a transparent page. The display manifest records source/output SHA-256,
+browser version and dimensions: original/vertical 944×794, mark 768×771,
+horizontal 1441×463. Alpha is retained. Original SVG bytes are unchanged from D0.
+
+The native `branding_test.dart` renders all six pairs into identical transparent
+640×320 contain rectangles on **each platform**. See the
+[review index](review/d1/README.md), `*-logo-*-svg.png`, `*-logo-*-export.png` and
+`*-runtime-branding.json`. Differences include antialiasing/resampling as well as
+unsupported source effects, so the numeric difference is diagnostic, not an
+acceptance score. Windows mean channel difference: 0.56–0.79/255; Android:
+0.56–0.89/255. About 1.9–2.5% of rectangle pixels differ by >16 in some channel.
+
+Gallery cards also show the wordmarks below the conservative 560/320 starting
+widths **as stress specimens**, not as a new product-placement approval. Small
+taglines there are not reliably readable. The gallery interface uses a 32/40px
+mark beside ordinary accessible text. Mark scale specimens show 24/32/48/64px
+with one-quarter-mark padding; source lockups preserve their own composition.
+Final wordmark placement and larger onboarding use remain D2 review work.
 
 The existing native launcher resources are Flutter development placeholders.
 Do not report them as Salapiya Windows icons, Android adaptive icons, themed

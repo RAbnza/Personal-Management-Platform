@@ -1,0 +1,756 @@
+{
+  "baseline": "7914b72310d2979b9d7d80885c587b0437585194",
+  "note": "Hashes describe local file bytes; Git may normalize line endings. Inventory omits its own recursive hash.",
+  "codeFilesInSnapshot": [
+    "apps/salapiya/assets/branding/display/manifest.json",
+    "apps/salapiya/assets/fonts/manifest.json",
+    "apps/salapiya/integration_test/branding_test.dart",
+    "apps/salapiya/integration_test/layout_test.dart",
+    "apps/salapiya/integration_test/startup_test.dart",
+    "apps/salapiya/lib/app.dart",
+    "apps/salapiya/lib/design_system/components.dart",
+    "apps/salapiya/lib/design_system/craft.dart",
+    "apps/salapiya/lib/design_system/navigation.dart",
+    "apps/salapiya/lib/design_system/theme.dart",
+    "apps/salapiya/lib/gallery/gallery.dart",
+    "apps/salapiya/lib/gallery/navigation_study.dart",
+    "apps/salapiya/lib/gallery/review_editor.dart",
+    "apps/salapiya/lib/gallery/settings.dart",
+    "apps/salapiya/lib/gallery/specimens.dart",
+    "apps/salapiya/lib/prototype/fixtures.dart",
+    "apps/salapiya/pubspec.lock",
+    "apps/salapiya/pubspec.yaml",
+    "apps/salapiya/test/widget_test.dart",
+    "apps/salapiya/test_driver/gallery_driver.dart",
+    "scripts/salapiya/export-branding.cjs",
+    "scripts/salapiya/write-source-snapshot.py"
+  ],
+  "files": [
+    {
+      "path": "apps/salapiya/assets/branding/display/manifest.json",
+      "status": "created",
+      "bytes": 2165,
+      "sha256": "d74d66bd621147ec4c254288f7a423b0d58127eb06854562874726437c3df3fe"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_horizontal_on_dark.png",
+      "status": "created",
+      "bytes": 184895,
+      "sha256": "636b9a012546c4090e5621f606bf5b4ec4eb14c629b07c7f54dd601dc1998801"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_horizontal_on_light.png",
+      "status": "created",
+      "bytes": 188409,
+      "sha256": "64833d38f8173074c8c1d8d5e57e4734b957349b14e369c5c725ca88c13edcec"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_mark.png",
+      "status": "created",
+      "bytes": 291523,
+      "sha256": "f8139c0a613fd040d0534927bf4c2c6c59e756f144b28ceb6cbce3fb7e519029"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_original.png",
+      "status": "created",
+      "bytes": 171332,
+      "sha256": "face31d61df5900deac4f7528bf89042947d2fa6522867d7818389f375519677"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_vertical_on_dark.png",
+      "status": "created",
+      "bytes": 170283,
+      "sha256": "35c863ed16f07e64f001923e72a2f92a33e7070d5b51b246f72d1507dff96013"
+    },
+    {
+      "path": "apps/salapiya/assets/branding/display/salapiya_vertical_on_light.png",
+      "status": "created",
+      "bytes": 173750,
+      "sha256": "dadb1666eb4ba7b0dac212c62c86dc92a1d58a844b9f7590aa7b957653bc979d"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/geist/METADATA.pb",
+      "status": "created",
+      "bytes": 1348,
+      "sha256": "62d302155bfbf778e9c488ef00671a4ad71a8a4cdc808ec66ceb668373afe900"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/geist/OFL.txt",
+      "status": "created",
+      "bytes": 4387,
+      "sha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/geist/regular.ttf",
+      "status": "created",
+      "bytes": 169056,
+      "sha256": "73894e0448cae90a92b6c2f8732b7bb9acb7b94c418bff559dad4a18e1de9659"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/manifest.json",
+      "status": "created",
+      "bytes": 1815,
+      "sha256": "199819d4812ebc9fd2da1a8cd3418e8098d9c16e751f670c3f5171348f679e78"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/nunitosans/METADATA.pb",
+      "status": "created",
+      "bytes": 1758,
+      "sha256": "b60c93a2cdadb477316d22d22c8d43fa957899a4e4fe75cbb2b9e39e03c5e96e"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/nunitosans/OFL.txt",
+      "status": "created",
+      "bytes": 4393,
+      "sha256": "efbb0c9e864cef973982d9a17567e6be5c3d1759695574586f3f18c7ecca064b"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/nunitosans/regular.ttf",
+      "status": "created",
+      "bytes": 571240,
+      "sha256": "f934d7142fb4784bf828da485b7dcbd90c0c80d514e9d49a5da0ed3a1ae2491d"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/sourcesans3/METADATA.pb",
+      "status": "created",
+      "bytes": 995,
+      "sha256": "f855c7833e0c780c90e5a797a003f86e1201990c0af65b9c75d0a04c9be05ed7"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/sourcesans3/OFL.txt",
+      "status": "created",
+      "bytes": 4579,
+      "sha256": "09746787287a289323b0ec3cff4d1a4a801331b82b7207c1e186f5d26619a392"
+    },
+    {
+      "path": "apps/salapiya/assets/fonts/sourcesans3/regular.ttf",
+      "status": "created",
+      "bytes": 646340,
+      "sha256": "042fe2cc0b933e328410d7acbd0aa6a1873dca5aef81875f4bc214b08825c7b9"
+    },
+    {
+      "path": "apps/salapiya/integration_test/branding_test.dart",
+      "status": "created",
+      "bytes": 3785,
+      "sha256": "498d9627250af1c845fa428d3457e3ee6d139e39d751bf3a6868f909486e834c"
+    },
+    {
+      "path": "apps/salapiya/integration_test/layout_test.dart",
+      "status": "created",
+      "bytes": 3888,
+      "sha256": "f24f993f0c26565ab95420ed4f0911d3e52cba6dc116471f6a7b30dc0a5aa021"
+    },
+    {
+      "path": "apps/salapiya/integration_test/startup_test.dart",
+      "status": "modified",
+      "bytes": 8634,
+      "sha256": "a4128907593ad664e256955f03c81d99839f276cc7e5aed133740645cb9707d4"
+    },
+    {
+      "path": "apps/salapiya/lib/app.dart",
+      "status": "modified",
+      "bytes": 3489,
+      "sha256": "5c28af4619f2690a870d482bb0ab42711210f7cdb9c3faa95335851ccc861c6e"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/components.dart",
+      "status": "created",
+      "bytes": 12349,
+      "sha256": "f9a8e6b5402f4e56b04cb6d05240600ce62b95e8f01fa020bd0352de19917774"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/craft.dart",
+      "status": "created",
+      "bytes": 2973,
+      "sha256": "8d9a88a02f4f85eeb6047bc3063e6cf2ab317bae6cf3e83e466a0b9b9dc80447"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/navigation.dart",
+      "status": "created",
+      "bytes": 1834,
+      "sha256": "55e93caac33b900f9c45947d6bed0652735053743142c097edef241cca07fe72"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/theme.dart",
+      "status": "created",
+      "bytes": 8968,
+      "sha256": "dbff7c171eb9e041ec32e67e04492dd4a108f9db2e1ddcec93329b9099f4ede4"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/gallery.dart",
+      "status": "created",
+      "bytes": 13656,
+      "sha256": "f708ee38b1d7cf9046e7beab4fe292fcb7e2ef6580c9448e84d765285e9c51de"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/navigation_study.dart",
+      "status": "created",
+      "bytes": 6430,
+      "sha256": "b5a6ee5b335c1f2ec26e269cf2e37d80cbfba9065439b321c920954341ca6be0"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/review_editor.dart",
+      "status": "created",
+      "bytes": 8326,
+      "sha256": "e92f2f0e8cb91a2c962c7ab6cab1bd3353a01d68cd7c651100f2a8bd06ef8f6a"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/settings.dart",
+      "status": "created",
+      "bytes": 1191,
+      "sha256": "02991b49c49308bd783e81beb391ffb30e8053a604f98e7030adcd6816ff61c5"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/specimens.dart",
+      "status": "created",
+      "bytes": 31639,
+      "sha256": "441189687ccaf29931d56abe71712bc420e5bb18eb7011930a0341557d0b35e5"
+    },
+    {
+      "path": "apps/salapiya/lib/prototype/fixtures.dart",
+      "status": "created",
+      "bytes": 1647,
+      "sha256": "fabfa86adbab0b1ae76908066aeb07412b82430fda32586d4566ad57d7d32da2"
+    },
+    {
+      "path": "apps/salapiya/pubspec.lock",
+      "status": "modified",
+      "bytes": 10083,
+      "sha256": "9bbb17c18f70288473cc20ec32919459565587a967abe611aa8ffd35c7b03e45"
+    },
+    {
+      "path": "apps/salapiya/pubspec.yaml",
+      "status": "modified",
+      "bytes": 982,
+      "sha256": "5b3db6a4bdd974d707f54c5f7e139172746807f6fc7624d5e50e129ae4c5de54"
+    },
+    {
+      "path": "apps/salapiya/test/widget_test.dart",
+      "status": "modified",
+      "bytes": 9743,
+      "sha256": "ddd0b401682232b22f85b2056cc90a67822f44f6c37aef8eecc83f9c8ced72bd"
+    },
+    {
+      "path": "apps/salapiya/test_driver/gallery_driver.dart",
+      "status": "created",
+      "bytes": 934,
+      "sha256": "50dc11c790c98b8220fe8dd379a1c7cdf4318bb158ec8e97eebdd61fb93f7ec4"
+    },
+    {
+      "path": "docs/salapiya/design/BRANDING_ASSETS.md",
+      "status": "modified",
+      "bytes": 9699,
+      "sha256": "ecc20078595acd2d3598bee032694cfce59ed04c0dda244c15e252aff9556934"
+    },
+    {
+      "path": "docs/salapiya/design/CREATIVE_DIRECTION.md",
+      "status": "modified",
+      "bytes": 17715,
+      "sha256": "f58b135cc44944152a7fbfacb93ed2c4a49640f9eb9b1cb403415798b795f81e"
+    },
+    {
+      "path": "docs/salapiya/design/D1_FILES.json",
+      "status": "created",
+      "bytes": null,
+      "sha256": null
+    },
+    {
+      "path": "docs/salapiya/design/D1_IMPLEMENTATION.md",
+      "status": "created",
+      "bytes": 22560,
+      "sha256": "dfed70a252d98af6bbb42760590bef7cacaf016c98f10b1758b3bd1aade2c280"
+    },
+    {
+      "path": "docs/salapiya/design/D1_SOURCE_SNAPSHOT.md",
+      "status": "created",
+      "bytes": 141060,
+      "sha256": "d489d62137d32a974252c7ff19fbad4c58371f50ded66239ba3ffadccfec629b"
+    },
+    {
+      "path": "docs/salapiya/design/DESIGN_SYSTEM.md",
+      "status": "modified",
+      "bytes": 21655,
+      "sha256": "c49ae6ce38a1f9f5c052304f5586daa4184f2c10375ecca757b6f08bce0399b8"
+    },
+    {
+      "path": "docs/salapiya/design/PROTOTYPE_ROADMAP.md",
+      "status": "modified",
+      "bytes": 26294,
+      "sha256": "81536591b44297515c9f3c155ab7854e069a1efe1ef3a4df698af00152ee2546"
+    },
+    {
+      "path": "docs/salapiya/design/README.md",
+      "status": "modified",
+      "bytes": 16058,
+      "sha256": "8964ad8d63057d1eb3b045f8d9c78efeb21403f94f0c0ed302eec5c5d8f8b16f"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/README.md",
+      "status": "created",
+      "bytes": 10131,
+      "sha256": "dea9c9dc926223986f42399babf7e5bc60b0ac64e6127a6d01819f6e5314a397"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-brand-svg.png",
+      "status": "created",
+      "bytes": 68429,
+      "sha256": "ebab08d4e7deb9c32a5c3b4a727653c775fec19dfc919b7ab9fe802e32846075"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-constrained-320x568-money-200pct.png",
+      "status": "created",
+      "bytes": 34491,
+      "sha256": "20e6bac752d9f963d15d9b60420b415f3ee8ee8a3b7c91493356b36c4af7c713"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-constrained-800x360-money-200pct.png",
+      "status": "created",
+      "bytes": 34457,
+      "sha256": "76f3ebcdb408c23861410a3cbd0a3277b3964ce625046f9b3ca8a99dacd8519c"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-craft-comparison.png",
+      "status": "created",
+      "bytes": 54801,
+      "sha256": "55ce5c3c4e709b54397a4d6512d3b55b90c1b018ceefbd65f2584b40e6e5983d"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-dark-foundations.png",
+      "status": "created",
+      "bytes": 64571,
+      "sha256": "f7592a1acb32a0b85c71f3e11b23c30d04dc1c5bc55ab2524bc56ded6ab74379"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-dirty-dismiss.png",
+      "status": "created",
+      "bytes": 58724,
+      "sha256": "b34d248ffcb9fd2ce380398205915a19c747e8e3b5249498a107e3ca495d3403"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-large-text-reduced.png",
+      "status": "created",
+      "bytes": 76408,
+      "sha256": "ed2ca87cb9015e86000a3412207fb51760bad56b5501e26dfd3eef6113ac420c"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-branding.png",
+      "status": "created",
+      "bytes": 69948,
+      "sha256": "7d290cd8e21b5532687c43dfad7b5e7d069d257c16494606d282506ef2beb345"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-feedback.png",
+      "status": "created",
+      "bytes": 59296,
+      "sha256": "5174c78485d2ae92c835b17f2154a83d7abdff09813ef03e8762b3f811611ed0"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-finance.png",
+      "status": "created",
+      "bytes": 60698,
+      "sha256": "b0f796256d98be4604b3f0c853d31e584f01c58444e2f785b6c7470b21014a39"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-foundations.png",
+      "status": "created",
+      "bytes": 62522,
+      "sha256": "7bb9f0d38ddd80d371c4a335359673cd27a3cd90f82e2837428b6f451ada2fea"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-navigation.png",
+      "status": "created",
+      "bytes": 59208,
+      "sha256": "c1ee1639a623995741b04bde1a88073d11bc5c47bef5d2020268521ea2be995d"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-light-typography.png",
+      "status": "created",
+      "bytes": 83490,
+      "sha256": "b8db64822c7e30be1e1415cd6bc5048b3bba6adb11b2423f17d6f5587436dcbb"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-horizontal-dark-export.png",
+      "status": "created",
+      "bytes": 59199,
+      "sha256": "7f504baa0fe3059415866b0d21e2edfe881777a57b82ee3a9a4fde0728feb7ac"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-horizontal-dark-svg.png",
+      "status": "created",
+      "bytes": 46046,
+      "sha256": "4b44900d154630ee62adfc43cbf84869dac0ee26f4933bab054123852662fa8e"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-horizontal-light-export.png",
+      "status": "created",
+      "bytes": 61278,
+      "sha256": "2648c15868e0dc7ba04aef265431d2f934551085837c1784a983e4b1fae10783"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-horizontal-light-svg.png",
+      "status": "created",
+      "bytes": 46285,
+      "sha256": "a63959d676d4b64b36fde68759fd70b73f7b79048dbb83a18687441d859229d2"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-mark-export.png",
+      "status": "created",
+      "bytes": 72808,
+      "sha256": "5aa40e26f50c911f8dc50c786f9bed39c25b720545239b7e3a718cdcb681b7db"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-mark-svg.png",
+      "status": "created",
+      "bytes": 75738,
+      "sha256": "3a8d8173aa49f3b71ad61e0fb5c01980e1e142b7b99c3602dde6542fa772aecd"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-original-export.png",
+      "status": "created",
+      "bytes": 48952,
+      "sha256": "0b822e5b3c3dbcf85e2a4cea31d7ae97d976fe4c73bb293ac48c8f8104df646b"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-original-svg.png",
+      "status": "created",
+      "bytes": 36813,
+      "sha256": "c950ea93da359ec77f5b2c40377d87a6af0ee2245f3ba1edf3d2faa603e3aff9"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-vertical-dark-export.png",
+      "status": "created",
+      "bytes": 48250,
+      "sha256": "5d37535955241cf64379678a472d1b3690f823e2e1713625fa00ad757681c2de"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-vertical-dark-svg.png",
+      "status": "created",
+      "bytes": 36739,
+      "sha256": "52bbfc4325a589a19748560fe70b0de76d6b120bbe6c9dec5d805fa7f18dfc49"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-vertical-light-export.png",
+      "status": "created",
+      "bytes": 49962,
+      "sha256": "8f94443b1caba61b543e14fa470f1308e6604353e58693e2f97f3e5b1eecd3d1"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-logo-vertical-light-svg.png",
+      "status": "created",
+      "bytes": 36929,
+      "sha256": "6d73b3d66ada150b6d0afa39b40907d708683dbe2cb8dbbc9d02dcf973141c14"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-native-back.png",
+      "status": "created",
+      "bytes": 219466,
+      "sha256": "85fa6a1ae28e0fbe30fbb81b1f571414ecd959b26e3903743c4b637616332dae"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-native-interaction.mp4",
+      "status": "created",
+      "bytes": 2102745,
+      "sha256": "9ba6cc19772b1d45bf6e2447a7775ef4aedcc9db125cfcf99f67a1ebf1da93cd"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-native-keyboard.png",
+      "status": "created",
+      "bytes": 230065,
+      "sha256": "b9ba0d111903baf2e0d47adf03679d0b715572431fb847884b602b96a13ccf35"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-native-validation.png",
+      "status": "created",
+      "bytes": 214077,
+      "sha256": "e2275158beccfd81410b7e71e47eb533e007437f7160bb2a49f4c3eeed959089"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-navigation-a.png",
+      "status": "created",
+      "bytes": 60956,
+      "sha256": "dfdda5a007af2da65b4e6ca99d3aa3a1342634bbee01f0f4edf94fb90e41cb25"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-navigation-b.png",
+      "status": "created",
+      "bytes": 60956,
+      "sha256": "dfdda5a007af2da65b4e6ca99d3aa3a1342634bbee01f0f4edf94fb90e41cb25"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-review-sheet.png",
+      "status": "created",
+      "bytes": 60735,
+      "sha256": "c19660e4fff67f6b2edec64973f376df08d0fdd59c58de9f0d3ffbd5c789b7d9"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-runtime-branding.json",
+      "status": "created",
+      "bytes": 1232,
+      "sha256": "b163a7ddbdba2fa82494a3fe3ab4f7a2f0bccd33070293eafea57e185eabd469"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-runtime-debug.json",
+      "status": "created",
+      "bytes": 2914,
+      "sha256": "3f14d9262791daa6026925b791709e657fe53b0f07af7f99d52b546be84282ee"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-runtime-layout.json",
+      "status": "created",
+      "bytes": 1336,
+      "sha256": "0895ac98bf5d5d231cf275921ab168bf712534f6d8a231d4fccc801e00224937"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-runtime-profile.json",
+      "status": "created",
+      "bytes": 2915,
+      "sha256": "842a9c13965c40fa2e28586150dee4765f6860683c97459a63d49157a7d88c2e"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-type-Geist.png",
+      "status": "created",
+      "bytes": 83818,
+      "sha256": "3f6e7d2072e3204cb51792a2aa3ab36d39c754d56c2269a25dec2b8d03bb0d2b"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-type-Source-Sans-3.png",
+      "status": "created",
+      "bytes": 71427,
+      "sha256": "806d5080f5749546c6da5354f2ef20095c817d741cbe320c40c7b3b835e7f7f1"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/android-validation.png",
+      "status": "created",
+      "bytes": 52214,
+      "sha256": "f379669e811404b9cc6fa8a402fed3ee1ac0b138a9634f75107fc1003d222dc3"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-brand-svg.png",
+      "status": "created",
+      "bytes": 106932,
+      "sha256": "e1e72f452bc8ac35914e5efe5f76a79ce4e0e0e1af780d6896e4165e654641aa"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-constrained-1600x900-money-200pct.png",
+      "status": "created",
+      "bytes": 79788,
+      "sha256": "0bd92d12c42d23f9e08073fed31590289ef5ad42e5f179ee4a005a63b4f8990f"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-constrained-640x480-money-200pct.png",
+      "status": "created",
+      "bytes": 39296,
+      "sha256": "825ebec02641f0033c3f874e1747bdbb68c8f79a8c3580e0dd4ef49211ad0320"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-craft-comparison.png",
+      "status": "created",
+      "bytes": 91443,
+      "sha256": "ee6756828c0ed750dfd84cd08a031af75b250fcf392442f0ea1a4dcc9bb404a1"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-dark-foundations.png",
+      "status": "created",
+      "bytes": 95524,
+      "sha256": "4b72e23784c4ffac6a4db84f06c41b7dcd9ddad93bb762ce12625e3e0707f418"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-dirty-dismiss.png",
+      "status": "created",
+      "bytes": 80893,
+      "sha256": "87761374fc71d0e37c23765ea296d48b510b8f142b13bd22b390cc1c2b64f184"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-large-text-reduced.png",
+      "status": "created",
+      "bytes": 64270,
+      "sha256": "5db80199d09034157b45e82c90b9a5d8ad5e06c38f9e3199c4fe9ff3e95b7343"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-branding.png",
+      "status": "created",
+      "bytes": 114193,
+      "sha256": "282ac42c2135a53a6420770458a9b89444f5d272b7e1541caa941e87167df7a7"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-feedback.png",
+      "status": "created",
+      "bytes": 71411,
+      "sha256": "62381a84ab51940db53c461060e140a388902a61786bd8778e8762699b98c5dc"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-finance.png",
+      "status": "created",
+      "bytes": 82633,
+      "sha256": "cc8f25f4366d40822e661e8a2e82e6e7f5ff737c83a488ba10e54ea1937832ac"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-foundations.png",
+      "status": "created",
+      "bytes": 93117,
+      "sha256": "37d3748d775f8582d1fa8af2d18f99db750290b9bf1034bafb93eac7c4256aec"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-navigation.png",
+      "status": "created",
+      "bytes": 83228,
+      "sha256": "7fa8c0911b86695783235be74cd9a43a009e8cc28b264afdd6effaedf449a38f"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-light-typography.png",
+      "status": "created",
+      "bytes": 91035,
+      "sha256": "2b2078e7a89b111dcadc63444ee7188f1c15a93bb1b5e6cb14cd17cc552b2cae"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-horizontal-dark-export.png",
+      "status": "created",
+      "bytes": 57596,
+      "sha256": "ca0f4626138aa810d66db3405ffbc13a9fa22a1fb09427c6e90b98caa73d9eb7"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-horizontal-dark-svg.png",
+      "status": "created",
+      "bytes": 45791,
+      "sha256": "339309ee837386a3c0923fd2dcebd53059dcb4fe45d1b12f280a726920b5f565"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-horizontal-light-export.png",
+      "status": "created",
+      "bytes": 59164,
+      "sha256": "fbaadb11984c4ad36b5169bd24dc01a10f311f84e61a8527c50885f3933e473b"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-horizontal-light-svg.png",
+      "status": "created",
+      "bytes": 46225,
+      "sha256": "45fcd01d83576b1bc813e77c4aa2dfe2818cb3daac04324f307e1476a0fd9382"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-mark-export.png",
+      "status": "created",
+      "bytes": 73549,
+      "sha256": "642040700a06e4651d7a3b8fe6c801c00f85a8b9b73a5cd6ea6aba34448d1176"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-mark-svg.png",
+      "status": "created",
+      "bytes": 75754,
+      "sha256": "36f5a7020d8b1cc6fe7e45460b59162d29f1eb38cf70f8ef22cca667e5ab9ff0"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-original-export.png",
+      "status": "created",
+      "bytes": 48988,
+      "sha256": "c3829b83a04b178556f8ce462b060dfb56c6b6dffabb2c6c53c56d078f594012"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-original-svg.png",
+      "status": "created",
+      "bytes": 36701,
+      "sha256": "f6f1dd527305e69c083feba0cae7e64284153464703592dacc007c203d3166c3"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-vertical-dark-export.png",
+      "status": "created",
+      "bytes": 48258,
+      "sha256": "d1d861aff01bc1a99b6b1a5ee9227249df8c1fab5a66969fcf61421663ad559d"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-vertical-dark-svg.png",
+      "status": "created",
+      "bytes": 36554,
+      "sha256": "a37679811419729ce7fb4cca1e11ae8a3498354ae80c5e90f4447c9beeb26ab8"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-vertical-light-export.png",
+      "status": "created",
+      "bytes": 49975,
+      "sha256": "c55eb6f86ce568c0605c2e034793b5cc11de41f47e37ba936a0da5c9d9e4ebc4"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-logo-vertical-light-svg.png",
+      "status": "created",
+      "bytes": 36919,
+      "sha256": "99408957ed3594870f0f141c6e858bbbc4aa874b4670a456d7c89da3cff92299"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-native-resize.jpg",
+      "status": "created",
+      "bytes": 51775,
+      "sha256": "119fe08545ac29051004d2c803e818c412afec5f235647034714cba83e8c99b0"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-navigation-a.png",
+      "status": "created",
+      "bytes": 77514,
+      "sha256": "c310b2263ccc4f5c4853c0649125de171b1826ce651482c98f8fd21e2f4bcae5"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-navigation-b.png",
+      "status": "created",
+      "bytes": 77514,
+      "sha256": "c310b2263ccc4f5c4853c0649125de171b1826ce651482c98f8fd21e2f4bcae5"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-review-sheet.png",
+      "status": "created",
+      "bytes": 84511,
+      "sha256": "5c9116bd94ce554612301c7b1bed41e7c71ef1d2fce14e7d683c0f8047b2d779"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-runtime-branding.json",
+      "status": "created",
+      "bytes": 1233,
+      "sha256": "f9a2066b986f8f82704197daab03320fd151bb520a2358f2d424b92473b7ba6d"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-runtime-debug.json",
+      "status": "created",
+      "bytes": 2952,
+      "sha256": "f191d5140a0b00645bbcdc7e3b172e4dff96a6fb1234c4b3f4c206338d6d4724"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-runtime-layout.json",
+      "status": "created",
+      "bytes": 1340,
+      "sha256": "90b3b783ff8958f3f8f876115026240ae377b7cdf3540b984ab8003ade22b102"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-runtime-profile.json",
+      "status": "created",
+      "bytes": 2953,
+      "sha256": "6012cab16a9e9df3d4525bbe872c1456bdfd47337da7c1dec079b95dd89c0f0a"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-type-Geist.png",
+      "status": "created",
+      "bytes": 88631,
+      "sha256": "daa418f3328aac6ed4b996db65376abaae0a1972ed383cde14d5d6c2d7bffc49"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-type-Source-Sans-3.png",
+      "status": "created",
+      "bytes": 82132,
+      "sha256": "a6de2cd8c4173b042227bfd59b298e9ca32823975479c921a95274cd0b0ac68b"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1/windows-validation.png",
+      "status": "created",
+      "bytes": 69719,
+      "sha256": "d216e9cf778ffb15bf89fb19c18348386c698f16ccc5c28317b9b8a7e928c3e1"
+    },
+    {
+      "path": "scripts/salapiya/export-branding.cjs",
+      "status": "created",
+      "bytes": 2187,
+      "sha256": "f842c34ff27a579fec5107a6f781e79fbd6e2735a32926d5a0ef7b4ae7649781"
+    },
+    {
+      "path": "scripts/salapiya/write-source-snapshot.py",
+      "status": "created",
+      "bytes": 3059,
+      "sha256": "1bbdaccdc3d3694d749a56a18d7c45398b4e2e411050d40e0de25b17c8f37995"
+    }
+  ]
+}

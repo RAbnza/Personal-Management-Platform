@@ -1,0 +1,56 @@
+[
+  {
+    "source": "source/salapiya_original.svg",
+    "output": "display/salapiya_original.png",
+    "width": 944,
+    "height": 794,
+    "sourceSha256": "5f6f711dfc2b4019f2253cbb122b083f35227842f43249b861a99e3f970c06b1",
+    "outputSha256": "face31d61df5900deac4f7528bf89042947d2fa6522867d7818389f375519677",
+    "renderer": "155.0.4283.62"
+  },
+  {
+    "source": "mark/salapiya_mark.svg",
+    "output": "display/salapiya_mark.png",
+    "width": 768,
+    "height": 771,
+    "sourceSha256": "f223376778b191c77115193cbf8952686ba2955a872ff9f5682a804e887b2813",
+    "outputSha256": "f8139c0a613fd040d0534927bf4c2c6c59e756f144b28ceb6cbce3fb7e519029",
+    "renderer": "155.0.4283.62"
+  },
+  {
+    "source": "horizontal/salapiya_horizontal_on_light.svg",
+    "output": "display/salapiya_horizontal_on_light.png",
+    "width": 1441,
+    "height": 463,
+    "sourceSha256": "d43fda57aee08873886d74443bfc1ec9582aada970d03c47f50b3b7374789fec",
+    "outputSha256": "64833d38f8173074c8c1d8d5e57e4734b957349b14e369c5c725ca88c13edcec",
+    "renderer": "155.0.4283.62"
+  },
+  {
+    "source": "horizontal/salapiya_horizontal_on_dark.svg",
+    "output": "display/salapiya_horizontal_on_dark.png",
+    "width": 1441,
+    "height": 463,
+    "sourceSha256": "2c70019fc683db470f97d4f9ad24aca8b5c7808bc356f263801852e7ebd56142",
+    "outputSha256": "636b9a012546c4090e5621f606bf5b4ec4eb14c629b07c7f54dd601dc1998801",
+    "renderer": "155.0.4283.62"
+  },
+  {
+    "source": "vertical/salapiya_vertical_on_light.svg",
+    "output": "display/salapiya_vertical_on_light.png",
+    "width": 944,
+    "height": 794,
+    "sourceSha256": "68a22a5f30fab3c0d9f1defff70347dd73592f7a802d74ee0fffd2a738240502",
+    "outputSha256": "dadb1666eb4ba7b0dac212c62c86dc92a1d58a844b9f7590aa7b957653bc979d",
+    "renderer": "155.0.4283.62"
+  },
+  {
+    "source": "vertical/salapiya_vertical_on_dark.svg",
+    "output": "display/salapiya_vertical_on_dark.png",
+    "width": 944,
+    "height": 794,
+    "sourceSha256": "cbf5c996fad731be5f4143d5273a81a7571e33751ab1355d0755ca819897b0aa",
+    "outputSha256": "35c863ed16f07e64f001923e72a2f92a33e7070d5b51b246f72d1507dff96013",
+    "renderer": "155.0.4283.62"
+  }
+]

@@ -1,6 +1,8 @@
-# Proposed native design system
+# Native design system — approved D1 baseline
 
-**Status:** D0 specification, not installed Flutter tokens. Read the
+**Status:** P03 approved baseline, implemented in `lib/design_system/` for D1.
+The [implementation record](D1_IMPLEMENTATION.md) maps actual reusable components
+and records measured proof and limitations. Rendered refinements await owner review. Read the
 [creative alternatives](CREATIVE_DIRECTION.md) and [decision register](README.md).
 Use one shared semantic system across Windows and Android; adapt layout/input.
 
@@ -100,7 +102,8 @@ by endpoint arithmetic; no text relies on them in this baseline.
 
 ## Type, spacing and density
 
-Typography family remains P02 pending. Sizes below are logical pixels before OS
+Nunito Sans is the P02-approved primary family; Geist and Source Sans 3 are
+controlled comparisons only. Sizes below are logical pixels before OS
 text scaling, with line heights as ratios, and are minimum role defaults rather
 than fixed-height boxes.
 

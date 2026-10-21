@@ -1,6 +1,8 @@
 # Creative direction and cultural research
 
-**Status:** D0 proposals for review. Approved constraints and open decisions:
+**Status:** Woven Calm and Nunito Sans approved for D1. Luminous Lattice is a
+bounded comparison only. Rendered refinements await owner review; see
+[D1 evidence](D1_IMPLEMENTATION.md). Approved constraints and open decisions:
 [decision register](README.md). These are modern design interpretations, not
 reproductions or claims of community endorsement.
 
@@ -51,7 +53,7 @@ structural choices, not a patterned wallpaper.
 - **Light and surface:** One wide, quiet focal plane; a thin top-edge highlight
   and soft shadow create depth. Financial data sits on an opaque region even if
   the outer header has a pearl-like blend.
-- **Typography:** Propose Nunito Sans 400/600/700, one family. Friendly form
+- **Typography:** Selected Nunito Sans 400/600/700, one family. Friendly form
   without bubbly display lettering. Tabular numeric proof is mandatory.
 - **Windows character:** An anchored rail with a narrow interlaced seam; a
   compact elevated dock feels like a tray of tools. Hover changes fill, not size.
