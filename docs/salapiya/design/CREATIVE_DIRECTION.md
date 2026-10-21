@@ -1,10 +1,32 @@
 # Creative direction and cultural research
 
-**Status:** Woven Calm and Nunito Sans approved for D1. Luminous Lattice is a
-bounded comparison only. Rendered refinements await owner review; see
-[D1 evidence](D1_IMPLEMENTATION.md). Approved constraints and open decisions:
-[decision register](README.md). These are modern design interpretations, not
-reproductions or claims of community endorsement.
+**Status:** D1R-R01 selects **Luminous Lattice structure + Woven Calm softness**
+after the owner's hands-on D1 comparison. Nunito Sans remains primary (R04).
+The historical D0 directions below explain the chronology; they are not two
+production themes. See the [decision register](README.md) and
+[D1R live review](D1R_IMPLEMENTATION.md). These are original modern interpretations,
+not reproductions or claims of community endorsement.
+
+## Current visual grammar
+
+Lattice governs signature geometry, framing, compositional rhythm, navigation
+and layered focal relationships. Woven Calm contributes soft corners, comfortable
+spacing, friendly type and calm opaque working surfaces. Keep Porcelain/Midnight
+Spectrum and the violet/lavender palette with bounded warm, plum and blue accents.
+
+The existing three rounded outlines progress diagonally on a 16-unit step inside
+a 96-unit square. This original geometry is now the default `CraftMotif`; explicit
+interlacing remains only in the small historical comparison. `LatticeFrame` adds
+one pearl edge: a straight line inset four units at the top, stepping down to
+eight units near the trailing corner. It uses simple static line segments, not a
+traced textile or architectural artwork. Soft 20-unit corners and 28-unit capsule
+corners keep the structure approachable. Neither primitive is a new brand mark.
+
+Use the motif in identity/empty-state regions; use the quiet edge on focal panels,
+rail/capsule frames and the raised action list. Plain cards, financial values,
+inputs, tables and reviews retain opaque surfaces and a single quiet border.
+Effects off removes motifs, highlights, gradients and shadows; labels, selected
+outlines, focus and financial meaning remain. No blur, shader or idle animation.
 
 ## Research and attribution
 
@@ -34,7 +56,7 @@ symbol. Do not multiply birds, feathers, shells or pearls across ordinary
 screens. The visual language should still be recognizable with decoration off:
 rhythm, framing, hierarchy and interactions must carry it.
 
-## Direction A — Woven Calm (recommended)
+## Historical D0 direction A — Woven Calm (then selected)
 
 **Character:** Soft, personal and composed; precise working areas held together
 by broad interlaced accents. The application feels crafted through repeated
@@ -74,7 +96,7 @@ Life items with source labels. A single woven corner ends the focal region.
 On Android, money, attention and agenda become a reading sequence. No masonry
 grid, decorative giant balance or row of identical KPI cards.
 
-## Direction B — Luminous Lattice
+## Direction B — Luminous Lattice (now primary with the refinements above)
 
 **Character:** More architectural and expressive; framed luminous panels and
 carefully stepped geometry give the product a composed, gallery-like presence.
@@ -91,15 +113,13 @@ carefully stepped geometry give the product a composed, gallery-like presence.
 - **Light and surface:** A few nested opaque panes with a static light-to-violet
   edge. An optional translucent header fragment is separated from every text
   field, figure and essential boundary. Never a full-window blur.
-- **Typography:** Source Sans 3 400/600/700 for crisp, humanist UI; larger section
-  headings create the architectural hierarchy. Keep all numerical text in the
-  same family. Geist is the continuity comparison.
+- **Typography:** Nunito Sans 400/600/700 remains primary. The original D0
+  Source Sans 3 suggestion was not adopted; it and Geist remain specimens only.
 - **Windows character:** Rail selection resembles a framed pane; dock is a
   rounded rectangle, less pill-like than A. Clear vertical seams align workspace
   and contextual inspector.
-- **Android fit:** B's floating navigation reinforces the suspended-pane idea;
-  A remains viable with a framed active destination. The brand must not depend
-  on adopting the more complex navigation.
+- **Android fit:** Selected B floating navigation reinforces the suspended-pane
+  structure. Its separate + opens a modal vertical list; shell proof remains D2.
 - **Strength:** More obvious distinction in onboarding, overview and reports;
   geometric discipline suits structured financial work.
 - **Risk:** Nested frames can look like an admin dashboard; repeated optical
@@ -113,7 +133,8 @@ Ordinary cards do not each receive a gradient, double border or shadow.
 
 ## Shared grammar and decoration budget
 
-The following are proposed drawing constraints, not delivered assets.
+The following grammar guided D0. D1R implements the bounded motif and stepped
+pearl edge described above; unimplemented primitive names remain proposals.
 
 | Primitive           | Geometry / placement contract                                                                                                                                                             |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,9 +158,9 @@ bundled or certified. No font is claimed to be intrinsically Filipino.
 
 | Option                                                              | Personality and reading                                                                                   | Numbers and accessibility proof                                                                                                         | Windows / Android / cost                                                                                                                                           |
 | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Nunito Sans — recommended for A**                                 | Soft, open UI expression; use moderate weights and normal width, not ultra-rounded Nunito display styling | Verify peso sign, lining/tabular digits, decimal/minus distinction, `0/O`, `1/l/I`, diacritics and 200% scaling in exact selected files | Bundle one normal variable TTF or three measured static weights; compare glyph rasterization on Windows and emulator. Variable axes add QA, not automatic quality. |
+| **Nunito Sans — selected for D1/D1R**                                 | Soft, open UI expression; use moderate weights and normal width, not ultra-rounded Nunito display styling | Verify peso sign, lining/tabular digits, decimal/minus distinction, `0/O`, `1/l/I`, diacritics and 200% scaling in exact selected files | Bundle one normal variable TTF or three measured static weights; compare glyph rasterization on Windows and emulator. Variable axes add QA, not automatic quality. |
 | **Geist Sans — continuity control**                                 | Precise geometric voice consistent with the web; less warm by default                                     | Same glyph/tabular proof; no extra Mono family just for balances                                                                        | Reusing web direction reduces visual change, but web WOFF files are not a native bundle plan; obtain suitable font files and test both platforms.                  |
-| **Source Sans 3 — recommended for B / readable fallback candidate** | Humanist, restrained, suitable for longer labels and dense forms                                          | Same digit, peso and scale proof; judge small captions and table rows directly                                                          | Single-family TTF/variable distribution; compare actual asset bytes and first text rendering before choosing. No assumed speed advantage.                          |
+| **Source Sans 3 — historical comparison** | Humanist, restrained, suitable for longer labels and dense forms                                          | Same digit, peso and scale proof; judge small captions and table rows directly                                                          | Single-family TTF/variable distribution; compare actual asset bytes and first text rendering before choosing. No assumed speed advantage.                          |
 
 Sources: [Nunito Sans project](https://github.com/googlefonts/NunitoSans) and
 [Google Fonts metadata](https://github.com/google/fonts/blob/main/ofl/nunitosans/METADATA.pb);
@@ -159,16 +180,14 @@ for UI initially. Use the selected single family everywhere before considering
 a second family. Platform fallback is for missing glyphs, not a different visual
 identity on each OS.
 
-## Recommendation and review
+## Selection and review
 
-Recommend **Woven Calm** because broad interlacing can define edges and grouping
-without competing with money; it accommodates dense Windows evidence and short
-Android reading sequences; it needs little decorative rendering; and it lets
-the existing violet eagle/pearl mark remain distinctive.
+Woven Calm was recommended and approved during D0/D1 planning. After reviewing
+the actual Flutter alternatives, the owner selected Luminous Lattice for its
+more appealing visual language. This subsequent choice supersedes the earlier
+recommendation without erasing it. D1R refines the same semantic design system.
 
-Review A and B using identical content, viewport and status combinations in D1:
-one summary, one amount field/error, a transaction list, selected navigation,
-an empty state and a consequential review. Do not choose from an attractive
-welcome screen alone. Owner approval should name direction, font candidate,
-decoration density and any allowed surface effect. Android selection remains
-separate and occurs only after the D2 interaction comparison.
+Review Foundations, Navigation studies and Brand & craft in the live application.
+Confirm the balance of luminous structure and softness, restrained framing and
+menu ergonomics in both themes. Android B is selected; D2 validates the complete
+shell instead of reopening an A/B contest. Typography research is not restarted.

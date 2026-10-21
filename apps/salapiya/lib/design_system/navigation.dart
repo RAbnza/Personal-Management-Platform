@@ -26,6 +26,9 @@ class DestinationControl extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: selected ? CraftTheme.of(context).selection : null,
           minimumSize: const Size(48, 48),
+          side: selected
+              ? BorderSide(color: CraftTheme.of(context).primary)
+              : null,
           padding: vertical
               ? const EdgeInsets.symmetric(horizontal: 2, vertical: 12)
               : const EdgeInsets.all(12),

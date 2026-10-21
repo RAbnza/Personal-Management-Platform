@@ -1,7 +1,13 @@
 # Salapiya
 
-One Flutter/Dart development foundation for Windows and Android. The startup
-screen is offline and has no profile, finance, storage, auth or sync implementation.
+One Flutter/Dart design gallery for Windows and Android. D1R uses Luminous
+Lattice structure with Woven Calm softness and the selected Android floating +
+menu. Data and outcomes are synthetic, memory-only; no product shell or services.
+
+Start with [D1R live review and verification](../../docs/salapiya/design/D1R_IMPLEMENTATION.md).
+Foundations, Navigation studies and Brand & craft show the refinement. Viewing
+preferences controls theme, effects, motion and text scale. Prior D1 screenshots
+remain historical; live app review is the default.
 
 See [development guide](../../docs/salapiya/P0_FOUNDATION.md),
 [actual verification](../../docs/salapiya/P0_VERIFICATION.md), and
@@ -25,8 +31,8 @@ press F5. Save Dart files to hot reload; CLI `r` reloads and `R` restarts.
 dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
-flutter test integration_test/startup_test.dart -d windows
-flutter test integration_test/startup_test.dart -d <actual-android-device-id>
+flutter test integration_test/refinement_test.dart -d windows
+flutter test integration_test/refinement_test.dart -d <actual-android-device-id>
 flutter build windows
 flutter build apk --debug
 ```

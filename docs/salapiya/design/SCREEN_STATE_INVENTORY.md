@@ -5,6 +5,9 @@ capability remains launch scope. D3/D4 placement determines prototype order,
 not production release eligibility. Blueprint IDs refer to
 [§4 and §19](../../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md).
 
+D1R updates the design/navigation selection only; financial and Life coverage is
+unchanged. Android B floating and its + menu are selected (D1R-R02/R03).
+
 ## Screen families and blueprint traceability
 
 Each screen family includes list/detail, creation where applicable, history,
@@ -13,8 +16,8 @@ in the linked source documents; a prototype is not the full acceptance suite.
 
 | Screen family                | Blueprint coverage | Required screens and distinctive states                                                                                                                       | First proof                                |
 | ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Foundation gallery           | F01, A26           | Components, typography, both themes, craft A/B, brand rendering, keyboard/scale controls                                                                      | D1                                         |
-| Shell / Overview             | M13, F01, A21      | Five destinations, Windows rail/dock, Android A/B, money/attention/agenda; complete versus incomplete/pending data                                            | D2                                         |
+| Foundation gallery           | F01, A26           | Components, typography, both themes, lattice default/historical weave, brand rendering, keyboard/scale controls                                                                      | D1                                         |
+| Shell / Overview             | M13, F01, A21      | Five destinations, Windows rail/dock, selected Android B, money/attention/agenda; complete versus incomplete/pending data                                            | D2                                         |
 | Accounts                     | M01                | Account list/detail, creation, opening/cutoff, archive/history; no independently edited balance                                                               | D3                                         |
 | Activity / entry             | M02                | Expense/income, category splits, cash/card source, completed transfer/fee, categories, filters and exact detail                                               | D3                                         |
 | Corrections / reconciliation | M03                | Correction/refund/reversal, original/revised evidence, balance acknowledgement, reconcile/adjust; dependent-record rejection                                  | D3                                         |

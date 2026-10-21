@@ -1,9 +1,10 @@
 # Prototype architecture, milestones and review gates
 
-**Status:** D1–D5 sequence approved. D1 implemented for owner visual review;
-see [implementation and verification](D1_IMPLEMENTATION.md) and
-[review artifacts](review/d1/README.md). D1–D5 are design milestones, separate
-from P0–P6 engineering. D2 requires the next owner assignment; it has not started.
+**Status:** D1R refines the implemented D1 foundation after hands-on owner review.
+Luminous Lattice is primary with Woven Calm softness; Android B floating and the
+modal + menu are selected. See [D1R implementation](D1R_IMPLEMENTATION.md).
+D1–D5 are design milestones, separate from P0–P6 engineering. D2 requires owner
+visual approval and a new assignment; it has not started.
 
 ## Architecture for reusable presentation
 
@@ -110,9 +111,11 @@ For each slice:
    viewport, text scale, theme, motion preference and fixture/scenario ID.
 2. Run focused Dart formatting/analyzer/widget or state tests, then Windows and
    Android builds/runtime input checks appropriate to the actual changes.
-3. Capture paired screenshots and short task recordings, including failure and
-   enlarged-text states. Include an explicit pass/fail/blocked ledger; a
-   screenshot alone is not interaction acceptance.
+3. Use the running Flutter application as the primary visual-review environment.
+   Provide exact run commands, section/interaction instructions and a concise
+   pass/fail/skipped ledger. Do not generate mandatory screenshot collections,
+   contact sheets or videos. Capture only targeted failure diagnostics or media
+   explicitly requested by the owner; preserve historical D1 evidence.
 4. Manually exercise keyboard/Narrator and touch/TalkBack for the consequential
    flow introduced in that slice. Record exact failures; automated semantics
    checks do not substitute.
@@ -160,9 +163,9 @@ directions only in a small comparison board; avoid two complete theme systems.
 - Both themes, large text and reduced motion retain readable controls/amounts.
   Owner reviews and selects visual direction/type/surface intensity.
 
-**Review artifacts:** Windows/Android contact sheets; A/B components with
-identical content; typography specimens; logo comparison; interaction clips;
-token contrast report; dependency/license record; unresolved-issue list.
+**Review artifacts:** Live gallery walkthrough; small historical craft comparison;
+typography and logo specimens; token contrast, dependency/license and unresolved
+issue records. Existing D1 media are historical; no new media collection required.
 
 **Testing:** Widget semantics/target-size/overflow checks and focused interactions;
 exact formatting fixtures; restrained golden snapshots for important
@@ -172,32 +175,40 @@ compositions, not every trivial wrapper; native keyboard/touch/modal tests.
 launcher icons, real files, production dependency-gate closure. D1 is the first
 major visual checkpoint, not an approved financial feature.
 
+## D1R — Luminous Lattice and floating actions
+
+Owner-assigned refinement only: adopt lattice as the default craft primitive,
+refine focal/navigation framing, replace Android B's labeled inline shelf with
+one reusable modal + menu, preserve type/themes/logos/finance and test both native
+platforms. Record R01–R07 in the existing decision register. Commit/push the
+refinement branch and stop for live visual review. No D2 shell or real services.
+
 ## D2 — Navigation and Overview proof
 
-**Prerequisites:** D1 visual direction accepted, navigation primitives accessible,
+**Prerequisites:** D1R rendered refinement accepted, navigation primitives accessible,
 bounded router/state selection recorded.
 
 **Scope / screens:** Windows expanded/collapsed rail and contextual dock; Android
-A/B navigable shell; five destination landing placeholders; Overview with money,
+selected B floating shell; five destination landing placeholders; Overview with money,
 attention, obligations and Life; first-run three-choice stub and profile/sync
 status specimens. Add in-session routing, filters and source drilldown return.
 
 **Acceptance:**
 
-- All five destinations discoverable in both Android concepts; no sixth
+- All five destinations discoverable in the selected Android B shell; no sixth
   Activity destination. Dock has actions only.
 - Resize/large text/short height never covers the final item, focus or action;
   measured clearance and fallback layouts work.
 - Back, dialog dismissal, context action scope and draft protection behave
   consistently. Overview communicates incomplete/pending/local-only states.
-- Owner compares A/B doing the same tasks: locate debt, add an expense, review
-  a group item, open a Life task and return. Record errors/hesitation/steps;
-  small owner testing is qualitative evidence, not a statistical usability claim.
-- Owner explicitly selects Android navigation and accepts Windows geometry.
+- Owner tests selected B: locate debt, open quick actions, review a group item,
+  open a Life task and return. Record errors/hesitation/steps; qualitative owner
+  feedback is not a statistical usability claim. Do not reopen A/B selection.
+- Owner accepts final Android B shell behavior/dimensions and Windows geometry.
 
-**Review artifacts:** Both navigation clips and comparison rubric; wide/narrow/
-IME screenshots; focus-order map; populated/empty/incomplete Overview; decision
-record for P04/P05.
+**Review artifacts:** Live Windows/Android walkthrough instructions, focus-order
+map, wide/narrow/IME verification, populated/empty/incomplete Overview and final
+shell decisions referencing D1R-R02/R03 and P05. No mandatory screenshots/videos.
 
 **Testing:** Route-state and Back tests; native resize and keyboard/touch journeys;
 Narrator/TalkBack destination/action identification; content-clearance checks.
@@ -231,7 +242,7 @@ before the next. Complete the D3 rows in SCREEN_STATE_INVENTORY.
   state coverage or a specifically identified production-only check.
 - Owner accepts financial interaction clarity, not financial implementation.
 
-**Review artifacts:** J02–J08 clips; side-by-side desktop/mobile review summaries;
+**Review artifacts:** Live J02–J08 walkthroughs; desktop/mobile review summaries;
 fixture arithmetic and scenario traceability; known versus unresolved debt
 breakdown; permission/error matrix; import preview/partial result.
 
@@ -322,7 +333,7 @@ No calendar estimate is committed. D3 is likely the largest milestone and is
 split into reviewable vertical slices above. D4 finishes the full inventory;
 neither stage is permission to defer advanced finance from the approved launch.
 
-## Recommended D1 assignment prompt
+## Historical D0 recommended D1 assignment prompt
 
 > Implement only D1 — Salapiya Theme and Interactive Component Gallery.
 > Read `docs/salapiya/design/README.md` and all six linked specifications, the
@@ -340,8 +351,8 @@ neither stage is permission to defer advanced finance from the approved launch.
 > OAuth, Supabase, PowerSync, real backup or launcher exports; do not claim any
 > engineering gate closed.
 
-The next assignment should include the owner's creative/font choices or explicit
-authorization to compare them. D0 does not presume those answers.
+The prompt above is historical D0 evidence. The current choices are D1R-R01–R07;
+the next assignment is bounded D2 only after D1R visual approval.
 
 ## D0 verification record
 

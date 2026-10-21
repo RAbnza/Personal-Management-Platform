@@ -16,17 +16,19 @@ class CraftPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = CraftTheme.of(context);
-    final effects = CraftPreferences.effectsOf(context);
+    if (focal) {
+      return LatticeFrame(
+        focal: true,
+        padding: EdgeInsets.all(padding),
+        child: Material(type: MaterialType.transparency, child: child),
+      );
+    }
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: c.surface,
-        gradient: focal && effects
-            ? LinearGradient(colors: [c.focalStart, c.focalEnd])
-            : null,
         borderRadius: BorderRadius.circular(Space.cardRadius),
         border: Border.all(color: c.divider),
-        boxShadow: focal && effects ? c.shadow : null,
       ),
       child: Material(type: MaterialType.transparency, child: child),
     );

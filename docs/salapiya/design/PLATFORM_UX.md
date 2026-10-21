@@ -1,7 +1,8 @@
 # Adaptive navigation and interaction proposal
 
-**Status:** D0 proposal. The five destinations, platform parity and first-run
-choices are approved requirements; dimensions and Android selection remain open.
+**Status:** D1R-R02 selects Android B floating navigation and R03 selects its
+modal + action menu. Windows retains collapsible rail/sidebar plus separate
+contextual dock. Full-shell dimensions and behavior remain D2 proof.
 Layout uses available logical width, usable height, text scale and input mode,
 not a hardcoded “phone versus PC” test. See
 [Flutter adaptive guidance](https://docs.flutter.dev/ui/adaptive-responsive/best-practices);
@@ -87,41 +88,64 @@ replaces the creation dock. A modal suppresses background actions. A nonmodal
 entry panel receives one scoped creation flow; opening another action prompts
 about the existing draft rather than creating stacked financial forms.
 
-### Android alternatives — both for D2 proof
+### Android B — selected floating navigation
 
-Five destinations plus an add control cannot be six cramped slots in one row.
-Both concepts retain five visible destination labels and put actions in a
-separate area. Do not hide Life or Shared Expenses in “More.”
+D0 required comparing A (anchored) and B (floating). The owner selected B after
+hands-on D1 review (D1R-R02). A remains a collapsed historical gallery specimen,
+not a competing production path. D2 must validate B in the actual shell.
 
-| Criterion         | Concept A: anchored bar + central Add                                                                                                                                                   | Concept B: floating navigation + context shelf                                                                                                                                            |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Structure         | Full-width bottom navigation with five equal destinations. A central 56-high “Add” button sits in a separate reserved row directly above it. No central notch displacing a destination. | Inset opaque rounded navigation capsule with five destinations. A labeled context-action tab sits above its trailing edge; expanding it opens a bounded action shelf above the capsule.   |
-| Creation behavior | Add opens a modal sheet of labeled actions, led by Add expense; five destinations remain visible behind the scrim but inactive.                                                         | “Add expense”/“Actions” opens a nonmodal shelf when it fits; on a compact/large-text screen use a modal sheet. Selection opens a focused route. No radial fan or long-press prerequisite. |
-| Visual identity   | Familiar stable base; woven seam, selected marker, palette and type carry Salapiya character.                                                                                           | More distinctive suspended surface and layered craft edge; stronger resemblance to the Windows tool tray without sharing its primary-navigation role.                                     |
-| Discoverability   | Consistent labels and Add location; central action is easy to locate.                                                                                                                   | Five stable labels; context tab must not look like a sixth destination or disappear on scroll.                                                                                            |
-| Accessibility     | Lower focus complexity; sheet semantics and safe focus restoration                                                                                                                      | More demanding traversal/dismissal and selected-state testing; shelf actions follow trigger in focus order, destination order remains stable                                              |
-| Space             | Bar about 80 high plus about 64 action row before safe inset; conservative but predictable                                                                                              | Capsule about 80 high plus 12 bottom gap and 56 action tab; expanded shelf costs additional space. Floating is not inherently more compact.                                               |
-| Performance       | Standard navigation/modal widgets, minimal decoration                                                                                                                                   | Extra elevation/layout and overlay work; no blur/magnification, so measurable cost should remain bounded                                                                                  |
-| Implementation    | Lower complexity; safest comparison baseline                                                                                                                                            | Medium complexity; bespoke composition, overflow and menu anchoring require proof                                                                                                         |
-| Risk              | Add row takes room; can feel familiar without disciplined branding                                                                                                                      | More visual clutter, occlusion and accidental actions if shelf placement is wrong                                                                                                         |
+Five labeled destinations remain Overview, Money, Debts, Shared Expenses and
+Life. A separate compact 56×56 + sits above the capsule's trailing edge, with a
+12-unit gap; its accessible name is “Quick actions” and collapsed state is exposed.
+It is not a sixth destination. The capsule and Windows rail share softly rounded
+lattice framing and an outlined selected pane. Windows still uses its own dock.
 
-**Recommendation for comparison:** A is the usability baseline. B is the
-expressive challenger and may win if owner preference and task evidence support
-it. Neither is selected by this document.
+`FloatingActionMenu` accepts labeled icons and callbacks from the caller. D1R
+supplies six synthetic actions: expense, income, transfer, debt payment, shared
+expense and task. Selection closes the modal before invoking one callback and
+shows “specimen only — no record created.” No real feature route or mutation.
 
-At width 360, A has 72-unit destination cells. B with 12-unit outer margins has
-67.2-unit cells before internal padding; “Shared Expenses” wraps. Never reduce
-targets below 48 or shrink labels to make B fit. At 320/large text, allow a
-two-row visible navigation arrangement (three items, then two) in stable reading
-order, with the action row separate. If that layout costs too much usable height,
-document the trade-off and revise the concept; do not substitute a hidden
-destination. Landscape/large-window Android may use a rail after D2 proof.
+Opening pushes one SDK modal route with a dimmed whole-viewport scrim, opaque
+raised vertical list above the trigger, and an expanded close control in the
+trigger's place. Only list and close are interactive; obscured controls are
+excluded from traversal and accessibility. Initial keyboard focus is Close;
+Tab cycles through the six actions and Close. Full labels wrap at system scale;
+targets are at least 48×48. Press feedback and visible focus use semantic colors.
 
-Both concepts reserve their measured total height plus system safe inset and
-focus clearance. Neither floats above the keyboard in a financial form. Focused
-task routes hide global bottom navigation and expose Back plus a keyboard-safe
-review action. Entry fields scroll above the IME. Tests must include gesture and
-three-button navigation, portrait/landscape, large fonts and split-window sizes.
+Dismiss through outside tap, close trigger, Android Back, Escape or selection.
+The route traps focus, protects against duplicate selection, and keeps the opener
+locked until reverse motion and barrier removal finish. Then focus returns to
+the trigger if it is still mounted. Outside taps are consumed without activating
+a destination. There is no dirty state in this presentation-only choice menu.
+
+Motion is a 160ms scrim/content fade with an ease-out upward displacement of at
+most four logical pixels; closing reverses it. System or gallery reduced motion
+uses zero-duration transitions and no translation. There is no idle controller,
+blur, stagger requirement or decorative background animation.
+
+### Constrained layout and shell integration contract
+
+The component measures action labels at actual text scale and bounds the menu to
+the usable viewport. With enough room above the measured trigger it anchors there.
+If space is insufficient, the anchor is out of bounds after resize, or a docked
+keyboard reports an inset, it uses a bottom-aligned bounded action sheet with a
+scrollable list and a separate always-reachable close control. Safe padding and
+keyboard bottom insets are reserved. The same route, action semantics and callbacks
+apply; there is no second business implementation. An arbitrary floating keyboard
+that reports no inset remains an OS limitation requiring D2 manual verification.
+
+The gallery retains D1's fully labeled vertical navigation fallback at narrow
+specimen widths or enlarged text. This keeps every destination accessible in its
+scrolling study; it does not approve a tall vertical capsule for the final shell.
+D2 must validate an economical visible-label arrangement (such as stable 3+2 rows)
+and landscape adaptation against real content, safe insets and system navigation.
+Do not squeeze labels or hide Life/Shared Expenses merely to preserve geometry.
+
+The shell must reserve measured capsule/trigger height and clearance, keep the
+trigger reachable without gallery scrolling, and hide global creation/navigation
+during focused financial tasks. Task forms own keyboard-safe Review/Back controls.
+Do not overlay quick creation on an active draft. Validate gesture/three-button
+navigation, rotation, IME and large text during D2, preserving all capabilities.
 
 ### Back, focus and state
 

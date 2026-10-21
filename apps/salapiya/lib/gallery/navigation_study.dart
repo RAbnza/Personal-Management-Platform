@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../design_system/components.dart';
 import '../design_system/theme.dart';
 import '../design_system/navigation.dart';
+import '../design_system/craft.dart';
+import '../design_system/floating_actions.dart';
 
 const specimenDestinations = <(String, IconData)>[
   ('Overview', Icons.dashboard_outlined),
@@ -21,7 +23,7 @@ class NavigationStudy extends StatefulWidget {
 
 class _NavigationStudyState extends State<NavigationStudy> {
   int selected = 0;
-  bool shelf = false;
+  String quickResult = 'Choose an action to preview its demo-only outcome.';
   void select(int i) => setState(() => selected = i);
   Widget destinations({bool rail = false, bool capsule = false}) =>
       LayoutBuilder(
@@ -42,13 +44,9 @@ class _NavigationStudyState extends State<NavigationStudy> {
                 onPressed: () => select(i),
               ),
           ];
-          return Container(
-            decoration: BoxDecoration(
-              color: CraftTheme.of(context).surface,
-              border: Border.all(color: CraftTheme.of(context).divider),
-              borderRadius: BorderRadius.circular(capsule ? 28 : 12),
-            ),
-            padding: const EdgeInsets.all(8),
+          return LatticeFrame(
+            raised: capsule,
+            radius: capsule ? Space.floatingRadius : Space.cardRadius,
             child: stacked
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -87,7 +85,7 @@ class _NavigationStudyState extends State<NavigationStudy> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       const StatusNotice(
-        'Component studies only. Both Android concepts remain open for D2 interaction testing.',
+        'Component studies only. Android B is selected; final application-shell validation belongs to D2.',
         tone: NoticeTone.information,
       ),
       const SizedBox(height: 24),
@@ -136,49 +134,65 @@ class _NavigationStudyState extends State<NavigationStudy> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SectionTitle(
-              'Android A · anchored',
-              caption: 'Five destinations; Add occupies its own row. Narrow/large-text study uses the labeled fallback list.',
+              'Android B · floating · selected',
+              caption: 'Five destinations, with a separate + for quick actions. Demo only.',
             ),
-            Center(
-              child: FilledButton.icon(
-                onPressed: () => action('Add'),
-                icon: const Icon(Icons.add),
-                label: const Text('Add'),
-              ),
-            ),
+            StatusNotice(quickResult, live: true),
             const SizedBox(height: 12),
-            destinations(),
-          ],
-        ),
-      ),
-      const SizedBox(height: 24),
-      CraftPanel(
-        padding: 12,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SectionTitle(
-              'Android B · floating',
-              caption:
-                  'Inset navigation with a separate, expandable action shelf.',
-            ),
             Align(
               alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => shelf = !shelf),
-                icon: Icon(shelf ? Icons.expand_less : Icons.expand_more),
-                label: const Text('Quick actions'),
+              child: FloatingActionMenu(
+                actions: [
+                  for (final item in const [
+                    ('Add expense', Icons.remove_circle_outline),
+                    ('Record income', Icons.add_circle_outline),
+                    ('Transfer money', Icons.swap_horiz_outlined),
+                    ('Record debt payment', Icons.handshake_outlined),
+                    ('Add shared expense', Icons.people_outline),
+                    ('Add task', Icons.check_circle_outline),
+                  ])
+                    FloatingQuickAction(
+                      label: item.$1,
+                      icon: item.$2,
+                      onSelected: () => setState(() {
+                        quickResult =
+                            '${item.$1} specimen only — no record created.';
+                      }),
+                    ),
+                ],
               ),
             ),
-            if (shelf)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: dock(),
-              ),
             const SizedBox(height: 12),
             destinations(capsule: true),
           ],
         ),
+      ),
+      const SizedBox(height: 24),
+      ExpansionTile(
+        key: const PageStorageKey('historical-android-a'),
+        title: const Text('Android A · historical comparison'),
+        subtitle: const Text(
+          'Superseded by the owner’s D1 review. No second production navigation.',
+        ),
+        children: [
+          CraftPanel(
+            padding: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: FilledButton.icon(
+                    onPressed: () => action('Add'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                destinations(),
+              ],
+            ),
+          ),
+        ],
       ),
     ],
   );

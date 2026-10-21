@@ -105,7 +105,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
                   if (box.maxWidth > 500)
                     const Padding(
                       padding: EdgeInsets.only(left: 32),
-                      child: CraftMotif(size: 144),
+                      child: CraftMotif(size: 96),
                     ),
                 ],
               ),
@@ -116,7 +116,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
                 children: [
                   Chip(label: Text(c.dark ? 'Midnight Spectrum' : 'Porcelain')),
                   const Chip(label: Text('Nunito Sans')),
-                  const Chip(label: Text('Woven Calm')),
+                  const Chip(label: Text('Luminous Lattice')),
                 ],
               ),
             ],
@@ -857,7 +857,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
       ),
       AdaptivePair(
         children: [
-          for (final lattice in [false, true])
+          for (final lattice in [true, false])
             CraftPanel(
               focal: true,
               child: Column(
@@ -867,8 +867,8 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
                   const SizedBox(height: 16),
                   SectionTitle(
                     lattice
-                        ? 'Luminous Lattice · comparison'
-                        : 'Woven Calm · selected',
+                        ? 'Luminous Lattice · selected'
+                        : 'Woven Calm · historical motif',
                     caption: 'A little clarity, every day.',
                   ),
                   const CraftPanel(

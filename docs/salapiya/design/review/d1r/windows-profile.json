@@ -1,0 +1,63 @@
+{
+  "platform": "windows",
+  "mode": "profile",
+  "status": "passed",
+  "layout": [
+    {
+      "width": 640.0,
+      "height": 480.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 640.0,
+      "height": 480.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 900.0,
+      "height": 600.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 900.0,
+      "height": 600.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 1280.0,
+      "height": 800.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 1280.0,
+      "height": 800.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 1600.0,
+      "height": 900.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 1600.0,
+      "height": 900.0,
+      "textScale": 2.0,
+      "themes": 2
+    }
+  ],
+  "performance": {
+    "scenario": "12 open/close cycles; one-second timing drain before each one-second idle sample",
+    "frames": 127,
+    "buildP95Ms": 2.44,
+    "rasterP95Ms": 3.473,
+    "closedIdleFrames": 0,
+    "openIdleFrames": 0
+  }
+}

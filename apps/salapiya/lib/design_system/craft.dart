@@ -4,7 +4,7 @@ import 'theme.dart';
 
 /// Original abstract interlacing; no traditional artwork or logo is copied.
 class CraftMotif extends StatelessWidget {
-  const CraftMotif({super.key, this.lattice = false, this.size = 96});
+  const CraftMotif({super.key, this.lattice = true, this.size = 96});
   final bool lattice;
   final double size;
   @override
@@ -30,6 +30,72 @@ class CraftMotif extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One soft, opaque pane with an optional stepped pearl edge. The edge is
+/// confined to the frame margin; it never runs behind labels or financial data.
+class LatticeFrame extends StatelessWidget {
+  const LatticeFrame({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(8),
+    this.radius = Space.cardRadius,
+    this.focal = false,
+    this.raised = false,
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final bool focal, raised;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = CraftTheme.of(context);
+    final effects = CraftPreferences.effectsOf(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: raised ? c.raised : c.surface,
+        gradient: focal && effects
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [c.focalStart, c.focalEnd],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: effects ? c.latticeEdge : c.divider),
+        boxShadow: effects && (raised || focal) ? c.shadow : null,
+      ),
+      child: CustomPaint(
+        foregroundPainter: effects ? _PaneEdge(c.pearlEdge, radius) : null,
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+  }
+}
+
+class _PaneEdge extends CustomPainter {
+  const _PaneEdge(this.color, this.radius);
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    // Original offset two-step seam, built from lines rather than rebuilt paths.
+    final end = size.width - radius;
+    if (end <= radius + 24) return;
+    canvas.drawLine(Offset(radius, 4), Offset(end - 16, 4), p);
+    canvas.drawLine(Offset(end - 16, 4), Offset(end - 16, 8), p);
+    canvas.drawLine(Offset(end - 16, 8), Offset(end, 8), p);
+  }
+
+  @override
+  bool shouldRepaint(_PaneEdge old) =>
+      old.color != color || old.radius != radius;
 }
 
 class _WeavePainter extends CustomPainter {

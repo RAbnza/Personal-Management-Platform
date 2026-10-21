@@ -1,10 +1,29 @@
-# Native design system — approved D1 baseline
+# Native design system — D1R refinement
 
-**Status:** P03 approved baseline, implemented in `lib/design_system/` for D1.
-The [implementation record](D1_IMPLEMENTATION.md) maps actual reusable components
+**Status:** D1R-R01/R03 refine the P03 baseline in `lib/design_system/`.
+Luminous Lattice is primary; Woven Calm softness and Nunito Sans remain.
+The [current implementation record](D1R_IMPLEMENTATION.md) maps actual reusable components
 and records measured proof and limitations. Rendered refinements await owner review. Read the
 [creative alternatives](CREATIVE_DIRECTION.md) and [decision register](README.md).
 Use one shared semantic system across Windows and Android; adapt layout/input.
+
+## Implemented D1R craft and navigation roles
+
+The existing `CraftTheme` remains the single theme extension. Added semantic roles:
+`pearlEdge` (white / #73658E), `latticeEdge` (divider blended 28% toward primary),
+and `modalScrim` (black 44% / 64%). These are decorative/modal roles, never money
+or status colors. `Space.floatingRadius` is 28 and `menuDuration` is 160ms.
+
+`CraftMotif` defaults to the original bounded lattice. `LatticeFrame` owns one
+soft frame, optional static stepped pearl edge and optional raised shadow or focal
+gradient. `CraftPanel(focal: true)` delegates to it; ordinary cards are unchanged.
+Rail/capsule and the action list reuse it. Selected `DestinationControl` has an
+explicit outline as well as fill and selected semantics, including effects-off.
+
+`FloatingActionMenu` owns a single modal route and compact + control. Callers pass
+`FloatingQuickAction` labels, icons and callbacks. See [platform UX](PLATFORM_UX.md)
+for anchoring, bounded sheet fallback, focus, Back and input-inset contracts.
+No dependency, palette overhaul, font change, finance logic or parallel theme.
 
 ## Token architecture
 
@@ -127,8 +146,7 @@ table region only for genuine two-dimensional comparisons.
 
 Spacing scale: **4, 8, 12, 16, 24, 32, 48**. Screen margins start at 16 compact,
 24 medium, 32 wide. Form content width generally 480–640. Cards use 20 radius,
-fields/buttons 12, menus 16, dialogs 24; the floating dock uses 24 in A and 16
-in B. These few shared values prevent arbitrary per-screen rounding.
+fields/buttons 12, menus 16, dialogs 24; the selected Android capsule uses 28; Windows dock geometry remains D2 proof. These few shared values prevent arbitrary per-screen rounding.
 
 Touch targets are at least **48×48** on both platforms when touch is possible.
 Mouse-oriented dense Windows rows may be 40 high only in an explicit comfortable/
@@ -169,8 +187,8 @@ Names below are proposed contracts, not required class names.
 | Choice/date controls    | SDK radio, checkbox, menu and date picker         | Own account/card/scope labels; date is a civil date, not silently shifted by timezone                          | Keyboard selection, long label, missing source, unavailable archived source   |
 | Financial summary       | Text, layout primitives                           | Exact value + definition, period/as-of, coverage and source action; null != zero                               | Complete, partial snapshot, pending overlay, hidden value                     |
 | Cards/section framing   | Container/Card composition                        | One emphasis level, named regions, optional external seam; avoid card-within-card nesting                      | Plain, focal, selected, small width, 200%                                     |
-| Primary rail/mobile nav | SDK navigation semantics and focus                | Five stable destinations; identity, marker and labels; no custom gesture recognizer replacing buttons          | Expanded/collapsed, active, focused, A/B, long text                           |
-| Quick-action dock       | Standard buttons plus menu/sheet primitives       | Context actions, distinct from destinations; measured content clearance; no icon magnification                 | Full, compact “Add”, expanded actions, modal/task suppression                 |
+| Primary rail/mobile nav | SDK navigation semantics and focus                | Five stable destinations; identity, marker and labels; no custom gesture recognizer replacing buttons          | Expanded/collapsed, active, focused, selected B, historical A, long text                           |
+| Quick-action dock       | Standard buttons plus menu/sheet primitives       | Context actions, distinct from destinations; measured content clearance; no icon magnification                 | Windows tool tray; Android +, modal list/sheet, safe dismissal                 |
 | Sheets/dialogs/review   | SDK modal routes, focus scopes, safe areas        | Named heading, safe initial focus, input retention, Escape/Back policy and trigger restoration                 | Short, long/IME, invalid, unknown result, dirty close                         |
 | Financial table/list    | SDK bounded DataTable/list first                  | Domain-supplied exact strings; row identity and explicit Details action; no whole-row-only interaction         | Empty, sorted, filtered, selected, long amount, bounded large fixture         |
 | Disclosure/detail       | Expansion/control semantics                       | Expanded state announced; source details and history retained, keyboard accessible                             | Collapsed, expanded, changing content, retained input                         |

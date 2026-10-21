@@ -48,7 +48,7 @@ class GalleryHome extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: const Text('Craft effects'),
               subtitle: const Text(
-                'Woven details, focal gradients and shadows',
+                'Lattice edges, focal gradients and shadows',
               ),
               value: settings.effects,
               onChanged: (v) => settings.change(() => settings.effects = v),
@@ -213,7 +213,7 @@ class GalleryHome extends StatelessWidget {
                           Expanded(
                             child: wide
                                 ? Text(
-                                    'Woven Calm / Component collection',
+                                    'Luminous Lattice / Component collection',
                                     style: TextStyle(color: c.secondary),
                                   )
                                 : DropdownButtonHideUnderline(
@@ -271,7 +271,7 @@ class GalleryHome extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  'D1  /  INTERACTIVE DESIGN STUDY',
+                                  'D1R  /  INTERACTIVE DESIGN STUDY',
                                   style: TextStyle(
                                     fontSize: 12,
                                     letterSpacing: 1.3,
@@ -301,7 +301,7 @@ class GalleryHome extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 32),
                                 Text(
-                                  'SALAPIYA  /  WOVEN CALM  /  OWNER REVIEW',
+                                  'SALAPIYA  /  LUMINOUS LATTICE  /  OWNER REVIEW',
                                   style: TextStyle(
                                     color: c.secondary,
                                     fontSize: 12,

@@ -1,0 +1,63 @@
+{
+  "platform": "android",
+  "mode": "debug",
+  "status": "passed",
+  "layout": [
+    {
+      "width": 320.0,
+      "height": 568.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 320.0,
+      "height": 568.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 360.0,
+      "height": 640.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 360.0,
+      "height": 640.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 412.0,
+      "height": 800.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 412.0,
+      "height": 800.0,
+      "textScale": 2.0,
+      "themes": 2
+    },
+    {
+      "width": 800.0,
+      "height": 360.0,
+      "textScale": 1.0,
+      "themes": 2
+    },
+    {
+      "width": 800.0,
+      "height": 360.0,
+      "textScale": 2.0,
+      "themes": 2
+    }
+  ],
+  "performance": {
+    "scenario": "12 open/close cycles; one-second timing drain before each one-second idle sample",
+    "frames": 195,
+    "buildP95Ms": 18.167,
+    "rasterP95Ms": 17.836,
+    "closedIdleFrames": 0,
+    "openIdleFrames": 0
+  }
+}

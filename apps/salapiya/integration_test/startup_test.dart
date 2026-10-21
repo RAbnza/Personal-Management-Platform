@@ -129,7 +129,7 @@ void main() {
         await tester.tap(find.text('Compare SVG renderer'));
         await tester.pumpAndSettle();
         await screenshot('brand-svg');
-        await tester.ensureVisible(find.text('Luminous Lattice · comparison'));
+        await tester.ensureVisible(find.text('Luminous Lattice · selected'));
         await screenshot('craft-comparison');
       }
     }

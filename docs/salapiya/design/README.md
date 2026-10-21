@@ -1,34 +1,34 @@
-# Salapiya native design — D0 decisions and D1 review
+# Salapiya native design — D1R owner decisions
 
 **Date:** October 21, 2026 (Asia/Manila).
 
-**Status:** D0 approved for D1 implementation on October 21, 2026 (Asia/Manila). D1 rendered refinements remain subject to owner visual review.
+**Status:** D1R direction authorized by the owner's hands-on D1 review on
+October 21, 2026 (Asia/Manila). Rendered refinements await owner visual approval.
+D2 has not started; G0–G4 and G6 remain open.
 
-**Scope:** Approved design contracts and the D1 synthetic Flutter component gallery. Full screens and production services remain future work.
+**Scope:** One synthetic Flutter design foundation and gallery, not the final app shell.
 
-Salapiya's approved expression is **Contemporary Filipino Craftsmanship — Soft,
-Premium, Expressive and Purposeful**. The selected direction is **Woven Calm**:
-interlaced structural accents, generous working surfaces, precise financial
-typography and restrained pearl-like light. **Luminous Lattice** is a distinct,
-more architectural comparison, bounded to a single specimen. Both preserve the existing logo and the
-Porcelain / Midnight Spectrum foundations.
+**Luminous Lattice is primary. Woven Calm contributes softness. Android floating
+navigation B is selected. The “+” modal action menu is the intended interaction.**
+Nunito Sans, Porcelain / Midnight Spectrum and the supplied branding remain.
 
 ## Read and review in this order
 
-Start with [D1 implementation and verification](D1_IMPLEMENTATION.md) and the
-[native screenshot review](review/d1/README.md). The documents below remain the
-authoritative design contracts; D1 implementation details do not approve D2.
+Start with [D1R implementation and live review](D1R_IMPLEMENTATION.md).
+[D1 implementation](D1_IMPLEMENTATION.md) and its [media](review/d1/README.md)
+remain historical evidence; live application review is now the default. The
+documents below remain the authoritative contracts; D1R does not approve D2.
 
 | Document                                                | Purpose                                                                                  |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [Creative direction](CREATIVE_DIRECTION.md)             | Two alternatives, cultural provenance, original geometry rules and typography comparison |
+| [Creative direction](CREATIVE_DIRECTION.md)             | Lattice-led grammar, historical choices, cultural provenance and retained typography |
 | [Branding register](BRANDING_ASSETS.md)                 | Six existing files, usage, integrity, spacing and renderer risks                         |
 | [Design system](DESIGN_SYSTEM.md)                       | Proposed tokens, component contracts, accessibility and motion                           |
-| [Platform experience](PLATFORM_UX.md)                   | Windows rail/dock, Android A/B comparison, Overview, onboarding and task interaction     |
+| [Platform experience](PLATFORM_UX.md)                   | Windows rail/dock, Selected Android B, Overview, onboarding and task interaction     |
 | [Screen and state inventory](SCREEN_STATE_INVENTORY.md) | Blueprint coverage, representative finance journeys and synthetic fixtures               |
 | [Prototype roadmap](PROTOTYPE_ROADMAP.md)               | D1–D5 scope, architecture, packages, checks, review artifacts and D1 prompt              |
 
-These documents are one proposal. Token values live in DESIGN_SYSTEM; screen
+These documents are one evolving design contract. Token values live in DESIGN_SYSTEM; screen
 coverage lives in SCREEN_STATE_INVENTORY; milestone evidence lives in
 PROTOTYPE_ROADMAP. Future sessions should update those sources rather than create
 competing theme or navigation specifications.
@@ -37,7 +37,7 @@ competing theme or navigation specifications.
 
 The [Salapiya blueprint](../../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) governs
 scope, financial meaning, identity, synchronization and platform parity. The
-owner's D0 assignment supplies the new visual preferences recorded below.
+owner's D0 and subsequent D1R assignments supply the dated decisions below.
 Historical [visual guidance](../../reference/DESIGN_SYSTEM_AND_VISUAL_GUIDELINES.md),
 [redesign plan](../../reference/COMPREHENSIVE_UI_UX_REDESIGN_PLAN.md) and
 [M1 guide](../../reference/REDESIGN_M1_COMPONENT_GUIDE.md) remain evidence, not
@@ -49,17 +49,32 @@ instructions to recreate the web shell.
 | D0-R02 | One Flutter application for Windows/Android; five destinations: Overview, Money, Debts, Shared Expenses, Life | Approved requirement; full capability and financial meaning on both                                                                   |
 | D0-R03 | Preserve all six branding files, transparent backgrounds and original symbol                                  | Owner requirement; no recoloring, monochrome, redraw, simplification or changed composition                                           |
 | D0-R04 | Windows collapsible primary rail/sidebar plus contextual quick-action dock                                    | Owner-selected direction; detailed geometry and behavior proposed here                                                                |
-| D0-R05 | Compare Android A and B before selection                                                                      | Required; neither alternative is finalized                                                                                            |
+| D0-R05 | Compare Android A and B before selection                                                                      | Historical D0 requirement; superseded by D1R-R02                                                                                            |
 | D0-R06 | Violet/lavender, Porcelain/Midnight Spectrum, Filipino craftsmanship, soft premium personality                | Owner-selected starting direction; precise composition remains proposed                                                               |
 | D0-R07 | Local profile / Continue with Google / Restore from backup are distinct                                       | Approved product requirement; prototype simulates each                                                                                |
 | D0-R08 | No real authentication, storage, sync or ledger during D milestones                                           | Assignment boundary; G0–G4 remain open                                                                                                |
-| D0-P01 | Woven Calm selected primary direction                                                                         | Approved October 21, 2026; bounded Luminous Lattice details/comparison allowed, no second complete system                             |
+| D0-P01 | Woven Calm selected primary direction                                                                         | Genuinely approved during D0/D1 planning; superseded by subsequent hands-on review D1R-R01                             |
 | D0-P02 | Nunito Sans selected primary typeface                                                                         | Approved baseline subject to actual license, glyph, numeric, rendering and performance proof; Geist/Source Sans 3 comparison retained |
 | D0-P03 | Proposed tokens, woven geometry, highlights, layers and craft accents                                         | Approved starting implementation baseline; rendered refinements remain subject to visual review                                       |
-| D0-P04 | Android A/B comparison in D2                                                                                  | No final selection; D1 isolated specimens only, no application shell                                                                  |
+| D0-P04 | Android A/B comparison in D2                                                                                  | Historical D0 position; superseded by D1R-R02, no D1R application shell                                                                  |
 | D0-P05 | Windows rail, action dock and adaptive breakpoints                                                            | Approved initial prototype parameters; final geometry/behavior tested in D2                                                           |
 | D0-P06 | Selective maintained Flutter dependency evaluation                                                            | Approved per specific need and exercised Windows/Android proof; not blanket package or G0 acceptance                                  |
 | D0-P07 | D1–D5 sequence and review checkpoints                                                                         | Approved; D1 assigned, stop at owner visual review; no automatic D2/P1 progression                                                    |
+
+### D1R hands-on review decisions (October 21, 2026)
+
+These later owner decisions supersede the historical choices above; D0's approval
+of Woven Calm is preserved, not retroactively relabeled as a mistake.
+
+| ID | Owner decision | Rationale / boundary |
+| --- | --- | --- |
+| D1R-R01 | Luminous Lattice primary, Woven Calm softness retained | Owner preferred lattice after comparing the running D1 gallery. Original stepped frames, luminous edges and layered surfaces; friendly corners, spacing and clear money remain. |
+| D1R-R02 | Android B floating selected | A is historical comparison only. Final shell dimensions, reachability and behavior require D2 proof. |
+| D1R-R03 | Compact “+” opens modal vertical quick actions | Dimmed background, labeled icon rows, short reversible motion, Back/Escape/outside/close/action dismissal; reusable caller-defined actions, demo-only results. |
+| D1R-R04 | Keep Nunito Sans | No new typography research; preserve comparison specimens. |
+| D1R-R05 | Keep Porcelain / Midnight Spectrum and violet/lavender | Warm, plum and blue remain supporting accents; refine placement, not palette. |
+| D1R-R06 | Gallery is a testing environment | Its sidebar and specimen arrangements are not final product shell decisions; D2 assembles shell and Overview. |
+| D1R-R07 | Live application review by default for this and later milestones | No mandatory screenshot collections, contact sheets, videos or new media merely to prove appearance. Retain tests, measurements and concise reports; targeted failure diagnostics or explicitly requested captures only. Preserve existing D1 evidence. |
 
 ### Proposed revisions to earlier visual decisions
 
@@ -67,7 +82,7 @@ instructions to recreate the web shell.
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Blueprint §14.3 / D19: logo deferred                               | Existing branding was subsequently committed at `aea133e`; owner now explicitly directs its preservation. Launcher exports remain later work.              | Later owner instruction recorded here; blueprint not rewritten    |
 | Blueprint §14.2: Geist where suitable                              | Compare Nunito Sans, Geist and Source Sans 3; implement Nunito Sans as the approved D1 baseline.                                                           | P02 approved D1 baseline; native proof required                   |
-| Web M1 D06: bottom-centered primary dock on desktop/mobile         | Native Windows uses rail for destinations and dock for actions; Android remains an A/B proof.                                                              | R04 is owner-selected; exact geometry P05; Android P04 unresolved |
+| Web M1 D06: bottom-centered primary dock on desktop/mobile         | Native Windows uses rail for destinations and dock for actions; Android B selected by D1R-R02; shell proof remains D2.                                                              | R04 is owner-selected; exact geometry P05; Android superseded by D1R-R02 |
 | Web M1 D06: Porcelain, Midnight Spectrum; ivory/cream rejected     | Preserve exact canvas/surface roles. Introduce warmth only in bounded accent regions.                                                                      | Foundation retained; accent P03 approved baseline                 |
 | Web M1: one focal blend, opaque surfaces, limited active-icon glow | Keep opaque financial surfaces; propose no glow and a static capiz-like header highlight. Genuine translucency is optional, tightly bounded and removable. | P03 approved native baseline; web approval unchanged              |
 | Blueprint §5: Overview may show recent money activity              | Use a Money summary and “View activity” link; detailed recent history belongs in Money → Activity.                                                         | Current owner direction; no sixth destination                     |

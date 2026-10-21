@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 abstract final class Space {
   static const double xs = 4, sm = 8, md = 12, lg = 16, xl = 24, xxl = 32;
   static const double target = 48, cardRadius = 20, controlRadius = 12;
+  static const double floatingRadius = 28, paneInset = 8;
+  static const menuDuration = Duration(milliseconds: 160);
 }
 
 abstract final class Palette {
@@ -44,6 +46,9 @@ class CraftTheme extends ThemeExtension<CraftTheme> {
       dark ? const Color(0xFF302153) : const Color(0xFFEEE8FF);
   Color get focalEnd =>
       dark ? const Color(0xFF142C49) : const Color(0xFFE1EFFF);
+  Color get pearlEdge => dark ? const Color(0xFF73658E) : Palette.white;
+  Color get latticeEdge => Color.lerp(divider, primary, .28)!;
+  Color get modalScrim => Colors.black.withValues(alpha: dark ? .64 : .44);
   (Color, Color) tone(NoticeTone tone) => switch (tone) {
     NoticeTone.neutral => (secondary, subtle),
     NoticeTone.information =>
