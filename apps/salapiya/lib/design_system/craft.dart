@@ -32,8 +32,8 @@ class CraftMotif extends StatelessWidget {
   }
 }
 
-/// One soft, opaque pane with an optional stepped pearl edge. The edge is
-/// confined to the frame margin; it never runs behind labels or financial data.
+/// One soft pane with a functional outline and optional focal/raised surface.
+/// Shared frames deliberately have no decorative stroke or corner ornament.
 class LatticeFrame extends StatelessWidget {
   const LatticeFrame({
     super.key,
@@ -66,36 +66,9 @@ class LatticeFrame extends StatelessWidget {
         border: Border.all(color: effects ? c.latticeEdge : c.divider),
         boxShadow: effects && (raised || focal) ? c.shadow : null,
       ),
-      child: CustomPaint(
-        foregroundPainter: effects ? _PaneEdge(c.pearlEdge, radius) : null,
-        child: Padding(padding: padding, child: child),
-      ),
+      child: Padding(padding: padding, child: child),
     );
   }
-}
-
-class _PaneEdge extends CustomPainter {
-  const _PaneEdge(this.color, this.radius);
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-    // Original offset two-step seam, built from lines rather than rebuilt paths.
-    final end = size.width - radius;
-    if (end <= radius + 24) return;
-    canvas.drawLine(Offset(radius, 4), Offset(end - 16, 4), p);
-    canvas.drawLine(Offset(end - 16, 4), Offset(end - 16, 8), p);
-    canvas.drawLine(Offset(end - 16, 8), Offset(end, 8), p);
-  }
-
-  @override
-  bool shouldRepaint(_PaneEdge old) =>
-      old.color != color || old.radius != radius;
 }
 
 class _WeavePainter extends CustomPainter {

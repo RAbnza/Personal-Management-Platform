@@ -46,7 +46,6 @@ class CraftTheme extends ThemeExtension<CraftTheme> {
       dark ? const Color(0xFF302153) : const Color(0xFFEEE8FF);
   Color get focalEnd =>
       dark ? const Color(0xFF142C49) : const Color(0xFFE1EFFF);
-  Color get pearlEdge => dark ? const Color(0xFF73658E) : Palette.white;
   Color get latticeEdge => Color.lerp(divider, primary, .28)!;
   Color get modalScrim => Colors.black.withValues(alpha: dark ? .64 : .44);
   (Color, Color) tone(NoticeTone tone) => switch (tone) {

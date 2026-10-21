@@ -3,8 +3,8 @@
 **Date:** October 21, 2026 (Asia/Manila).
 
 **Status:** D1R direction authorized by the owner's hands-on D1 review on
-October 21, 2026 (Asia/Manila). Rendered refinements await owner visual approval.
-D2 has not started; G0–G4 and G6 remain open.
+October 21, 2026 (Asia/Manila). Owner approved D1R on October 22, 2026 except for the repeated decorative
+top line. D2-F0 is authorized first, followed by D2 shell/Overview; G0–G4 and G6 remain open.
 
 **Scope:** One synthetic Flutter design foundation and gallery, not the final app shell.
 
@@ -17,7 +17,8 @@ Nunito Sans, Porcelain / Midnight Spectrum and the supplied branding remain.
 Start with [D1R implementation and live review](D1R_IMPLEMENTATION.md).
 [D1 implementation](D1_IMPLEMENTATION.md) and its [media](review/d1/README.md)
 remain historical evidence; live application review is now the default. The
-documents below remain the authoritative contracts; D1R does not approve D2.
+documents below remain authoritative; the October 22 D2 assignment authorizes
+the shell after the D2-F0 verification gate.
 
 | Document                                                | Purpose                                                                                  |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -159,3 +160,15 @@ application code, configuration, dependency, migration, logo or authoritative
 product document changes. No full prototype, external design publication or cloud
 service is created. The final task report records the resulting commit SHA and
 push verification so this document does not contain a self-referential commit ID.
+
+## D2 owner decisions (October 22, 2026)
+
+- D2-R01: D1R visual identity, typography, themes, components and Android B/+
+  approved following live review, except the repetitive stepped top-line treatment.
+- D2-R02: Remove `_PaneEdge` centrally and its unused `pearlEdge` role; preserve
+  functional outlines, focus/selection, gradients, shadows and bounded motifs.
+  No automatic replacement corner ornament on shared surfaces.
+- D2-R03: After verifying D2-F0 on Windows/Android, implement the memory-only
+  native shell and interactive Overview, then stop for live approval before D3.
+
+Historical D1/D1R implementation records retain the prior styling as dated evidence.

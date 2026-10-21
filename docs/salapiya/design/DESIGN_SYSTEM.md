@@ -3,19 +3,20 @@
 **Status:** D1R-R01/R03 refine the P03 baseline in `lib/design_system/`.
 Luminous Lattice is primary; Woven Calm softness and Nunito Sans remain.
 The [current implementation record](D1R_IMPLEMENTATION.md) maps actual reusable components
-and records measured proof and limitations. Rendered refinements await owner review. Read the
+and records measured proof and limitations. D1R was owner-approved on October 22, 2026 except for the repeated top line,
+removed in D2-F0. Read the
 [creative alternatives](CREATIVE_DIRECTION.md) and [decision register](README.md).
 Use one shared semantic system across Windows and Android; adapt layout/input.
 
 ## Implemented D1R craft and navigation roles
 
 The existing `CraftTheme` remains the single theme extension. Added semantic roles:
-`pearlEdge` (white / #73658E), `latticeEdge` (divider blended 28% toward primary),
+`latticeEdge` (divider blended 28% toward primary),
 and `modalScrim` (black 44% / 64%). These are decorative/modal roles, never money
 or status colors. `Space.floatingRadius` is 28 and `menuDuration` is 160ms.
 
 `CraftMotif` defaults to the original bounded lattice. `LatticeFrame` owns one
-soft frame, optional static stepped pearl edge and optional raised shadow or focal
+soft frame without decorative top strokes, and optional raised shadow or focal
 gradient. `CraftPanel(focal: true)` delegates to it; ordinary cards are unchanged.
 Rail/capsule and the action list reuse it. Selected `DestinationControl` has an
 explicit outline as well as fill and selected semantics, including effects-off.
@@ -161,7 +162,7 @@ increase control height and may trigger a different layout.
 | Working plane                 | Opaque fill, optional 1-unit divider; no shadow on every row                                                                                                                                                       |
 | Floating dock / raised region | One shadow: light black 8%, y=4, blur=16; dark black 20%, y=4, blur=16, plus visible outline                                                                                                                       |
 | Modal                         | One stronger shadow: light black 14% / dark 28%, y=8, blur=24; opaque content and bounded scrim                                                                                                                    |
-| Pearl highlight               | One static upper-edge line/gradient in a branded focal region; no glow around text or figures                                                                                                                      |
+| Pearl highlight               | A bounded static gradient in an intentional branded focal region; no repeated top line; no glow around text or figures                                                                                                                      |
 | Capiz-like effect             | Prefer opaque layered color. Optional genuinely translucent decoration may occupy ≤15% of a welcome/header region, never a control/data background; no blur by default. Remove if readability or frame cost fails. |
 | Hover/press                   | 100–120ms color change, stable target; focus ring immediate                                                                                                                                                        |
 | Menu/disclosure               | 120–160ms; at most 4-unit translation; no animated long-list relayout                                                                                                                                              |

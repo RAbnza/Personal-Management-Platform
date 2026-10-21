@@ -85,10 +85,10 @@ void main() {
         });
         await tester.pumpAndSettle();
         final frame = find.byType(LatticeFrame).first;
-        final painted = tester.widget<CustomPaint>(
-          find.descendant(of: frame, matching: find.byType(CustomPaint)).first,
+        final surface = tester.widget<Container>(
+          find.descendant(of: frame, matching: find.byType(Container)).first,
         );
-        expect(painted.foregroundPainter, isNull);
+        expect(surface.child, isA<Padding>());
         expect(find.text('Made with care.\nClear by design.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }

@@ -48,7 +48,7 @@ class GalleryHome extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: const Text('Craft effects'),
               subtitle: const Text(
-                'Lattice edges, focal gradients and shadows',
+                'Lattice motifs, focal gradients and shadows',
               ),
               value: settings.effects,
               onChanged: (v) => settings.change(() => settings.effects = v),

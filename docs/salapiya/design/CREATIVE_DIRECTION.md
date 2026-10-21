@@ -16,15 +16,15 @@ Spectrum and the violet/lavender palette with bounded warm, plum and blue accent
 
 The existing three rounded outlines progress diagonally on a 16-unit step inside
 a 96-unit square. This original geometry is now the default `CraftMotif`; explicit
-interlacing remains only in the small historical comparison. `LatticeFrame` adds
-one pearl edge: a straight line inset four units at the top, stepping down to
-eight units near the trailing corner. It uses simple static line segments, not a
-traced textile or architectural artwork. Soft 20-unit corners and 28-unit capsule
-corners keep the structure approachable. Neither primitive is a new brand mark.
+interlacing remains only in the small historical comparison. `LatticeFrame` uses
+soft 20-unit corners and 28-unit capsule corners, a continuous rounded boundary,
+and optional focal gradients/shadows. Neither primitive is a new brand mark.
 
-Use the motif in identity/empty-state regions; use the quiet edge on focal panels,
-rail/capsule frames and the raised action list. Plain cards, financial values,
-inputs, tables and reviews retain opaque surfaces and a single quiet border.
+The October 22, 2026 owner review approved D1R but rejected the repeated stepped
+top line. D2-F0 removes that shared painter, without a replacement corner ornament.
+Use bounded motifs intentionally in identity/empty-state regions. Focal panels,
+rail/capsule frames and raised action lists have no decorative top stroke.
+Financial values, inputs, tables and reviews retain opaque working surfaces.
 Effects off removes motifs, highlights, gradients and shadows; labels, selected
 outlines, focus and financial meaning remain. No blur, shader or idle animation.
 
@@ -133,8 +133,8 @@ Ordinary cards do not each receive a gradient, double border or shadow.
 
 ## Shared grammar and decoration budget
 
-The following grammar guided D0. D1R implements the bounded motif and stepped
-pearl edge described above; unimplemented primitive names remain proposals.
+The following grammar is historical D0 guidance. D2-F0 supersedes repeated
+upper-edge strokes; bounded motifs remain. Unimplemented names remain proposals.
 
 | Primitive           | Geometry / placement contract                                                                                                                                                             |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
