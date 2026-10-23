@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/components.dart';
+import '../design_system/measured_layout.dart';
 import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
 import '../prototype/activity.dart';
@@ -290,11 +291,91 @@ class AccountWallet extends StatefulWidget {
 
 class _AccountWalletState extends State<AccountWallet> {
   int selected = 1;
+  final pages = PageController(initialPage: 1);
+  @override
+  void dispose() {
+    pages.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
-    final account = demoAccounts[selected];
+
     final mobile = Theme.of(context).platform == TargetPlatform.android;
+    Widget wallet(int index) {
+      final account = demoAccounts[index];
+      return Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: Palette.mint,
+          gradient: CraftPreferences.effectsOf(context)
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFE5EDCF), Color(0xFFC9DAAC)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: DefaultTextStyle(
+          style: const TextStyle(
+            fontFamily: 'Geist',
+            color: Palette.ink,
+            height: 1.4,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      session.empty ? 'Your first wallet' : account.$1,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.account_balance_outlined,
+                    color: Palette.ink,
+                    size: 24,
+                  ),
+                ],
+              ),
+              SizedBox(height: mobile ? 12 : 24),
+              Text(
+                !session.complete
+                    ? 'Awaiting history'
+                    : session.empty
+                    ? 'No account yet'
+                    : session.amount(BigInt.parse(account.$2)),
+                style: const TextStyle(
+                  fontSize: 26,
+                  letterSpacing: -.8,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              SizedBox(height: mobile ? 12 : 20),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'PHP / LIQUID ACCOUNT',
+                      style: TextStyle(fontSize: 10, letterSpacing: 1),
+                    ),
+                  ),
+                  const Icon(Icons.blur_on, size: 28, color: Palette.ink),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -306,75 +387,17 @@ class _AccountWalletState extends State<AccountWallet> {
             icon: const Icon(Icons.north_east, size: 20),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: Palette.mint,
-            gradient: CraftPreferences.effectsOf(context)
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFE5EDCF), Color(0xFFC9DAAC)],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(22),
+        if (session.empty)
+          wallet(selected)
+        else
+          MeasuredPageView(
+            key: const ValueKey('wallet-pages'),
+            controller: pages,
+            index: selected,
+            itemCount: demoAccounts.length,
+            itemBuilder: (context, index) => wallet(index),
+            onPageChanged: (index) => setState(() => selected = index),
           ),
-          child: DefaultTextStyle(
-            style: const TextStyle(
-              fontFamily: 'Geist',
-              color: Palette.ink,
-              height: 1.4,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        session.empty ? 'Your first wallet' : account.$1,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.account_balance_outlined,
-                      color: Palette.ink,
-                      size: 24,
-                    ),
-                  ],
-                ),
-                SizedBox(height: mobile ? 12 : 24),
-                Text(
-                  !session.complete
-                      ? 'Awaiting history'
-                      : session.empty
-                      ? 'No account yet'
-                      : session.amount(BigInt.parse(account.$2)),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    letterSpacing: -.8,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-                SizedBox(height: mobile ? 12 : 20),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'PHP / LIQUID ACCOUNT',
-                        style: TextStyle(fontSize: 10, letterSpacing: 1),
-                      ),
-                    ),
-                    const Icon(Icons.blur_on, size: 28, color: Palette.ink),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
         if (!session.empty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -388,7 +411,7 @@ class _AccountWalletState extends State<AccountWallet> {
                       label: Text(['Cash', 'Bank', 'Mobile'][i]),
                       selected: selected == i,
                       showCheckmark: false,
-                      onSelected: (_) => setState(() => selected = i),
+                      onSelected: (_) => selectPage(context, pages, i),
                     ),
                   ),
               ],

@@ -314,11 +314,17 @@ class Overview extends StatelessWidget {
           const SizedBox(height: 28),
           if (wide)
             pair(
-              ActivityView(session: session),
+              ActivityView(
+                session: session,
+                onViewAll: () => open(PreviewSource.activity),
+              ),
               OverviewAgenda(session: session, open: open),
             )
           else ...[
-            ActivityView(session: session),
+            ActivityView(
+              session: session,
+              onViewAll: () => open(PreviewSource.activity),
+            ),
             const SizedBox(height: 28),
             OverviewAgenda(session: session, open: open),
           ],

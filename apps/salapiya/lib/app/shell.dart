@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/floating_actions.dart';
+import '../design_system/measured_layout.dart';
 import '../design_system/theme.dart';
 import '../gallery/settings.dart';
 import '../prototype/scenarios.dart';
@@ -24,6 +25,7 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
   AppDestination selected = AppDestination.overview;
   bool? expanded;
   bool opening = false;
+  double dockHeight = 112;
   @override
   void dispose() {
     for (final controller in scrolls) {
@@ -110,6 +112,8 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
             scale <= 1.5;
         final canExpand = bounds.maxWidth >= 1200;
         final isExpanded = canExpand && (expanded ?? true);
+        final showDock =
+            !mobile || MediaQuery.viewInsetsOf(context).bottom == 0;
         return Scaffold(
           body: SafeArea(
             child: Row(
@@ -201,41 +205,66 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                         ),
                       ),
                       Expanded(
-                        child: IndexedStack(
-                          index: selected.index,
-                          sizing: StackFit.expand,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            for (final destination in AppDestination.values)
-                              Scrollbar(
-                                controller: scrolls[destination.index],
-                                child: SingleChildScrollView(
-                                  key: PageStorageKey(
-                                    'destination-${destination.name}',
+                            IndexedStack(
+                              index: selected.index,
+                              sizing: StackFit.expand,
+                              children: [
+                                for (final destination in AppDestination.values)
+                                  Scrollbar(
+                                    controller: scrolls[destination.index],
+                                    child: SingleChildScrollView(
+                                      key: PageStorageKey(
+                                        'destination-${destination.name}',
+                                      ),
+                                      controller: scrolls[destination.index],
+                                      padding: EdgeInsets.fromLTRB(
+                                        bounds.maxWidth >= 1200 ? 32 : 16,
+                                        bounds.maxWidth >= 1200 ? 32 : 16,
+                                        bounds.maxWidth >= 1200 ? 32 : 16,
+                                        (showDock ? dockHeight : 0) + 24,
+                                      ),
+                                      child:
+                                          destination == AppDestination.overview
+                                          ? Overview(
+                                              session: session,
+                                              open: source,
+                                            )
+                                          : DestinationPreview(
+                                              destination: destination,
+                                              session: session,
+                                              open: source,
+                                            ),
+                                    ),
                                   ),
-                                  controller: scrolls[destination.index],
-                                  padding: EdgeInsets.all(
-                                    bounds.maxWidth >= 1200 ? 32 : 16,
+                              ],
+                            ),
+                            // The scroll viewport extends behind the dock. Only its
+                            // trailing content padding reserves final-item clearance.
+                            if (showDock)
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: MeasureSize(
+                                  onChanged: (size) {
+                                    if (mounted && dockHeight != size.height) {
+                                      setState(() => dockHeight = size.height);
+                                    }
+                                  },
+                                  child: ShellBottomBar(
+                                    mobile: mobile,
+                                    selected: selected,
+                                    select: select,
+                                    actions: actions,
+                                    constrained: short,
                                   ),
-                                  child: destination == AppDestination.overview
-                                      ? Overview(session: session, open: source)
-                                      : DestinationPreview(
-                                          destination: destination,
-                                          session: session,
-                                          open: source,
-                                        ),
                                 ),
                               ),
                           ],
                         ),
-                      ),
-                      // Normal-flow measured reservation: neither capsule nor dock can cover
-                      // the final scroll item. SafeArea adds the actual system bottom inset.
-                      ShellBottomBar(
-                        mobile: mobile,
-                        selected: selected,
-                        select: select,
-                        actions: actions,
-                        constrained: short,
                       ),
                     ],
                   ),

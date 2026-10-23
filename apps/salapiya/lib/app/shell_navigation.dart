@@ -260,6 +260,7 @@ class ShellBottomBar extends StatelessWidget {
   final AppDestination selected;
   final ValueChanged<AppDestination> select;
   final List<FloatingQuickAction> actions;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
@@ -267,75 +268,120 @@ class ShellBottomBar extends StatelessWidget {
           constrained ||
           box.maxWidth < 360 ||
           MediaQuery.textScalerOf(context).scale(14) >= 21;
+      final colors = CraftTheme.of(context);
       if (!mobile) {
+        final labels = box.maxWidth >= 700 && !compact;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 4, 16, 16),
-          child: Row(
-            children: [
-              if (box.maxWidth >= 650 && !compact) ...[
-                for (final action in actions.take(2))
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: TextButton.icon(
-                      onPressed: action.onSelected,
-                      icon: Icon(action.icon, size: 18),
-                      label: Text(action.label),
-                    ),
-                  ),
-                const Spacer(),
-              ] else
-                const Spacer(),
-              const SizedBox(width: 8),
-              FloatingActionMenu(actions: actions),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Center(
+            child: Material(
+              key: const ValueKey('floating-dock-surface'),
+              color: colors.raised,
+              elevation: CraftPreferences.effectsOf(context) ? 8 : 0,
+              shadowColor: Colors.black.withValues(alpha: .22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(36),
+                side: BorderSide(color: colors.divider),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final action in actions.take(
+                      box.maxWidth >= 280 ? 2 : 0,
+                    ))
+                      if (labels)
+                        TextButton.icon(
+                          onPressed: action.onSelected,
+                          icon: Icon(action.icon, size: 18),
+                          label: Text(action.label),
+                        )
+                      else
+                        IconButton(
+                          tooltip: action.label,
+                          onPressed: action.onSelected,
+                          icon: Icon(action.icon, size: 20),
+                        ),
+                    if (box.maxWidth >= 280)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: SizedBox(
+                          height: 24,
+                          child: VerticalDivider(
+                            width: 1,
+                            color: colors.divider,
+                          ),
+                        ),
+                      ),
+                    FloatingActionMenu(actions: actions),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       }
       return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Palette.ink,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Theme(
-            data: SalapiyaTheme.build(Brightness.dark),
-            child: compact
-                ? Row(
-                    children: [
-                      Expanded(
-                        child: TextButton.icon(
-                          key: const ValueKey('navigation-fallback'),
-                          onPressed: () async {
-                            final next = await chooseDestination(
-                              context,
-                              selected,
-                            );
-                            if (next != null) select(next);
-                          },
-                          icon: const Icon(Icons.menu),
-                          label: const Text('Navigation'),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              key: const ValueKey('floating-dock-surface'),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Palette.ink,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: CraftPreferences.effectsOf(context)
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: .18),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
-                      FloatingActionMenu(actions: actions),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      for (final destination in AppDestination.values)
-                        Expanded(
-                          child: _NavItem(
-                            key: ValueKey('nav-${destination.name}'),
-                            destination: destination,
-                            selected: selected == destination,
-                            compact: true,
-                            onPressed: () => select(destination),
+                      ]
+                    : null,
+              ),
+              child: Theme(
+                data: SalapiyaTheme.build(Brightness.dark),
+                child: compact
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: TextButton.icon(
+                              key: const ValueKey('navigation-fallback'),
+                              onPressed: () async {
+                                final next = await chooseDestination(
+                                  context,
+                                  selected,
+                                );
+                                if (next != null) select(next);
+                              },
+                              icon: const Icon(Icons.menu),
+                              label: const Text('Navigation'),
+                            ),
                           ),
-                        ),
-                      FloatingActionMenu(actions: actions),
-                    ],
-                  ),
+                          FloatingActionMenu(actions: actions),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          for (final destination in AppDestination.values)
+                            Expanded(
+                              child: _NavItem(
+                                key: ValueKey('nav-${destination.name}'),
+                                destination: destination,
+                                selected: selected == destination,
+                                compact: true,
+                                onPressed: () => select(destination),
+                              ),
+                            ),
+                          FloatingActionMenu(actions: actions),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
       );

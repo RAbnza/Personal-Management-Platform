@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/editorial.dart';
+import '../design_system/measured_layout.dart';
 import '../design_system/theme.dart';
 import '../prototype/activity.dart';
 import '../prototype/scenarios.dart';
@@ -22,16 +23,29 @@ Color categoryColor(String category) => switch (category) {
 };
 
 class ActivityView extends StatefulWidget {
-  const ActivityView({super.key, required this.session, this.full = false});
+  const ActivityView({
+    super.key,
+    required this.session,
+    this.full = false,
+    this.onViewAll,
+  });
   final PrototypeSession session;
   final bool full;
+  final VoidCallback? onViewAll;
   @override
   State<ActivityView> createState() => _ActivityViewState();
 }
 
 class _ActivityViewState extends State<ActivityView> {
   String filter = 'All';
-  bool all = false;
+  int page = 0;
+  static const pageSize = 6;
+  final pages = PageController();
+  @override
+  void dispose() {
+    pages.dispose();
+    super.dispose();
+  }
 
   Future<void> detail(DemoEntry entry) => showDialog<void>(
     context: context,
@@ -85,7 +99,80 @@ class _ActivityViewState extends State<ActivityView> {
               filter == 'All' || (filter == 'Money in' ? e.income : !e.income),
         )
         .toList();
-    final shown = all || widget.full ? records : records.take(4).toList();
+    final shown = records.take(4).toList();
+    final pageCount = (records.length / pageSize).ceil();
+    Widget entryRow(DemoEntry entry) => LayoutBuilder(
+      builder: (context, box) {
+        final narrow =
+            box.maxWidth < 420 ||
+            MediaQuery.textScalerOf(context).scale(14) > 21;
+        final amount = Text(
+          session.amount(entry.amount),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFeatures: const [FontFeature.tabularFigures()],
+            color: entry.income
+                ? CraftTheme.of(context).tone(NoticeTone.success).$1
+                : CraftTheme.of(context).text,
+          ),
+        );
+        return Column(
+          children: [
+            TextButton(
+              key: ValueKey('entry-${entry.title}'),
+              onPressed: () => detail(entry),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 4,
+                ),
+                foregroundColor: CraftTheme.of(context).text,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconTile(
+                    categoryIcon(entry.category),
+                    color: categoryColor(entry.category),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.title,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${entry.day} Oct · ${entry.account}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: CraftTheme.of(context).secondary,
+                          ),
+                        ),
+                        if (narrow)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: amount,
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (!narrow) ...[const SizedBox(width: 12), amount],
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right, size: 16),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: CraftTheme.of(context).divider),
+          ],
+        );
+      },
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -93,8 +180,8 @@ class _ActivityViewState extends State<ActivityView> {
           'The latest movements',
           trailing: !widget.full && session.complete && !session.empty
               ? TextButton(
-                  onPressed: () => setState(() => all = !all),
-                  child: Text(all ? 'Show less' : 'See all'),
+                  onPressed: widget.onViewAll,
+                  child: const Text('See all'),
                 )
               : null,
         ),
@@ -117,89 +204,63 @@ class _ActivityViewState extends State<ActivityView> {
                   label: Text(label),
                   showCheckmark: false,
                   selected: filter == label,
-                  onSelected: (_) => setState(() => filter = label),
+                  onSelected: (_) {
+                    if (pages.hasClients) pages.jumpToPage(0);
+                    setState(() {
+                      filter = label;
+                      page = 0;
+                    });
+                  },
                 ),
             ],
           ),
           const SizedBox(height: 12),
-          for (final entry in shown)
-            LayoutBuilder(
-              builder: (context, box) {
-                final narrow =
-                    box.maxWidth < 420 ||
-                    MediaQuery.textScalerOf(context).scale(14) > 21;
-                final amount = Text(
-                  session.amount(entry.amount),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    color: entry.income
-                        ? CraftTheme.of(context).tone(NoticeTone.success).$1
-                        : CraftTheme.of(context).text,
-                  ),
-                );
-                return Column(
-                  children: [
-                    TextButton(
-                      key: ValueKey('entry-${entry.title}'),
-                      onPressed: () => detail(entry),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                          horizontal: 4,
-                        ),
-                        foregroundColor: CraftTheme.of(context).text,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          IconTile(
-                            categoryIcon(entry.category),
-                            color: categoryColor(entry.category),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${entry.day} Oct · ${entry.account}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: CraftTheme.of(context).secondary,
-                                  ),
-                                ),
-                                if (narrow)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: amount,
-                                  ),
-                              ],
-                            ),
-                          ),
-                          if (!narrow) ...[const SizedBox(width: 12), amount],
-                          const SizedBox(width: 8),
-                          const Icon(Icons.chevron_right, size: 16),
-                        ],
-                      ),
-                    ),
-                    Divider(height: 1, color: CraftTheme.of(context).divider),
-                  ],
-                );
-              },
+          if (widget.full) ...[
+            MeasuredPageView(
+              key: ValueKey('activity-pages-$filter'),
+              controller: pages,
+              index: page,
+              itemCount: pageCount,
+              onPageChanged: (index) => setState(() => page = index),
+              itemBuilder: (context, index) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: records
+                    .skip(index * pageSize)
+                    .take(pageSize)
+                    .map(entryRow)
+                    .toList(),
+              ),
             ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              children: [
+                IconButton(
+                  tooltip: 'Previous activity page',
+                  onPressed: page > 0
+                      ? () => selectPage(context, pages, page - 1)
+                      : null,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Semantics(
+                  liveRegion: true,
+                  child: Text('Page ${page + 1} of $pageCount'),
+                ),
+                IconButton(
+                  tooltip: 'Next activity page',
+                  onPressed: page + 1 < pageCount
+                      ? () => selectPage(context, pages, page + 1)
+                      : null,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+          ] else
+            ...shown.map(entryRow),
           const SizedBox(height: 12),
           Text(
-            '${shown.length} of ${records.length} ${filter == 'All' ? 'movements' : '${filter.toLowerCase()} records'} · 15–21 Oct · synthetic, accepted history',
+            '${widget.full ? records.skip(page * pageSize).take(pageSize).length : shown.length} of ${records.length} ${filter == 'All' ? 'movements' : '${filter.toLowerCase()} records'} · 15–21 Oct · synthetic, accepted history',
             style: TextStyle(
               fontSize: 11,
               color: CraftTheme.of(context).secondary,

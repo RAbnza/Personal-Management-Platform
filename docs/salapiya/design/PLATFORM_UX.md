@@ -1,6 +1,6 @@
 # Adaptive navigation and interaction proposal
 
-**Current implementation:** [D2 reimagined](D2_REIMAGINED.md) replaces the earlier framing below. Windows uses an ink sidebar and compact command footer. Android uses a single dock with integrated quick actions and a wallet-first Overview with expandable spending detail. All five destinations remain reachable.
+**Current implementation:** [D2 reimagined](D2_REIMAGINED.md) replaces the earlier framing below. Windows uses an ink sidebar and a compact floating quick-action tray. Android uses a floating dock with integrated quick actions and a wallet-first Overview with expandable spending detail. All five destinations remain reachable.
 
 **Status:** D1R-R02 selects Android B floating navigation and R03 selects its
 modal + action menu. Windows retains collapsible rail/sidebar plus separate

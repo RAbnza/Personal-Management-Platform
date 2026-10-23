@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salapiya/app.dart';
+import 'package:salapiya/app/activity_view.dart';
+import 'package:salapiya/app/overview_wallet.dart';
 import 'package:salapiya/prototype/activity.dart';
 import 'package:salapiya/prototype/fixtures.dart';
 import 'package:salapiya/prototype/scenarios.dart';
@@ -8,6 +10,61 @@ import 'package:salapiya/prototype/scenarios.dart';
 import 'shell_journey.dart';
 
 void main() {
+  testWidgets(
+    'wallet swipe and bounded activity pages preserve the dashboard cap',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(412, 900);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const SalapiyaApp());
+      await tester.pumpAndSettle();
+      final wallet = find.descendant(
+        of: find.byType(AccountWallet),
+        matching: find.byType(PageView),
+      );
+      await tester.ensureVisible(wallet);
+      await tester.drag(wallet, const Offset(-330, 0));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Mobile'))
+            .selected,
+        isTrue,
+      );
+      final activity = find.byType(ActivityView);
+      expect(
+        find.descendant(
+          of: activity,
+          matching: find.byWidgetPredicate(
+            (w) => w is TextButton && w.key.toString().contains('entry-'),
+          ),
+        ),
+        findsNWidgets(4),
+      );
+      await tapVisible(tester, find.text('See all'));
+      expect(find.text('Money / Activity'), findsOneWidget);
+      expect(find.text('Page 1 of 2'), findsOneWidget);
+      final history = find.descendant(
+        of: find.byType(ActivityView),
+        matching: find.byType(PageView),
+      );
+      await tester.ensureVisible(history);
+      await tester.drag(history, const Offset(-330, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Page 2 of 2'), findsOneWidget);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('activity-filter-Money in')),
+      );
+      expect(find.text('Page 1 of 1'), findsOneWidget);
+      expect(find.text('Project payment'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('See all'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
   test('synthetic weekly activity reconciles to liquid balances exactly', () {
     expect(DemoActivity.incoming, BigInt.from(1800000));
     expect(DemoActivity.outgoing, BigInt.from(474600));

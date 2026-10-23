@@ -49,3 +49,16 @@ files are not new performance proof.
 No production finance, identity, persistence, synchronization, migrations or G0–G4
 gate closure is claimed. Manual visual approval and physical-device accessibility
 acceptance remain with the owner.
+
+## Floating controls and bounded previews
+
+Follow-up: `fix/salapiya-floating-docks`. The shell now overlays its controls in a
+viewport-anchored Stack. The Windows tray is compact and centered; Android keeps
+its dark capsule. Safe areas surround both, and measured dock height adds trailing
+padding inside each scroll view. Android hides the dock while the keyboard is open.
+
+Overview shows at most four recent movements, one wallet, one selected agenda
+item, two upcoming reminders, four category totals, one household and one Life
+summary. “See all” opens separate history with six records per page. Wallets and
+history support horizontal swipes plus explicit selection/paging controls; page
+heights follow content and text scaling. Amounts and source meaning are unchanged.
