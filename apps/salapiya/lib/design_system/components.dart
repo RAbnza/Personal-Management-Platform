@@ -148,7 +148,7 @@ class AmountText extends StatelessWidget {
         if (box.hasBoundedWidth) {
           // The parent first gives amounts a full-width row. Only then adapt the
           // display role, retaining OS scaling and the 14px minimum text role.
-          for (final size in [32.0, 26.0, 20.0, 16.0, 14.0]) {
+          for (final size in [44.0, 38.0, 32.0, 26.0, 20.0, 16.0, 14.0]) {
             style = base.copyWith(fontSize: size);
             final measure = TextPainter(
               text: TextSpan(text: value, style: style),

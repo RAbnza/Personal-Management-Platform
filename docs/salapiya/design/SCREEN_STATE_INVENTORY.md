@@ -1,6 +1,7 @@
 # Screen, state and synthetic scenario inventory
 
-**Status:** D0 planning coverage, not completed screens. Every listed financial
+**Status:** D0 full-scope inventory with D2 shell/Overview presentation proof.
+Rows beyond D2 remain planned, not completed workflows. Every listed financial
 capability remains launch scope. D3/D4 placement determines prototype order,
 not production release eligibility. Blueprint IDs refer to
 [§4 and §19](../../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md).
@@ -145,3 +146,26 @@ Dart/SQLite/server range: G3 must validate native storage and aggregate ranges.
 Store no real personal data in demo assets. A persistent banner and About notice
 state that in-memory actions reset on process close. Never show successful real
 backup/export/authentication toasts for simulated interactions.
+
+## Implemented D2 scenario mapping
+
+`PrototypeSession` contains only in-memory presentation state. The scenario clock
+remains 21 October 2026 even though implementation continued on October 23.
+
+| Scenario | Money Today / source meaning |
+| --- | --- |
+| Populated local-only | F-BASE local complete total; no failed-sync implication. Shared records are explicitly illustrative examples, not live membership. |
+| Connected current | F-BASE accepted snapshot at 09:00; recipient confirmation remains independently awaiting. |
+| Waiting | Complete cached accepted snapshot with last-sync time; no fabricated current synchronization. |
+| Pending effect | F-PENDING accepted 2930075, separate pending 18550 outflow, projected 2911525 centavos. |
+| Initial download | Accepted total unavailable, no zero substitution; financial detail withheld and Life remains accessible. |
+| Empty / first use | Complete empty local profile, zero liquid total and no accounts; distinguished from missing history. |
+| Review | Accepted snapshot retained; explicit group-source/private-effect review, no silent private overwrite. |
+
+Overview commitments follow F-SCHEDULE chronologically: Career interview 23 Oct,
+reading task 24 Oct, electricity 25 Oct, card-obligation preview 27 Oct (amount
+due deliberately unavailable, not inferred from liability), debt 28 Oct. The card
+preview date is a D2 synthetic presentation extension. Shared and settlement
+examples remain independent of the F-BASE liquid total and say so in detail.
+D2 does not implement the financial commands of J02-J10, nor real J01/J12 identity,
+restore or synchronization. Full scenario traceability remains required in D3/D4.

@@ -1,10 +1,10 @@
 # Prototype architecture, milestones and review gates
 
-**Status:** D1R refines the implemented D1 foundation after hands-on owner review.
-Luminous Lattice is primary with Woven Calm softness; Android B floating and the
-modal + menu are selected. See [D1R implementation](D1R_IMPLEMENTATION.md).
-D1–D5 are design milestones, separate from P0–P6 engineering. D2 requires owner
-visual approval and a new assignment; it has not started.
+**Status:** D1R was owner-approved on October 22, 2026 with the repeated top-line
+exception. D2-F0 removed it and passed Windows/Android verification before D2.
+D2 now implements the native shell and Overview; see [implementation and live
+review](D2_IMPLEMENTATION.md). D1-D5 remain separate from P0-P6 engineering.
+Stop for owner live approval before D3; no production gates are closed.
 
 ## Architecture for reusable presentation
 
@@ -47,8 +47,8 @@ record IDs; separate `SyncState`, `SettlementState`, `Coverage` and
 strings. A UI draft retains entered decimal text until validated. A chart gets
 exact labels separately from approximate plot coordinates.
 
-D1 can use local widget state for specimen toggles. D2 chooses one application
-state/routing approach after the bounded compatibility review; do not introduce
+D1 can use local widget state for specimen toggles. D2 uses SDK Navigator routes, IndexedStack/ScrollControllers and one
+PrototypeSession ChangeNotifier after its bounded needs review; do not introduce
 multiple frameworks. In D3 onward, screens call application interfaces once,
 so validated persistence/services can later replace mocks without rewriting the
 presentation. A synthetic preview is illustrative, not the production domain
@@ -185,8 +185,9 @@ refinement branch and stop for live visual review. No D2 shell or real services.
 
 ## D2 — Navigation and Overview proof
 
-**Prerequisites:** D1R rendered refinement accepted, navigation primitives accessible,
-bounded router/state selection recorded.
+**Prerequisites satisfied for this assignment:** owner D1R approval with D2-F0
+correction, both-platform correction evidence, and SDK-only routing/state choice.
+The implemented D2 result still awaits owner visual approval.
 
 **Scope / screens:** Windows expanded/collapsed rail and contextual dock; Android
 selected B floating shell; five destination landing placeholders; Overview with money,

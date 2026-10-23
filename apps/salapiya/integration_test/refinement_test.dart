@@ -15,7 +15,7 @@ void main() {
     tester,
   ) async {
     final settings = GallerySettings()..section = GallerySection.navigation;
-    await tester.pumpWidget(SalapiyaApp(settings: settings));
+    await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
     await tester.pumpAndSettle();
 
     Future<void> open() async {
@@ -98,7 +98,7 @@ void main() {
       settings.section = GallerySection.foundations;
     });
     await tester.pumpAndSettle();
-    expect(find.text('Luminous Lattice'), findsOneWidget);
+    expect(find.text('Daylight / editorial'), findsOneWidget);
     settings.change(() => settings.effects = false);
     await tester.pumpAndSettle();
     expect(find.text('Made with care.\nClear by design.'), findsOneWidget);

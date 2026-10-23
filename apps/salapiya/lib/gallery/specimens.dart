@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../design_system/components.dart';
+import '../design_system/editorial.dart';
 import '../design_system/craft.dart';
 import 'navigation_study.dart';
 import '../design_system/theme.dart';
@@ -73,8 +74,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
   Widget foundations() {
     final c = CraftTheme.of(context);
     return stack([
-      CraftPanel(
-        focal: true,
+      EditorialSurface(
         child: LayoutBuilder(
           builder: (context, box) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,8 +115,8 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
                 runSpacing: 8,
                 children: [
                   Chip(label: Text(c.dark ? 'Midnight Spectrum' : 'Porcelain')),
-                  const Chip(label: Text('Nunito Sans')),
-                  const Chip(label: Text('Luminous Lattice')),
+                  const Chip(label: Text('Geist')),
+                  const Chip(label: Text('Daylight / editorial')),
                 ],
               ),
             ],
@@ -134,9 +134,9 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
               children: [
                 for (final swatch in <(String, Color, Color)>[
                   ('Violet', c.primary, c.onPrimary),
-                  ('Warm craft', c.warmSurface, c.warm),
-                  ('Plum', c.plumSurface, c.plum),
-                  ('Blue', c.blueSurface, c.blue),
+                  ('Mint', Palette.mint, Palette.ink),
+                  ('Lilac', Palette.lilac, Palette.ink),
+                  ('Peach', Palette.peach, Palette.ink),
                 ])
                   Container(
                     width: 120,
@@ -158,7 +158,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
           ),
           panel(
             'Surfaces with purpose',
-            'Opaque reading surfaces. Expressive framing stays at the edge.',
+            'Open ledgers, quiet surfaces and color with a purpose.',
             stack([
               Container(
                 padding: const EdgeInsets.all(16),
@@ -224,7 +224,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
 
   Widget typography() => stack([
     const StatusNotice(
-      'Nunito Sans is the approved baseline. Geist and Source Sans 3 are comparison specimens only. All fonts are bundled offline.',
+      'Geist is the current editorial typeface. Nunito Sans and Source Sans 3 remain comparison specimens. All fonts are bundled offline.',
       tone: NoticeTone.information,
     ),
     for (final family in ['Nunito Sans', 'Geist', 'Source Sans 3'])
@@ -867,7 +867,7 @@ class _GallerySpecimensState extends State<GallerySpecimens> {
                   const SizedBox(height: 16),
                   SectionTitle(
                     lattice
-                        ? 'Luminous Lattice · selected'
+                        ? 'Luminous Lattice · historical motif'
                         : 'Woven Calm · historical motif',
                     caption: 'A little clarity, every day.',
                   ),

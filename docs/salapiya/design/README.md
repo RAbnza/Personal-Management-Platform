@@ -1,12 +1,16 @@
-# Salapiya native design — D1R owner decisions
+# Salapiya native design — D2 shell and Overview
 
-**Date:** October 21, 2026 (Asia/Manila).
+**Current:** [D2 reimagined](D2_REIMAGINED.md), a complete owner-authorized visual replacement of earlier D0-D2 selections. Implemented for review; not yet owner-approved. Historical decisions and evidence below remain available.
+
+**Updated:** October 23, 2026 (Asia/Manila).
 
 **Status:** D1R direction authorized by the owner's hands-on D1 review on
 October 21, 2026 (Asia/Manila). Owner approved D1R on October 22, 2026 except for the repeated decorative
 top line. D2-F0 is authorized first, followed by D2 shell/Overview; G0–G4 and G6 remain open.
 
-**Scope:** One synthetic Flutter design foundation and gallery, not the final app shell.
+**Scope:** Native application shell and interactive Overview, with the preserved
+Design Gallery. All data remains synthetic and memory-only. D2 awaits owner live
+visual approval before D3.
 
 **Luminous Lattice is primary. Woven Calm contributes softness. Android floating
 navigation B is selected. The “+” modal action menu is the intended interaction.**
@@ -14,11 +18,12 @@ Nunito Sans, Porcelain / Midnight Spectrum and the supplied branding remain.
 
 ## Read and review in this order
 
-Start with [D1R implementation and live review](D1R_IMPLEMENTATION.md).
+Start with [D2 implementation and live review](D2_IMPLEMENTATION.md).
+[D1R implementation](D1R_IMPLEMENTATION.md),
 [D1 implementation](D1_IMPLEMENTATION.md) and its [media](review/d1/README.md)
 remain historical evidence; live application review is now the default. The
 documents below remain authoritative; the October 22 D2 assignment authorizes
-the shell after the D2-F0 verification gate.
+the shell after the D2-F0 verification gate, now passed on both platforms.
 
 | Document                                                | Purpose                                                                                  |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -172,3 +177,7 @@ push verification so this document does not contain a self-referential commit ID
   native shell and interactive Overview, then stop for live approval before D3.
 
 Historical D1/D1R implementation records retain the prior styling as dated evidence.
+
+D2 implementation continues these decisions on October 23. Its shell geometry,
+Overview composition and fallback navigation await live owner approval. No D3
+work or production engineering gate is approved by automated checks.

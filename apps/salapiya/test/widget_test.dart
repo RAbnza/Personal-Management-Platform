@@ -14,7 +14,7 @@ void main() {
     'scrolled finance and expanded detail survive section revisit without storage collision',
     (tester) async {
       final settings = GallerySettings()..section = GallerySection.finance;
-      await tester.pumpWidget(SalapiyaApp(settings: settings));
+      await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.text('Inspect isolated expense allocation'),
@@ -33,7 +33,7 @@ void main() {
     tester,
   ) async {
     final settings = GallerySettings()..section = GallerySection.overlays;
-    await tester.pumpWidget(SalapiyaApp(settings: settings));
+    await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
     await tester.pumpAndSettle();
     final origin = Focus.of(tester.element(find.text('Open dialog')));
     origin.requestFocus();
@@ -66,6 +66,7 @@ void main() {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       SalapiyaApp(
+        gallery: true,
         settings: GallerySettings()..section = GallerySection.actions,
       ),
     );
@@ -136,7 +137,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         final settings = GallerySettings()..textScale = scale;
-        await tester.pumpWidget(SalapiyaApp(settings: settings));
+        await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
         for (final theme in [ThemeMode.light, ThemeMode.dark]) {
           for (final section in GallerySection.values) {
             settings.change(() {
@@ -160,7 +161,7 @@ void main() {
     tester,
   ) async {
     final settings = GallerySettings();
-    await tester.pumpWidget(SalapiyaApp(settings: settings));
+    await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
     await tester.tap(find.byTooltip('Viewing preferences'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Dark'));
@@ -183,7 +184,7 @@ void main() {
   });
   testWidgets('amount validation and dirty overlay recovery', (tester) async {
     final settings = GallerySettings()..section = GallerySection.actions;
-    await tester.pumpWidget(SalapiyaApp(settings: settings));
+    await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('demo-amount')), '0.001');
     await tester.ensureVisible(find.text('Validate example'));
@@ -218,8 +219,8 @@ void main() {
   testWidgets('native font amount remains one line at narrow 200% scale', (
     tester,
   ) async {
-    final loader = FontLoader('Nunito Sans')
-      ..addFont(rootBundle.load('assets/fonts/nunitosans/regular.ttf'));
+    final loader = FontLoader('Geist')
+      ..addFont(rootBundle.load('assets/fonts/geist/regular.ttf'));
     await loader.load();
     for (final value in ['₱29,300.75', '−₱185.50', '₱1,000,000,000.00']) {
       await tester.pumpWidget(

@@ -19,8 +19,8 @@ class FloatingQuickAction {
   final VoidCallback onSelected;
 }
 
-/// Place separately above the trailing edge of a navigation capsule. The caller
-/// reserves space for both controls; the menu owns only its transient modal route.
+/// The caller reserves space for the trigger in a dock or command bar.
+/// The menu owns only its transient modal route.
 class FloatingActionMenu extends StatefulWidget {
   const FloatingActionMenu({super.key, required this.actions});
   final List<FloatingQuickAction> actions;
@@ -85,7 +85,7 @@ ButtonStyle _triggerStyle(BuildContext context) {
     minimumSize: const Size(56, 56),
     backgroundColor: c.primary,
     foregroundColor: c.onPrimary,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    shape: const CircleBorder(),
   ).copyWith(
     side: WidgetStateProperty.resolveWith(
       (states) => states.contains(WidgetState.focused)

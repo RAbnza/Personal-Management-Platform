@@ -45,7 +45,7 @@ void main() {
     await tester.pumpWidget(
       RepaintBoundary(
         key: key,
-        child: SalapiyaApp(settings: settings),
+        child: SalapiyaApp(gallery: true, settings: settings),
       ),
     );
     for (final size in sizes) {

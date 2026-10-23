@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salapiya/app.dart';
 import 'package:salapiya/design_system/craft.dart';
+import 'package:salapiya/design_system/editorial.dart';
 import 'package:salapiya/design_system/floating_actions.dart';
 import 'package:salapiya/design_system/theme.dart';
 import 'package:salapiya/gallery/settings.dart';
@@ -66,12 +67,12 @@ Widget harness({
 
 void main() {
   testWidgets(
-    'lattice default, both themes and optional effects preserve content',
+    'editorial foundations, both themes and optional effects preserve content',
     (tester) async {
       final settings = GallerySettings();
-      await tester.pumpWidget(SalapiyaApp(settings: settings));
+      await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
       await tester.pumpAndSettle();
-      expect(find.text('Luminous Lattice'), findsOneWidget);
+      expect(find.text('Daylight / editorial'), findsOneWidget);
       expect(
         tester
             .widgetList<CraftMotif>(find.byType(CraftMotif))
@@ -84,11 +85,11 @@ void main() {
           settings.effects = false;
         });
         await tester.pumpAndSettle();
-        final frame = find.byType(LatticeFrame).first;
+        final frame = find.byType(EditorialSurface).first;
         final surface = tester.widget<Container>(
           find.descendant(of: frame, matching: find.byType(Container)).first,
         );
-        expect(surface.child, isA<Padding>());
+        expect(surface.padding, const EdgeInsets.all(24));
         expect(find.text('Made with care.\nClear by design.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
@@ -278,7 +279,7 @@ void main() {
     tester,
   ) async {
     final settings = GallerySettings()..section = GallerySection.navigation;
-    await tester.pumpWidget(SalapiyaApp(settings: settings));
+    await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Android A · historical comparison'));
     await tester.tap(find.text('Android A · historical comparison'));

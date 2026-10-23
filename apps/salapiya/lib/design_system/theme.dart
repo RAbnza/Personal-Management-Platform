@@ -8,9 +8,11 @@ abstract final class Space {
 }
 
 abstract final class Palette {
-  static const porcelain = Color(0xFFF7F8FC), midnight = Color(0xFF0D1020);
-  static const violet = Color(0xFF6B469C), lavender = Color(0xFFC8B6F2);
+  static const porcelain = Color(0xFFF4F3EF), midnight = Color(0xFF141517);
+  static const violet = Color(0xFF6546A3), lavender = Color(0xFFCABDFA);
   static const white = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF222126), lilac = Color(0xFFD9CEF8);
+  static const mint = Color(0xFFD9E8BC), peach = Color(0xFFF5D1BC);
 }
 
 enum NoticeTone { neutral, information, success, warning, error }
@@ -19,14 +21,14 @@ enum NoticeTone { neutral, information, success, warning, error }
 class CraftTheme extends ThemeExtension<CraftTheme> {
   const CraftTheme({required this.dark});
   final bool dark;
-  Color get surface => dark ? const Color(0xFF171B31) : Palette.white;
-  Color get raised => dark ? const Color(0xFF20253F) : Palette.white;
-  Color get subtle => dark ? const Color(0xFF202440) : const Color(0xFFEEF0F8);
-  Color get text => dark ? const Color(0xFFF3F5FF) : const Color(0xFF22252B);
+  Color get surface => dark ? const Color(0xFF202124) : Palette.white;
+  Color get raised => dark ? const Color(0xFF2A2B30) : Palette.white;
+  Color get subtle => dark ? const Color(0xFF2B2C30) : const Color(0xFFEAE9E4);
+  Color get text => dark ? const Color(0xFFF3F2F0) : Palette.ink;
   Color get secondary =>
-      dark ? const Color(0xFFB7C2DE) : const Color(0xFF5E6570);
+      dark ? const Color(0xFFBDBCC3) : const Color(0xFF65646B);
   Color get border => dark ? const Color(0xFF929CBA) : const Color(0xFF7A8197);
-  Color get divider => dark ? const Color(0xFF363D5B) : const Color(0xFFDCE0EC);
+  Color get divider => dark ? const Color(0xFF3B3C41) : const Color(0xFFDDDDD7);
   Color get primary => dark ? Palette.lavender : Palette.violet;
   Color get onPrimary => dark ? const Color(0xFF1B1B22) : Palette.white;
   Color get hover => dark ? const Color(0xFFBCA5EE) : const Color(0xFF5D3D88);
@@ -102,7 +104,7 @@ abstract final class SalapiyaTheme {
   static ThemeData build(Brightness brightness) {
     final c = CraftTheme(dark: brightness == Brightness.dark);
     TextStyle type(double size, FontWeight weight, double height) => TextStyle(
-      fontFamily: 'Nunito Sans',
+      fontFamily: 'Geist',
       fontSize: size,
       fontWeight: weight,
       height: height,
@@ -133,7 +135,7 @@ abstract final class SalapiyaTheme {
         EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
       shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       textStyle: WidgetStatePropertyAll(type(14, FontWeight.w700, 1.4)),
       foregroundColor: WidgetStateProperty.resolveWith(
@@ -165,13 +167,13 @@ abstract final class SalapiyaTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: c.dark ? Palette.midnight : Palette.porcelain,
-      fontFamily: 'Nunito Sans',
+      fontFamily: 'Geist',
       extensions: [c],
       textTheme: TextTheme(
-        displaySmall: type(32, FontWeight.w600, 1.2),
-        headlineMedium: type(26, FontWeight.w700, 1.25),
+        displaySmall: type(40, FontWeight.w500, 1.12),
+        headlineMedium: type(30, FontWeight.w500, 1.2),
         titleLarge: type(20, FontWeight.w600, 1.3),
-        titleMedium: type(16, FontWeight.w700, 1.4),
+        titleMedium: type(16, FontWeight.w600, 1.4),
         bodyLarge: type(16, FontWeight.w400, 1.5),
         bodyMedium: type(14, FontWeight.w400, 1.45),
         bodySmall: type(14, FontWeight.w400, 1.45),
@@ -232,10 +234,7 @@ abstract final class SalapiyaTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: c.text,
-        contentTextStyle: TextStyle(
-          color: c.surface,
-          fontFamily: 'Nunito Sans',
-        ),
+        contentTextStyle: TextStyle(color: c.surface, fontFamily: 'Geist'),
       ),
     );
   }

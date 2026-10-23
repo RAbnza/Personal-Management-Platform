@@ -5,15 +5,25 @@ import 'package:flutter/services.dart';
 import 'design_system/theme.dart';
 import 'gallery/gallery.dart';
 import 'gallery/settings.dart';
+import 'app/shell.dart';
+import 'prototype/scenarios.dart';
 
 class SalapiyaApp extends StatefulWidget {
-  const SalapiyaApp({super.key, this.settings});
+  const SalapiyaApp({
+    super.key,
+    this.settings,
+    this.gallery = false,
+    this.session,
+  });
   final GallerySettings? settings;
+  final bool gallery;
+  final PrototypeSession? session;
   @override
   State<SalapiyaApp> createState() => _SalapiyaAppState();
 }
 
 class _SalapiyaAppState extends State<SalapiyaApp> {
+  final navigator = GlobalKey<NavigatorState>();
   static bool licensesRegistered = false;
   late final GallerySettings settings = widget.settings ?? GallerySettings();
   @override
@@ -40,7 +50,8 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: settings,
     builder: (context, _) => MaterialApp(
-      title: 'Salapiya · Design gallery',
+      navigatorKey: navigator,
+      title: 'Salapiya · Demo',
       debugShowCheckedModeBanner: false,
       theme: SalapiyaTheme.build(Brightness.light),
       darkTheme: SalapiyaTheme.build(Brightness.dark),
@@ -84,12 +95,25 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
                   ),
                 ),
               ),
-              child: child!,
+              child: CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.escape): () =>
+                      navigator.currentState?.maybePop(),
+                  const SingleActivator(
+                    LogicalKeyboardKey.arrowLeft,
+                    alt: true,
+                  ): () =>
+                      navigator.currentState?.maybePop(),
+                },
+                child: child!,
+              ),
             ),
           ),
         );
       },
-      home: GalleryHome(settings: settings),
+      home: widget.gallery
+          ? GalleryHome(settings: settings)
+          : SalapiyaShell(settings: settings, session: widget.session),
     ),
   );
 }

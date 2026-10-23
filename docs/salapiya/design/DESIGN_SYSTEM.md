@@ -1,8 +1,10 @@
-# Native design system — D1R refinement
+# Native design system — D2 corrected framing
+
+**Current implementation (23 October 2026):** [Daylight editorial redesign](D2_REIMAGINED.md) supersedes the visual selections below. Geist, warm porcelain/graphite, ink balance surfaces, lilac navigation, mint wallets and open ledgers are implemented. Older Gallery motifs remain historical comparisons.
 
 **Status:** D1R-R01/R03 refine the P03 baseline in `lib/design_system/`.
 Luminous Lattice is primary; Woven Calm softness and Nunito Sans remain.
-The [current implementation record](D1R_IMPLEMENTATION.md) maps actual reusable components
+The [current implementation record](D2_IMPLEMENTATION.md) maps actual reusable components
 and records measured proof and limitations. D1R was owner-approved on October 22, 2026 except for the repeated top line,
 removed in D2-F0. Read the
 [creative alternatives](CREATIVE_DIRECTION.md) and [decision register](README.md).
@@ -231,3 +233,14 @@ and verify the final composition; a semantic primitive is not sufficient alone.
 
 G6 remains open after D1/D5 UI checks; representative physical-device and release
 acceptance require their own evidence.
+
+## D2 assembly contract
+
+The shell reuses `DestinationControl`, `LatticeFrame`, `FloatingActionMenu`,
+`CraftPanel`, `SectionTitle`, `StatusNotice`, `AmountText` and verified branding.
+The Overview uses one focal Money Today surface and opaque financial figures;
+attention/agenda/shared/Life form related reading regions rather than a KPI grid.
+Signature motifs occur intentionally in identity/focal previews. No new painter,
+palette, font, automatic top stroke, blur or idle decoration was introduced.
+Product privacy masks all exact amount strings including source previews;
+the separate gallery is explicitly outside that demo preference.

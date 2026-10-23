@@ -1,10 +1,14 @@
 # Adaptive navigation and interaction proposal
 
+**Current implementation:** [D2 reimagined](D2_REIMAGINED.md) replaces the earlier framing below. Windows uses an ink sidebar and compact command footer. Android uses a single dock with integrated quick actions and a wallet-first Overview with expandable spending detail. All five destinations remain reachable.
+
 **Status:** D1R-R02 selects Android B floating navigation and R03 selects its
 modal + action menu. Windows retains collapsible rail/sidebar plus separate
-contextual dock. Full-shell dimensions and behavior remain D2 proof.
-Layout uses available logical width, usable height, text scale and input mode,
-not a hardcoded “phone versus PC” test. See
+contextual dock. D2 implements these in the running native shell; final geometry
+and composition await owner live review. See [D2 evidence](D2_IMPLEMENTATION.md).
+Layout uses available logical width, usable height, text scale and input mode.
+A small platform adapter selects Windows rail/dock or Android capsule, while
+constraints govern each platform's accessible fallback. See
 [Flutter adaptive guidance](https://docs.flutter.dev/ui/adaptive-responsive/best-practices);
 Salapiya's required financial parity takes precedence over generic advice that
 allows removing features on smaller devices.
@@ -43,8 +47,7 @@ while resizing; close obsolete overlay geometry without losing content.
 
 Keep native window controls/title-bar behavior. Expanded sidebar contains the
 brand identity, five labeled destinations, and separated utilities at the foot.
-Collapsed state retains current selection and a labeled expand control. A small
-craft seam sits outside the destination hit regions. Rail resizing never animates
+Collapsed state retains current selection and a labeled expand control. Shared frames have no decorative top stroke or automatic corner ornament. Rail resizing never animates
 amount text or displaces a focused input during typing.
 
 Proposed shortcuts, shown in tooltips and Help:
@@ -243,3 +246,29 @@ before/current/proposed values for review without silently merging money.
 Prototype “Simulate save” results say “Demo entry recorded in this session.”
 “Saved on this device,” “Synced” and “Confirmed by recipient” may appear only
 inside visibly labeled scenario previews; they are not claims of real effects.
+
+## Implemented D2 adaptation (October 23, 2026)
+
+- Windows starts with a 240-unit sidebar at >=1200 width; a user collapse uses
+  the 80-unit rail. At 600-1199, Expand opens a labeled modal destination list.
+  Below 600, below 400 height, or above 150% text, the header Navigation utility
+  supplies the same five choices. Selection and per-tab scroll remain in memory.
+- Android uses the selected B capsule: five labeled cells where they fit, 3+2
+  at narrower widths. At >=150% text or below 500 height, an economical labeled
+  Navigation control opens all five full labels in a scrollable modal. This
+  fallback is proposed for owner review, not a reopened A/B decision.
+- The + remains separate from primary destinations. The existing D1R modal
+  owns scrim, focus, duplicate prevention and sheet fallback. Windows displays
+  three contextual commands plus + at roomy widths, or Create/+ when constrained.
+- Navigation/dock use normal-flow measured footer space and safe insets, leaving
+  12-24 units of content clearance. They look like floating surfaces but cannot
+  overlap the final scroll item. This is more robust than guessed fixed padding.
+- Task routes cover the shell. Their scrollable content resizes above a reported
+  keyboard inset. No global creation control can overlap a focused draft.
+- Primary tabs never push routes. SDK detail routes carry source breadcrumbs and
+  return to the invoking screen and scroll. A group preview can push its settlement
+  example; a Life agenda can push Career/Tasks. Global Escape/Alt+Left acts on the
+  top route. Dirty demo notes require Keep editing/Discard; receipt and financial
+  records are never mutated. Other proposed shortcuts remain unimplemented.
+- The profile utility owns scenario, theme, text-size, privacy, effects and motion
+  controls; First-run preview and Design Gallery are utilities, never destinations.

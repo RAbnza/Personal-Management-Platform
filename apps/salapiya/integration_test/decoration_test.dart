@@ -11,7 +11,7 @@ void main() {
     'all gallery surface consumers render without the shared stroke',
     (tester) async {
       final settings = GallerySettings();
-      await tester.pumpWidget(SalapiyaApp(settings: settings));
+      await tester.pumpWidget(SalapiyaApp(gallery: true, settings: settings));
       for (final theme in [ThemeMode.light, ThemeMode.dark]) {
         for (final effects in [true, false]) {
           for (final section in GallerySection.values) {
