@@ -5,6 +5,8 @@ import '../design_system/measured_layout.dart';
 import '../design_system/theme.dart';
 import '../prototype/activity.dart';
 import '../prototype/scenarios.dart';
+import 'demo_routes.dart';
+import '../features/finance/presentation/money_screen.dart';
 
 IconData categoryIcon(String category) => switch (category) {
   'Groceries' => Icons.shopping_basket_outlined,
@@ -82,6 +84,22 @@ class _ActivityViewState extends State<ActivityView> {
         ],
       ),
       actions: [
+        TextButton(
+          onPressed: () {
+            final record = widget.session.finance.records
+                .where((r) => r.title == entry.title)
+                .firstOrNull;
+            Navigator.pop(context);
+            if (record != null) {
+              openDemoPage<void>(
+                this.context,
+                TransactionDetail(session: widget.session, id: record.id),
+                'money/transaction/${record.id}',
+              );
+            }
+          },
+          child: const Text('Open financial record'),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),

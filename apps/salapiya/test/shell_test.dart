@@ -111,14 +111,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.offset, greaterThan(0));
       await tapVisible(tester, find.text('Demo household'));
-      await tapVisible(tester, find.text('View settlement example'));
-      expect(
-        find.text('Shared Expenses / Recipient confirmation'),
-        findsOneWidget,
-      );
+      await tapVisible(tester, find.text('Tala reported a payment'));
+      expect(find.text('Review payment confirmation'), findsWidgets);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('Shared Expenses / Demo household'), findsOneWidget);
+      expect(find.text('Demo household'), findsWidgets);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(controller.offset, greaterThan(0));

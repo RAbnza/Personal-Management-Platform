@@ -43,21 +43,12 @@ void main() {
         findsNWidgets(4),
       );
       await tapVisible(tester, find.text('See all'));
-      expect(find.text('Money / Activity'), findsOneWidget);
-      expect(find.text('Page 1 of 2'), findsOneWidget);
-      final history = find.descendant(
-        of: find.byType(ActivityView),
-        matching: find.byType(PageView),
-      );
-      await tester.ensureVisible(history);
-      await tester.drag(history, const Offset(-330, 0));
-      await tester.pumpAndSettle();
-      expect(find.text('Page 2 of 2'), findsOneWidget);
-      await tapVisible(
-        tester,
-        find.byKey(const ValueKey('activity-filter-Money in')),
-      );
-      expect(find.text('Page 1 of 1'), findsOneWidget);
+      expect(find.text('Your activity'), findsOneWidget);
+      expect(find.text('11 records · page 1 / 2'), findsOneWidget);
+      await tapVisible(tester, find.byTooltip('Next page'));
+      expect(find.text('11 records · page 2 / 2'), findsOneWidget);
+      await tapVisible(tester, find.widgetWithText(ChoiceChip, 'income'));
+      expect(find.text('1 records · page 1 / 1'), findsOneWidget);
       expect(find.text('Project payment'), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();

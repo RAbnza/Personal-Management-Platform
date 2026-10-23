@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salapiya/app.dart';
-import 'package:salapiya/app/previews.dart';
+import 'package:salapiya/features/finance/presentation/financial_editor.dart';
 import 'package:salapiya/app/shell.dart';
 import 'package:salapiya/gallery/settings.dart';
 import 'package:salapiya/prototype/scenarios.dart';
@@ -53,8 +53,8 @@ Future<void> shellJourney(WidgetTester tester) async {
     await tester.pumpAndSettle();
   }
   await tapVisible(tester, find.text('View accounts'));
-  expect(find.text('Money / Accounts'), findsOneWidget);
-  expect(find.text('Cash wallet'), findsOneWidget);
+  expect(find.text('Accounts'), findsWidgets);
+  expect(find.text('Cash wallet'), findsNWidgets(2));
   await tester.binding.handlePopRoute();
   await tester.pumpAndSettle();
   expect(find.text('Money Today'), findsOneWidget);
@@ -69,9 +69,9 @@ Future<void> shellJourney(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Add expense').last);
   await tester.pumpAndSettle();
-  expect(find.byType(DemoActionPage), findsOneWidget);
+  expect(find.byType(FinancialEditor), findsOneWidget);
   expect(find.byTooltip('Quick actions'), findsNothing);
-  final field = find.byKey(const ValueKey('demo-task-note'));
+  final field = find.byKey(const ValueKey('field-name'));
   if (kProfileMode) {
     final editable = find.descendant(
       of: field,
@@ -89,15 +89,15 @@ Future<void> shellJourney(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.binding.handlePopRoute();
   await tester.pumpAndSettle();
-  expect(find.text('Discard demo draft?'), findsOneWidget);
+  expect(find.text('Leave this demo draft?'), findsOneWidget);
   await tester.tap(find.text('Keep editing'));
   await tester.pumpAndSettle();
   expect(tester.widget<TextField>(field).controller!.text, 'Invented note');
   await tester.sendKeyEvent(LogicalKeyboardKey.escape);
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Discard demo draft'));
+  await tester.tap(find.text('Discard draft'));
   await tester.pumpAndSettle();
-  expect(find.byType(DemoActionPage), findsNothing);
+  expect(find.byType(FinancialEditor), findsNothing);
 
   for (final scenario in OverviewScenario.values) {
     session.select(scenario);

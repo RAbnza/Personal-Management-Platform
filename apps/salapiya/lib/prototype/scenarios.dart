@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'fixtures.dart';
+import '../features/finance/application/financial_controller.dart';
 
 enum AppDestination {
   overview('Overview'),
@@ -29,10 +30,22 @@ enum OverviewScenario {
 /// One memory-only scenario controller; no persistence or network adapters.
 /// Coverage, transport and receipt state stay separate from display scenarios.
 class PrototypeSession extends ChangeNotifier {
+  PrototypeSession() {
+    finance.addListener(notifyListeners);
+  }
+  final finance = FinancialController();
+  @override
+  void dispose() {
+    finance.removeListener(notifyListeners);
+    finance.dispose();
+    super.dispose();
+  }
+
   OverviewScenario scenario = OverviewScenario.local;
   bool hideAmounts = false;
 
-  bool get empty => scenario == OverviewScenario.empty;
+  bool get empty =>
+      scenario == OverviewScenario.empty && finance.accounts.isEmpty;
   bool get complete => scenario != OverviewScenario.incomplete;
   bool get local => scenario == OverviewScenario.local || empty;
   bool get pending => scenario == OverviewScenario.pending;
@@ -42,9 +55,8 @@ class PrototypeSession extends ChangeNotifier {
       ? null
       : empty
       ? BigInt.zero
-      : DemoMoney.liquid;
-  BigInt? get projected =>
-      pending ? DemoMoney.liquid - DemoMoney.expense : null;
+      : finance.liquid;
+  BigInt? get projected => pending ? finance.liquid - DemoMoney.expense : null;
   String get syncLabel => switch (scenario) {
     OverviewScenario.local || OverviewScenario.empty => 'Local only',
     OverviewScenario.current => 'Synced · 21 Oct, 09:00',
@@ -64,7 +76,11 @@ class PrototypeSession extends ChangeNotifier {
   String amount(BigInt value) =>
       hideAmounts ? 'Amount hidden' : DemoMoney.format(value);
   void select(OverviewScenario value) {
+    if (value == OverviewScenario.empty || scenario == OverviewScenario.empty) {
+      finance.reset(empty: value == OverviewScenario.empty);
+    }
     scenario = value;
+    finance.available = value != OverviewScenario.incomplete;
     notifyListeners();
   }
 
@@ -74,6 +90,7 @@ class PrototypeSession extends ChangeNotifier {
   }
 
   void reset() {
+    finance.reset();
     scenario = OverviewScenario.local;
     hideAmounts = false;
     notifyListeners();

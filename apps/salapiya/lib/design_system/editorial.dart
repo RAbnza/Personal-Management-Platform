@@ -14,13 +14,10 @@ class EditorialSurface extends StatelessWidget {
   final Color? color;
   final double padding;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.all(padding),
-    decoration: BoxDecoration(
-      color: color ?? CraftTheme.of(context).surface,
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: child,
+  Widget build(BuildContext context) => Material(
+    color: color ?? CraftTheme.of(context).surface,
+    borderRadius: BorderRadius.circular(24),
+    child: Padding(padding: EdgeInsets.all(padding), child: child),
   );
 }
 

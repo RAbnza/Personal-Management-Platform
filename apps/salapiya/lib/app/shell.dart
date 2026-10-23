@@ -10,6 +10,12 @@ import 'overview.dart';
 import 'previews.dart';
 import 'profile_utilities.dart';
 import 'shell_navigation.dart';
+import '../features/finance/contracts/financial_models.dart';
+import '../features/finance/presentation/financial_editor.dart';
+import '../features/finance/presentation/financial_widgets.dart';
+import '../features/finance/presentation/money_screen.dart';
+import '../features/finance/presentation/debts_screen.dart';
+import '../features/finance/presentation/shared_screen.dart';
 
 class SalapiyaShell extends StatefulWidget {
   const SalapiyaShell({super.key, required this.settings, this.session});
@@ -47,10 +53,39 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
     }
   }
 
-  void source(PreviewSource source) => open(
-    SourcePreviewPage(source: source, session: session),
-    '${source.destination.name}/${source.name}',
-  );
+  void source(PreviewSource source) => open(switch (source) {
+    PreviewSource.accounts ||
+    PreviewSource.activity ||
+    PreviewSource.cards => FinancePage(
+      title: source.label,
+      child: MoneyScreen(
+        session: session,
+        initial: source == PreviewSource.cards
+            ? 'Cards'
+            : source == PreviewSource.activity
+            ? 'Activity'
+            : 'Accounts',
+      ),
+    ),
+    PreviewSource.debt || PreviewSource.debtHistory => FinancePage(
+      title: 'Debts',
+      child: DebtsScreen(session: session),
+    ),
+    PreviewSource.group ||
+    PreviewSource.settlement ||
+    PreviewSource.privateReview => FinancePage(
+      title: source.label,
+      child: SharedScreen(
+        session: session,
+        initial: source == PreviewSource.settlement
+            ? 'Payments'
+            : source == PreviewSource.privateReview
+            ? 'Private review'
+            : 'Bills',
+      ),
+    ),
+    _ => SourcePreviewPage(source: source, session: session),
+  }, '${source.destination.name}/${source.name}');
   void utilities() => open(
     ProfileUtilities(settings: widget.settings, session: session),
     'profile',
@@ -89,12 +124,34 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
         FloatingQuickAction(
           label: definition.$1,
           icon: definition.$2,
-          onSelected: () => open(
-            DemoActionPage(label: definition.$1),
-            'action/${definition.$1}',
-          ),
+          onSelected: () =>
+              open(actionPage(definition.$1), 'action/${definition.$1}'),
         ),
     ];
+  }
+
+  Widget actionPage(String label) {
+    final action = switch (label) {
+      'Add expense' => FinancialAction.expense,
+      'Record income' => FinancialAction.income,
+      'Transfer money' => FinancialAction.transfer,
+      'Record payment' || 'Record debt payment' => FinancialAction.debtPayment,
+      'Add existing debt' => FinancialAction.debtImport,
+      'Record borrowing' => FinancialAction.borrowing,
+      'Add shared expense' => FinancialAction.sharedBill,
+      'Report payment' => FinancialAction.settlement,
+      _ => null,
+    };
+    if (action == null) return DemoActionPage(label: label);
+    if (!session.complete) {
+      return const DemoPage(
+        title: 'History unavailable',
+        child: Text(
+          'Complete the demo snapshot before recording financial actions. Your balances are not known yet.',
+        ),
+      );
+    }
+    return FinancialEditor(controller: session.finance, action: action);
   }
 
   @override
@@ -232,6 +289,12 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                               session: session,
                                               open: source,
                                             )
+                                          : destination == AppDestination.money
+                                          ? MoneyScreen(session: session)
+                                          : destination == AppDestination.debts
+                                          ? DebtsScreen(session: session)
+                                          : destination == AppDestination.shared
+                                          ? SharedScreen(session: session)
                                           : DestinationPreview(
                                               destination: destination,
                                               session: session,

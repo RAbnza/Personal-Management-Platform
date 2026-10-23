@@ -303,8 +303,15 @@ class _AccountWalletState extends State<AccountWallet> {
     final session = widget.session;
 
     final mobile = Theme.of(context).platform == TargetPlatform.android;
+    final wallets = session.finance.accounts.isEmpty
+        ? demoAccounts
+        : [
+            for (final a in session.finance.accounts)
+              (a.name, a.balance.toString()),
+          ];
+    final indexNow = selected.clamp(0, wallets.length - 1);
     Widget wallet(int index) {
-      final account = demoAccounts[index];
+      final account = wallets[index];
       return Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
@@ -388,13 +395,13 @@ class _AccountWalletState extends State<AccountWallet> {
           ),
         ),
         if (session.empty)
-          wallet(selected)
+          wallet(indexNow)
         else
           MeasuredPageView(
             key: const ValueKey('wallet-pages'),
             controller: pages,
-            index: selected,
-            itemCount: demoAccounts.length,
+            index: indexNow,
+            itemCount: wallets.length,
             itemBuilder: (context, index) => wallet(index),
             onPageChanged: (index) => setState(() => selected = index),
           ),
@@ -404,12 +411,16 @@ class _AccountWalletState extends State<AccountWallet> {
             child: Wrap(
               spacing: 4,
               children: [
-                for (var i = 0; i < demoAccounts.length; i++)
+                for (var i = 0; i < wallets.length; i++)
                   Tooltip(
-                    message: demoAccounts[i].$1,
+                    message: wallets[i].$1,
                     child: ChoiceChip(
-                      label: Text(['Cash', 'Bank', 'Mobile'][i]),
-                      selected: selected == i,
+                      label: Text(
+                        i < 3 && wallets[i].$1 == demoAccounts[i].$1
+                            ? ['Cash', 'Bank', 'Mobile'][i]
+                            : wallets[i].$1,
+                      ),
+                      selected: indexNow == i,
                       showCheckmark: false,
                       onSelected: (_) => selectPage(context, pages, i),
                     ),
