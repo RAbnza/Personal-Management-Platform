@@ -238,7 +238,14 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
     }
   }
 
-  String date = value('date').isEmpty ? civilToday() : civilDate(value('date'));
+  // Omitted economic dates must not turn into the recovery day's clock.
+  String date = value('date').isNotEmpty
+      ? civilDate(value('date'))
+      : cmd.kind == 'account'
+      ? civilDate(value('cutoff'))
+      : ['category', 'archive', 'reversal'].contains(cmd.kind)
+      ? civilToday()
+      : civilDate('');
   var kind = cmd.kind, change = 'create', actionId = cmd.id;
   String? previous, source;
   var number = 1;
@@ -497,48 +504,80 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
         title = value('name').isEmpty
             ? 'Refund · ${original.title}'
             : value('name');
-        final eligible = original.postings
-            .asMap()
-            .entries
-            .where(
-              (e) =>
-                  e.value.ledger == 'expense' &&
-                  e.value.date.compareTo(date) <= 0 &&
-                  (value('refundPosting').isEmpty
-                      ? e.value.category == value('refundCategory')
-                      : '${original.id}-p${e.key + 1}' ==
-                            value('refundPosting')),
-            )
-            .toList();
-        if (eligible.length != 1) {
-          reject('Choose one eligible original purchase or fee portion.');
+        final multiple = value('refundMultiple') == 'true';
+        final count = multiple ? int.tryParse(value('refundCount')) ?? 2 : 1;
+        if (count < 1 || count > 100) {
+          reject('Allocate 1–100 original purchase/fee portions.');
         }
-        final portion = eligible.single;
-        final postingId = '${original.id}-p${portion.key + 1}';
-        final category = portion.value.category!;
-        data['refundPosting'] = postingId;
-        data['refundCategory'] = category;
-        final refunded = sumMinor(
-          s.current
-              .where(
-                (r) =>
-                    r.kind == 'refund' &&
-                    r.source == original.id &&
-                    r.values['refundPosting'] == postingId &&
-                    r.id != replaced?.id,
-              )
-              .expand((r) => r.postings)
-              .where((p) => p.ledger == 'expense' && p.category == category)
-              .map((p) => -p.amount),
-        );
-        final available = portion.value.amount - refunded;
-        if (total > available) {
-          reject(
-            'Refund exceeds the remaining purchase/fee amount for this category (${phpDecimal(available)} PHP).',
+        final allocations = <Map<String, String>>[];
+        final selected = <String>{};
+        var allocated = BigInt.zero;
+        for (var i = 0; i < count; i++) {
+          final selection = value(
+            i == 0 ? 'refundPosting' : 'refund${i}Posting',
           );
+          final eligible = original.postings
+              .asMap()
+              .entries
+              .where(
+                (e) =>
+                    e.value.ledger == 'expense' &&
+                    e.value.date.compareTo(date) <= 0 &&
+                    (selection.isEmpty && !multiple
+                        ? e.value.category == value('refundCategory')
+                        : '${original.id}-p${e.key + 1}' == selection),
+              )
+              .toList();
+          if (eligible.length != 1) {
+            reject('Choose an eligible original purchase or fee portion.');
+          }
+          final portion = eligible.single, category = portion.value.category!;
+          final postingId = '${original.id}-p${portion.key + 1}';
+          if (!selected.add(postingId)) {
+            reject('Allocate each original purchase or fee portion once.');
+          }
+          final part = multiple
+              ? amount(i == 0 ? 'refundFirstAmount' : 'refund${i}Amount')
+              : total;
+          var refunded = BigInt.zero;
+          for (final r in s.current.where(
+            (r) =>
+                r.kind == 'refund' &&
+                r.source == original.id &&
+                r.id != replaced?.id,
+          )) {
+            if (r.values['refundAllocations'] case final String json) {
+              for (final raw in jsonDecode(json) as List) {
+                final a = raw as Map;
+                if (a['posting'] == postingId) {
+                  refunded += parseMinor(a['amount_minor'] as String);
+                }
+              }
+            } else if (r.values['refundPosting'] == postingId) {
+              refunded += r.amount;
+            }
+          }
+          final available = portion.value.amount - refunded;
+          if (part > available) {
+            reject(
+              'Refund exceeds the remaining original purchase/fee portion (${phpDecimal(available)} PHP).',
+            );
+          }
+          allocations.add({
+            'posting': postingId,
+            'category': category,
+            'amount_minor': '$part',
+          });
+          allocated += part;
+          classified('expense', category, -part, date);
         }
+        if (allocated != total) {
+          reject('Refund allocations must equal the exact total received.');
+        }
+        data['refundPosting'] = allocations.first['posting']!;
+        data['refundCategory'] = allocations.first['category']!;
+        data['refundAllocations'] = jsonEncode(allocations);
         cash(value('account'), total, date);
-        classified('expense', category, -total, date);
         effects.add(
           'Refund reduces the original category spending; it is not income.',
         );
@@ -547,7 +586,15 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
         if (date.compareTo(a.cutoff) < 0) {
           reject('A comparison cannot precede the opening cutoff.');
         }
-        final observed = amount('amount', zero: true, signed: true);
+        final BigInt observed;
+        try {
+          observed = signedPhp(value('amount'));
+          sqliteInteger(observed);
+        } catch (_) {
+          reject(
+            'Enter an exact signed PHP balance within the supported 64-bit minor-unit range.',
+          );
+        }
         final calculated = s.balance(a.id, through: date);
         total = observed - calculated;
         comparison = {
@@ -565,6 +612,21 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
           'As of $date: tracked ${phpDecimal(calculated)}, observed ${phpDecimal(observed)}, difference ${phpDecimal(total)} PHP. No money is posted.',
         );
       case 'adjustment':
+        if (replaced != null
+            ? replaced.source == null
+            : value('source').isEmpty) {
+          total = amount('amount', signed: true);
+          requiredText('reason');
+          cash(value('account'), total, date);
+          postings.add(LocalPosting('equity', -total, date));
+          title = 'Balance adjustment';
+          source = null;
+          data['mode'] = 'manual';
+          effects.add(
+            'Explicit adjustment ${phpDecimal(total)} PHP against equity. No income or spending.',
+          );
+          break;
+        }
         final original = s.revision(replaced?.source ?? value('source'));
         if (original.kind != 'reconcile' ||
             original.values['account'] != value('account')) {
@@ -698,9 +760,14 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
       '${opening?.id == p.account ? opening!.name : s.account(p.account!).name}: ${phpDecimal(p.amount)} PHP on ${p.date}.',
     );
   }
+  for (final p in postings.where((p) => p.category != null)) {
+    effects.add(
+      '${p.ledger == 'income' ? 'Recognized income' : 'Recognized spending'} · ${s.category(p.category!, p.ledger).name}: ${phpDecimal(p.ledger == 'income' ? -p.amount : p.amount)} PHP on ${p.date}.',
+    );
+  }
   if (change == 'replace') {
     effects.add(
-      'Revision $number replaces the current economic effect. All original evidence remains.',
+      'Revision $number replaces revision ${replaced!.number} (${phpDecimal(replaced.amount)} PHP). All original evidence remains.',
     );
   }
   if (change == 'reverse') {

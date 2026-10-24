@@ -11,6 +11,128 @@ void main() {
     f = await LocalFixture.open();
   });
   tearDown(() => f.close());
+  test('multi-portion refunds commit one cash receipt with exact independent source caps', () async {
+    final a = await f.account('Wallet');
+    final purchase = await f.post('expense', {
+      'name': 'Split receipt',
+      'account': a,
+      'amount': '100.00',
+      'category': 'category-food',
+      'split': 'true',
+      'splitAmount': '40.00',
+      'splitCategory': 'category-transport',
+    });
+    final v = {
+      'source': purchase,
+      'sourceVersion': '1',
+      'account': a,
+      'amount': '50.00',
+      'refundMultiple': 'true',
+      'refundCount': '2',
+      'refundPosting': '$purchase-p2',
+      'refundFirstAmount': '20.00',
+      'refund1Posting': '$purchase-p3',
+      'refund1Amount': '30.00',
+      'reason': 'Two returned portions',
+    };
+    await f.post('refund', v);
+    await expectLater(
+      f.store.commit(
+        await f.command('refund', {
+          ...v,
+          'amount': '30.01',
+          'refundFirstAmount': '20.00',
+          'refund1Amount': '10.01',
+          'refund1Posting': '$purchase-p2',
+        }),
+      ),
+      throwsA(isA<LocalRuleException>()),
+    );
+    await expectLater(
+      f.store.commit(
+        await f.command('refund', {
+          ...v,
+          'amount': '50.01',
+          'refundFirstAmount': '20.01',
+        }),
+      ),
+      throwsA(isA<LocalRuleException>()),
+    );
+    final c = LocalFinancialController(f.store, await f.store.snapshot());
+    expect(c.recognizedSpending, BigInt.from(5000));
+    expect(c.account(a).balance, BigInt.from(120000));
+    c.dispose();
+  });
+  test('100 exact category portions fit the bounded native command and SQLite schema', () async {
+    final a = await f.account('Wallet');
+    final id = await f.post('expense', {
+      'name': 'Hundred centavos',
+      'account': a,
+      'amount': '1.00',
+      'category': 'category-food',
+      'split': 'true',
+      'splitCount': '100',
+      'splitAmount': '0.01',
+      'splitCategory': 'category-food',
+      for (var i = 2; i < 100; i++) ...{
+        'split${i}Amount': '0.01',
+        'split${i}Category': 'category-food',
+      },
+    });
+    final r = (await f.store.snapshot()).revision(id);
+    expect(r.postings.where((p) => p.ledger == 'expense').length, 100);
+    expect(sumMinor(r.postings.map((p) => p.amount)), BigInt.zero);
+    await f.store.integrity();
+  });
+  test('reconciliation records full-range signed balances and lossless differences', () async {
+    final a = await f.account('Wallet');
+    final r = await f.post('reconcile', {
+      'account': a,
+      'amount': '-92233720368547758.08',
+    });
+    final snapshot = await f.store.snapshot();
+    expect(snapshot.revision(r).amount, BigInt.parse('-9223372036854900808'));
+    expect(snapshot.balance(a), BigInt.from(125000));
+    await expectLater(
+      f.store.commit(
+        await f.command('adjustment', {
+          'source': r,
+          'account': a,
+          'reason': 'Exceeds one component',
+        }),
+      ),
+      throwsA(anything),
+    );
+  });
+  test('standalone signed adjustment and its correction/reversal use equity and historical balance checks', () async {
+    final a = await f.account('Wallet');
+    final id = await f.post('adjustment', {
+      'account': a,
+      'amount': '-10.01',
+      'reason': 'Tracked cash difference',
+    });
+    final r = (await f.store.snapshot()).revision(id);
+    final correction = await f.post('correction', {
+      ...r.values,
+      'source': id,
+      'sourceVersion': '1',
+      'amount': '-10.02',
+      'reason': 'Correct evidence',
+    });
+    var c = LocalFinancialController(f.store, await f.store.snapshot());
+    expect(c.recognizedSpending, BigInt.zero);
+    expect(c.recognizedIncome, BigInt.zero);
+    expect(c.account(a).balance, BigInt.from(123998));
+    c.dispose();
+    await f.post('reversal', {
+      'source': correction,
+      'sourceVersion': '2',
+      'reason': 'Void adjustment',
+    });
+    c = LocalFinancialController(f.store, await f.store.snapshot());
+    expect(c.account(a).balance, BigInt.from(125000));
+    c.dispose();
+  });
   test('opening correction/reversal preserves account and cutoff, warns for negative history', () async {
     final a = await f.account('Opening wallet');
     final v = {
@@ -192,6 +314,7 @@ void main() {
     final a = await f.account('Cash');
     for (final change in [
       {'date': '2026-10-14'},
+      {'date': ''},
       {'date': '2026-02-30'},
       {'amount': '1.001'},
       {'amount': '1000000000.01'},

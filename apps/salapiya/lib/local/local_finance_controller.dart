@@ -132,7 +132,9 @@ class LocalFinancialController extends FinancialController {
     id: id,
     owner: store.owner,
     expectedVersion: expected,
-    kind: action == FinancialAction.reconcile && values['mode'] == 'adjustment'
+    kind:
+        action == FinancialAction.reconcile &&
+            ['adjustment', 'manual'].contains(values['mode'])
         ? 'adjustment'
         : action.name,
     values: Map.unmodifiable(values),
@@ -324,7 +326,13 @@ class LocalFinancialController extends FinancialController {
       );
     }
     // Stable date ordering, newest accepted sequence first for ties.
-    records.sort((a, b) => b.date.compareTo(a.date));
+    final sequence = {
+      for (final e in snapshot.revisions.asMap().entries) e.value.id: e.key,
+    };
+    records.sort((a, b) {
+      final date = b.date.compareTo(a.date);
+      return date != 0 ? date : sequence[b.id]!.compareTo(sequence[a.id]!);
+    });
   }
 
   bool isCurrent(String id) => snapshot.current.any((r) => r.id == id);

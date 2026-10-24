@@ -560,6 +560,18 @@ class AccountDetail extends StatelessWidget {
               a.name,
               'Opening cutoff ${a.cutoff} · ${a.archived ? 'Archived, history retained' : 'Active private account'}',
               actions: [
+                if (c.production)
+                  OutlinedButton(
+                    onPressed: a.archived
+                        ? null
+                        : () => openFinancialEditor(
+                            context,
+                            c,
+                            FinancialAction.reconcile,
+                            initial: {'account': a.id, 'mode': 'manual'},
+                          ),
+                    child: const Text('Record adjustment'),
+                  ),
                 for (final action in [
                   FinancialAction.expense,
                   FinancialAction.income,
@@ -689,6 +701,19 @@ class TransactionDetail extends StatelessWidget {
                     FinanceNotice(
                       session.hideAmounts ? 'Evidence amounts hidden.' : r.note,
                     ),
+                  if (c is LocalFinancialController)
+                    for (final field in [
+                      ('Merchant', 'merchant'),
+                      ('Received from', 'sender'),
+                      ('Income source', 'sourceLabel'),
+                      ('Income classification', 'incomeClass'),
+                    ])
+                      if ((c.snapshot.revision(r.id).values[field.$2] ?? '')
+                          .isNotEmpty)
+                        FinancialLine(
+                          field.$1,
+                          c.snapshot.revision(r.id).values[field.$2]!,
+                        ),
                 ],
               ),
               aside: Column(
@@ -850,6 +875,9 @@ class LocalDrafts extends StatelessWidget {
                             sourceId:
                                 operation.length > 1 && operation[1].isNotEmpty
                                 ? operation[1]
+                                : null,
+                            initial: operation.length > 2
+                                ? {'mode': operation[2]}
                                 : null,
                           ),
                   );

@@ -298,7 +298,7 @@ class AccountWallet extends StatefulWidget {
 }
 
 class _AccountWalletState extends State<AccountWallet> {
-  int selected = 1;
+  late int selected = widget.session.production ? 0 : 1;
   late final pages = PageController(
     initialPage: widget.session.production ? 0 : 1,
   );
@@ -450,7 +450,9 @@ class _AccountWalletState extends State<AccountWallet> {
                     message: wallets[i].$1,
                     child: ChoiceChip(
                       label: Text(
-                        i < 3 && wallets[i].$1 == demoAccounts[i].$1
+                        !session.production &&
+                                i < 3 &&
+                                wallets[i].$1 == demoAccounts[i].$1
                             ? ['Cash', 'Bank', 'Mobile'][i]
                             : wallets[i].$1,
                       ),

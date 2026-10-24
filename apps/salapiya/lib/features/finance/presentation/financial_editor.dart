@@ -57,7 +57,14 @@ class _FinancialEditorState extends State<FinancialEditor> {
   bool reviewing = false, busy = false, dirty = false, allowPop = false;
   FinancialController get c => widget.controller;
   FinancialAction get action => widget.action;
-  String get operation => '${action.name}:${widget.sourceId ?? ''}';
+  String get actionLabel =>
+      c.production &&
+          action == FinancialAction.reconcile &&
+          ['adjustment', 'manual'].contains(values['mode'])
+      ? 'Adjust account balance'
+      : action.label;
+  late final String operation =
+      '${action.name}:${widget.sourceId ?? ''}${c.production && action == FinancialAction.reconcile ? ':${values['mode'] ?? 'compare'}' : ''}';
   bool restoring = false, restored = false, draftUnavailable = false;
   String? draftError;
   int draftRevision = 0, savedDraftRevision = 0;
@@ -131,7 +138,10 @@ class _FinancialEditorState extends State<FinancialEditor> {
             () => TextEditingController(text: values[key] ?? ''),
           ),
           keyboardType: money
-              ? const TextInputType.numberWithOptions(decimal: true)
+              ? const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                )
               : TextInputType.text,
           decoration: InputDecoration(
             labelText: label,
@@ -148,6 +158,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
       );
   Widget select(String key, String label, Map<String, String> choices) =>
       Padding(
+        key: ValueKey('select-$key'),
         padding: const EdgeInsets.only(bottom: 18),
         child: DropdownButtonFormField<String>(
           key: ValueKey('$key-${values[key]}'),
@@ -660,18 +671,56 @@ class _FinancialEditorState extends State<FinancialEditor> {
     final purchase = source?.kind == 'refund' && source?.source != null
         ? local.snapshot.revision(source!.source!)
         : source;
-    Widget refundPortions() => select(
-      'refundPosting',
-      'Original purchase / fee portion',
-      {
-        for (final e
-            in (purchase?.postings ?? <LocalPosting>[]).asMap().entries.where(
-              (e) => e.value.ledger == 'expense',
-            ))
-          '${purchase!.id}-p${e.key + 1}':
-              '${local.categoryName(e.value.category)} · ${c.amount(e.value.amount)} · ${e.value.date}',
-      },
-    );
+    Widget refundPortions([
+      String key = 'refundPosting',
+    ]) => select(key, 'Original purchase / fee portion', {
+      for (final e
+          in (purchase?.postings ?? <LocalPosting>[]).asMap().entries.where(
+            (e) => e.value.ledger == 'expense',
+          ))
+        '${purchase!.id}-p${e.key + 1}':
+            '${local.categoryName(e.value.category)} · ${c.amount(e.value.amount)} · ${e.value.date}',
+    });
+    final refundCount = int.tryParse(values['refundCount'] ?? '') ?? 2;
+    List<Widget> refundAllocationFields() => [
+      refundPortions(),
+      if ((purchase?.postings.where((p) => p.ledger == 'expense').length ?? 0) >
+          1) ...[
+        toggle('refundMultiple', 'Allocate refund across original portions'),
+        if (values['refundMultiple'] == 'true') ...[
+          text('refundFirstAmount', 'First portion refund', money: true),
+          for (var i = 1; i < refundCount; i++) ...[
+            refundPortions('refund${i}Posting'),
+            text('refund${i}Amount', 'Portion ${i + 1} refund', money: true),
+          ],
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: refundCount < 100
+                    ? () => setState(() {
+                        values['refundCount'] = '${refundCount + 1}';
+                        dirty = true;
+                        retain();
+                      })
+                    : null,
+                icon: const Icon(Icons.add),
+                label: const Text('Add refund portion'),
+              ),
+              if (refundCount > 2)
+                TextButton(
+                  onPressed: () => setState(() {
+                    values['refundCount'] = '${refundCount - 1}';
+                    dirty = true;
+                    retain();
+                  }),
+                  child: const Text('Remove last portion'),
+                ),
+            ],
+          ),
+        ],
+      ],
+    ];
     final splitCount = int.tryParse(values['splitCount'] ?? '') ?? 2;
     final feeCount = int.tryParse(values['feeCount'] ?? '') ?? 1;
     void addFee() => setState(() {
@@ -710,7 +759,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
         amount('Refund amount'),
         account(label: 'Receiving account'),
         date(),
-        refundPortions(),
+        ...refundAllocationFields(),
         reason(),
         ...details,
         const FinanceNotice(
@@ -719,6 +768,18 @@ class _FinancialEditorState extends State<FinancialEditor> {
       ];
     }
     if (action == FinancialAction.reconcile) {
+      if (values['mode'] == 'manual') {
+        return [
+          account(),
+          amount('Signed balance adjustment'),
+          date(),
+          reason(),
+          ...details,
+          const FinanceNotice(
+            'Post a signed adjustment against equity. It is not income or spending. Use reconciliation first when comparing a statement or cash count.',
+          ),
+        ];
+      }
       return values['mode'] == 'adjustment'
           ? [
               account(),
@@ -788,8 +849,10 @@ class _FinancialEditorState extends State<FinancialEditor> {
               'other': 'Other',
             }),
             text('sender', 'Received from (optional)'),
+            text('sourceLabel', 'Income source (optional)'),
           ],
           if (kind == 'expense') ...[
+            text('merchant', 'Merchant (optional)'),
             toggle('split', 'Split across categories'),
             if (values['split'] == 'true') ...[
               text('splitAmount', 'First category amount', money: true),
@@ -883,7 +946,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
           amount('Corrected refund'),
           account(label: 'Receiving account'),
           date(),
-          refundPortions(),
+          ...refundAllocationFields(),
           reason(),
           ...details,
         ];
@@ -894,6 +957,17 @@ class _FinancialEditorState extends State<FinancialEditor> {
           reason(),
           const FinanceNotice(
             'The original account and coverage cutoff stay fixed. This corrects the baseline and preserves the full original evidence.',
+          ),
+        ];
+      case 'adjustment':
+        return [
+          account(),
+          if (source?.source == null) amount('Signed balance adjustment'),
+          date(),
+          reason(),
+          ...details,
+          const FinanceNotice(
+            'Adjustment corrections preserve equity classification and the original comparison link, when present.',
           ),
         ];
       default:
@@ -1012,7 +1086,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
       if (!didPop && !busy) back();
     },
     child: FinancePage(
-      title: action.label,
+      title: actionLabel,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1022,7 +1096,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
                 : reviewing
                 ? '02 REVIEW'
                 : '01 DETAILS'}',
-            action.label,
+            actionLabel,
             action.caption,
           ),
           FinanceColumns(
@@ -1101,7 +1175,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
                     if (result == null && reviewing) ...[
                       const SectionHeading('Your review'),
                       Text(
-                        '${values['date']} · ${action.label}',
+                        '${values['date']} · $actionLabel',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 16),

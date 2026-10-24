@@ -146,9 +146,9 @@ void main() {
               throwsA(anything),
             );
             const export = String.fromEnvironment('P1_EXPORT_PATH');
-              if (export.isNotEmpty) {
+            if (export.isNotEmpty) {
               await PortableRecovery.writeNewArchive(File(export), archive);
-              }
+            }
             final file = File('${sourceDir.path}/${store.owner}.sqlite');
             expect(
               utf8.decode(await file.readAsBytes(), allowMalformed: true),
@@ -157,9 +157,9 @@ void main() {
           } finally {
             await sourceProfiles.close();
             await OsProfileVault.storage.delete(key: sourceSlot);
-              if (await sourceDir.exists()) {
+            if (await sourceDir.exists()) {
               await sourceDir.delete(recursive: true);
-              }
+            }
           }
         }
         // Validate on a separately keyed native database and resume activation

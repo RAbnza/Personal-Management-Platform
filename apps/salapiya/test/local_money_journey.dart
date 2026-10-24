@@ -40,7 +40,6 @@ Future<void> localWait(WidgetTester tester, bool Function() ready) async {
 }
 
 Future<void> localTap(WidgetTester tester, Finder finder) async {
-  debugPrint('P1 UI: $finder');
   expect(finder, findsWidgets);
   await tester.ensureVisible(finder.first);
   await tester.pumpAndSettle();
@@ -134,6 +133,8 @@ Future<void> localMoneyJourney(
   await localTap(tester, find.byKey(const ValueKey('review-action')));
   expect(find.textContaining('at most two decimals'), findsOneWidget);
   await localEnter(tester, 'amount', '185.50');
+  await localTap(tester, find.text('Split across categories'));
+  await localEnter(tester, 'splitAmount', '150.00');
   // Navigation retains an encrypted unposted draft, then the same editor restores it.
   await localTap(tester, find.byType(BackButton));
   await localTap(tester, find.text('Save draft & leave'));
@@ -159,6 +160,9 @@ Future<void> localMoneyJourney(
   await localTap(tester, find.text('Transfer').first);
   await localEnter(tester, 'amount', '100.00');
   await localEnter(tester, 'fee', '10.00');
+  await localTap(tester, find.text('Add transfer fee'));
+  await localEnter(tester, 'fee', '9.99');
+  await localEnter(tester, 'extraFee1Amount', '0.01');
   await localEnter(tester, 'date', '2026-10-21');
   await localConfirm(tester);
   expect(runtime.session!.finance.account(cash).balance, BigInt.from(105451));
@@ -176,6 +180,11 @@ Future<void> localMoneyJourney(
   await localTap(tester, find.byKey(ValueKey('evidence-$correctedId')));
   await localTap(tester, find.text('Record refund'));
   await localEnter(tester, 'amount', '5.00');
+  await localTap(tester, find.text('Allocate refund across original portions'));
+  await localEnter(tester, 'refundFirstAmount', '3.00');
+  await localEnter(tester, 'refund1Amount', '2.00');
+  await localTap(tester, find.byKey(const ValueKey('select-refund1Posting')));
+  await localTap(tester, find.textContaining('Transport ·').last);
   await localEnter(tester, 'date', '2026-10-21');
   await localEnter(tester, 'reason', 'Partial returned purchase');
   await localConfirm(tester);
@@ -199,6 +208,20 @@ Future<void> localMoneyJourney(
   await localTap(tester, find.text('Reconciliation · Cash wallet'));
   await localTap(tester, find.text('Review explicit adjustment'));
   await localEnter(tester, 'reason', 'Counted wallet');
+  await localConfirm(tester);
+  await localTap(tester, find.byType(BackButton));
+  expect(runtime.session!.finance.account(cash).balance, BigInt.from(105000));
+  await localTap(tester, find.text('Record adjustment'));
+  await localEnter(tester, 'amount', '-0.01');
+  await localEnter(tester, 'date', '2026-10-21');
+  await localEnter(tester, 'reason', 'One cent cash evidence');
+  await localConfirm(tester);
+  final manual = runtime.session!.localFinance.snapshot.current.firstWhere(
+    (r) => r.kind == 'adjustment' && r.values['mode'] == 'manual',
+  );
+  await localTap(tester, find.byKey(ValueKey('record-${manual.id}')));
+  await localTap(tester, find.text('Reverse transaction'));
+  await localEnter(tester, 'reason', 'Void adjustment evidence');
   await localConfirm(tester);
   await localTap(tester, find.byType(BackButton));
   expect(runtime.session!.finance.account(cash).balance, BigInt.from(105000));
