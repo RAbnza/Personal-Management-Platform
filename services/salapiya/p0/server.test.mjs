@@ -13,6 +13,7 @@ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth;
   GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated,anon;`);
 await db.exec(await readFile(new URL('001_proof.sql', import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('002_enrollment.sql', import.meta.url),'utf8'));
 await db.query('INSERT INTO p0_profile(id,owner_id) VALUES($1,$2),($3,$4)',[randomUUID(),ownerA,randomUUID(),ownerB]);
 const asOwner = async (owner, fn) => db.transaction(async tx => {
   await tx.exec('SET LOCAL ROLE authenticated');
@@ -63,5 +64,34 @@ test('two device IDs produce two accepted effects with exact decimal transport',
   assert.ok(results.every(r=>r.outcome==='accepted'));
   assert.equal((await db.query('SELECT sum(amount_minor::bigint)::text AS total FROM p0_accepted WHERE owner_id=$1',[ownerB])).rows[0].total,'200000000000');
   // PGlite serializes these transactions; this is not a multi-session race proof.
+});
+test('enrollment stages privately, publishes one graph, retries and retrieves by trusted owner', async () => {
+  const owner=randomUUID(), profile=randomUUID(), enrollment=randomUUID(), action=randomUUID();
+  const snapshot=JSON.stringify([{id:action,amount_minor:'500050'}]);
+  const stage=()=>asOwner(owner,tx=>tx.query('SELECT p0_stage_enrollment($1,$2,$3) AS result',[enrollment,profile,snapshot]));
+  assert.equal((await stage()).rows[0].result.outcome,'staged');
+  assert.equal((await asOwner(owner,tx=>tx.query('SELECT * FROM p0_profile'))).rows.length,0);
+  assert.equal((await stage()).rows[0].result.outcome,'staged');
+  await assert.rejects(asOwner(owner,tx=>tx.query('SELECT p0_stage_enrollment($1,$2,$3)',[enrollment,profile,'[]'])),/payload mismatch/);
+  const publish=()=>asOwner(owner,tx=>tx.query('SELECT p0_publish_enrollment($1) AS result',[enrollment]));
+  const first=await publish();assert.equal(first.rows[0].result.outcome,'published');
+  assert.deepEqual((await publish()).rows,first.rows);
+  assert.equal((await asOwner(owner,tx=>tx.query('SELECT id FROM p0_profile'))).rows[0].id,profile);
+  assert.equal((await asOwner(owner,tx=>tx.query('SELECT id FROM p0_accepted'))).rows[0].id,action);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM salapiya_p0.evidence WHERE action_id=$1',[action])).rows[0].n,2);
+  assert.equal((await asOwner(owner,tx=>tx.query('SELECT p0_stage_enrollment($1,$2,$3) AS result',[randomUUID(),randomUUID(),'[]']))).rows[0].result.outcome,'collision');
+  await assert.rejects(asOwner(ownerB,tx=>tx.query('SELECT p0_publish_enrollment($1)',[enrollment])),/not found/);
+});
+test('two staged claims publish once; failed publication exposes no partial graph', async () => {
+  const owner=randomUUID(), enrollments=[randomUUID(),randomUUID()];
+  for(const id of enrollments) await asOwner(owner,tx=>tx.query('SELECT p0_stage_enrollment($1,$2,$3)',[id,randomUUID(),'[]']));
+  const claims=await Promise.all(enrollments.map(id=>asOwner(owner,tx=>tx.query('SELECT p0_publish_enrollment($1) AS result',[id]))));
+  assert.deepEqual(claims.map(r=>r.rows[0].result.outcome),['published','collision']);
+  const failedOwner=randomUUID(), enrollment=randomUUID();
+  const existing=(await db.query('SELECT id FROM p0_accepted LIMIT 1')).rows[0].id;
+  await asOwner(failedOwner,tx=>tx.query('SELECT p0_stage_enrollment($1,$2,$3)',[enrollment,randomUUID(),JSON.stringify([{id:randomUUID(),amount_minor:'1'},{id:existing,amount_minor:'1'}])]));
+  await assert.rejects(asOwner(failedOwner,tx=>tx.query('SELECT p0_publish_enrollment($1)',[enrollment])),/graph rejected/);
+  assert.equal((await asOwner(failedOwner,tx=>tx.query('SELECT * FROM p0_profile'))).rows.length,0);
+  assert.equal((await asOwner(failedOwner,tx=>tx.query('SELECT * FROM p0_accepted'))).rows.length,0);
 });
 test.after(async()=>db.close());

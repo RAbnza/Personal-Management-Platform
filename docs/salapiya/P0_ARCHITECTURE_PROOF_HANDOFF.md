@@ -78,3 +78,31 @@ queue progress, pending/accepted matching and owner-scoped local queries.
 No service connection, CDC checkpoint or actual second-device replication has
 been claimed. `sync-streams.yaml` filters by authenticated JWT owner independently
 of RLS; hosted syntax/negative-scope verification remains mandatory.
+
+## Phase D checkpoint
+
+Seven SQL tests now pass, adding private staged enrollment, immutable retry
+identity, publication of one complete synthetic expense graph, retained source
+IDs, collision outcomes, second-device owner-scoped retrieval and full rollback
+when a staged graph cannot publish. Two competing claims are serialized by the
+test runtime; true independent-session races remain outstanding.
+
+Two Windows host identity tests pass: unauthenticated local creation, one local
+profile guard, transactional write freeze, durable staged snapshot across reopen,
+wrong-account interruption denial and cancel preserving local records. The proof
+does **not** activate a real connected profile or merge financial datasets.
+Production graph enrollment (openings, debt/card relations, attachments and full
+download activation) remains blocked by the bounded schema / hosted prerequisites.
+
+Secure Supabase session and PKCE-verifier adapters use OS secure storage instead
+of default preferences. Callback filtering is restricted to
+`dev.salapiya.p0://auth/callback`. Android declares this development callback;
+Windows forwards app links to an existing instance. No protocol registration,
+Google account or provider configuration is invented. OAuth URL generation and
+native callback delivery are distinct from real provider authentication.
+
+Initial native Windows builds succeeded; the compatibility test first exposed
+failed-open cleanup propagation, then missing PKCE async storage. Both were fixed
+in the probe. Android's first build failed because Kotlin incremental caches
+cannot relativize Pub sources on C: against the repository on E:. The project
+now disables Kotlin incremental compilation, without relocating the toolchain.

@@ -56,6 +56,14 @@ class LocalLedger {
       'version': 1,
     });
     await db.writeTransaction((tx) async {
+      final guard = await tx.getAll(
+        "SELECT name FROM sqlite_master WHERE name='proof_enrollment_state'",
+      );
+      if (guard.isNotEmpty &&
+          (await tx.get('SELECT phase FROM proof_enrollment_state'))['phase'] !=
+              'local') {
+        throw StateError('Enrollment freezes the bounded local graph');
+      }
       final prior = await tx.getAll(
         'SELECT payload FROM proof_intent WHERE id=?',
         [id],

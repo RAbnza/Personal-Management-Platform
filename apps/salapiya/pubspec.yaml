@@ -19,6 +19,7 @@ dependencies:
   cryptography: 2.9.0
   path_provider: 2.1.5
   path: 1.9.1
+  app_links: 7.2.2
 
 hooks:
   user_defines:
