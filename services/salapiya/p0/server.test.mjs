@@ -12,8 +12,8 @@ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth;
   $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
   GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated,anon;`);
-await db.exec(await readFile(new URL('001_proof.sql', import.meta.url),'utf8'));
-await db.exec(await readFile(new URL('002_enrollment.sql', import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('supabase/migrations/20261024000100_p0_financial_proof.sql', import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('supabase/migrations/20261024000200_p0_enrollment_proof.sql', import.meta.url),'utf8'));
 await db.query('INSERT INTO p0_profile(id,owner_id) VALUES($1,$2),($3,$4)',[randomUUID(),ownerA,randomUUID(),ownerB]);
 const asOwner = async (owner, fn) => db.transaction(async tx => {
   await tx.exec('SET LOCAL ROLE authenticated');
