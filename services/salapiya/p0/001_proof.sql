@@ -43,9 +43,10 @@ CREATE FUNCTION public.p0_submit_expense(command_id uuid, command_payload text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE
   actor uuid := auth.uid(); data jsonb; prior salapiya_p0.receipt;
-  current_revision bigint; amount bigint; outcome jsonb; reason text;
+  current_revision bigint; amount bigint; outcome jsonb; reason text; normalized text;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'authentication required' USING ERRCODE='42501'; END IF;
+  IF command_id IS NULL OR command_payload IS NULL THEN RAISE EXCEPTION 'missing command' USING ERRCODE='22023'; END IF;
   IF octet_length(command_payload) > 4096 THEN RAISE EXCEPTION 'payload too large' USING ERRCODE='22023'; END IF;
   data := command_payload::jsonb;
   -- Lock receipt identity before lookup. Same-owner actions serialize below too.
@@ -78,7 +79,9 @@ BEGIN
   END IF;
   IF reason IS NULL THEN
     current_revision := current_revision + 1;
-    INSERT INTO public.p0_accepted VALUES(command_id,actor,command_payload,amount::text,current_revision);
+    normalized := '{"amount_minor":' || to_json(amount::text)::text || ',"expected_revision":' ||
+      (data->>'expected_revision') || ',"kind":"expense","owner_id":' || to_json(actor::text)::text || ',"version":1}';
+    INSERT INTO public.p0_accepted VALUES(command_id,actor,normalized,amount::text,current_revision);
     INSERT INTO salapiya_p0.evidence(action_id,owner_id,kind,amount_minor)
       VALUES(command_id,actor,'expense',amount),(command_id,actor,'cash',-amount);
     UPDATE public.p0_profile SET revision=current_revision WHERE owner_id=actor;

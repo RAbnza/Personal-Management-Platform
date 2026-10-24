@@ -15,8 +15,9 @@ class LocalLedger {
     );
     final rows = await tx.getAll('SELECT version FROM proof_version');
     if (rows.isNotEmpty) {
-      if (rows.single['version'] != 1)
+      if (rows.single['version'] != 1) {
         throw StateError('Unsupported schema; preserve database');
+      }
       return;
     }
     await tx.execute('''CREATE TABLE proof_intent(
@@ -69,8 +70,9 @@ class LocalLedger {
         [id],
       );
       if (prior.isNotEmpty) {
-        if (prior.single['payload'] != payload)
+        if (prior.single['payload'] != payload) {
           throw StateError('Command ID payload mismatch');
+        }
         return;
       }
       await tx.execute(
@@ -90,11 +92,12 @@ class LocalLedger {
         'cash',
         -minor,
       ]);
-      if (connected)
+      if (connected) {
         await tx.execute(
           'INSERT INTO command_transport(id,payload) VALUES(?,?)',
           [id, payload],
         );
+      }
     });
   }
 

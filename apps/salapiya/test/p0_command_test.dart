@@ -19,13 +19,14 @@ void main() {
       credentials: () async => null,
       submit: (id, payload) async {
         final receipt = receipts.putIfAbsent(id, () {
-          if (id == 'reject')
+          if (id == 'reject') {
             return {
               'id': id,
               'owner_id': 'a',
               'outcome': 'rejected',
               'reason': 'stale_revision',
             };
+          }
           effects++;
           return {'id': id, 'owner_id': 'a', 'outcome': 'accepted'};
         });

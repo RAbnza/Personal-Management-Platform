@@ -36,8 +36,9 @@ int sqliteInteger(BigInt amount) {
 }
 
 List<BigInt> allocateEvenly(BigInt amount, int count) {
-  if (count <= 0 || count > 100)
+  if (count <= 0 || count > 100) {
     throw RangeError('Invalid proof participant count');
+  }
   final divisor = BigInt.from(count);
   final base = amount ~/ divisor;
   final remainder = amount.remainder(divisor);

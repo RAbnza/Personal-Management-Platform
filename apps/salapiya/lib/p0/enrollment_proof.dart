@@ -27,8 +27,9 @@ class EnrollmentProof {
       [localId],
     );
     final state = await tx.get('SELECT * FROM proof_enrollment_state');
-    if (state['version'] != 1 || state['local_id'] != localId)
+    if (state['version'] != 1 || state['local_id'] != localId) {
       throw StateError('One local profile per proof database');
+    }
   });
 
   Future<String> stage(String enrollmentId, String authenticatedOwner) =>
@@ -45,8 +46,9 @@ class EnrollmentProof {
           'SELECT id,CAST(amount_minor AS TEXT) AS amount_minor FROM proof_intent WHERE owner_id=? AND state=? ORDER BY id',
           [state['local_id'], 'local'],
         );
-        if (rows.length > 100)
+        if (rows.length > 100) {
           throw StateError('Proof graph exceeds bounded enrollment');
+        }
         final snapshot = jsonEncode(
           rows
               .map(

@@ -20,8 +20,9 @@ void main() {
       try {
         final deadline = DateTime.now().add(const Duration(seconds: 60));
         while (!await File('$path.ready').exists()) {
-          if (DateTime.now().isAfter(deadline))
+          if (DateTime.now().isAfter(deadline)) {
             fail('Worker readiness timeout: ${String.fromCharCodes(errors)}');
+          }
           await Future<void>.delayed(const Duration(milliseconds: 100));
         }
         // On Windows runInShell starts cmd, so terminate the process tree.

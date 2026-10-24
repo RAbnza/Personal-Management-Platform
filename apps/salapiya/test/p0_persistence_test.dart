@@ -21,6 +21,19 @@ void main() {
           isEmpty,
         );
         await ledger.migrate();
+        await db.execute(
+          'CREATE TABLE proof_integer(value INTEGER NOT NULL) STRICT',
+        );
+        await db.execute('INSERT INTO proof_integer VALUES(?),(?)', [
+          9223372036854775807,
+          -9223372036854775808,
+        ]);
+        expect(
+          (await db.getAll(
+            'SELECT CAST(value AS TEXT) AS value FROM proof_integer',
+          )).map((r) => r['value']).toList(),
+          ['9223372036854775807', '-9223372036854775808'],
+        );
         await expectLater(
           ledger.expense(
             id: 'rollback',

@@ -106,3 +106,29 @@ failed-open cleanup propagation, then missing PKCE async storage. Both were fixe
 in the probe. Android's first build failed because Kotlin incremental caches
 cannot relativize Pub sources on C: against the repository on E:. The project
 now disables Kotlin incremental compilation, without relocating the toolchain.
+
+## Phase E checkpoint
+
+The synthetic logical archive uses cryptography's AES-256-GCM with a fresh nonce,
+authenticated format header, encrypted manifest/counts, exact string amounts and
+SHA-256 file checksums. A library-generated random 256-bit recovery secret is
+independent of the device/database key. This is a high-entropy recovery key, not a
+short PIN or a human password; no custom cipher or password KDF is implemented.
+Private proof files also use independently keyed AES-GCM before disk writes.
+
+One Windows host recovery test passes: fresh database key, wrong secret,
+header/ciphertext/tag tampering, truncation, paired-evidence completeness, owner
+mismatch, token-field exclusion, path rejection, interrupted export and restore,
+and no overwrite of populated staging data. Pending/accepted commands retain
+original IDs but restore into review with **no upload queue entries**. This
+prevents blind replay; reconnect-and-review release is deliberately unimplemented.
+Recovered file bytes are returned in memory for staged activation, not silently
+written as plaintext. Real file-store activation/atomic profile switching and a
+complete accepted cloud snapshot are still required before production recovery.
+
+Bounds: 100 synthetic expenses, 10 files, 1 MiB per file, 4 MiB plaintext archive.
+The source explicitly supplies every proof file. This is not yet a backup of all
+approved financial modules, production attachments or group history. A surviving
+archive and its separately retained secret are both necessary; neither Google
+recovery nor OS credential storage can recover a lost portable secret. Archives
+contain no reusable sessions, original device key or authority to join a group.

@@ -9,6 +9,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE actor uuid:=auth.uid(); prior salapiya_p0.enrollment; item jsonb; seen uuid[]:='{}';
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'authentication required' USING ERRCODE='42501'; END IF;
+  IF enrollment_id IS NULL OR profile_id IS NULL OR snapshot IS NULL THEN RAISE EXCEPTION 'missing enrollment'; END IF;
   IF jsonb_typeof(snapshot) IS DISTINCT FROM 'array' OR octet_length(snapshot::text)>65536 THEN
     RAISE EXCEPTION 'invalid snapshot'; END IF;
   IF jsonb_array_length(snapshot)>100 THEN RAISE EXCEPTION 'snapshot too large'; END IF;

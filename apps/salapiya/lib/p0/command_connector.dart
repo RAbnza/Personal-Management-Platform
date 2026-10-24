@@ -27,8 +27,9 @@ class ProofConnector extends PowerSyncBackendConnector {
     credentials: () async {
       var session = client.auth.currentSession;
       if (session == null || session.user.id != owner) return null;
-      if (session.isExpired)
+      if (session.isExpired) {
         session = (await client.auth.refreshSession()).session;
+      }
       if (session == null || session.user.id != owner) return null;
       return PowerSyncCredentials(
         endpoint: endpoint,
@@ -37,8 +38,9 @@ class ProofConnector extends PowerSyncBackendConnector {
       );
     },
     submit: (id, payload) async {
-      if (client.auth.currentUser?.id != owner)
+      if (client.auth.currentUser?.id != owner) {
         throw StateError('Reauthentication required');
+      }
       try {
         final value = await client.rpc(
           'p0_submit_expense',
@@ -70,8 +72,9 @@ class ProofConnector extends PowerSyncBackendConnector {
       }
       final payload = entry.opData?['payload'] as String;
       final data = jsonDecode(payload) as Map<String, dynamic>;
-      if (data['owner_id'] != owner)
+      if (data['owner_id'] != owner) {
         throw StateError('Queue belongs to another identity');
+      }
       final receipt = await submit(entry.id, payload);
       if (receipt['id'] != entry.id ||
           receipt['owner_id'] != owner ||
@@ -83,8 +86,9 @@ class ProofConnector extends PowerSyncBackendConnector {
           'SELECT payload,owner_id FROM proof_intent WHERE id=?',
           [entry.id],
         );
-        if (intent['payload'] != payload || intent['owner_id'] != owner)
+        if (intent['payload'] != payload || intent['owner_id'] != owner) {
           throw StateError('Intent mismatch');
+        }
         await tx.execute(
           '''UPDATE proof_intent SET state=?,reason=?
           WHERE id=? AND state IN ('pending','accepted')''',

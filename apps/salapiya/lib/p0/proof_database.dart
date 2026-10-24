@@ -4,6 +4,7 @@ import 'package:powersync/powersync.dart';
 const proofSchema = Schema([
   Table.localOnly('local_probe', [Column.text('value')]),
   Table.insertOnly('command_transport', [Column.text('payload')]),
+  Table('p0_profile', [Column.text('owner_id'), Column.integer('revision')]),
   Table('p0_accepted', [
     Column.text('owner_id'),
     Column.text('payload'),
