@@ -1,6 +1,9 @@
 # Remaining P0 assignments
 
 The [blueprint](../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) remains authoritative.
+The October 24 continuation is recorded in the single
+[P0 architecture proof handoff](P0_ARCHITECTURE_PROOF_HANDOFF.md). Use its actual
+evidence and remaining gate conditions when assigning subsequent work.
 This foundation closes none of G0-G4. Each assignment must preserve the web
 reference, produce Windows and Android evidence and leave product features out
 unless a synthetic flow is essential to prove a gate. Complete foundational gates
