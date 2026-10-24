@@ -52,3 +52,29 @@ migration / rollback / reopen test and two actual killed-process WAL tests.
 These are native Windows-host SQLite checks, not yet Android process-kill proof.
 The killed worker is an isolated Dart subprocess with synthetic data; tests
 terminate only that worker's PID/process tree.
+
+## Phase C checkpoint
+
+`services/salapiya/p0/001_proof.sql` is a fresh synthetic schema, not a copy of
+web migrations. PostgreSQL RPC authenticates through `auth.uid()`, validates a
+bounded whole expense, locks receipt identity / owner revision, and atomically
+persists paired immutable evidence, action and durable accepted/rejected receipt.
+JSONB payload equality is server-owned; different-payload ID reuse fails. Client
+SDK completion follows durable local acceptance/review; response loss replays the
+same ID. Accepted-download matching excludes the overlay even before the explicit
+reconciliation update. Local-only writes generate no SDK upload records.
+
+Five actual PostgreSQL-in-WASM (PGlite 0.5.11) tests passed: receipt replay and
+mismatch, RLS/direct-write/anonymous denial, durable rejections and stale revision,
+full transaction rollback and independent expense IDs. The auth.uid() test stub
+sets a transaction-local claim; it does not verify JWTs. PGlite serializes
+transactions: advisory-lock behavior under independent PostgreSQL sessions is
+unverified. These are SQL implementation tests, not Supabase deployment tests.
+
+One Windows host test passed using the real encrypted PowerSync upload queue and
+an explicitly simulated server/download. It covers lost responses, close/reopen,
+exactly one simulated financial effect, retained rejection evidence, unrelated
+queue progress, pending/accepted matching and owner-scoped local queries.
+No service connection, CDC checkpoint or actual second-device replication has
+been claimed. `sync-streams.yaml` filters by authenticated JWT owner independently
+of RLS; hosted syntax/negative-scope verification remains mandatory.

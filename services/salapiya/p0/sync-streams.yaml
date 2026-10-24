@@ -1,0 +1,11 @@
+# Paste only after the proof schema/publication and JWT validation are configured.
+# No client-controlled stream parameters confer ownership. RLS is NOT used by CDC.
+config:
+  edition: 3
+streams:
+  private_profile:
+    auto_subscribe: true
+    query: SELECT * FROM p0_profile WHERE owner_id = auth.user_id()
+  private_actions:
+    auto_subscribe: true
+    query: SELECT * FROM p0_accepted WHERE owner_id = auth.user_id()

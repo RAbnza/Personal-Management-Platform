@@ -1,0 +1,7 @@
+{
+  "name": "salapiya-p0-server-proof",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test server.test.mjs"},
+  "devDependencies": {"@electric-sql/pglite": "0.5.11"}
+}

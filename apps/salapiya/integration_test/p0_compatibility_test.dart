@@ -6,6 +6,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:salapiya/p0/proof_database.dart';
+import 'package:salapiya/p0/secure_auth_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
@@ -47,12 +48,17 @@ void main() {
         await expectLater(wrong.initialize(), throwsA(anything));
       } finally {
         // A failed initialization also propagates through close in this SDK.
-        try { await wrong.close(); } catch (_) { /* Expected failed-open cleanup. */ }
+        try {
+          await wrong.close();
+        } catch (_) {
+          /* Expected failed-open cleanup. */
+        }
       }
       final auth = SupabaseClient(
         'https://example.invalid',
         'synthetic-public-key',
         authOptions: const AuthClientOptions(
+          pkceAsyncStorage: SecurePkceStorage(storage, 'salapiya.p0.pkce'),
           authFlowType: AuthFlowType.pkce,
           autoRefreshToken: false,
         ),
