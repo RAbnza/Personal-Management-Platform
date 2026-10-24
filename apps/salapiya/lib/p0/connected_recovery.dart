@@ -6,6 +6,30 @@ class ConnectedRecovery {
   final PowerSyncDatabase db;
   final SupabaseClient client;
 
+  // Explicit activation requires current server authority AND actual SDK rows.
+  Future<void> acceptDownloaded(String id, String owner) async {
+    if (await review(id, owner) != 'accepted') {
+      throw StateError('Accepted owner receipt required');
+    }
+    await db.writeTransaction((tx) async {
+      final row = await tx.get('SELECT * FROM proof_intent WHERE id=?', [id]);
+      final accepted = await tx.getAll(
+        '''SELECT id FROM p0_accepted WHERE id=? AND owner_id=? AND payload=?
+        AND amount_minor=CAST(? AS TEXT)''',
+        [id, owner, row['payload'], row['amount_minor']],
+      );
+      if (row['owner_id'] != owner ||
+          row['state'] != 'review' ||
+          accepted.length != 1) {
+        throw StateError('Matching downloaded action required');
+      }
+      await tx.execute(
+        "UPDATE proof_intent SET state='reconciled',reason=NULL WHERE id=?",
+        [id],
+      );
+    });
+  }
+
   Future<String> review(
     String id,
     String owner, {

@@ -6,7 +6,12 @@ import 'secure_auth_storage.dart';
 
 // Only the isolated P0 harness initializes this. Local-only product startup
 // remains unchanged and does not require network authentication.
-Future<Supabase> initializeProofAuth(String url, String publicKey) async {
+Future<Supabase> initializeProofAuth(
+  String url,
+  String publicKey, {
+  String scope = 'salapiya.p0.hosted',
+  bool detectSessionInUri = true,
+}) async {
   final uri = Uri.parse(url);
   if (uri.scheme != 'https' ||
       !uri.host.endsWith('.supabase.co') ||
@@ -22,18 +27,18 @@ Future<Supabase> initializeProofAuth(String url, String publicKey) async {
     debug: false,
     authOptions: FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
-      localStorage: const SecureSessionStorage(
-        storage,
-        'salapiya.p0.hosted.session',
-      ),
-      pkceAsyncStorage: const SecurePkceStorage(
-        storage,
-        'salapiya.p0.hosted.pkce',
-      ),
+      localStorage: SecureSessionStorage(storage, '$scope.session'),
+      pkceAsyncStorage: SecurePkceStorage(storage, '$scope.pkce'),
       detectSessionInUriPredicate: isProofCallback,
+      detectSessionInUri: detectSessionInUri,
     ),
   );
 }
 
-Future<bool> connectProofGoogle(SupabaseClient client) => client.auth
-    .signInWithOAuth(OAuthProvider.google, redirectTo: proofCallback);
+Future<bool> connectProofGoogle(SupabaseClient client) =>
+    client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: proofCallback,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+      queryParams: {'prompt': 'select_account'},
+    );

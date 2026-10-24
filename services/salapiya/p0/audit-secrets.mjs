@@ -1,12 +1,16 @@
 import {spawnSync} from 'node:child_process';
 import {apiKeys} from './auth-fixtures.mjs';
 import {readState} from './private-state.mjs';
-import {root,report} from './cloud.mjs';
+import {root,report,sb,protect} from './cloud.mjs';
 
 try{
   const keys=await apiKeys();
+  const auth=await sb('/config/auth');
   const values=[keys.admin,...['SUPABASE_ACCESS_TOKEN','SUPABASE_DB_PASSWORD','PS_ADMIN_TOKEN']
     .map(name=>process.env[name])];
+  if(auth.external_google_secret&&!/^\*+$/.test(auth.external_google_secret)){
+    values.push(protect(auth.external_google_secret));
+  }
   function collect(value){
     for(const [key,item]of Object.entries(value)){
       if(item&&typeof item==='object')collect(item);
