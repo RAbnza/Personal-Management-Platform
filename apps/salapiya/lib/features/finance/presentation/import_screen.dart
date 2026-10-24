@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
 import '../application/financial_controller.dart';
-import '../application/import_controller.dart';
 import 'financial_widgets.dart';
+import '../../common/prototype_form.dart';
 
 class ImportScreen extends StatefulWidget {
   const ImportScreen({super.key, required this.controller});
@@ -14,12 +14,11 @@ class ImportScreen extends StatefulWidget {
 }
 
 class _ImportScreenState extends State<ImportScreen> {
-  late final c = ImportController(widget.controller);
-  final opening = TextEditingController();
+  late final c = widget.controller.importSession;
+  late final opening = TextEditingController(text: c.earlierOpening);
   @override
   void dispose() {
     opening.dispose();
-    c.dispose();
     super.dispose();
   }
 
@@ -33,6 +32,81 @@ class _ImportScreenState extends State<ImportScreen> {
           'IMPORT / A CAREFUL ARRIVAL',
           'Bring the story with you.',
           'A simulated CSV review. No file is read, uploaded or stored.',
+        ),
+        ExpansionTile(
+          key: const PageStorageKey('csv-format-details'),
+          title: const Text('Supported format & column mapping'),
+          children: [
+            const FinanceNotice(
+              'pmp-cash-activity v1 · UTF-8 · PHP · at most 1 MiB / 500 rows / 16 KiB per row. Only cash income and expenses. No provider, card, debt, transfer or refund inference.',
+            ),
+            for (final e in {
+              'date': 'Civil date with explicit interpretation',
+              'kind': 'income or expense',
+              'amount_minor': 'Canonical integer minor units',
+              'classification':
+                  'Expense category or earned/gift/reward/other income',
+              'description': 'Source description',
+              'reference': 'Duplicate review reference',
+            }.entries)
+              FinancialLine(e.key, e.value),
+            DropdownButtonFormField<String>(
+              initialValue: c.dateFormat,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Date interpretation',
+              ),
+              items: [
+                for (final d in ['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY'])
+                  DropdownMenuItem(value: d, child: Text(d)),
+              ],
+              onChanged: c.accepted > 0
+                  ? null
+                  : (v) {
+                      c.dateFormat = v!;
+                      c.refresh();
+                    },
+            ),
+            const FinanceNotice(
+              'Changing interpretation changes the setup specimen. Normalized synthetic preview rows below always display ISO dates.',
+            ),
+            OutlinedButton(
+              onPressed: () => reviewForm(
+                context,
+                title: 'Import validation scenario',
+                fields: [
+                  DemoField(
+                    'scenario',
+                    'Input scenario',
+                    value: 'Supported sample',
+                    options: {
+                      for (final x in [
+                        'Supported sample',
+                        'Unsupported provider format',
+                        'Wrong currency',
+                        'Oversized file',
+                        'Invalid encoding',
+                        'Duplicate file',
+                      ])
+                        x: x,
+                    },
+                  ),
+                ],
+                save: (v) {
+                  c.inputScenario = v['scenario']!;
+                  c.refresh();
+                },
+              ),
+              child: const Text('Explore file validation'),
+            ),
+            if (c.inputScenario != 'Supported sample')
+              FinanceNotice(
+                c.inputScenario == 'Duplicate file'
+                    ? 'Duplicate file specimen: inspect row fingerprints and acknowledge duplicate rows before processing.'
+                    : '${c.inputScenario}: unsupported source is blocked. Return to Supported sample to continue.',
+                warning: true,
+              ),
+          ],
         ),
         FinanceColumns(
           main: EditorialSurface(

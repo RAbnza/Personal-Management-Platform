@@ -8,6 +8,7 @@ import '../application/financial_controller.dart';
 import '../contracts/financial_models.dart';
 import 'financial_editor.dart';
 import 'financial_widgets.dart';
+import 'group_lifecycle.dart';
 
 class SharedScreen extends StatefulWidget {
   const SharedScreen({
@@ -212,6 +213,7 @@ class _SharedScreenState extends State<SharedScreen> {
                 'People',
                 'Private review',
                 'History',
+                'Lifecycle',
               ])
                 ChoiceChip(
                   label: Text(t),
@@ -227,9 +229,10 @@ class _SharedScreenState extends State<SharedScreen> {
             'Balances' => balances(),
             'People' => people(),
             'Private review' => privateReview(),
+            'Lifecycle' => [GroupLifecycle(session: widget.session)],
             'History' => [
               const SectionHeading('Group history'),
-              for (final h in c.groupHistory)
+              for (final h in c.visibleGroupHistory)
                 FinancialLine('Immutable demo event', h, icon: Icons.history),
               if (c.groupHistory.isEmpty)
                 const FinanceNotice(
@@ -344,6 +347,9 @@ class _SharedScreenState extends State<SharedScreen> {
               );
               final net = forward - backward;
               return ExpansionTile(
+                key: PageStorageKey(
+                  'shared-pair-${c.activeGroup}-$left-$right',
+                ),
                 title: Text('$left ↔ $right'),
                 subtitle: Text(
                   'Reciprocal net ${money(net.abs())} · ${net >= BigInt.zero ? '$left owes $right' : '$right owes $left'}',
@@ -412,7 +418,7 @@ class _SharedScreenState extends State<SharedScreen> {
         color: Palette.peach,
       ),
     const FinanceNotice(
-      'Group owners administer membership; they cannot inspect private funding. Former-member access retains entitled history only. Full lifecycle and history export are assigned to D4.',
+      'Group owners administer membership; they cannot inspect private funding. Former-member access retains entitled history only. Open Lifecycle for ownership, removal, recovery and export.',
     ),
   ];
 

@@ -5,8 +5,9 @@ exception. D2-F0 removed it and passed Windows/Android verification before D2.
 D2 now implements the native shell and Overview; see [implementation and live
 review](D2_IMPLEMENTATION.md). D1-D5 remain separate from P0-P6 engineering.
 D2 redesign and floating controls were owner-approved in the D3 assignment.
-D3 is implemented for live review; see [D3 implementation](D3_IMPLEMENTATION.md).
-Stop for owner review before D4; no production gates are closed.
+D3 was owner-approved in the D4 assignment; see [D3 implementation](D3_IMPLEMENTATION.md).
+D4 is implemented for live review; see [D4 coverage](D4_IMPLEMENTATION.md).
+Stop for owner review before D5; no production gates are closed.
 
 ## Architecture for reusable presentation
 

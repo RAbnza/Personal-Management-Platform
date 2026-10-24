@@ -107,7 +107,8 @@ void main() {
       await tapVisible(tester, find.text('Close'));
       await tapVisible(tester, find.byKey(const ValueKey('agenda-day-25')));
       await tapVisible(tester, find.text('Electricity'));
-      expect(find.text('Money / Electricity bill'), findsOneWidget);
+      expect(find.text('Electricity bill'), findsOneWidget);
+      expect(find.text('Give your money direction.'), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       session.togglePrivacy();

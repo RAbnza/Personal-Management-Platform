@@ -7,6 +7,7 @@ import '../../../prototype/scenarios.dart';
 import '../contracts/financial_models.dart';
 import 'financial_editor.dart';
 import 'financial_widgets.dart';
+import '../../supporting/presentation/files_screen.dart';
 
 class DebtsScreen extends StatelessWidget {
   const DebtsScreen({super.key, required this.session});
@@ -176,6 +177,7 @@ class DebtDetail extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const SectionHeading('Payment & revision history'),
+                  SupportingFilesLink(session: session, source: 'debt:${d.id}'),
                   for (final h in d.history.reversed)
                     FinancialLine(
                       'Retained evidence',

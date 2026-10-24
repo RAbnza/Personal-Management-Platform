@@ -133,9 +133,9 @@ Future<void> shellJourney(WidgetTester tester) async {
   expect(find.text('Continue with Google'), findsOneWidget);
   expect(find.text('Restore from backup'), findsOneWidget);
   await tapVisible(tester, find.text('Continue with Google'));
-  await tester.tap(find.text('Explore simulated result'));
+  expect(find.text('Explore connection scenario'), findsOneWidget);
+  await tester.binding.handlePopRoute();
   await tester.pumpAndSettle();
-  expect(session.scenario, OverviewScenario.incomplete);
   await tapVisible(tester, find.text('Design Gallery'));
   expect(find.text('Made with care.\nClear by design.'), findsOneWidget);
   await tester.binding.handlePopRoute();

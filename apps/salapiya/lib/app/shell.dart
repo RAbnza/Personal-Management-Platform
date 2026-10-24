@@ -16,6 +16,8 @@ import '../features/finance/presentation/financial_widgets.dart';
 import '../features/finance/presentation/money_screen.dart';
 import '../features/finance/presentation/debts_screen.dart';
 import '../features/finance/presentation/shared_screen.dart';
+import '../features/life/presentation/life_screen.dart';
+import '../features/life/application/life_controller.dart';
 
 class SalapiyaShell extends StatefulWidget {
   const SalapiyaShell({super.key, required this.settings, this.session});
@@ -56,11 +58,20 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
   void source(PreviewSource source) => open(switch (source) {
     PreviewSource.accounts ||
     PreviewSource.activity ||
-    PreviewSource.cards => FinancePage(
+    PreviewSource.cards ||
+    PreviewSource.planning ||
+    PreviewSource.reports ||
+    PreviewSource.electricity => FinancePage(
       title: source.label,
       child: MoneyScreen(
         session: session,
-        initial: source == PreviewSource.cards
+        initial:
+            source == PreviewSource.planning ||
+                source == PreviewSource.electricity
+            ? 'Planning'
+            : source == PreviewSource.reports
+            ? 'Reports'
+            : source == PreviewSource.cards
             ? 'Cards'
             : source == PreviewSource.activity
             ? 'Activity'
@@ -84,7 +95,19 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
             : 'Bills',
       ),
     ),
-    _ => SourcePreviewPage(source: source, session: session),
+    _ => FinancePage(
+      title: source.label,
+      child: LifeScreen(
+        session: session,
+        initial: switch (source) {
+          PreviewSource.task => 'Tasks',
+          PreviewSource.learning => 'Learning',
+          PreviewSource.books => 'Books',
+          PreviewSource.career => 'Career',
+          _ => 'Calendar',
+        },
+      ),
+    ),
   }, '${source.destination.name}/${source.name}');
   void utilities() => open(
     ProfileUtilities(settings: widget.settings, session: session),
@@ -124,8 +147,15 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
         FloatingQuickAction(
           label: definition.$1,
           icon: definition.$2,
-          onSelected: () =>
-              open(actionPage(definition.$1), 'action/${definition.$1}'),
+          onSelected: () {
+            if (definition.$1 == 'Add task') {
+              editLifeEntry(context, session, LifeKind.task);
+            } else if (definition.$1 == 'Add event') {
+              editPersonalEvent(context, session);
+            } else {
+              open(actionPage(definition.$1), 'action/${definition.$1}');
+            }
+          },
         ),
     ];
   }
@@ -168,7 +198,7 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
             bounds.maxHeight >= 400 &&
             scale <= 1.5;
         final canExpand = bounds.maxWidth >= 1200;
-        final isExpanded = canExpand && (expanded ?? true);
+        final isExpanded = canExpand && (expanded ?? !widget.settings.compact);
         final showDock =
             !mobile || MediaQuery.viewInsetsOf(context).bottom == 0;
         return Scaffold(
@@ -179,6 +209,7 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                 // Stable Row/Expanded ancestry preserves destination controllers on resize.
                 if (rail)
                   ShellSidebar(
+                    profileName: session.profile.name,
                     selected: selected,
                     expanded: isExpanded,
                     select: select,
@@ -290,16 +321,15 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                               open: source,
                                             )
                                           : destination == AppDestination.money
-                                          ? MoneyScreen(session: session)
+                                          ? MoneyScreen(
+                                              key: ObjectKey(session.finance),
+                                              session: session,
+                                            )
                                           : destination == AppDestination.debts
                                           ? DebtsScreen(session: session)
                                           : destination == AppDestination.shared
                                           ? SharedScreen(session: session)
-                                          : DestinationPreview(
-                                              destination: destination,
-                                              session: session,
-                                              open: source,
-                                            ),
+                                          : LifeScreen(session: session),
                                     ),
                                   ),
                               ],

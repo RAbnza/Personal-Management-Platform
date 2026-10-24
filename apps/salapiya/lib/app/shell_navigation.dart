@@ -23,8 +23,10 @@ class ShellSidebar extends StatelessWidget {
     required this.select,
     required this.toggle,
     required this.utilities,
+    this.profileName = 'Amihan',
   });
   final AppDestination selected;
+  final String profileName;
   final bool expanded;
   final ValueChanged<AppDestination> select;
   final VoidCallback toggle, utilities;
@@ -107,13 +109,13 @@ class ShellSidebar extends StatelessWidget {
           if (expanded)
             TextButton(
               onPressed: utilities,
-              child: const Row(
+              child: Row(
                 children: [
                   CircleAvatar(
                     radius: 17,
                     backgroundColor: Palette.mint,
                     child: Text(
-                      'A',
+                      profileName.isEmpty ? '?' : profileName.substring(0, 1),
                       style: TextStyle(color: Palette.ink, fontSize: 12),
                     ),
                   ),
@@ -122,7 +124,10 @@ class ShellSidebar extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Amihan', style: TextStyle(color: Colors.white)),
+                        Text(
+                          profileName,
+                          style: const TextStyle(color: Colors.white),
+                        ),
                         Text(
                           'Demo profile',
                           style: TextStyle(color: Palette.lilac, fontSize: 11),

@@ -41,6 +41,7 @@ class ImportController extends ChangeNotifier {
   }
 
   late String accountId;
+  String dateFormat = 'YYYY-MM-DD', inputScenario = 'Supported sample';
   final rows = [
     ImportRow('1', '2026-10-16', 'Project milestone', '250000'),
     ImportRow('2', '2026-10-17', 'Market groceries', '-38500', duplicate: true),
@@ -84,6 +85,11 @@ class ImportController extends ChangeNotifier {
 
   bool validate() {
     error = '';
+    if (!['Supported sample', 'Duplicate file'].contains(inputScenario)) {
+      error = '$inputScenario: unsupported file cannot be imported.';
+      notifyListeners();
+      return false;
+    }
     if (!finance.activeAccounts.any((a) => a.id == accountId)) {
       error = 'Select an active liquid account.';
     }
@@ -108,6 +114,10 @@ class ImportController extends ChangeNotifier {
 
   Future<void> process() async {
     if (running || uncertain || cancelled) return;
+    if (!reviewed ||
+        !['Supported sample', 'Duplicate file'].contains(inputScenario)) {
+      return;
+    }
     if (accepted == 0 && reviewedVersion != finance.version) {
       error = 'Account snapshot changed. Review again; no rows applied.';
       reviewed = false;

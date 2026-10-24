@@ -15,38 +15,36 @@ class OverviewAgenda extends StatefulWidget {
 
 class _OverviewAgendaState extends State<OverviewAgenda> {
   int day = 23;
-  static const events = <int, (String, String, IconData, PreviewSource)>{
-    23: (
-      'Interview',
-      '10:00 · Career',
-      Icons.work_outline,
-      PreviewSource.career,
-    ),
-    24: (
-      'A chapter for yourself',
-      'Reading · Personal task',
-      Icons.auto_stories_outlined,
-      PreviewSource.task,
-    ),
-    25: (
-      'Electricity',
-      'Expected bill · not paid',
-      Icons.bolt_outlined,
-      PreviewSource.electricity,
-    ),
-    27: (
-      'Card obligation',
-      'Amount due not yet available',
-      Icons.credit_card_outlined,
-      PreviewSource.cards,
-    ),
-    28: (
-      'Debt commitment',
-      'Expected · not a payment',
-      Icons.event_note_outlined,
-      PreviewSource.debt,
-    ),
-  };
+  Map<int, (String, String, IconData, PreviewSource, BigInt?)> get events {
+    final s = widget.session;
+    final result = <int, (String, String, IconData, PreviewSource, BigInt?)>{};
+    for (final e
+        in s.life
+            .agenda(s.planning, s.finance, financial: s.complete)
+            .where((e) => e.date.startsWith('2026-10-'))) {
+      final d = int.parse(e.date.substring(8));
+      result.putIfAbsent(
+        d,
+        () => (
+          e.title,
+          '${e.time} · ${e.kind}',
+          e.amount == null ? Icons.event_outlined : Icons.event_note_outlined,
+          switch (e.kind) {
+            'Career' => PreviewSource.career,
+            'Tasks' => PreviewSource.task,
+            'Learning' => PreviewSource.learning,
+            'Books' => PreviewSource.books,
+            'Recurring' => PreviewSource.electricity,
+            'Cards' => PreviewSource.cards,
+            'Debts' => PreviewSource.debt,
+            _ => PreviewSource.agenda,
+          },
+          e.amount,
+        ),
+      );
+    }
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,14 +187,10 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
                             color: CraftTheme.of(context).secondary,
                           ),
                         ),
-                        if ((day == 25 || day == 28) && session.complete)
+                        if (session.complete && event.$5 != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: AmountText(
-                              session.amount(
-                                BigInt.from(day == 25 ? 185000 : 200000),
-                              ),
-                            ),
+                            child: AmountText(session.amount(event.$5!)),
                           ),
                       ],
                     ),
@@ -208,24 +202,21 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
           const Divider(height: 32),
           const Eyebrow('AHEAD THIS WEEK'),
           const SizedBox(height: 8),
-          if (!session.empty) ...[
-            TextButton(
-              onPressed: () => widget.open(PreviewSource.electricity),
-              style: TextButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          if (!session.empty)
+            for (final item
+                in events.entries
+                    .where(
+                      (e) => e.key >= 22 && e.key <= 28 && e.value.$5 != null,
+                    )
+                    .take(2))
+              TextButton(
+                onPressed: () => widget.open(item.value.$4),
+                style: TextButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text('${item.key} Oct  /  ${item.value.$1}'),
               ),
-              child: const Text('25 Oct  /  Electricity due'),
-            ),
-            TextButton(
-              onPressed: () => widget.open(PreviewSource.debt),
-              style: TextButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text('28 Oct  /  Debt commitment'),
-            ),
-          ],
           const SizedBox(height: 8),
           Text(
             'Expected obligations are not actual expenses.',

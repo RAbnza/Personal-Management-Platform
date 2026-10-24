@@ -3,14 +3,31 @@ import 'package:flutter/foundation.dart';
 import '../../../prototype/activity.dart';
 import '../../../prototype/fixtures.dart';
 import '../contracts/financial_models.dart';
+import '../../supporting/application/supporting_controller.dart';
+import 'import_controller.dart';
+import '../contracts/card_evidence_models.dart';
 
 part 'shared_controller.dart';
+part 'card_evidence_controller.dart';
 
 /// Memory-only command/preview boundary. No storage, auth, network or posting.
 class FinancialController extends ChangeNotifier {
   FinancialController() {
     reset(notify: false);
+    files.addListener(changed);
   }
+  final files = SupportingController();
+  ImportController? _importSession;
+  ImportController get importSession =>
+      _importSession ??= ImportController(this);
+  @override
+  void dispose() {
+    _importSession?.dispose();
+    files.removeListener(changed);
+    files.dispose();
+    super.dispose();
+  }
+
   final List<FinancialAccount> accounts = [];
   final List<FinancialRecord> records = [];
   final List<DebtRecord> debts = [];
@@ -20,6 +37,16 @@ class FinancialController extends ChangeNotifier {
   final Map<String, PrivateAdoption> adoptions = {};
   final Map<String, String> retainedReviews = {};
   final Map<String, String> groups = {};
+  final Map<String, String> groupOwners = {};
+  final Set<String> unavailableOwners = {}, archivedGroups = {};
+  final Map<String, Set<String>> exitEntitlements = {};
+  final Map<String, List<String>> exitHistories = {};
+  bool get isGroupOwner =>
+      actor == (groupOwners[activeGroup] ?? 'Amihan') && !formerMember;
+  bool get groupAdministrationAvailable =>
+      isGroupOwner &&
+      !unavailableOwners.contains(activeGroup) &&
+      !archivedGroups.contains(activeGroup);
   final Map<String, Map<String, String>> memberSets = {};
   Map<String, String> get members =>
       memberSets.putIfAbsent(activeGroup, () => {});
@@ -31,6 +58,16 @@ class FinancialController extends ChangeNotifier {
   final Map<String, DemoOutcome> _receipts = {};
   final Set<String> _applied = {};
   final Map<String, String> unresolvedPayments = {};
+  final Set<String> planningDependencies = {};
+  final List<CardStatementEvidence> statementDefinitions = [];
+  final List<CardPlanEvidence> planDefinitions = [];
+  final Set<String> suspendedPlans = {};
+  final Map<String, BigInt> statementCoverage = {};
+  final Map<String, Map<String, BigInt>> cardPaymentCoverage = {};
+  final Map<String, Map<int, (String, BigInt)>> allInstallmentApplications = {};
+  String activeStatementId = 'statement-oct', activePlanId = 'provider-plan';
+  Map<int, (String, BigInt)> get installmentApplications =>
+      allInstallmentApplications.putIfAbsent(activePlanId, () => {});
   final Set<String> privateSettlements = {};
   final Map<String, String> privateSettlementReviews = {};
   void changed() => notifyListeners();
@@ -42,6 +79,7 @@ class FinancialController extends ChangeNotifier {
       statementAllocated = BigInt.zero;
   BigInt installmentAmount = BigInt.from(100000);
   int installmentCount = 6, statementVersion = 1, installmentVersion = 1;
+  String statementDue = '2026-10-27', installmentDue = '2026-10-27';
   int version = 0, _serial = 0;
   BigInt get liquid => ExactFinance.sum(accounts.map((a) => a.balance));
   BigInt get debtTotal =>
@@ -66,8 +104,13 @@ class FinancialController extends ChangeNotifier {
       .toList();
 
   void reset({bool empty = false, bool notify = true}) {
+    _importSession?.dispose();
+    _importSession = null;
+    files.reset(empty: empty);
     available = true;
     unresolvedPayments.clear();
+    planningDependencies.clear();
+    installmentApplications.clear();
     privateSettlements.clear();
     privateSettlementReviews.clear();
     accounts.clear();
@@ -79,6 +122,11 @@ class FinancialController extends ChangeNotifier {
     adoptions.clear();
     retainedReviews.clear();
     groups.clear();
+    groupOwners.clear();
+    unavailableOwners.clear();
+    archivedGroups.clear();
+    exitEntitlements.clear();
+    exitHistories.clear();
     memberSets.clear();
     _groupHistories.clear();
     statementHistory.clear();
@@ -99,12 +147,15 @@ class FinancialController extends ChangeNotifier {
     statementAllocated = BigInt.zero;
     statementVersion = 1;
     installmentVersion = 1;
-    installmentAmount = BigInt.from(100000);
-    installmentCount = 6;
+    installmentAmount = empty ? BigInt.zero : BigInt.from(100000);
+    installmentCount = empty ? 0 : 6;
+    statementDue = installmentDue = '2026-10-27';
+    resetCardEvidence(empty: empty);
     actor = 'Amihan';
     formerMember = false;
     activeGroup = 'household';
     groups['household'] = 'Demo household';
+    groupOwners['household'] = 'Amihan';
     members.addAll({
       'Amihan': 'Registered · owner',
       'Tala': 'Registered · member',
@@ -257,10 +308,14 @@ class FinancialController extends ChangeNotifier {
         v.addAll({
           'amount': ExactFinance.decimal(statementBalance),
           'allocation': '500.00',
-          'due': '2026-10-27',
+          'due': statementDue,
         });
       case FinancialAction.installment:
-        v.addAll({'amount': '1000.00', 'count': '6'});
+        v.addAll({
+          'amount': ExactFinance.decimal(installmentAmount),
+          'count': '$installmentCount',
+          'due': installmentDue,
+        });
       case FinancialAction.reconcile:
         v['amount'] = a.isEmpty
             ? '0.00'
@@ -362,6 +417,17 @@ class FinancialController extends ChangeNotifier {
         !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v['date'] ?? '') ||
         date.toIso8601String().substring(0, 10) != v['date']) {
       errors.add('Use a valid YYYY-MM-DD date.');
+    }
+    if ([
+      FinancialAction.statement,
+      FinancialAction.installment,
+    ].contains(action)) {
+      final due = DateTime.tryParse(v['due'] ?? '');
+      if (due == null ||
+          !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v['due'] ?? '') ||
+          due.toIso8601String().substring(0, 10) != v['due']) {
+        errors.add('Use a valid YYYY-MM-DD due date.');
+      }
     }
     switch (action) {
       case FinancialAction.debtClassification:
@@ -505,6 +571,24 @@ class FinancialController extends ChangeNotifier {
         if (adoptions.values.any((a) => a.existingId == r.id)) {
           errors.add(
             'Shared adoption depends on this record. Use private-effect review.',
+          );
+        }
+        if (planningDependencies.contains(r.id) &&
+            (action == FinancialAction.correction ||
+                action == FinancialAction.reversal)) {
+          errors.add(
+            'Reverse the recurring actual link before correcting this source.',
+          );
+        }
+        if (planDefinitions.any(
+              (p) => p.source == r.id && !suspendedPlans.contains(p.id),
+            ) &&
+            [
+              FinancialAction.correction,
+              FinancialAction.reversal,
+            ].contains(action)) {
+          errors.add(
+            'Suspend the attached installment plan before replacing its purchase evidence.',
           );
         }
         final children = records.where((x) => x.sourceId == r.id).toList();
@@ -747,6 +831,12 @@ class FinancialController extends ChangeNotifier {
         spending += amount;
       case FinancialAction.statement:
         requireText('evidence', 'Enter the statement reference.');
+        if (activeStatement.minimum != null &&
+            amount < activeStatement.minimum!) {
+          errors.add(
+            'Review the statement minimum due before lowering its balance.',
+          );
+        }
         if (amount < statementAllocated) {
           errors.add(
             'Statement revision cannot undercut retained payment allocations.',
@@ -759,6 +849,13 @@ class FinancialController extends ChangeNotifier {
         requireText('evidence', 'Enter the provider plan reference.');
         final count = int.tryParse(v['count'] ?? '') ?? 0;
         if (count < 1 || count > 120) errors.add('Use 1–120 installments.');
+        if (installmentApplications.entries.any(
+          (e) => e.key >= count || e.value.$2 > amount,
+        )) {
+          errors.add(
+            'Reverse incompatible installment applications before revising the schedule.',
+          );
+        }
         effects.add(
           '$count expected payments of ${this.amount(amount)}. Applying this plan changes schedule evidence only; no repeat purchase or inferred interest.',
         );
@@ -938,12 +1035,18 @@ class FinancialController extends ChangeNotifier {
         d.firstDue = v['due']!;
       case FinancialAction.cardPayment:
         statementAllocated += DemoMoney.parse(v['allocation']!)!;
+        statementCoverage[activeStatementId] = statementAllocated;
+        cardPaymentCoverage[p.commandId] = {
+          activeStatementId: DemoMoney.parse(v['allocation']!)!,
+        };
       case FinancialAction.statement:
         statementHistory.add(
           'v$statementVersion · ${amount(statementBalance)} · ${v['evidence']}',
         );
         statementVersion++;
         statementBalance = p.amount;
+        statementDue = v['due']!;
+        retainCurrentStatement();
       case FinancialAction.installment:
         installmentHistory.add(
           'v$installmentVersion · $installmentCount × ${amount(installmentAmount)} · ${v['evidence']}',
@@ -951,6 +1054,8 @@ class FinancialController extends ChangeNotifier {
         installmentVersion++;
         installmentAmount = p.amount;
         installmentCount = int.parse(v['count']!);
+        installmentDue = v['due']!;
+        retainCurrentPlan();
       case FinancialAction.group ||
           FinancialAction.member ||
           FinancialAction.invitation ||
@@ -978,11 +1083,39 @@ class FinancialController extends ChangeNotifier {
         cash: p.cash,
         card: p.card,
         spending: p.spending,
+        categorySpending: classifiedSpending(p),
         sourceId: (v['source'] ?? '').isEmpty ? null : v['source'],
         note: '${v['reason'] ?? ''}\n${p.effects.join('\n')}',
       ),
     );
     version++;
+  }
+
+  Map<String, BigInt> classifiedSpending(FinancialPreview p) {
+    final v = p.values;
+    if ([
+          FinancialAction.expense,
+          FinancialAction.cardPurchase,
+        ].contains(p.action) &&
+        v['split'] == 'true') {
+      final first = DemoMoney.parse(v['splitAmount']!)!;
+      return {v['category']!: first, v['splitCategory']!: p.spending - first};
+    }
+    if ([
+      FinancialAction.correction,
+      FinancialAction.reversal,
+    ].contains(p.action)) {
+      final original = records.firstWhere((r) => r.id == v['source']);
+      final categories = {
+        for (final e in original.categorySpending.entries) e.key: -e.value,
+      };
+      if (p.action == FinancialAction.correction && original.kind != 'income') {
+        final category = v['category'] ?? original.category;
+        categories[category] = (categories[category] ?? BigInt.zero) + p.amount;
+      }
+      return categories;
+    }
+    return {v['category'] ?? 'Other': p.spending};
   }
 
   void applyHistoricalImport(

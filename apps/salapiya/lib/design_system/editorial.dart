@@ -44,16 +44,27 @@ class SectionHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
-    child: Row(
-      children: [
-        Expanded(
-          child: Semantics(
-            header: true,
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
-          ),
-        ),
-        ?trailing,
-      ],
+    child: LayoutBuilder(
+      builder: (context, bounds) {
+        final heading = Semantics(
+          header: true,
+          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        );
+        if (trailing != null &&
+            bounds.maxWidth < 460 &&
+            MediaQuery.textScalerOf(context).scale(14) > 18) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [heading, const SizedBox(height: 8), trailing!],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: heading),
+            ?trailing,
+          ],
+        );
+      },
     ),
   );
 }

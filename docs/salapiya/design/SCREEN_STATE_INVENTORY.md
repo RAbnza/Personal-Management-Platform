@@ -1,8 +1,8 @@
 # Screen, state and synthetic scenario inventory
 
-**Status:** D0 full-scope inventory with D2 shell/Overview and D3 financial
-interaction implementation, awaiting owner review. See [D3 coverage and historical
-scenario mapping](D3_IMPLEMENTATION.md). D4 rows remain planned. Every listed financial
+**Status:** D0 full-scope inventory with approved D2/D3 and D4 remaining-screen
+implementation awaiting owner review. See [D3 coverage and historical
+scenario mapping](D3_IMPLEMENTATION.md) and [D4 coverage](D4_IMPLEMENTATION.md). Every listed financial
 capability remains launch scope. D3/D4 placement determines prototype order,
 not production release eligibility. Blueprint IDs refer to
 [§4 and §19](../../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md).

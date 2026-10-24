@@ -1,16 +1,48 @@
 part of 'financial_controller.dart';
 
 extension SharedPrototypeCommands on FinancialController {
-  List<SharedBill> get groupBills =>
-      bills.where((b) => b.groupId == activeGroup).toList();
-  List<SharedSettlement> get groupSettlements =>
-      settlements.where((s) => s.groupId == activeGroup).toList();
+  List<SharedBill> get groupBills => bills
+      .where(
+        (b) =>
+            b.groupId == activeGroup &&
+            (!formerMember ||
+                (exitEntitlements['$activeGroup:$actor'] ?? {}).contains(b.id)),
+      )
+      .toList();
+  List<SharedSettlement> get groupSettlements => settlements
+      .where(
+        (s) =>
+            s.groupId == activeGroup &&
+            (!formerMember ||
+                s.allocations.keys.every(
+                      (id) => (exitEntitlements['$activeGroup:$actor'] ?? {})
+                          .contains(id),
+                    ) &&
+                    (s.sender == actor || s.recipient == actor)),
+      )
+      .toList();
+  List<String> get visibleGroupHistory => formerMember
+      ? (exitHistories['$activeGroup:$actor'] ?? [])
+      : groupHistory;
   SharedBill bill(String id) => bills.firstWhere((b) => b.id == id);
   SharedSettlement settlement(String id) =>
       settlements.firstWhere((s) => s.id == id);
   void setActor(String name, bool former) {
     actor = name;
-    formerMember = former;
+    formerMember = former || (members[name]?.startsWith('Former') ?? false);
+    if (formerMember) {
+      exitEntitlements.putIfAbsent(
+        '$activeGroup:$name',
+        () => bills
+            .where((b) => b.groupId == activeGroup)
+            .map((b) => b.id)
+            .toSet(),
+      );
+      exitHistories.putIfAbsent(
+        '$activeGroup:$name',
+        () => List.of(groupHistory),
+      );
+    }
     version++;
     changed();
   }
@@ -18,7 +50,7 @@ extension SharedPrototypeCommands on FinancialController {
   void selectGroup(String id) {
     activeGroup = id;
     actor = 'Amihan';
-    formerMember = false;
+    formerMember = members[actor]?.startsWith('Former') ?? false;
     version++;
     changed();
   }
@@ -37,7 +69,8 @@ extension SharedPrototypeCommands on FinancialController {
       'memberKind': 'Manual · no login',
     });
     for (final m in members.keys) {
-      v['include:$m'] = 'true';
+      v['include:$m'] = (!(members[m]?.startsWith('Former') ?? false))
+          .toString();
       v['paid:$m'] = m == 'Amihan' ? '1200.00' : '0.00';
       v['share:$m'] = m == 'Amihan' || m == 'Tala' || m == 'Nico'
           ? '400.00'
@@ -171,9 +204,19 @@ extension SharedPrototypeCommands on FinancialController {
     final privateAction =
         action == FinancialAction.adoption ||
         action == FinancialAction.privateReview;
-    if (formerMember && !privateAction) {
+    if (formerMember &&
+        !privateAction &&
+        action != FinancialAction.confirmation) {
       errors.add(
         'Former member: retained history and private review only. New group writes are unavailable.',
+      );
+    }
+    if (archivedGroups.contains(activeGroup) &&
+        !privateAction &&
+        action != FinancialAction.confirmation &&
+        action != FinancialAction.group) {
+      errors.add(
+        'This group is archived. Retained history and permitted receipt resolution remain available.',
       );
     }
     if (privateAction && actor != 'Amihan') {
@@ -197,7 +240,7 @@ extension SharedPrototypeCommands on FinancialController {
           'Fictional group created in memory. No online membership or sharing connection.',
         );
       case FinancialAction.member:
-        if (actor != 'Amihan') {
+        if (!groupAdministrationAvailable) {
           errors.add('Only the group owner manages participants in this demo.');
         }
         required('name', 'Name the participant.');
@@ -208,6 +251,11 @@ extension SharedPrototypeCommands on FinancialController {
           '${v['name']} · ${v['memberKind']}. A manual identity grants no login access.',
         );
       case FinancialAction.invitation:
+        if (!groupAdministrationAvailable) {
+          errors.add(
+            'Current owner administration is required for invitations and nominations.',
+          );
+        }
         required('name', 'Enter the invited participant name.');
         required('evidence', 'Enter the demo invitation reference.');
         if (v['claim'] == 'Expired invitation') {
@@ -231,6 +279,17 @@ extension SharedPrototypeCommands on FinancialController {
             ? ExactFinance.equal(total, included)
             : axis('share');
         if (shares.isEmpty) errors.add('Select at least one participant.');
+        if (action == FinancialAction.sharedBill &&
+            members.entries.any(
+              (e) =>
+                  e.value.startsWith('Former') &&
+                  ((paid[e.key] ?? BigInt.zero) > BigInt.zero ||
+                      shares.containsKey(e.key)),
+            )) {
+          errors.add(
+            'Former participants cannot be included in a new bill. Their earlier sources remain intact.',
+          );
+        }
         if (ExactFinance.sum(paid.values) != total) {
           errors.add('Payer contributions must exactly equal the bill total.');
         }
@@ -324,7 +383,7 @@ extension SharedPrototypeCommands on FinancialController {
         if (!members.containsKey(sender) || !members.containsKey(recipient)) {
           errors.add('Select current group participants.');
         }
-        if (actor != sender && actor != 'Amihan') {
+        if (actor != sender && !isGroupOwner) {
           errors.add('Only the sender or owner can enter this report.');
         }
         var allocated = BigInt.zero;
@@ -359,11 +418,14 @@ extension SharedPrototypeCommands on FinancialController {
           break;
         }
         final s = settlement(v['source']!), decision = v['decision'];
+        if (formerMember && !groupSettlements.any((x) => x.id == s.id)) {
+          errors.add('This payment is outside retained entitlement.');
+        }
         final manual =
             members[s.recipient] != null &&
             !members[s.recipient]!.startsWith('Registered');
         if (actor != s.recipient &&
-            !(manual && actor == 'Amihan') &&
+            !(manual && isGroupOwner) &&
             !(decision == 'Cancel report' && actor == s.sender)) {
           errors.add(
             'Only the recipient can confirm/dispute. Manual recipients require explicit owner-entered evidence.',
@@ -516,6 +578,7 @@ extension SharedPrototypeCommands on FinancialController {
     switch (p.action) {
       case FinancialAction.group:
         groups[p.commandId] = v['name']!;
+        groupOwners[p.commandId] = 'Amihan';
         activeGroup = p.commandId;
         memberSets[p.commandId] = {'Amihan': 'Registered · owner'};
       case FinancialAction.member:

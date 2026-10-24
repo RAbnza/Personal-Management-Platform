@@ -10,6 +10,9 @@ import 'financial_editor.dart';
 import 'financial_widgets.dart';
 import 'credit_screen.dart';
 import 'import_screen.dart';
+import '../../planning/presentation/planning_screen.dart';
+import '../../planning/presentation/reports_screen.dart';
+import '../../supporting/presentation/files_screen.dart';
 
 class MoneyScreen extends StatefulWidget {
   const MoneyScreen({
@@ -60,7 +63,15 @@ class _MoneyScreenState extends State<MoneyScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final t in ['Accounts', 'Activity', 'Cards', 'Import'])
+            for (final t in [
+              'Accounts',
+              'Activity',
+              'Cards',
+              'Planning',
+              'Reports',
+              'Import',
+              'Files',
+            ])
               ChoiceChip(
                 label: Text(t),
                 selected: t == tab,
@@ -75,6 +86,12 @@ class _MoneyScreenState extends State<MoneyScreen> {
             'Financial history is incomplete. Balances and financial actions are unavailable until the demo snapshot is complete.',
             warning: true,
           )
+        else if (tab == 'Files')
+          FilesScreen(session: widget.session)
+        else if (tab == 'Planning')
+          PlanningScreen(session: widget.session)
+        else if (tab == 'Reports')
+          ReportsScreen(session: widget.session)
         else if (tab == 'Cards')
           CreditScreen(session: widget.session)
         else if (tab == 'Import')
@@ -635,6 +652,10 @@ class TransactionDetail extends StatelessWidget {
                     ),
                   const SizedBox(height: 24),
                   const SectionHeading('Evidence trail'),
+                  SupportingFilesLink(
+                    session: session,
+                    source: 'action:${r.id}',
+                  ),
                   if (r.sourceId != null)
                     FinancialLine(
                       'Original source',

@@ -5,7 +5,8 @@ import '../gallery/gallery.dart';
 import '../gallery/settings.dart';
 import '../prototype/scenarios.dart';
 import 'demo_routes.dart';
-import 'previews.dart';
+import '../features/profile/presentation/profile_experience.dart';
+import '../features/finance/presentation/financial_widgets.dart';
 
 class ProfileUtilities extends StatelessWidget {
   const ProfileUtilities({
@@ -23,11 +24,21 @@ class ProfileUtilities extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionTitle(
-            'Amihan · Demo household',
+          SectionTitle(
+            '${session.profile.name} · Demo profile',
             caption: 'Fictional profile. All preferences and scenarios reset when the application closes.',
           ),
           StatusNotice('${session.syncLabel}\n${session.coverage}'),
+          FinancialLine(
+            'Profile, connection & recovery',
+            'Onboarding · Google simulation · devices · backups · lifecycle · help',
+            icon: Icons.manage_accounts_outlined,
+            onTap: () => openDemoPage<void>(
+              context,
+              ProfileExperience(session: session, settings: settings),
+              'profile/experience',
+            ),
+          ),
           const SizedBox(height: 24),
           DropdownButtonFormField<OverviewScenario>(
             key: ValueKey(session.scenario),
@@ -100,7 +111,11 @@ class ProfileUtilities extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () => openDemoPage<void>(
               context,
-              FirstRunPage(session: session),
+              ProfileExperience(
+                session: session,
+                settings: settings,
+                initial: 'Welcome',
+              ),
               'first-run',
             ),
             icon: const Icon(Icons.waving_hand_outlined),

@@ -4,10 +4,12 @@ import '../../../app/demo_routes.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
 import '../../../prototype/scenarios.dart';
+import '../application/financial_controller.dart';
 import '../contracts/financial_models.dart';
 import 'financial_editor.dart';
 import 'financial_widgets.dart';
 import 'money_screen.dart';
+import 'card_evidence.dart';
 
 class CreditScreen extends StatelessWidget {
   const CreditScreen({super.key, required this.session});
@@ -21,6 +23,8 @@ class CreditScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        CardEvidence(session: session),
+        const SizedBox(height: 24),
         FinanceColumns(
           main: Container(
             padding: const EdgeInsets.all(28),
@@ -88,7 +92,7 @@ class CreditScreen extends StatelessWidget {
               ValueBlock(
                 'STATEMENT DUE',
                 session.amount(due),
-                'Due 27 Oct · provider evidence v${c.statementVersion}\nUnknown allocations stay separate.',
+                'Due ${c.statementDue} · provider evidence v${c.statementVersion}\nUnknown allocations stay separate.',
                 color: Palette.peach,
               ),
               const SizedBox(height: 12),
@@ -148,7 +152,7 @@ class CreditScreen extends StatelessWidget {
               const SizedBox(height: 24),
               const SectionHeading('Statement & reconciliation'),
               FinancialLine(
-                'October statement',
+                'Statement · ${c.activeStatement.issued}',
                 'Provider balance · v${c.statementVersion} · allocations ${session.amount(c.statementAllocated)}',
                 value: session.amount(c.statementBalance),
                 icon: Icons.description_outlined,

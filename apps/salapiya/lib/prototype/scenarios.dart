@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import 'fixtures.dart';
 import '../features/finance/application/financial_controller.dart';
+import '../features/planning/application/planning_controller.dart';
+import '../features/common/prototype_form.dart';
+import '../features/life/application/life_controller.dart';
+import '../features/profile/application/profile_controller.dart';
 
 enum AppDestination {
   overview('Overview'),
@@ -32,12 +36,83 @@ enum OverviewScenario {
 class PrototypeSession extends ChangeNotifier {
   PrototypeSession() {
     finance.addListener(notifyListeners);
+    planning.addListener(notifyListeners);
+    life.addListener(notifyListeners);
+    profile.addListener(notifyListeners);
   }
-  final finance = FinancialController();
+  FinancialController finance = FinancialController();
+  late PlanningController planning = PlanningController(finance);
+  LifeController life = LifeController();
+  final profile = ProfileController();
+  final List<
+    (
+      FinancialController,
+      PlanningController,
+      LifeController,
+      OverviewScenario,
+      String,
+    )
+  >
+  recoveryCopies = [];
+  void replaceProfile({required bool empty, required String name}) {
+    finance.removeListener(notifyListeners);
+    planning.removeListener(notifyListeners);
+    life.removeListener(notifyListeners);
+    recoveryCopies.add((finance, planning, life, scenario, profile.name));
+    finance = FinancialController()..reset(empty: empty);
+    planning = PlanningController(finance)..reset(empty: empty);
+    life = LifeController()..reset(empty: empty);
+    finance.addListener(notifyListeners);
+    planning.addListener(notifyListeners);
+    life.addListener(notifyListeners);
+    scenario = empty ? OverviewScenario.empty : OverviewScenario.local;
+    profile.name = name;
+    profile.generation++;
+    profile.profileId = 'demo-profile-${profile.generation}';
+    prototypeDrafts.clear();
+    profile.changed();
+    notifyListeners();
+  }
+
+  void recoverPreviousProfile() {
+    if (recoveryCopies.isEmpty) return;
+    finance.removeListener(notifyListeners);
+    planning.removeListener(notifyListeners);
+    life.removeListener(notifyListeners);
+    finance.dispose();
+    planning.dispose();
+    life.dispose();
+    final old = recoveryCopies.removeLast();
+    finance = old.$1;
+    planning = old.$2;
+    life = old.$3;
+    scenario = old.$4;
+    profile.name = old.$5;
+    finance.addListener(notifyListeners);
+    planning.addListener(notifyListeners);
+    life.addListener(notifyListeners);
+    profile.generation++;
+    profile.connection = 'Local recovery demo';
+    profile.identity = 'Not connected';
+    profile.changed();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     finance.removeListener(notifyListeners);
+    planning.removeListener(notifyListeners);
+    planning.dispose();
+    life.removeListener(notifyListeners);
+    life.dispose();
     finance.dispose();
+    profile.removeListener(notifyListeners);
+    profile.dispose();
+    for (final old in recoveryCopies) {
+      old.$1.dispose();
+      old.$2.dispose();
+      old.$3.dispose();
+    }
     super.dispose();
   }
 
@@ -70,14 +145,16 @@ class PrototypeSession extends ChangeNotifier {
       : empty
       ? 'No accounts yet. Complete empty local profile.'
       : local
-      ? '3 local accounts · complete through 21 Oct 2026, 09:00.'
-      : '3 accepted accounts · snapshot at 21 Oct 2026, 09:00. Pending effects excluded.';
+      ? '${finance.accounts.length} local accounts · complete through 21 Oct 2026, 09:00.'
+      : '${finance.accounts.length} accepted accounts · snapshot at 21 Oct 2026, 09:00. Pending effects excluded.';
 
   String amount(BigInt value) =>
       hideAmounts ? 'Amount hidden' : DemoMoney.format(value);
   void select(OverviewScenario value) {
     if (value == OverviewScenario.empty || scenario == OverviewScenario.empty) {
       finance.reset(empty: value == OverviewScenario.empty);
+      planning.reset(empty: value == OverviewScenario.empty);
+      life.reset(empty: value == OverviewScenario.empty);
     }
     scenario = value;
     finance.available = value != OverviewScenario.incomplete;
@@ -91,6 +168,16 @@ class PrototypeSession extends ChangeNotifier {
 
   void reset() {
     finance.reset();
+    planning.reset();
+    life.reset();
+    profile.reset();
+    for (final old in recoveryCopies) {
+      old.$1.dispose();
+      old.$2.dispose();
+      old.$3.dispose();
+    }
+    recoveryCopies.clear();
+    prototypeDrafts.clear();
     scenario = OverviewScenario.local;
     hideAmounts = false;
     notifyListeners();

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:salapiya/app.dart';
 import 'package:salapiya/gallery/settings.dart';
 import 'package:salapiya/prototype/scenarios.dart';
-import 'package:salapiya/app/previews.dart';
+import 'package:salapiya/features/common/prototype_form.dart';
 import 'package:salapiya/app/shell_navigation.dart';
 
 import 'shell_journey.dart';
@@ -59,7 +59,7 @@ void main() {
               await tester.tap(find.byTooltip('Quick actions'));
               await tester.pumpAndSettle();
               await tapVisible(tester, find.text('Add task'));
-              expect(find.text('Add task · preview'), findsOneWidget);
+              expect(find.byType(PrototypeForm), findsOneWidget);
               await tester.binding.handlePopRoute();
               await tester.pumpAndSettle();
               expect(tester.takeException(), isNull);
@@ -154,20 +154,26 @@ void main() {
       }
       await tapVisible(tester, find.text('First-run preview'));
       await tapVisible(tester, find.text('Restore from backup'));
-      await tapVisible(tester, find.text('Cancel'));
-      await tapVisible(tester, find.text('Skip to populated demo'));
+      expect(find.text('Restore deliberately'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Quick actions'));
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('Add task'));
+      final taskTitle = find.widgetWithText(TextField, 'Title');
+      await tester.ensureVisible(taskTitle);
+      await tester.enterText(taskTitle, 'Review the weekly plan');
+      FocusManager.instance.primaryFocus?.unfocus();
       tester.view.viewInsets = const FakeViewPadding(bottom: 220);
       addTearDown(tester.view.resetViewInsets);
       await tester.pumpAndSettle();
-      await tapVisible(tester, find.text('Preview outcome'));
-      expect(find.byType(DemoActionPage), findsOneWidget);
+      await tapVisible(tester, find.text('Review changes'));
+      expect(find.byType(PrototypeForm), findsOneWidget);
+      await tester.ensureVisible(find.text('Apply simulation'));
       expect(
-        tester.getBottomLeft(find.text('Preview outcome')).dy,
+        tester.getBottomLeft(find.text('Apply simulation')).dy,
         lessThanOrEqualTo(348),
       );
       expect(tester.takeException(), isNull);

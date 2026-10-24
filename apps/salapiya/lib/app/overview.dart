@@ -263,7 +263,7 @@ class Overview extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Good morning, Amihan',
+            'Good morning, ${session.profile.name}',
             style: TextStyle(color: CraftTheme.of(context).secondary),
           ),
         ],
