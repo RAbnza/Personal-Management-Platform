@@ -81,6 +81,7 @@ class FinancialRecord {
     required this.accountId,
     required this.category,
     required Map<String, BigInt> cash,
+    Set<String>? affectedAccounts,
     BigInt? card,
     BigInt? spending,
     Map<String, BigInt>? categorySpending,
@@ -88,7 +89,10 @@ class FinancialRecord {
     this.note = '',
     this.status = 'Accepted demo',
     this.revision = 1,
-  }) : cash = Map.unmodifiable(cash),
+  }) : affectedAccounts = Set.unmodifiable(
+         affectedAccounts ?? {...cash.keys, accountId},
+       ),
+       cash = Map.unmodifiable(cash),
        card = card ?? BigInt.zero,
        spending = spending ?? BigInt.zero,
        categorySpending = Map.unmodifiable(
@@ -98,6 +102,7 @@ class FinancialRecord {
   final String? sourceId;
   final BigInt amount, card, spending;
   final Map<String, BigInt> cash;
+  final Set<String> affectedAccounts;
   final Map<String, BigInt> categorySpending;
   final int revision;
   bool get sharedOnly =>

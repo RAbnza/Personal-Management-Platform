@@ -7,6 +7,9 @@ import 'gallery/gallery.dart';
 import 'gallery/settings.dart';
 import 'app/shell.dart';
 import 'prototype/scenarios.dart';
+import 'local/local_profile_view.dart';
+import 'local/local_runtime.dart';
+import 'features/finance/presentation/financial_widgets.dart';
 
 class SalapiyaApp extends StatefulWidget {
   const SalapiyaApp({
@@ -14,10 +17,14 @@ class SalapiyaApp extends StatefulWidget {
     this.settings,
     this.gallery = false,
     this.session,
+    this.production = false,
+    this.localRuntime,
   });
   final GallerySettings? settings;
   final bool gallery;
   final PrototypeSession? session;
+  final bool production;
+  final LocalRuntime? localRuntime;
   @override
   State<SalapiyaApp> createState() => _SalapiyaAppState();
 }
@@ -51,7 +58,7 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
     listenable: settings,
     builder: (context, _) => MaterialApp(
       navigatorKey: navigator,
-      title: 'Salapiya · Demo',
+      title: widget.production ? 'Salapiya' : 'Salapiya · Demo',
       debugShowCheckedModeBanner: false,
       theme: SalapiyaTheme.build(Brightness.light),
       darkTheme: SalapiyaTheme.build(Brightness.dark),
@@ -105,7 +112,12 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
                   ): () =>
                       navigator.currentState?.maybePop(),
                 },
-                child: child!,
+                child: FinancialEnvironment(
+                  production:
+                      widget.production ||
+                      (widget.session?.production ?? false),
+                  child: child!,
+                ),
               ),
             ),
           ),
@@ -113,6 +125,8 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
       },
       home: widget.gallery
           ? GalleryHome(settings: settings)
+          : widget.production
+          ? LocalBootstrap(settings: settings, runtime: widget.localRuntime)
           : SalapiyaShell(settings: settings, session: widget.session),
     ),
   );

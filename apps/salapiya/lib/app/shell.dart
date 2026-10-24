@@ -18,6 +18,7 @@ import '../features/finance/presentation/debts_screen.dart';
 import '../features/finance/presentation/shared_screen.dart';
 import '../features/life/presentation/life_screen.dart';
 import '../features/life/application/life_controller.dart';
+import '../local/local_profile_view.dart';
 
 class SalapiyaShell extends StatefulWidget {
   const SalapiyaShell({super.key, required this.settings, this.session});
@@ -55,60 +56,71 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
     }
   }
 
-  void source(PreviewSource source) => open(switch (source) {
-    PreviewSource.accounts ||
-    PreviewSource.activity ||
-    PreviewSource.cards ||
-    PreviewSource.planning ||
-    PreviewSource.reports ||
-    PreviewSource.electricity => FinancePage(
-      title: source.label,
-      child: MoneyScreen(
-        session: session,
-        initial:
-            source == PreviewSource.planning ||
-                source == PreviewSource.electricity
-            ? 'Planning'
-            : source == PreviewSource.reports
-            ? 'Reports'
-            : source == PreviewSource.cards
-            ? 'Cards'
-            : source == PreviewSource.activity
-            ? 'Activity'
-            : 'Accounts',
+  void source(PreviewSource source) {
+    if (session.production &&
+        ![PreviewSource.accounts, PreviewSource.activity].contains(source)) {
+      open(
+        FinancePage(title: source.label, child: UpcomingView(source.label)),
+        'upcoming/${source.name}',
+      );
+      return;
+    }
+    open(switch (source) {
+      PreviewSource.accounts ||
+      PreviewSource.activity ||
+      PreviewSource.cards ||
+      PreviewSource.planning ||
+      PreviewSource.reports ||
+      PreviewSource.electricity => FinancePage(
+        title: source.label,
+        child: MoneyScreen(
+          session: session,
+          initial:
+              source == PreviewSource.planning ||
+                  source == PreviewSource.electricity
+              ? 'Planning'
+              : source == PreviewSource.reports
+              ? 'Reports'
+              : source == PreviewSource.cards
+              ? 'Cards'
+              : source == PreviewSource.activity
+              ? 'Activity'
+              : 'Accounts',
+        ),
       ),
-    ),
-    PreviewSource.debt || PreviewSource.debtHistory => FinancePage(
-      title: 'Debts',
-      child: DebtsScreen(session: session),
-    ),
-    PreviewSource.group ||
-    PreviewSource.settlement ||
-    PreviewSource.privateReview => FinancePage(
-      title: source.label,
-      child: SharedScreen(
-        session: session,
-        initial: source == PreviewSource.settlement
-            ? 'Payments'
-            : source == PreviewSource.privateReview
-            ? 'Private review'
-            : 'Bills',
+      PreviewSource.debt || PreviewSource.debtHistory => FinancePage(
+        title: 'Debts',
+        child: DebtsScreen(session: session),
       ),
-    ),
-    _ => FinancePage(
-      title: source.label,
-      child: LifeScreen(
-        session: session,
-        initial: switch (source) {
-          PreviewSource.task => 'Tasks',
-          PreviewSource.learning => 'Learning',
-          PreviewSource.books => 'Books',
-          PreviewSource.career => 'Career',
-          _ => 'Calendar',
-        },
+      PreviewSource.group ||
+      PreviewSource.settlement ||
+      PreviewSource.privateReview => FinancePage(
+        title: source.label,
+        child: SharedScreen(
+          session: session,
+          initial: source == PreviewSource.settlement
+              ? 'Payments'
+              : source == PreviewSource.privateReview
+              ? 'Private review'
+              : 'Bills',
+        ),
       ),
-    ),
-  }, '${source.destination.name}/${source.name}');
+      _ => FinancePage(
+        title: source.label,
+        child: LifeScreen(
+          session: session,
+          initial: switch (source) {
+            PreviewSource.task => 'Tasks',
+            PreviewSource.learning => 'Learning',
+            PreviewSource.books => 'Books',
+            PreviewSource.career => 'Career',
+            _ => 'Calendar',
+          },
+        ),
+      ),
+    }, '${source.destination.name}/${source.name}');
+  }
+
   void utilities() => open(
     ProfileUtilities(settings: widget.settings, session: session),
     'profile',
@@ -143,7 +155,11 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
       ],
     };
     return [
-      for (final definition in definitions)
+      for (final definition in definitions.where(
+        (d) =>
+            !session.production ||
+            ['Add expense', 'Record income', 'Transfer money'].contains(d.$1),
+      ))
         FloatingQuickAction(
           label: definition.$1,
           icon: definition.$2,
@@ -284,7 +300,9 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'DEMO · synthetic data · ${session.syncLabel}',
+                            session.production
+                                ? 'LOCAL ONLY · encrypted on this device · available offline'
+                                : 'DEMO · synthetic data · ${session.syncLabel}',
                             style: TextStyle(
                               fontSize: 11,
                               color: CraftTheme.of(context).secondary,
@@ -325,6 +343,8 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                               key: ObjectKey(session.finance),
                                               session: session,
                                             )
+                                          : session.production
+                                          ? UpcomingView(destination.label)
                                           : destination == AppDestination.debts
                                           ? DebtsScreen(session: session)
                                           : destination == AppDestination.shared

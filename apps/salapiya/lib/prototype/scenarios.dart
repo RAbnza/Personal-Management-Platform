@@ -34,13 +34,20 @@ enum OverviewScenario {
 /// One memory-only scenario controller; no persistence or network adapters.
 /// Coverage, transport and receipt state stay separate from display scenarios.
 class PrototypeSession extends ChangeNotifier {
-  PrototypeSession() {
+  PrototypeSession({FinancialController? financial, this.production = false})
+    : finance = financial ?? FinancialController() {
+    if (production) {
+      planning.reset(empty: true);
+      life.reset(empty: true);
+      scenario = OverviewScenario.local;
+    }
     finance.addListener(notifyListeners);
     planning.addListener(notifyListeners);
     life.addListener(notifyListeners);
     profile.addListener(notifyListeners);
   }
-  FinancialController finance = FinancialController();
+  final bool production;
+  FinancialController finance;
   late PlanningController planning = PlanningController(finance);
   LifeController life = LifeController();
   final profile = ProfileController();
@@ -144,6 +151,8 @@ class PrototypeSession extends ChangeNotifier {
       ? 'Money summary not ready — history is still downloading.'
       : empty
       ? 'No accounts yet. Complete empty local profile.'
+      : production
+      ? '${finance.accounts.length} local accounts · complete committed local history · PHP · Asia/Manila.'
       : local
       ? '${finance.accounts.length} local accounts · complete through 21 Oct 2026, 09:00.'
       : '${finance.accounts.length} accepted accounts · snapshot at 21 Oct 2026, 09:00. Pending effects excluded.';

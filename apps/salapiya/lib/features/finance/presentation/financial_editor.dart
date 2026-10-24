@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/demo_routes.dart';
@@ -6,6 +8,8 @@ import '../../../design_system/theme.dart';
 import '../application/financial_controller.dart';
 import '../contracts/financial_models.dart';
 import 'financial_widgets.dart';
+import '../../../local/local_finance_controller.dart';
+import '../../../local/finance_domain.dart';
 
 Future<void> openFinancialEditor(
   BuildContext context,
@@ -53,6 +57,62 @@ class _FinancialEditorState extends State<FinancialEditor> {
   bool reviewing = false, busy = false, dirty = false, allowPop = false;
   FinancialController get c => widget.controller;
   FinancialAction get action => widget.action;
+  String get operation => '${action.name}:${widget.sourceId ?? ''}';
+  bool restoring = false, restored = false, draftUnavailable = false;
+  String? draftError;
+  int draftRevision = 0, savedDraftRevision = 0;
+  Future<void> draftWork = Future.value();
+  @override
+  void initState() {
+    super.initState();
+    if (c.production) {
+      restoring = true;
+      unawaited(loadDraft());
+    }
+  }
+
+  Future<void> loadDraft() async {
+    try {
+      final draft = await c.restoreDraft(operation);
+      if (!mounted) return;
+      draftUnavailable = false;
+      if (draft != null) {
+        values.addAll(Map<String, String>.from(draft['values'] as Map));
+        command = draft['command'] as String;
+        dirty = true;
+        restored = true;
+      }
+    } catch (_) {
+      draftUnavailable = true;
+      if (mounted) draftError = 'The saved draft could not be read. Reopen this profile before editing.';
+    } finally {
+      if (mounted) setState(() => restoring = false);
+    }
+  }
+
+  void retain() {
+    if (!c.production) return;
+    final revision = ++draftRevision;
+    final frozen = Map<String, String>.from(values), id = command;
+    draftWork = draftWork
+        .then((_) => c.retainDraft(operation, id, frozen))
+        .then((_) {
+          if (mounted) {
+            setState(() {
+              draftError = null;
+              savedDraftRevision = revision;
+            });
+          }
+        })
+        .catchError((Object _) {
+          if (mounted) {
+            setState(
+              () => draftError = 'Draft could not be saved. Keep this screen open and check available storage.',
+            );
+          }
+        });
+  }
+
   @override
   void dispose() {
     for (final f in fields.values) {
@@ -82,6 +142,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
           onChanged: (x) => setState(() {
             values[key] = x;
             dirty = true;
+            retain();
           }),
         ),
       );
@@ -103,6 +164,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
           onChanged: (x) => setState(() {
             values[key] = x ?? '';
             dirty = true;
+            retain();
           }),
         ),
       );
@@ -114,6 +176,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
     onChanged: (x) => setState(() {
       values[key] = '$x';
       dirty = true;
+      retain();
     }),
   );
   Widget section(String title, List<Widget> children) => Column(
@@ -131,7 +194,13 @@ class _FinancialEditorState extends State<FinancialEditor> {
     bool card = false,
   }) => select(key, label, {
     for (final a in c.activeAccounts) a.id: a.name,
-    if (card) 'card': 'Everyday credit · liability',
+    if (c.production &&
+        [FinancialAction.correction, FinancialAction.reversal].contains(action))
+      for (final a in c.accounts.where(
+        (a) => a.archived && a.id == values[key],
+      ))
+        a.id: '${a.name} · archived historical account',
+    if (card && !c.production) 'card': 'Everyday credit · liability',
   });
   Widget amount([String label = 'Amount']) =>
       text('amount', label, money: true);
@@ -147,6 +216,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
   };
 
   List<Widget> get entryFields {
+    if (c.production) return productionFields;
     switch (action) {
       case FinancialAction.debtClassification:
         return [
@@ -577,7 +647,300 @@ class _FinancialEditorState extends State<FinancialEditor> {
     }
   }
 
+  List<Widget> get productionFields {
+    final local = c as LocalFinancialController;
+    final source = local.snapshot.revisions
+        .where((r) => r.id == values['source'])
+        .firstOrNull;
+    final kind = action == FinancialAction.correction
+        ? source?.kind
+        : action.name;
+    Widget categories(String key, String label, String classification) =>
+        select(key, label, local.categoryChoices(classification));
+    final purchase = source?.kind == 'refund' && source?.source != null
+        ? local.snapshot.revision(source!.source!)
+        : source;
+    Widget refundPortions() => select(
+      'refundPosting',
+      'Original purchase / fee portion',
+      {
+        for (final e
+            in (purchase?.postings ?? <LocalPosting>[]).asMap().entries.where(
+              (e) => e.value.ledger == 'expense',
+            ))
+          '${purchase!.id}-p${e.key + 1}':
+              '${local.categoryName(e.value.category)} · ${c.amount(e.value.amount)} · ${e.value.date}',
+      },
+    );
+    final splitCount = int.tryParse(values['splitCount'] ?? '') ?? 2;
+    final feeCount = int.tryParse(values['feeCount'] ?? '') ?? 1;
+    void addFee() => setState(() {
+      values.addAll({
+        'feeCount': '${feeCount + 1}',
+        'extraFee${feeCount}Amount': '',
+        'extraFee${feeCount}Treatment': 'source_additional',
+        'extraFee${feeCount}Category': 'category-fees',
+        'extraFee${feeCount}Account': values['account'] ?? '',
+        'extraFee${feeCount}Date': '',
+        'extraFee${feeCount}Label': '',
+      });
+      dirty = true;
+      retain();
+    });
+    void splitNumber(int delta) => setState(() {
+      values['splitCount'] = '${splitCount + delta}';
+      dirty = true;
+      retain();
+    });
+    final details = [
+      text('reference', 'Reference (optional)'),
+      text('notes', 'Notes (optional)'),
+    ];
+    if (action == FinancialAction.reversal) {
+      return [
+        date(),
+        reason(),
+        const FinanceNotice(
+          'The current financial effect is voided at its original dates. Every revision remains visible.',
+        ),
+      ];
+    }
+    if (action == FinancialAction.refund) {
+      return [
+        amount('Refund amount'),
+        account(label: 'Receiving account'),
+        date(),
+        refundPortions(),
+        reason(),
+        ...details,
+        const FinanceNotice(
+          'Allocate only the amount returned for the selected original category. Prior refunds reduce its available amount. A refund reduces spending; it is not income.',
+        ),
+      ];
+    }
+    if (action == FinancialAction.reconcile) {
+      return values['mode'] == 'adjustment'
+          ? [
+              account(),
+              date(),
+              reason(),
+              const FinanceNotice(
+                'Post the reviewed comparison difference as an explicit equity adjustment. It is not income or spending. Changed sources require a new comparison.',
+              ),
+            ]
+          : [
+              account(),
+              amount('Observed balance (signed)'),
+              date(),
+              text('reference', 'Statement / evidence reference (optional)'),
+              text('notes', 'Notes (optional)'),
+              const FinanceNotice(
+                'Save a comparison without changing money. Inspect it in account history, then explicitly review an adjustment if needed.',
+              ),
+            ];
+    }
+    switch (kind) {
+      case 'account':
+        return [
+          text('name', 'Account name'),
+          select(
+            'kind',
+            'Account type',
+            choices(['Cash', 'Bank', 'Mobile wallet', 'Checking', 'Savings']),
+          ),
+          amount('Opening balance'),
+          text('cutoff', 'Opening cutoff · YYYY-MM-DD'),
+          text('institution', 'Institution (optional)'),
+          text('notes', 'Notes (optional)'),
+          const FinanceNotice(
+            'This balance is your baseline at the end of the cutoff date, not income. Record new activity strictly after that date.',
+          ),
+        ];
+      case 'category':
+        return [
+          text('name', 'Category name'),
+          select('classification', 'Classification', {
+            'expense': 'Expense',
+            'income': 'Income',
+          }),
+        ];
+      case 'archive':
+        return [
+          account(),
+          reason(),
+          const FinanceNotice(
+            'History and balance are retained. Archiving disables new entries for this account.',
+          ),
+        ];
+      case 'expense':
+      case 'income':
+        return [
+          text('name', 'Description'),
+          amount(),
+          account(),
+          date(),
+          categories('category', 'Category', kind!),
+          if (kind == 'income') ...[
+            select('incomeClass', 'Income classification', {
+              'earned': 'Earned',
+              'gift': 'Gift',
+              'reward': 'Reward',
+              'other': 'Other',
+            }),
+            text('sender', 'Received from (optional)'),
+          ],
+          if (kind == 'expense') ...[
+            toggle('split', 'Split across categories'),
+            if (values['split'] == 'true') ...[
+              text('splitAmount', 'First category amount', money: true),
+              for (var i = 2; i < splitCount; i++) ...[
+                text('split${i}Amount', 'Split ${i + 1} amount', money: true),
+                categories(
+                  'split${i}Category',
+                  'Split ${i + 1} category',
+                  'expense',
+                ),
+              ],
+              categories('splitCategory', 'Remainder category', 'expense'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: splitCount < 100 ? () => splitNumber(1) : null,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add category split'),
+                  ),
+                  if (splitCount > 2)
+                    TextButton(
+                      onPressed: () => splitNumber(-1),
+                      child: const Text('Remove last split'),
+                    ),
+                ],
+              ),
+            ],
+          ],
+          ...details,
+          if (action == FinancialAction.correction) reason(),
+        ];
+      case 'transfer':
+        return [
+          text('name', 'Description (optional)'),
+          amount('Amount arriving at destination'),
+          account(label: 'From account'),
+          account(key: 'destination', label: 'To account'),
+          date(),
+          text('fee', 'Transfer fee', money: true),
+          select('feeTreatment', 'Fee payment', {
+            'source_additional': 'Paid additionally by source',
+            'withheld': 'Withheld from amount sent',
+            'separate': 'Paid by another account',
+          }),
+          if (values['feeTreatment'] == 'separate')
+            account(key: 'feeAccount', label: 'Fee-bearing account'),
+          categories('feeCategory', 'Fee category', 'expense'),
+          text('feeDate', 'Fee date · YYYY-MM-DD (blank uses transfer date)'),
+          for (var i = 1; i < feeCount; i++) ...[
+            SectionHeading('Additional fee ${i + 1}'),
+            text('extraFee${i}Label', 'Fee label (optional)'),
+            text('extraFee${i}Amount', 'Fee amount', money: true),
+            select('extraFee${i}Treatment', 'Fee payment', {
+              'source_additional': 'Paid additionally by source',
+              'withheld': 'Withheld from amount sent',
+              'separate': 'Paid by another account',
+            }),
+            if (values['extraFee${i}Treatment'] == 'separate')
+              account(key: 'extraFee${i}Account', label: 'Fee-bearing account'),
+            categories('extraFee${i}Category', 'Fee category', 'expense'),
+            text('extraFee${i}Date', 'Fee date (blank uses transfer date)'),
+          ],
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: feeCount < 20 ? addFee : null,
+                icon: const Icon(Icons.add),
+                label: const Text('Add transfer fee'),
+              ),
+              if (feeCount > 1)
+                TextButton(
+                  onPressed: () => setState(() {
+                    values['feeCount'] = '${feeCount - 1}';
+                    dirty = true;
+                    retain();
+                  }),
+                  child: const Text('Remove last fee'),
+                ),
+            ],
+          ),
+          ...details,
+          if (action == FinancialAction.correction) reason(),
+          const FinanceNotice(
+            'Both principal sides commit together. Fees are recognized once; principal is neither income nor spending.',
+          ),
+        ];
+      case 'refund':
+        return [
+          amount('Corrected refund'),
+          account(label: 'Receiving account'),
+          date(),
+          refundPortions(),
+          reason(),
+          ...details,
+        ];
+      case 'opening':
+        return [
+          amount('Corrected opening balance'),
+          date(),
+          reason(),
+          const FinanceNotice(
+            'The original account and coverage cutoff stay fixed. This corrects the baseline and preserves the full original evidence.',
+          ),
+        ];
+      default:
+        return [
+          const FinanceNotice('Use the source workflow to review this action.'),
+        ];
+    }
+  }
+
   Future<void> back() async {
+    if (busy || restoring) return;
+    if (c.production && dirty && result != DemoOutcome.accepted) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Leave this draft?'),
+          content: const Text(
+            'Keep your entries encrypted on this device, or discard this unposted draft.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Keep editing'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'discard'),
+              child: const Text('Discard draft'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'keep'),
+              child: const Text('Save draft & leave'),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return;
+      await draftWork;
+      if (choice == 'discard') {
+        await c.discardDraft(operation);
+      }
+      if (draftError != null && choice == 'keep') return;
+      if (mounted) {
+        setState(() => allowPop = true);
+        Navigator.pop(context);
+      }
+      return;
+    }
     if (!dirty || result == DemoOutcome.accepted) {
       setState(() => allowPop = true);
       if (mounted) Navigator.pop(context);
@@ -618,21 +981,33 @@ class _FinancialEditorState extends State<FinancialEditor> {
       reviewing = preview!.valid;
       dirty = true;
     });
+    retain();
   }
 
   Future<void> simulate() async {
     setState(() => busy = true);
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    await draftWork;
+    if (c.production && draftError != null) {
+      if (mounted) setState(() => busy = false);
+      return;
+    }
+    if (!c.production) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    }
+    final committed = await c.commitPreview(preview!, outcome);
     if (!mounted) return;
     setState(() {
-      result = c.execute(preview!, outcome);
+      result = committed;
       busy = false;
     });
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: allowPop || !dirty || result == DemoOutcome.accepted,
+    canPop:
+        !busy &&
+        !restoring &&
+        (allowPop || !dirty || result == DemoOutcome.accepted),
     onPopInvokedWithResult: (didPop, _) {
       if (!didPop && !busy) back();
     },
@@ -660,7 +1035,39 @@ class _FinancialEditorState extends State<FinancialEditor> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (result == null && !reviewing) ...[
+                    if (restoring)
+                      const Center(child: CircularProgressIndicator()),
+                    if (restored && result == null)
+                      const FinanceNotice(
+                        'Restored encrypted draft. Review current financial effects before saving.',
+                      ),
+                    if (draftError != null)
+                      FinanceNotice(draftError!, warning: true),
+                    if (c.production &&
+                        dirty &&
+                        result == null &&
+                        draftError == null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            savedDraftRevision == draftRevision
+                                ? 'Draft saved on this device · not posted'
+                                : 'Saving draft…',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ),
+                    if (draftUnavailable)
+                      TextButton(
+                        onPressed: loadDraft,
+                        child: const Text('Retry reading saved draft'),
+                      ),
+                    if (result == null &&
+                        !reviewing &&
+                        !restoring &&
+                        !draftUnavailable) ...[
                       ...entryFields,
                       toggle('acknowledge', switch (action) {
                         FinancialAction.payoff =>
@@ -701,12 +1108,14 @@ class _FinancialEditorState extends State<FinancialEditor> {
                       for (final effect in preview!.effects)
                         FinancialLine(
                           effect,
-                          'Synthetic preview',
+                          c.production
+                              ? 'Reviewed local effect'
+                              : 'Synthetic preview',
                           icon: Icons.check,
                           color: Palette.mint,
                         ),
                       const SizedBox(height: 20),
-                      selectOutcome(),
+                      if (!c.production) selectOutcome(),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
@@ -731,7 +1140,9 @@ class _FinancialEditorState extends State<FinancialEditor> {
                                   )
                                 : const Icon(Icons.check),
                             label: Text(
-                              busy ? 'Simulating…' : 'Simulate action',
+                              c.production
+                                  ? (busy ? 'Saving…' : 'Confirm & save')
+                                  : (busy ? 'Simulating…' : 'Simulate action'),
                             ),
                           ),
                         ],
@@ -764,13 +1175,17 @@ class _FinancialEditorState extends State<FinancialEditor> {
                   'Account balances and private records belong only to you.',
                   icon: Icons.lock_outline,
                 ),
-                const FinancialLine(
+                FinancialLine(
                   'The full story',
-                  'Originals, revisions and simulated command receipts remain inspectable.',
+                  c.production
+                      ? 'Originals, revisions and durable command receipts remain inspectable.'
+                      : 'Originals, revisions and simulated command receipts remain inspectable.',
                   icon: Icons.history,
                 ),
-                const FinanceNotice(
-                  'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
+                FinanceNotice(
+                  c.production
+                      ? 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.'
+                      : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
                 ),
               ],
             ),
@@ -810,7 +1225,8 @@ class _FinancialEditorState extends State<FinancialEditor> {
     ),
     const SizedBox(height: 20),
     Text(switch (result!) {
-      DemoOutcome.accepted => 'Demo action complete',
+      DemoOutcome.accepted =>
+        c.production ? 'Saved on this device' : 'Demo action complete',
       DemoOutcome.pending => 'Awaiting simulated acceptance',
       DemoOutcome.stale => 'Review the current source',
       DemoOutcome.unavailable => 'Temporarily unavailable',
@@ -819,7 +1235,9 @@ class _FinancialEditorState extends State<FinancialEditor> {
     const SizedBox(height: 12),
     Text(switch (result!) {
       DemoOutcome.accepted =>
-        'Updated in this session only. Your original evidence is retained.',
+        c.production
+            ? 'Committed to encrypted storage. Your original evidence is retained.'
+            : 'Updated in this session only. Your original evidence is retained.',
       DemoOutcome.pending => 'Accepted balances have not changed. Check this same command to resolve its status.',
       DemoOutcome.stale => 'No new action was applied by this attempt. Your input is retained; compare the current preview before trying again.',
       DemoOutcome.unavailable =>
@@ -827,7 +1245,12 @@ class _FinancialEditorState extends State<FinancialEditor> {
       DemoOutcome.unknown => 'Do not submit another payment. Check the original command; it may already have been accepted.',
     }),
     const SizedBox(height: 16),
-    SelectableText('Demo receipt: $command'),
+    if (c is LocalFinancialController &&
+        (c as LocalFinancialController).lastError != null)
+      FinanceNotice((c as LocalFinancialController).lastError!, warning: true),
+    SelectableText(
+      '${c.production ? 'Local command' : 'Demo receipt'}: $command',
+    ),
     const SizedBox(height: 12),
     for (final e in preview!.effects)
       Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(e)),
@@ -838,7 +1261,14 @@ class _FinancialEditorState extends State<FinancialEditor> {
       children: [
         if (result == DemoOutcome.pending || result == DemoOutcome.unknown)
           FilledButton(
-            onPressed: () => setState(() => result = c.checkResult(command)),
+            onPressed: () async {
+              final resolved = c is LocalFinancialController
+                  ? await (c as LocalFinancialController).resolveReceipt(
+                      command,
+                    )
+                  : c.checkResult(command);
+              if (mounted) setState(() => result = resolved);
+            },
             child: const Text('Check original result'),
           ),
         if (result == DemoOutcome.stale || result == DemoOutcome.unavailable)
@@ -846,7 +1276,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
             onPressed: () => setState(() {
               result = null;
               reviewing = false;
-              command = c.nextCommand();
+              if (!c.production) command = c.nextCommand();
               preview = c.preview(action, values, command);
             }),
             child: const Text('Return to retained draft'),

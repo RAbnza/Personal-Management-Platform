@@ -7,6 +7,8 @@ import '../design_system/theme.dart';
 import '../prototype/activity.dart';
 import '../prototype/fixtures.dart';
 import '../prototype/scenarios.dart';
+import '../local/local_finance_controller.dart';
+import '../local/finance_domain.dart';
 
 class BalanceFeature extends StatefulWidget {
   const BalanceFeature({super.key, required this.session, required this.open});
@@ -99,7 +101,13 @@ class _BalanceFeatureState extends State<BalanceFeature> {
                           : 'Explore spending rhythm',
                     ),
                   ),
-                if (visible && (!mobile || rhythmExpanded)) ...[
+                if (visible &&
+                    session.production &&
+                    (!mobile || rhythmExpanded))
+                  LocalSpendingRhythm(session: session)
+                else if (visible &&
+                    !session.production &&
+                    (!mobile || rhythmExpanded)) ...[
                   Row(
                     children: [
                       const Expanded(
@@ -291,7 +299,9 @@ class AccountWallet extends StatefulWidget {
 
 class _AccountWalletState extends State<AccountWallet> {
   int selected = 1;
-  final pages = PageController(initialPage: 1);
+  late final pages = PageController(
+    initialPage: widget.session.production ? 0 : 1,
+  );
   @override
   void dispose() {
     pages.dispose();
@@ -301,6 +311,30 @@ class _AccountWalletState extends State<AccountWallet> {
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
+
+    if (session.production && session.finance.accounts.isEmpty) {
+      return EditorialSurface(
+        color: Palette.mint,
+        child: DefaultTextStyle.merge(
+          style: const TextStyle(color: Palette.ink),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeading('Your first wallet'),
+              const SizedBox(height: 16),
+              const Text(
+                'Start with a confirmed opening balance. Your money stays on this device.',
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton(
+                onPressed: () => widget.open(PreviewSource.accounts),
+                child: const Text('Set up your accounts'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final mobile = Theme.of(context).platform == TargetPlatform.android;
     final wallets = session.finance.accounts.isEmpty
@@ -458,6 +492,127 @@ class _AccountWalletState extends State<AccountWallet> {
               color: CraftTheme.of(context).secondary,
             ),
           ),
+      ],
+    );
+  }
+}
+
+class LocalSpendingRhythm extends StatefulWidget {
+  const LocalSpendingRhythm({super.key, required this.session});
+  final PrototypeSession session;
+  @override
+  State<LocalSpendingRhythm> createState() => _LocalSpendingRhythmState();
+}
+
+class _LocalSpendingRhythmState extends State<LocalSpendingRhythm> {
+  int selected = 6;
+  bool values = false;
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.session.finance as LocalFinancialController;
+    final today = DateTime.parse(civilToday());
+    final days = List.generate(
+      7,
+      (i) => today
+          .subtract(Duration(days: 6 - i))
+          .toIso8601String()
+          .substring(0, 10),
+    );
+    final amounts = days.map(c.spendingOn).toList();
+    final max = amounts.fold<BigInt>(
+      BigInt.one,
+      (a, b) => a > b.abs() ? a : b.abs(),
+    );
+    final net = sumMinor(amounts);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Spending rhythm', style: TextStyle(fontSize: 13)),
+        const SizedBox(height: 8),
+        Text(
+          '${days[selected]} · ${widget.session.amount(amounts[selected])}',
+          style: const TextStyle(color: Palette.mint, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < days.length; i++)
+                Semantics(
+                  selected: i == selected,
+                  child: Tooltip(
+                    message:
+                        '${days[i]} · ${widget.session.amount(amounts[i])}',
+                    child: TextButton(
+                      onPressed: () => setState(() => selected = i),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: 64,
+                            width: 28,
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: 28,
+                                // Approximate display geometry only. All values/totals remain BigInt.
+                                height:
+                                    6 +
+                                    58 *
+                                        (amounts[i].abs() *
+                                                BigInt.from(10000) ~/
+                                                max)
+                                            .toInt() /
+                                        10000,
+                                decoration: BoxDecoration(
+                                  color: selected == i
+                                      ? Palette.mint
+                                      : Palette.lilac.withValues(alpha: .35),
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            days[i].substring(8),
+                            style: const TextStyle(
+                              color: Palette.lilac,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              '7-day net spending ${widget.session.amount(net)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            TextButton(
+              onPressed: () => setState(() => values = !values),
+              child: Text(values ? 'Hide values' : 'View values'),
+            ),
+          ],
+        ),
+        if (values) ...[
+          for (var i = 0; i < days.length; i++)
+            Text('${days[i]} · ${widget.session.amount(amounts[i])}'),
+          const SizedBox(height: 8),
+          const Text(
+            'Current revisions only. Refunds reduce spending on their recorded date. Transfer principal, openings and adjustments excluded.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
       ],
     );
   }

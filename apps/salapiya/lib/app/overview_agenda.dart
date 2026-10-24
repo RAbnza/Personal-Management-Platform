@@ -49,6 +49,20 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
+    if (session.production) {
+      return const EditorialSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SectionHeading('On the horizon'),
+            SizedBox(height: 16),
+            Text(
+              'Plans, reminders and Life workflows will arrive in a later milestone. No scheduled commitments have been recorded.',
+            ),
+          ],
+        ),
+      );
+    }
     final event = session.empty ? null : events[day];
     return EditorialSurface(
       padding: 20,

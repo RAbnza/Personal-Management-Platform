@@ -8,6 +8,7 @@ import '../prototype/scenarios.dart';
 import 'activity_view.dart';
 import 'overview_agenda.dart';
 import 'overview_wallet.dart';
+import '../local/finance_domain.dart';
 
 class SourceLink extends StatelessWidget {
   const SourceLink({
@@ -104,7 +105,7 @@ class Overview extends StatelessWidget {
             icon: Icons.rule_outlined,
             onTap: () => open(PreviewSource.privateReview),
           ),
-        if (!session.empty)
+        if (!session.empty && !session.production)
           LayoutBuilder(
             builder: (context, box) {
               final wide =
@@ -158,30 +159,33 @@ class Overview extends StatelessWidget {
       children: [
         const Eyebrow('TOGETHER, WITH CLARITY'),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            for (final (initial, color) in [
-              ('A', Palette.lilac),
-              ('T', Palette.mint),
-              ('N', Palette.peach),
-            ])
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: color,
-                  foregroundColor: Palette.ink,
-                  child: Text(initial, style: const TextStyle(fontSize: 12)),
+        if (!session.production)
+          Row(
+            children: [
+              for (final (initial, color) in [
+                ('A', Palette.lilac),
+                ('T', Palette.mint),
+                ('N', Palette.peach),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: color,
+                    foregroundColor: Palette.ink,
+                    child: Text(initial, style: const TextStyle(fontSize: 12)),
+                  ),
                 ),
-              ),
-            const Spacer(),
-            const Icon(Icons.people_outline),
-          ],
-        ),
+              const Spacer(),
+              const Icon(Icons.people_outline),
+            ],
+          ),
         const SizedBox(height: 12),
         SourceLink(
-          title: 'Demo household',
-          subtitle: session.empty
+          title: session.production ? 'Shared Expenses' : 'Demo household',
+          subtitle: session.production
+              ? 'Collaboration arrives in a later milestone'
+              : session.empty
               ? 'Explore Shared Expenses'
               : 'Dinner with Tala and Nico',
           icon: Icons.restaurant_outlined,
@@ -189,7 +193,9 @@ class Overview extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          session.empty
+          session.production
+              ? 'Your local Money records remain private. No group data has been created.'
+              : session.empty
               ? 'No groups yet. Connect when you are ready to collaborate.'
               : session.local
               ? 'An independent group example. Connect to collaborate; your private money stays yours.'
@@ -215,15 +221,19 @@ class Overview extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         SourceLink(
-          title: session.empty
+          title: session.production
+              ? 'Tasks, learning and your next chapter'
+              : session.empty
               ? 'Make space for your first task'
               : 'Reading, learning and your next chapter',
-          subtitle: 'Tasks · Learning · Books · Career',
+          subtitle: session.production
+              ? 'Upcoming · Life workflows'
+              : 'Tasks · Learning · Books · Career',
           icon: Icons.auto_stories_outlined,
           onTap: () => open(PreviewSource.agenda),
         ),
         const SizedBox(height: 12),
-        if (!session.empty)
+        if (!session.empty && !session.production)
           Text(
             'Next: interview on 23 Oct, then reading on 24 Oct. These personal items remain separate from financial commitments.',
             style: TextStyle(
@@ -276,14 +286,22 @@ class Overview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(child: heading),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(bottom: 4),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Eyebrow('WEDNESDAY, 21 OCTOBER'),
-                      SizedBox(height: 8),
-                      Text('2026 / demo week · Asia/Manila'),
+                      Eyebrow(
+                        session.production
+                            ? civilToday()
+                            : 'WEDNESDAY, 21 OCTOBER',
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        session.production
+                            ? 'Your local space · Asia/Manila'
+                            : '2026 / demo week · Asia/Manila',
+                      ),
                     ],
                   ),
                 ),

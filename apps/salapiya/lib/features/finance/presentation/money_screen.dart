@@ -13,6 +13,9 @@ import 'import_screen.dart';
 import '../../planning/presentation/planning_screen.dart';
 import '../../planning/presentation/reports_screen.dart';
 import '../../supporting/presentation/files_screen.dart';
+import '../../../local/local_finance_controller.dart';
+import '../../../local/local_profile_view.dart';
+import '../../../local/finance_domain.dart';
 
 class MoneyScreen extends StatefulWidget {
   const MoneyScreen({
@@ -86,6 +89,8 @@ class _MoneyScreenState extends State<MoneyScreen> {
             'Financial history is incomplete. Balances and financial actions are unavailable until the demo snapshot is complete.',
             warning: true,
           )
+        else if (c.production && !['Accounts', 'Activity'].contains(tab))
+          UpcomingView(tab)
         else if (tab == 'Files')
           FilesScreen(session: widget.session)
         else if (tab == 'Planning')
@@ -224,6 +229,17 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     ),
                 const SizedBox(height: 20),
                 const SectionHeading('A little structure'),
+                if (c.production)
+                  FinancialLine(
+                    'Saved drafts',
+                    'Encrypted on this device · unposted entries',
+                    icon: Icons.drafts_outlined,
+                    onTap: () => openDemoPage<void>(
+                      context,
+                      LocalDrafts(controller: c as LocalFinancialController),
+                      'money/drafts',
+                    ),
+                  ),
                 FinancialLine(
                   'Categories & splits',
                   '${c.categories.length} categories · exact allocation',
@@ -232,20 +248,33 @@ class _MoneyScreenState extends State<MoneyScreen> {
                     context,
                     FinancePage(
                       title: 'Categories',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final category in c.categories)
-                            FinancialLine(
-                              category,
-                              'Available for transaction splits',
+                      child: ListenableBuilder(
+                        listenable: c,
+                        builder: (context, _) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final category in c.categories)
+                              FinancialLine(
+                                category,
+                                c is LocalFinancialController
+                                    ? (c as LocalFinancialController)
+                                          .snapshot
+                                          .categories
+                                          .firstWhere((x) => x.name == category)
+                                          .kind
+                                    : 'Available for transaction splits',
+                              ),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              onPressed: () => openFinancialEditor(
+                                context,
+                                c,
+                                FinancialAction.category,
+                              ),
+                              child: const Text('Create category'),
                             ),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: () => edit(FinancialAction.category),
-                            child: const Text('Create category'),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     'money/categories',
@@ -253,7 +282,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 ),
                 FinancialLine(
                   'Review imported history',
-                  'CSV preview · duplicates · opening cutoff',
+                  c.production
+                      ? 'Upcoming · CSV imports are not yet available'
+                      : 'CSV preview · duplicates · opening cutoff',
                   icon: Icons.upload_file_outlined,
                   onTap: () => setState(() => tab = 'Import'),
                 ),
@@ -366,12 +397,14 @@ class _MoneyLedgerState extends State<MoneyLedger> {
           (r) =>
               !r.sharedOnly &&
               (widget.accountId == null ||
-                  r.cash.containsKey(widget.accountId)) &&
+                  r.affectedAccounts.contains(widget.accountId)) &&
               ('${r.title} ${r.note} ${r.date}'.toLowerCase().contains(
                 query.toLowerCase(),
               )) &&
               (kind == 'All' || r.kind == kind) &&
-              (category == 'All' || r.category == category),
+              (category == 'All' ||
+                  r.category == category ||
+                  r.categorySpending.containsKey(category)),
         )
         .toList();
     final size = widget.compact ? 5 : 8;
@@ -420,7 +453,13 @@ class _MoneyLedgerState extends State<MoneyLedger> {
                 'expense',
                 'income',
                 'transfer',
-                'cardPurchase',
+                if (!c.production) 'cardPurchase',
+                if (c.production) ...[
+                  'refund',
+                  'reconcile',
+                  'adjustment',
+                  'opening',
+                ],
               ])
                 ChoiceChip(
                   label: Text(f == 'cardPurchase' ? 'Card purchase' : f),
@@ -455,6 +494,7 @@ class _MoneyLedgerState extends State<MoneyLedger> {
         for (final r in records.skip(current * size).take(size))
           FinancialLine(
             r.title,
+            key: ValueKey('record-${r.id}'),
             '${r.date} · ${r.category} · ${r.status}',
             value: widget.session.amount(r.amount),
             icon: r.kind == 'income'
@@ -542,10 +582,27 @@ class AccountDetail extends StatelessWidget {
             ValueBlock(
               'CURRENT BALANCE',
               session.amount(a.balance),
-              'Derived from opening evidence and accepted demo actions. No independent balance edit.',
+              c.production
+                  ? 'Derived from current immutable financial evidence, including opening balance. No independent balance edit.'
+                  : 'Derived from opening evidence and accepted demo actions. No independent balance edit.',
               color: Palette.mint,
             ),
             const SizedBox(height: 28),
+            if (c is LocalFinancialController) ...[
+              FinancialLine(
+                'Opening balance',
+                'Baseline at the end of ${a.cutoff}',
+                value: session.amount(a.openingBalance),
+              ),
+              if (c.snapshot.account(id).institution.isNotEmpty)
+                FinancialLine(
+                  'Institution',
+                  c.snapshot.account(id).institution,
+                ),
+              if (c.snapshot.account(id).notes.isNotEmpty)
+                FinanceNotice(c.snapshot.account(id).notes),
+              const SizedBox(height: 20),
+            ],
             MoneyLedger(session: session, accountId: id),
           ],
         ),
@@ -591,16 +648,43 @@ class TransactionDetail extends StatelessWidget {
                       'Actual cash movement',
                       value: session.amount(e.value),
                     ),
-                  FinancialLine(
-                    'Card liability',
-                    'Separate from liquid funds',
-                    value: session.amount(r.card),
-                  ),
+                  if (!c.production)
+                    FinancialLine(
+                      'Card liability',
+                      'Separate from liquid funds',
+                      value: session.amount(r.card),
+                    ),
                   FinancialLine(
                     'Recognized spending',
                     'Transfer principal and card repayments excluded',
                     value: session.amount(r.spending),
                   ),
+                  if (c is LocalFinancialController && r.kind == 'reconcile')
+                    FinanceNotice(c.comparisonStatus(r.id)),
+                  if (c is LocalFinancialController &&
+                      r.kind == 'reconcile') ...[
+                    FinancialLine(
+                      'Observed balance',
+                      'Account comparison · ${r.date}',
+                      value: session.amount(
+                        signedPhp(c.snapshot.revision(r.id).values['amount']!),
+                      ),
+                    ),
+                    FinancialLine(
+                      'Calculated balance',
+                      'At comparison time',
+                      value: session.amount(
+                        BigInt.parse(
+                          c.snapshot.revision(r.id).values['calculated']!,
+                        ),
+                      ),
+                    ),
+                    FinancialLine(
+                      'Difference',
+                      'No financial effect until explicitly adjusted',
+                      value: session.amount(r.amount),
+                    ),
+                  ],
                   if (r.note.trim().isNotEmpty)
                     FinanceNotice(
                       session.hideAmounts ? 'Evidence amounts hidden.' : r.note,
@@ -611,14 +695,35 @@ class TransactionDetail extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SectionHeading('Contextual actions'),
+                  if (c is LocalFinancialController && r.kind == 'reconcile')
+                    OutlinedButton(
+                      onPressed: () => openFinancialEditor(
+                        context,
+                        c,
+                        FinancialAction.reconcile,
+                        sourceId: r.id,
+                      ),
+                      child: const Text('Review explicit adjustment'),
+                    ),
                   if ([
-                    'expense',
-                    'income',
-                    'cardPurchase',
-                  ].contains(r.kind)) ...[
+                        'expense',
+                        'income',
+                        'cardPurchase',
+                        if (c.production) ...[
+                          'transfer',
+                          'refund',
+                          'adjustment',
+                          'opening',
+                        ],
+                      ].contains(r.kind) &&
+                      (c is! LocalFinancialController ||
+                          c.isCurrent(r.id))) ...[
                     for (final a in [
                       FinancialAction.correction,
-                      if (r.kind != 'income') FinancialAction.refund,
+                      if (c.production
+                          ? ['expense', 'transfer'].contains(r.kind)
+                          : r.kind != 'income')
+                        FinancialAction.refund,
                       FinancialAction.reversal,
                     ])
                       Padding(
@@ -633,7 +738,7 @@ class TransactionDetail extends StatelessWidget {
                           child: Text(a.label),
                         ),
                       ),
-                    if (r.kind != 'income')
+                    if (!c.production && r.kind != 'income')
                       OutlinedButton(
                         onPressed: () => openFinancialEditor(
                           context,
@@ -652,10 +757,11 @@ class TransactionDetail extends StatelessWidget {
                     ),
                   const SizedBox(height: 24),
                   const SectionHeading('Evidence trail'),
-                  SupportingFilesLink(
-                    session: session,
-                    source: 'action:${r.id}',
-                  ),
+                  if (!c.production)
+                    SupportingFilesLink(
+                      session: session,
+                      source: 'action:${r.id}',
+                    ),
                   if (r.sourceId != null)
                     FinancialLine(
                       'Original source',
@@ -677,6 +783,7 @@ class TransactionDetail extends StatelessWidget {
                     FinancialLine(
                       child.kind,
                       '${child.date} · ${session.amount(child.amount)}',
+                      key: ValueKey('evidence-${child.id}'),
                       onTap: () => openDemoPage<void>(
                         context,
                         TransactionDetail(session: session, id: child.id),
@@ -690,5 +797,67 @@ class TransactionDetail extends StatelessWidget {
         ),
       );
     },
+  );
+}
+
+class LocalDrafts extends StatelessWidget {
+  const LocalDrafts({super.key, required this.controller});
+  final LocalFinancialController controller;
+  @override
+  Widget build(BuildContext context) => FinancePage(
+    title: 'Saved drafts',
+    child: FutureBuilder(
+      future: controller.store.drafts(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const FinanceNotice(
+            'Drafts could not be read. Reopen your profile and retry.',
+            warning: true,
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final rows = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const FinanceHeading(
+              'MONEY / DRAFTS',
+              'Pick up where you paused.',
+              'Drafts are encrypted local entries. They do not affect balances.',
+            ),
+            if (rows.isEmpty)
+              const FinanceNotice(
+                'No saved drafts. Entries are retained as you edit.',
+              ),
+            for (final row in rows)
+              Builder(
+                builder: (context) {
+                  final operation = (row['operation'] as String).split(':');
+                  final action = FinancialAction.values
+                      .where((a) => a.name == operation.first)
+                      .firstOrNull;
+                  return FinancialLine(
+                    action?.label ?? 'Unavailable draft',
+                    row['command_id'] as String,
+                    onTap: action == null
+                        ? null
+                        : () => openFinancialEditor(
+                            context,
+                            controller,
+                            action,
+                            sourceId:
+                                operation.length > 1 && operation[1].isNotEmpty
+                                ? operation[1]
+                                : null,
+                          ),
+                  );
+                },
+              ),
+          ],
+        );
+      },
+    ),
   );
 }

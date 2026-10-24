@@ -12,10 +12,22 @@ part 'card_evidence_controller.dart';
 
 /// Memory-only command/preview boundary. No storage, auth, network or posting.
 class FinancialController extends ChangeNotifier {
-  FinancialController() {
-    reset(notify: false);
+  FinancialController({bool demo = true}) {
+    if (demo) reset(notify: false);
     files.addListener(changed);
   }
+  bool get production => false;
+  Future<DemoOutcome> commitPreview(
+    FinancialPreview preview,
+    DemoOutcome outcome,
+  ) async => execute(preview, outcome);
+  Future<Map<String, dynamic>?> restoreDraft(String operation) async => null;
+  Future<void> retainDraft(
+    String operation,
+    String id,
+    Map<String, String> values,
+  ) async {}
+  Future<void> discardDraft(String operation) async {}
   final files = SupportingController();
   ImportController? _importSession;
   ImportController get importSession =>

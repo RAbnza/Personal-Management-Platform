@@ -4,6 +4,23 @@ import '../../../app/demo_routes.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
 
+class FinancialEnvironment extends InheritedWidget {
+  const FinancialEnvironment({
+    super.key,
+    required this.production,
+    required super.child,
+  });
+  final bool production;
+  static bool isProduction(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<FinancialEnvironment>()
+          ?.production ??
+      false;
+  @override
+  bool updateShouldNotify(FinancialEnvironment oldWidget) =>
+      production != oldWidget.production;
+}
+
 class FinancePage extends StatelessWidget {
   const FinancePage({super.key, required this.title, required this.child});
   final String title;
@@ -38,8 +55,10 @@ class FinancePage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Eyebrow(
-                          'DEMO · SYNTHETIC DATA · RESETS WHEN CLOSED',
+                        Eyebrow(
+                          FinancialEnvironment.isProduction(context)
+                              ? 'LOCAL ONLY · PRIVATE ON THIS DEVICE'
+                              : 'DEMO · SYNTHETIC DATA · RESETS WHEN CLOSED',
                         ),
                         const SizedBox(height: 24),
                         child,

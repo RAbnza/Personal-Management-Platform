@@ -111,6 +111,9 @@ class _ActivityViewState extends State<ActivityView> {
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
+    if (session.production) {
+      return MoneyLedger(session: session, compact: !widget.full);
+    }
     final records = DemoActivity.entries
         .where(
           (e) =>
