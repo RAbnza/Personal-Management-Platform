@@ -213,8 +213,10 @@ class PortableRecovery {
           .join();
   static Future<void> _verifyFiles(Map<String, dynamic> bundle) async {
     for (final row in bundle['files'] as List) {
-      if (await _digest(base64Decode(row['bytes'] as String)) != row['sha256'])
+      if (await _digest(base64Decode(row['bytes'] as String)) !=
+          row['sha256']) {
         throw const FormatException('Private file checksum mismatch');
+      }
     }
   }
 

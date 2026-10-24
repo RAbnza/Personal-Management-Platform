@@ -71,7 +71,10 @@ void main() {
         final uri = Uri.parse(oauth.url);
         expect(uri.queryParameters['code_challenge_method'], 's256');
         expect(uri.queryParameters['provider'], 'google');
-        const sessionStore = SecureSessionStorage(storage, 'salapiya.p0.session');
+        const sessionStore = SecureSessionStorage(
+          storage,
+          'salapiya.p0.session',
+        );
         await sessionStore.initialize();
         await sessionStore.persistSession('synthetic-session-only');
         expect(await sessionStore.hasAccessToken(), isTrue);
@@ -80,8 +83,10 @@ void main() {
         expect(await sessionStore.hasAccessToken(), isFalse);
       } finally {
         await auth.dispose();
-        await const SecurePkceStorage(storage, 'salapiya.p0.pkce')
-            .removeItem(key: 'supabase.auth.token-code-verifier');
+        await const SecurePkceStorage(
+          storage,
+          'salapiya.p0.pkce',
+        ).removeItem(key: 'supabase.auth.token-code-verifier');
       }
     } finally {
       await db.close();

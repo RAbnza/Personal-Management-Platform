@@ -14,8 +14,9 @@ void main() {
     final completer = Completer<Uri>();
     final links = AppLinks();
     final subscription = links.uriLinkStream.listen((uri) {
-      if (isProofCallback(uri) && !completer.isCompleted)
+      if (isProofCallback(uri) && !completer.isCompleted) {
         completer.complete(uri);
+      }
     });
     try {
       debugPrint('P0_CALLBACK_READY');

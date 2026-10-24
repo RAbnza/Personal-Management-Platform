@@ -21,6 +21,14 @@ void main() {
           isEmpty,
         );
         await ledger.migrate();
+        expect((await db.get('PRAGMA foreign_keys')).values.single, 1);
+        expect((await db.get('PRAGMA synchronous')).values.single, 2);
+        await expectLater(
+          db.execute(
+            "INSERT INTO proof_evidence VALUES('orphan','missing','cash',-1)",
+          ),
+          throwsA(anything),
+        );
         await db.execute(
           'CREATE TABLE proof_integer(value INTEGER NOT NULL) STRICT',
         );

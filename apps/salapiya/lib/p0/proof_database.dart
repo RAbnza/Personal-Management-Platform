@@ -1,4 +1,6 @@
 import 'package:powersync/powersync.dart';
+import 'package:powersync/native.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 // Synthetic P0 data only. Never open the approved prototype's profile here.
 const proofSchema = Schema([
@@ -14,8 +16,25 @@ const proofSchema = Schema([
 ]);
 
 PowerSyncDatabase openProofDatabase(String path, String key) =>
-    PowerSyncDatabase(
+    PowerSyncDatabase.withFactory(
+      _ProofOpenFactory(path, key),
       schema: proofSchema,
-      path: path,
-      encryption: EncryptionOptions(key: key),
     );
+
+final class _ProofOpenFactory extends NativePowerSyncOpenFactory {
+  _ProofOpenFactory(String path, String key)
+    : super(
+        path: path,
+        encryptionOptions: EncryptionOptions(key: key),
+        sqliteOptions: const SqliteOptions(
+          synchronous: SqliteSynchronous.full,
+          profileQueries: false,
+        ),
+      );
+  @override
+  List<String> pragmaStatements(SqliteOpenOptions options) => [
+    ...super.pragmaStatements(options),
+    'PRAGMA foreign_keys=ON',
+    'PRAGMA temp_store=MEMORY',
+  ];
+}
