@@ -35,3 +35,20 @@ Official references checked October 24, 2026:
 Docker is installed but its engine is unavailable. Automatic approval review
 rejected starting Docker Desktop. An isolated PostgreSQL test runtime will be
 used where possible; that does not substitute for hosted service acceptance.
+
+## Phase B checkpoint
+
+The exact-money port uses `BigInt`, canonical decimal-string boundaries and
+checked signed-64-bit SQLite conversion. Component bounds remain ±100,000,000,000
+minor units; shared bill fixtures retain the web's larger signed-bigint bound
+and stable participant ordering. Aggregates use BigInt rather than SQLite TOTAL
+or potentially overflowing SUM. The synthetic expense proof commits intent,
+expense/cash evidence and (when connected) a PowerSync command atomically.
+Immutable evidence triggers and strict SQLite tables reject mutation/type drift.
+Versioned migrations roll back and fail closed on unsupported versions.
+
+Windows host tests passed: two money fixture tests, one encrypted persistence /
+migration / rollback / reopen test and two actual killed-process WAL tests.
+These are native Windows-host SQLite checks, not yet Android process-kill proof.
+The killed worker is an isolated Dart subprocess with synthetic data; tests
+terminate only that worker's PID/process tree.

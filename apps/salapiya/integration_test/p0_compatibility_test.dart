@@ -46,7 +46,8 @@ void main() {
       try {
         await expectLater(wrong.initialize(), throwsA(anything));
       } finally {
-        await wrong.close();
+        // A failed initialization also propagates through close in this SDK.
+        try { await wrong.close(); } catch (_) { /* Expected failed-open cleanup. */ }
       }
       final auth = SupabaseClient(
         'https://example.invalid',
