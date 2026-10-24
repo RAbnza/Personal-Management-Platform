@@ -1,5 +1,5 @@
 import { PGlite } from '@electric-sql/pglite';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,17 +10,31 @@ const db = new PGlite();
 await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth;
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
   $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+  CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS
+  $$ SELECT nullif(current_setting('request.jwt.claims',true),'')::jsonb $$;
+  CREATE TABLE auth.users(id uuid PRIMARY KEY,deleted_at timestamptz,banned_until timestamptz);
+  CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL);
   GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated,anon;`);
-await db.exec(await readFile(new URL('supabase/migrations/20261024000100_p0_financial_proof.sql', import.meta.url),'utf8'));
-await db.exec(await readFile(new URL('supabase/migrations/20261024000200_p0_enrollment_proof.sql', import.meta.url),'utf8'));
-await db.exec(await readFile(new URL('supabase/migrations/20261024000300_p0_recovery_receipt_review.sql', import.meta.url),'utf8'));
+for(const name of (await readdir(new URL('supabase/migrations/',import.meta.url))).filter(n=>n.endsWith('.sql')).sort()) {
+  await db.exec(await readFile(new URL(`supabase/migrations/${name}`,import.meta.url),'utf8'));
+}
 await db.query('INSERT INTO p0_profile(id,owner_id) VALUES($1,$2),($3,$4)',[randomUUID(),ownerA,randomUUID(),ownerB]);
-const asOwner = async (owner, fn) => db.transaction(async tx => {
+const registered=new Set();
+const asOwner = async (owner, fn) => {
+  // Local-only auth catalog/claim stub. Hosted tests separately validate real JWTs.
+  if(!registered.has(owner)){
+    await db.query('INSERT INTO auth.users(id) VALUES($1) ON CONFLICT DO NOTHING',[owner]);
+    await db.query('INSERT INTO auth.sessions VALUES($1,$1) ON CONFLICT DO NOTHING',[owner]);
+    registered.add(owner);
+  }
+  return db.transaction(async tx => {
   await tx.exec('SET LOCAL ROLE authenticated');
   await tx.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[owner]);
+  await tx.query("SELECT set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:owner,session_id:owner})]);
   return fn(tx);
-});
+  });
+};
 const payload = (owner, amount='500050', revision=0) => JSON.stringify({amount_minor:amount,expected_revision:revision,kind:'expense',owner_id:owner,version:1});
 const submit = (tx,id,body) => tx.query('SELECT p0_submit_expense($1,$2) AS result',[id,body]).then(r=>r.rows[0].result);
 
@@ -94,5 +108,11 @@ test('two staged claims publish once; failed publication exposes no partial grap
   await assert.rejects(asOwner(failedOwner,tx=>tx.query('SELECT p0_publish_enrollment($1)',[enrollment])),/graph rejected/);
   assert.equal((await asOwner(failedOwner,tx=>tx.query('SELECT * FROM p0_profile'))).rows.length,0);
   assert.equal((await asOwner(failedOwner,tx=>tx.query('SELECT * FROM p0_accepted'))).rows.length,0);
+});
+test('receipt and publication wrappers reject a revoked session even with its subject claim',async()=>{
+  const owner=randomUUID();
+  await asOwner(owner,async()=>{});
+  await db.query('DELETE FROM auth.sessions WHERE user_id=$1',[owner]);
+  await assert.rejects(asOwner(owner,tx=>submit(tx,randomUUID(),payload(owner))),/current session required/);
 });
 test.after(async()=>db.close());

@@ -16,7 +16,8 @@ export async function authRequest(path,key,{method='POST',body,bearer=key}={}){
     method,headers:{apikey:key,Authorization:`Bearer ${bearer}`,'Content-Type':'application/json'},
     body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
   if(!response.ok)throw Error(`Auth operation HTTP ${response.status}`);
-  return response.json();
+  const text=await response.text();
+  return text?JSON.parse(text):null;
 }
 export async function fixtures(){
   const keys=await apiKeys();
@@ -39,6 +40,12 @@ export async function signIn(user,key){
   protect(session.access_token);protect(session.refresh_token);
   if(session.user.id!==user.id)throw Error('Fixture identity mismatch');
   return session;
+}
+export async function freshFixtureSession(keys){
+  const email=`salapiya-p0-gate-${randomUUID()}@example.test`;
+  const password=protect(randomBytes(32).toString('base64url'));
+  const user=await authRequest('/admin/users',keys.admin,{body:{email,password,email_confirm:true,user_metadata:{salapiya_p0_fixture:true}}});
+  return signIn({id:user.id,email,password},keys.client);
 }
 export async function rest(path,session,key,{method='GET',body,expectStatus}={}){
   const response=await fetch(`https://${ref}.supabase.co/rest/v1/${path}`,{
