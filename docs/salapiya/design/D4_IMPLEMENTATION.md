@@ -1,5 +1,14 @@
 # D4 remaining UI/UX prototype
 
+**Later approval record — October 24, 2026:** The owner personally reviewed and
+approved the complete Windows/Android UI/UX through D4 in the D5 assignment.
+D0–D4 are complete and owner-approved; D5 is finalized under the explicitly
+streamlined inspection/handoff scope. See the single
+[production handoff](D5_PRODUCTION_HANDOFF.md). The current UI is the production
+visual baseline, while all operations remain synthetic/in-memory and G0–G8 stay
+open. Original pending-review language and verification below are historical;
+D5 does not repeat or extend their acceptance claims.
+
 D3 at `a9708d1` was owner-approved in the D4 assignment. D4 extends that
 implementation in one Flutter application for Windows and Android. The approved
 shell, identity, typography and D3 financial entry/review flows are retained.

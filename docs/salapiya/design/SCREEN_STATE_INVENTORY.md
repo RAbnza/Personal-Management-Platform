@@ -1,7 +1,11 @@
 # Screen, state and synthetic scenario inventory
 
-**Status:** D0 full-scope inventory with approved D2/D3 and D4 remaining-screen
-implementation awaiting owner review. See [D3 coverage and historical
+**Status — October 24, 2026:** D0–D4 completed and owner-approved; D5 finalized
+under the owner's lightweight inspection/handoff scope. Current Windows/Android
+UI/UX is the accepted production visual baseline; all data/operations remain
+synthetic/in-memory. The [D5 handoff](D5_PRODUCTION_HANDOFF.md) records service
+integration gaps and open G0–G8 gates. No production, security, accessibility,
+performance or synchronization acceptance is inferred. See [D3 coverage and historical
 scenario mapping](D3_IMPLEMENTATION.md) and [D4 coverage](D4_IMPLEMENTATION.md). Every listed financial
 capability remains launch scope. D3/D4 placement determines prototype order,
 not production release eligibility. Blueprint IDs refer to
@@ -149,6 +153,10 @@ state that in-memory actions reset on process close. Never show successful real
 backup/export/authentication toasts for simulated interactions.
 
 ## Implemented D2 scenario mapping
+
+Historical D2-only mapping below is retained. D3/D4 add the interactive workflows
+recorded above; D5 does not refresh the fixed fixture clock or certify production
+domain behavior.
 
 `PrototypeSession` contains only in-memory presentation state. The scenario clock
 remains 21 October 2026 even though implementation continued on October 23.

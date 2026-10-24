@@ -1,6 +1,13 @@
 # Prototype architecture, milestones and review gates
 
-**Status:** D1R was owner-approved on October 22, 2026 with the repeated top-line
+**Current status — October 24, 2026:** D0–D4 are complete and owner-approved.
+D5 is finalized under the owner's replacement lightweight scope; see the
+[production handoff](D5_PRODUCTION_HANDOFF.md). Current Windows/Android UI/UX is
+the accepted production visual baseline. All operations remain synthetic and
+in-memory; production implementation and G0–G8 acceptance remain open. Next:
+remaining P0 dependency/device compatibility (G0) and early cost feasibility (G7).
+
+**Historical pre-D5 status:** D1R was owner-approved on October 22, 2026 with the repeated top-line
 exception. D2-F0 removed it and passed Windows/Android verification before D2.
 D2 now implements the native shell and Overview; see [implementation and live
 review](D2_IMPLEMENTATION.md). D1-D5 remain separate from P0-P6 engineering.
@@ -102,6 +109,13 @@ Google sign-in, notifications and real backup libraries remain bounded
 engineering work outside the synthetic design milestones.
 
 ## Common milestone evidence
+
+**D5 exception authorized by the owner on October 24, 2026:** the requirements
+below remain historical D1–D4 guidance. D5 uses focused inspection and handoff;
+documentation-only finalization does not repeat Flutter suites, native builds,
+manual campaigns, screenshots, performance or accessibility reports. If a genuine
+code fix were needed, only formatting, analysis and directly relevant tests/builds
+would apply. This scope replacement does not pass or waive engineering gates.
 
 Every D1–D5 slice is implemented/shared once and exercised on **Windows and the
 Android emulator before moving to the next slice**. Do not finish the Windows
@@ -290,7 +304,27 @@ tables with long amounts, keyboard-safe forms on both platforms.
 **Exclusions:** Real notifications, storage/scanning/encryption, account deletion,
 service configuration, OAuth, portable recovery or release infrastructure.
 
-## D5 — Refinement and design acceptance
+## D5 — Finalization and production handoff (completed)
+
+**Authority:** The October 24, 2026 D5 assignment personally approves the complete
+prototype through D4 and intentionally replaces the original testing-heavy D5
+plan retained below. D0–D4 owner approval is recorded in the
+[design decision register](README.md#authority-and-decision-register).
+
+**Delivered:** Focused source inspection of routes/actions, feature integration,
+obsolete previews and future service seams; one [technical handoff](D5_PRODUCTION_HANDOFF.md)
+covering architecture, frontend retention, synthetic replacements, real-service
+connections, correctness/ownership boundaries, outstanding decisions and next P0
+work. No application change was needed; the approved design is preserved.
+
+**Validation:** Documentation links/source paths, whitespace and scope checks.
+No repeat runtime/testing campaign or new acceptance evidence. All records and
+operations remain synthetic/in-memory. G0–G8 and production release work remain
+open. Next is separately assigned remaining P0 G0/early G7 proof; D5 starts no
+P0/P1 implementation. Finalization is committed/pushed on the dedicated D5 branch
+without merging main.
+
+### Historical original D5 scope — superseded, not executed
 
 **Prerequisites:** D1–D4 screens and review decisions recorded; unresolved issues
 have severity, owner and reproducible scenario.

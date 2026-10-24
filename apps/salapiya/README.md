@@ -1,12 +1,19 @@
 # Salapiya
 
-One Flutter/Dart native prototype for Windows and Android. D2 opens into the
-application shell and interactive Overview, using the Daylight editorial redesign:
-ink, lilac and mint, Geist typography, wallets, activity and a source-linked agenda.
+One Flutter/Dart native prototype for Windows and Android. D0–D4 are complete and
+owner-approved as of October 24, 2026 (Asia/Manila). D5 is finalized under the
+owner's lightweight inspection and handoff scope, replacing the original testing-heavy
+plan. The current shell, Daylight/Geist identity, floating controls, financial,
+planning, Life, onboarding and supporting workflows are the accepted production
+visual baseline.
 All data is synthetic, memory-only and resets on process close.
 No real storage, authentication, synchronization or financial mutation exists.
 
-Start with [the current D2 redesign](../../docs/salapiya/design/D2_REIMAGINED.md).
+Start with the [D5 production handoff](../../docs/salapiya/design/D5_PRODUCTION_HANDOFF.md)
+and [screen inventory](../../docs/salapiya/design/SCREEN_STATE_INVENTORY.md).
+The [D2 redesign](../../docs/salapiya/design/D2_REIMAGINED.md) and D3/D4 records
+retain historical implementation evidence. Production work and G0–G8 acceptance
+remain open; next is separately assigned remaining P0 G0/early G7 proof.
 Use Profile & utilities for scenarios, themes, privacy, effects, reduced motion,
 text size, first-run preview and the preserved Design Gallery. Historical D1/D1R
 evidence remains unchanged; no routine screenshot collection is required.

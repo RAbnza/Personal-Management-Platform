@@ -1,5 +1,11 @@
 # D3 — Core financial interaction prototype
 
+**Later approval record — October 24, 2026:** D3 was approved in the D4 assignment;
+the owner has now approved the complete prototype through D4. D5 finalization and
+the accepted production visual baseline are recorded in the
+[production handoff](D5_PRODUCTION_HANDOFF.md). The original implementation and
+verification record below is retained; no production gate is closed by approval.
+
 23–24 October 2026 (Asia/Manila). Branch `feat/salapiya-d3-financial-prototype`,
 based on verified `fix/salapiya-floating-docks` / `de8541b`. The owner approved
 the D2 redesign and authorized all D3 phases in one assignment. D3 is implemented

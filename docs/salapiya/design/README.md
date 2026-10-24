@@ -1,4 +1,25 @@
-# Salapiya native design — D2 shell and Overview
+# Salapiya native design — approved prototype
+
+**Current status — October 24, 2026 (Asia/Manila):** D0–D4 are complete and
+owner-approved, including the full Windows/Android UI/UX reviewed for D5.
+D5 is finalized under the owner's streamlined finalization/handoff assignment,
+which intentionally replaces the original testing-heavy D5 scope. The current
+Daylight D2 composition, floating controls and D3/D4 workflows are the accepted
+production visual baseline. Preserve this design.
+
+Start with the single [D5 production handoff](D5_PRODUCTION_HANDOFF.md) for
+architecture, retained frontend, synthetic replacements, inspection findings and
+integration boundaries. [D3](D3_IMPLEMENTATION.md), [D4](D4_IMPLEMENTATION.md) and
+the [screen inventory](SCREEN_STATE_INVENTORY.md) retain feature/scenario coverage.
+All prototype data and operations remain synthetic/in-memory. Production,
+security, accessibility, performance and synchronization acceptance are not
+complete; G0–G8 remain open. Next is bounded remaining P0 G0 compatibility and
+early G7 cost proof, per [P0 next assignments](../P0_NEXT_ASSIGNMENTS.md), not P1.
+
+## Historical D2 introduction and review record
+
+The dated status/review instructions below describe earlier milestones; the D5
+approval above supersedes their pending-review language and earlier visual choices.
 
 **Current:** [D2 reimagined](D2_REIMAGINED.md), a complete owner-authorized visual replacement of earlier D0-D2 selections. Implemented for review; not yet owner-approved. Historical decisions and evidence below remain available.
 
@@ -40,6 +61,13 @@ PROTOTYPE_ROADMAP. Future sessions should update those sources rather than creat
 competing theme or navigation specifications.
 
 ## Authority and decision register
+
+**D5-R01 — October 24, 2026:** The owner approved all UI/UX through D4, including
+Windows/Android layouts, financial and Life workflows, onboarding and supporting
+screens, as the production visual baseline. The owner replaced original D5
+testing/refinement requirements with lightweight inspection and one technical
+handoff. D5 is finalized on that basis; no production engineering gates are
+accepted or waived. Earlier decisions and evidence below remain historical.
 
 The [Salapiya blueprint](../../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) governs
 scope, financial meaning, identity, synchronization and platform parity. The
