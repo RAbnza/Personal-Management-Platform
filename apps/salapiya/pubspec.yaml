@@ -11,6 +11,19 @@ dependencies:
   flutter_svg: 2.3.0
   flutter:
     sdk: flutter
+  powersync: 2.5.0
+  sqlite3: 3.8.0
+  sqlite_async: 0.14.6
+  supabase_flutter: 2.18.3
+  flutter_secure_storage: 11.2.0
+  cryptography: 2.9.0
+  path_provider: 2.1.5
+  path: 1.9.1
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
 
 dev_dependencies:
   integration_test:
