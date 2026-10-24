@@ -2,12 +2,12 @@
 
 **Date:** October 24, 2026 (Asia/Manila)
 
-**Branch:** `feat/salapiya-p0-architecture-proof`
+**Branch:** `feat/salapiya-p0-hosted-integration`
 
-**Verified base:** `4cd03faf72f1242b6018ac64c7de3df0c1387d3c`, matching the latest remote D5 branch at assignment start.
-**Decision:** bounded local proofs completed; hosted acceptance blocked. **Substantial P1 must not begin yet.**
+**Verified base:** `8e2f9cc4708c6123609c17e41d124c2d3d16e739`, matching the remote architecture-proof branch at this continuation's start. The earlier local proof was based on approved D5 commit `4cd03faf72f1242b6018ac64c7de3df0c1387d3c`.
+**Decision:** development Supabase and PowerSync are configured; bounded hosted acceptance is now exercised. Google OAuth and wider foundation acceptance remain open. **Substantial P1 must not begin yet.**
 
-This is the assignment's single completion report. The [blueprint](../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) and [approved D5 handoff](design/D5_PRODUCTION_HANDOFF.md) remain authoritative. All six phases were addressed sequentially through implementation checkpoints and consolidation. Presentation, navigation and prototype controllers remain unchanged. Historical web source, tests, migrations and pnpm tooling remain executable and unmodified. No real cloud configuration, personal data, paid service, main merge or force push was performed.
+This is the assignment's single completion report. The [blueprint](../SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md) and [approved D5 handoff](design/D5_PRODUCTION_HANDOFF.md) remain authoritative. Presentation, navigation and prototype controllers remain unchanged. Historical web source, tests, migrations and pnpm tooling remain executable and unmodified. This continuation modifies only the existing development resources with synthetic data. No production changes, destructive resets, paid activation, main merge or force push occurred.
 
 ## Implementation and source map
 
@@ -15,16 +15,32 @@ This is the assignment's single completion report. The [blueprint](../SALAPIYA_P
 | --- | --- |
 | A: compatibility/cost | Exact stack pins, lockfile, native critical API probes, dated service quotas and explicit four-user model |
 | B: money/SQLite | Exact Dart money port and shared golden fixtures, strict transactional evidence, migrations, integer extremes, rollback and actual process-kill recovery |
-| C: commands/sync | Real PowerSync insert-only queue, durable pending/review state, narrow Supabase connector, PostgreSQL acceptance/receipts, simulated network/download fault tests |
-| D: identity | Secure session/PKCE adapters, native callback transport, durable local enrollment freeze/cancel, private SQL staging and atomic synthetic publication |
-| E: protection/recovery | Library AES-GCM database/file/archive approaches, independent recovery secret, staged restore, corruption/tamper tests and actual Windows-to-Android archive transfer |
+| C: commands/sync | Real SDK queue and Supabase RPC; independent hosted races, durable receipts/conflicts and private PowerSync streams; local simulation tests retained separately |
+| D: identity | Secure runtime Supabase session/PKCE initialization, callback transport, durable enrollment freeze/cancel and bounded publication completion; real password fixture sessions, Google still unavailable |
+| E: protection/recovery | Library AES-GCM database/file/archive approaches and independent secret; cross-target transfer plus owner-authenticated hosted receipt review and explicit same-ID retry of a missing restored command |
 | F: consolidation | Evidence-based gate assessment, configuration runbook, blockers and P1 decision below |
 
-Native modules are under `apps/salapiya/lib/p0/`; none is wired into product `main.dart`. Tests are `test/p0_*_test.dart`, `integration_test/p0_architecture_test.dart`, `p0_callback_test.dart` and `p0_portability_test.dart`. The process-kill worker is `tool/p0_crash_worker.dart`. `tool/p0_make_transfer.dart` writes only a synthetic fixture into ignored `build/`.
+Native modules are under `apps/salapiya/lib/p0/`; none is wired into product `main.dart`. Tests include `test/p0_*_test.dart`, `integration_test/p0_architecture_test.dart`, `p0_callback_test.dart`, `p0_portability_test.dart` and the new `p0_hosted_test.dart`. The process-kill worker is `tool/p0_crash_worker.dart`. `tool/p0_make_transfer.dart` writes only a synthetic fixture into ignored `build/`.
 
 Server SQL, stream configuration and executable tests are under `services/salapiya/p0/`. Shared golden data is `contracts/salapiya/p0_money.json`. Reuse traced `src/shared/money.ts`, its tests, sharing allocation code/tests, web command canonicalization/receipt code and `tests/integration/financial-command-receipt.test.ts`. The original TypeScript money functions actually execute against the same fixture used by Dart. Web backup framing informed authenticated metadata and independent-key recovery; its server dump format was not mechanically copied.
 
 This remains a bounded synthetic expense proof, not a full ledger, group system, generic sync engine or P1 feature implementation.
+
+### Hosted continuation implementation
+
+The official Supabase CLI **2.122.0**, PowerSync CLI **0.10.2** and `pg` **8.23.1** are pinned in the service package/lockfile. Existing SQL was moved into tracked timestamped migrations, with no web migration replay:
+
+- `supabase/migrations/20261024000100_p0_financial_proof.sql`
+- `supabase/migrations/20261024000200_p0_enrollment_proof.sql`
+- `supabase/migrations/20261024000300_p0_recovery_receipt_review.sql`
+
+All three were previewed and applied with the linked official CLI. The third adds a SELECT-only, owner-authenticated receipt-review RPC; no table reset or financial rewrite. The target is Supabase **salapiya-dev**, ref `uxnyxhwqshqpvinvopiv`, Tokyo `ap-northeast-1`, healthy, hosted PostgreSQL **17.11**. `cloud.mjs` verifies name/ref/region/health before operations. PostgreSQL race tests use three distinct backend sessions through the verified **session** pooler on port 5432, with full TLS certificate verification. The public CA bundle is reproducibly extracted from the pinned official Supabase CLI source; certificate verification was not disabled.
+
+The existing PowerSync **salapiya-dev → Development**, JP instance `6adc9162b32a60a89a2e706c`, runs at `https://6adc9162b32a60a89a2e706c.powersync.journeyapps.com`. No additional instance was created. The dedicated `salapiya_p0_replication` login has the provider-required REPLICATION/BYPASSRLS privileges, public schema usage and SELECT on exactly the two proof tables. Publication `powersync` contains only `public.p0_profile` and `public.p0_accepted`; private receipts/evidence/staging stay excluded. The server connection verifies TLS against the supplied public roots. Edition-3 streams filter with signed `auth.user_id()`, without owner parameters granting authority.
+
+Initial ordinary deployment failed at operation `6adcb567501b259d0e4dfed7`; neither API nor the owner's dashboard inspection exposed a cause. A supported initial deploy using `--validate-only=configuration,connections` included the reviewed streams at first boot and succeeded. Full configuration, connection **and stream** validation then passed. This bootstrap's skipped stream validation is not counted as passing evidence. A subsequent real client exposed `PSYNC_S2105`: Cloud CLI ignores the self-hosted `audience` field. Configuration now uses explicit Supabase JWKS, `supabase: false` and Cloud `additional_audiences: [authenticated]`; a normal fully validated redeploy succeeded. No JWT secret or custom token signer was added. See the official [Supabase auth guide](https://docs.powersync.com/configuration/auth/supabase-auth) and the pinned Cloud CLI schema.
+
+`auth_runtime.dart` initializes actual PKCE auth using OS-secured session/verifier adapters. `completePublication` verifies the entire bounded accepted snapshot and identity before atomically remapping local intent ownership/payload while retaining evidence IDs and amounts; repeated completion cannot regress reconciliation. `ConnectedRecovery.review` compares restored original IDs/payloads against the authenticated server receipt. Accepted/rejected/mismatched results remain held; a missing result queues only after explicit resume. Receipts never manufacture downloaded rows or grant group access.
 
 ## Dependencies, compatibility and environment
 
@@ -74,7 +90,7 @@ The PostgreSQL RPC uses auth.uid(), bounded validation, server-parsed JSONB payl
 
 SDK queue completion follows durable local accepted/review state. Response loss retries the original ID. Permanent rejection preserves intent/evidence and allows unrelated valid commands to progress. Temporary network/auth failures retain the queue for SDK retry. Wrong-owner queues/unexpected transport operations fail closed; broader malformed-queue quarantine remains unimplemented.
 
-A receipt alone does not remove pending effects. Matching accepted ID, owner, canonical payload and amount suppress the overlay even before explicit reconciliation. Client tests deliberately inject a local accepted row to simulate a download and remove that injection's upload entry. That is **not** real CDC/checkpoint evidence.
+A receipt alone does not remove pending effects. Matching accepted ID, owner, canonical payload and amount suppress the overlay even before explicit reconciliation. Retained local tests inject an accepted row to simulate a download and remove that injection's upload entry; those tests remain **simulations**. The new hosted native test instead waits for a genuine PowerSync download before reconciliation and checks an offline queue through encrypted reopen/reconnect.
 
 No group command surface exists here. Owner RLS does not prove membership, creator corrections or recipient confirmations. Two manually entered purchases with different IDs also cannot be deduplicated by idempotency alone.
 
@@ -118,11 +134,11 @@ Most command-specific fixtures in this matrix remain unimplemented. No launch-sc
 
 Local creation makes no network/anonymous-auth request. Enrollment freezes the bounded local graph transactionally, persists claim/snapshot across reopening and preserves records on cancellation/collision. Wrong-account interruption cannot replace the staged claim.
 
-SQL staging is private and unpublished. Publication creates one profile and all synthetic actions/evidence/receipts in one transaction. Repeated publication is idempotent; competing staged claims collide safely in the serialized test runtime. Retrieval is owner-scoped, never by name/email.
+SQL staging is private and unpublished. Publication creates one profile and all synthetic actions/evidence/receipts in one transaction. Repeated publication is idempotent; competing staged claims now also collide safely in genuinely concurrent hosted sessions. Retrieval is owner-scoped, never by name/email.
 
-**Outstanding:** complete financial graph enrollment/openings/debt/card/files, activation after complete initial sync, populated-local/existing-cloud switch, true simultaneous independent-session claims and actual Google cancellation/wrong-account/expiry/revocation/second-device identity. Placeholder claims do not certify authentication.
+**Outstanding:** complete financial graph enrollment/openings/debt/card/files, complete-profile activation after initial sync, populated-local/existing-cloud switch and actual Google cancellation/wrong-account/expiry/revocation/second-device identity. SQL race cases use transaction-local synthetic subjects, while separate JWT tests use real Auth-created password fixtures. Neither certifies Google authentication.
 
-Secure session and PKCE adapters replace preference storage. Native tests exercise synthetic credential/session/verifier operations. Windows uses the plugin's Credential Manager backed protection; Android uses supported keystore-backed storage. These protect at rest, not against a compromised logged-in OS. Native callback delivery and PKCE URL generation do not prove provider token exchange.
+Secure session and PKCE adapters replace preference storage. Native tests exercise synthetic storage operations and real Supabase fixture sessions. Windows uses the plugin's Credential Manager backed protection; Android uses supported keystore-backed storage. These protect at rest, not against a compromised logged-in OS. Native callback delivery and Google PKCE URL generation do not prove Google token exchange. Actual refresh-token revocation is checked; this does not invalidate already issued stateless access JWTs immediately.
 
 Portable archives and private files use cryptography's AES-256-GCM with fresh nonces and authenticated version headers. The encrypted archive manifest records schema/command/calculation versions, UTC creation time, record/file counts and SHA-256 file checksums. Exact paired evidence and owner consistency are validated.
 
@@ -130,11 +146,11 @@ A separate library-generated random **256-bit recovery secret** permits restorat
 
 Bounds: 100 synthetic expenses, 10 supplied files, 1 MiB/file, 4 MiB plaintext archive. No paths, arbitrary fields or reusable tokens are permitted. This is not a backup of all approved domains/group history. Files return in memory for safe staging rather than silently becoming plaintext files.
 
-Connected commands retain original IDs but restore held in review with **no upload entries**. Later receipt comparison/release, complete accepted-history restoration, deleted/revoked account reconciliation, atomic profile/file activation and production key creation/rotation/loss remain unimplemented. A backup grants no group authority or cloud rollback permission.
+Connected commands retain original IDs but restore held in review with **no upload entries**. Owner-authenticated receipt comparison and explicit same-ID release of a missing command are now implemented and exercised against Supabase. Accepted/rejected receipts remain held; complete accepted-history restoration/activation, deleted/revoked account reconciliation, atomic profile/file activation and production key creation/rotation/loss remain unimplemented. A backup grants no group authority or cloud rollback permission.
 
 ## Actual evidence and reproduction
 
-All evidence is local Windows/emulator work. No screenshots/videos, hosted tests or unrelated historical web campaign were run.
+The earlier local Windows/emulator evidence is retained below; the new hosted continuation is listed separately. No screenshots/videos or unrelated historical web campaign were run.
 
 | Check | Actual result |
 | --- | --- |
@@ -151,11 +167,22 @@ All evidence is local Windows/emulator work. No screenshots/videos, hosted tests
 | Normal Android application restored | `adb install -r` succeeded without clearing data; MainActivity cold start returned Status ok (8.6s) |
 | Analyzer | No issues found on the final analyzed code |
 | Locked dependencies / formatting / whitespace | `flutter pub get --enforce-lockfile`, targeted Dart format verification and `git diff --check` passed |
-| Hosted Google/Supabase/PowerSync | **Not tested; blocked** by missing configuration/credentials |
+| Hosted PostgreSQL concurrency and authority | **11 passed**, three distinct backend sessions; real JWT/RLS checks separately from SQL claim fixtures |
+| Focused local command/enrollment/recovery regression | **5 passed**, including new complete-publication validation/idempotence |
+| Local server regression after tracked migrations | **8 passed**, including authoritative web money golden parity |
+| Windows hosted native proof | **1 comprehensive scenario passed** (20s runtime; 49.6s Debug build), real Supabase/PowerSync |
+| Android hosted native proof | **Same scenario passed** (15s runtime; 109.8s build, 6.3s install), including download of Windows' accepted command for the same owner |
+| Normal Android app after hosted tests | **Debug build passed** (86.3s), `adb install -r` succeeded without clearing data; MainActivity cold start returned **Status ok** (11.0s) |
+| Final analysis/credential checks | Analyzer **no issues** (8.0s); format/diff checks passed; actual known supplied/admin/generated secrets absent from **1,841 scanned files**, including Windows Dart kernel and decompressed normal APK; `.env.local` ignored/untracked |
+| Google OAuth | **Not tested; blocked** by absent Google project/client/provider setup |
 
 Portable evidence: the actual Windows-created encrypted archive was **1,339 bytes**, containing two intents, four evidence rows and one file. It restored with an independently encrypted target database on both native platforms. The ignored `build/p0-transfer.json` contains only synthetic test material; its compile-time test secret is not a real credential-storage pattern. Archive size is not measured hosted wire traffic.
 
-Local disposable logs are under ignored `apps/salapiya/build/p0-*.log`; committed test code is the reproducible evidence. PGlite executes real PostgreSQL in WASM but serializes transactions. Its auth.uid() stub sets a transaction-local subject and verifies no JWT. Real server races, CDC checkpoints, stream privacy and provider authentication remain unverified.
+Local disposable logs are under ignored `apps/salapiya/build/p0-*.log`; committed test code is the reproducible evidence. PGlite executes real PostgreSQL in WASM but serializes transactions. Its auth.uid() stub sets a transaction-local subject and verifies no JWT. `hosted-tests.mjs` supplies independent hosted races and actual signed JWT/RLS checks; `p0_hosted_test.dart` supplies native hosted auth/RPC/download checks. No local injected row is counted as hosted replication.
+
+The hosted scenario exercises real Supabase fixture session exchange, bounded enrollment/publication or preserved-local collision, committed RPC retry after encrypted close/reopen, stale rejection while unrelated work proceeds, owner API isolation, encrypted archive restore into another database, accepted/rejected/missing receipt review and explicit original-ID resume. Actual PowerSync streams then download matching accepted rows, reconcile without double counting, preserve cached history plus offline intent through reopen, upload automatically on reconnect, and exclude foreign owners in **two independently authenticated databases**, even with forged owner parameters. Android additionally downloads the preceding Windows command. Other-session sign-out is followed by a real rejected refresh attempt. Google URL generation checks PKCE S256 only; no Google authorization/exchange is claimed.
+
+Fault boundaries: response loss is an injected client `SocketException` **after a real hosted commit**, and the original ID is replayed through the durable SDK queue after reopen. Offline work uses an explicit SDK disconnect, not a new host-network/airplane-mode campaign. No forced service outage, replication-slot loss, deliberately invalidated checkpoint or immediate access-JWT revocation is claimed. PowerSync's default debug logger is replaced by its non-console attached logger; financial payload/query logging remains disabled.
 
 The isolated Windows release bundle is retained locally under ignored
 `apps/salapiya/build/p0-release/`; its build log is copied into the main workspace.
@@ -200,7 +227,9 @@ Official free-tier allowances checked October 24, 2026:
 
 Files dominate: 50 MiB/owner starts at 200 MiB, plus 20 MiB total/month reaches about 440 MiB after one year, excluding independent backups. Indexes, immutable receipts/history, tombstones, WAL, sync buckets, repeated initial downloads, scans and exports add usage. Four light users appear plausible on free tiers, not guaranteed.
 
-Pauses/deactivation require manual reactivation and a real drill for slot health, refresh/reauthentication, complete resync and receipt reconciliation. Preserve offline writes throughout. Inspect retained WAL/slots and disk during outages; see [PowerSync Supabase operations](https://docs.powersync.com/integrations/supabase/guide). No hosted storage/traffic/retention or inactivity recovery was measured.
+Actual snapshot at **2026-10-24 14:05:03 UTC / 22:05:03 Manila**, after both hosted native runs: database **11,499,187 bytes**, proof tables including indexes **229,376 bytes**, **30 accepted synthetic actions / 50 receipts**. PowerSync initial replication was complete, source connected, stream/table error counts zero, reported lag **0 bytes**; its active slot had reserved WAL status and **56 bytes** retained at that instant. This is a tiny synthetic point-in-time sample, not four-user capacity/traffic evidence. `inspect-health.mjs` reproduces the measurement. Monthly PowerSync wire/storage billing usage is not exposed by that diagnostics endpoint and still needs the provider Usage dashboard.
+
+Pauses/deactivation require manual reactivation and a real drill for slot health, refresh/reauthentication, complete resync and receipt reconciliation. Preserve offline writes throughout. Inspect retained WAL/slots and disk during outages; see [PowerSync Supabase operations](https://docs.powersync.com/integrations/supabase/guide). Monthly traffic, retention growth and inactivity recovery remain unmeasured; no slot was removed/reset.
 
 If always-on paid continuity is needed, current listed starting plans are approximately Supabase $25/month and PowerSync $49/month, before extras/tax. No upgrade/production instance/card/budget commitment was activated. Owner approval of a specific budget is required before paid changes.
 
@@ -209,51 +238,64 @@ If always-on paid continuity is needed, current listed starting plans are approx
 | Gate | Classification | Remaining condition |
 | --- | --- | --- |
 | G0 | **Partially verified** | Native stack works on tested targets; owner physical/minimum OS/CPU inventory and installer callback registration open |
-| G1 | **Partially verified** | Actual SDK queue/local faults pass; real two-device CDC/checkpoint loss, private-stream negatives and interrupted service recovery **blocked** |
-| G2 | **Partially verified** | Local freeze/collision and SQL staging pass; Google/full graph activation and independently concurrent claims **blocked** |
-| G3 | **Partially verified** | Exact fixtures/storage/crash and bounded SQL pass; advanced domain parity, concurrent capacity conflicts and group authorization **not tested** |
-| G4 | **Partially verified** | Encrypted DB/files/credentials and cross-target recovery pass; complete archive, key lifecycle, revoked/deleted identity and connected restore activation **not tested** |
-| Early G7 | **Partially verified** | Official quotas/model reviewed; measured cloud usage and inactivity/reactivation **not tested** |
+| G1 | **Partially verified** | Live private streams, RPC retries and encrypted offline reopen/reconnect now exercised; hosted service interruption/inactivity, forced checkpoint loss/full resync and broader queue faults remain open |
+| G2 | **Partially verified** | Real JWT owner retrieval, bounded publication and independently concurrent claims pass; Google, full graph and populated-local/existing-cloud activation remain blocked/open |
+| G3 | **Partially verified** | Exact fixtures/storage/crash plus independent hosted idempotency/revision races pass; advanced domain parity, financial capacity conflicts and group authorization remain untested |
+| G4 | **Partially verified** | Cross-target encryption/recovery, real receipt review and explicit missing-command resume pass; complete archive/activation, production key lifecycle and revoked/deleted identity reconciliation remain open |
+| Early G7 | **Partially verified** | Published quotas/model and actual development DB/replication health sampled; monthly wire usage, inactivity/reactivation and retained-WAL growth during outages remain untested |
 
 No foundational gate is marked Passed. G5 signing/upgrades/distribution, G6 physical/accessibility/performance and G8 full files/lifecycle/retention remain later work. No new acceptance is implied.
 
-**P1 must wait.** Recommended next assignment: configure the development providers below, then prove real Google-authenticated Windows/Android enrollment and private PowerSync replication against this synthetic schema. Add independent PostgreSQL-session races, receipt/checkpoint loss, wrong-owner streams and connected recovery review. Close remaining full-graph/financial parity/key-lifecycle requirements before substantial P1. Do not begin P2–P6.
+**P1 must wait.** The immediate external blocker is Google Cloud/Supabase Google provider setup below. The next bounded assignment should prove real browser PKCE on Windows/Android (including Windows protocol registration), cancellation/wrong-account/revocation/restart/second-device behavior, full enrollment/restore activation and deliberate hosted interruption/resync. Complete domain parity/capacity/group authority and key lifecycle evidence before closing G0–G4 or starting substantial P1. Do not begin P2–P6.
 
 ## Exact manual setup and credentials
 
-### Supabase development proof schema
+### Completed development provider setup and reproduction
 
-1. Open existing **salapiya-dev**, verify its project reference and that the target is development/synthetic.
-2. Review and apply `services/salapiya/p0/001_proof.sql`, then `002_enrollment.sql` once, in **SQL Editor**. They create a fresh bounded proof schema, not repeatable production migrations. Never replay web migrations or create arbitrary demo tables.
-3. Verify RLS and SELECT-only authenticated grants on public.p0_profile/public.p0_accepted. Writes use the three explicitly granted RPCs. Keep salapiya_p0 out of exposed Data API schemas.
-4. Copy actual **Project URL** and **publishable client key** from Connect/API settings to external client configuration. Never use a service-role/secret/database key in Flutter.
-5. Do not install the PGlite auth.uid() stub; Supabase already supplies it. Actual signed-in JWT/RLS/RPC checks still need a hosted test session.
-6. Before production, review auth-user deletion/revocation, rate limits, all financial graph rules and group permissions. This proof supplies no complete production lifecycle policy.
+No manual SQL or PowerSync dashboard authorization is currently required. The CLI is linked to the verified existing Supabase target; the existing JP Development instance is deployed. Review migrations/configuration before rerunning remote writes. Never replay web migrations, use transaction pooling for replication, expose `salapiya_p0` in Data API schemas, or publish all tables.
 
-### PowerSync existing JP development instance
+The server helpers load `services/salapiya/p0/.env.local` only after verifying Git ignores it and does not track it. The four supplied variable names remain `SUPABASE_PROJECT_ID`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` and `PS_ADMIN_TOKEN`. Values are passed in memory/inherited environment, never command arguments. No persistent provider CLI login was created.
 
-Use the [Supabase integration guide](https://docs.powersync.com/integrations/supabase/guide), [JWT guide](https://docs.powersync.com/configuration/auth/supabase-auth) and [Sync Streams reference](https://docs.powersync.com/sync/streams/quickstart).
-
-1. Create a dedicated PostgreSQL replication login through Supabase SQL Editor, with a new random password stored in your password manager. The official role pattern uses REPLICATION BYPASSRLS LOGIN. This privileged credential belongs only to the server connection/dashboard.
-2. Grant only public schema usage and SELECT on p0_profile/p0_accepted. Create publication **powersync** for these two tables only. Inspect any existing publication first; do not use FOR ALL TABLES or grants on every future table.
-3. In PowerSync **salapiya-dev → JP development instance → Database Connections**, add the actual Supabase connection using that login, TLS and a supported replication-compatible direct/session endpoint. Copy actual host/database/port from Supabase Connect; do not use transaction pooling.
-4. Verify the connection/publication. In **Client Auth**, enable **Use Supabase Auth**. Inspect Supabase **Project Settings → JWT** first. For asymmetric signing keys leave the legacy secret empty, verify detected project/issuer, audience authenticated and JWKS `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`. Follow official legacy instructions only if actually required, never exposing that secret to Flutter.
-5. In **Sync Streams**, paste `services/salapiya/p0/sync-streams.yaml` and **Deploy**. It uses edition 3 and signed auth.user_id(); no client-controlled owner or global private stream. Resolve validation errors before connection.
-6. Copy the actual PowerSync endpoint into external config. Keep the existing development instance; no Production/paid activation is needed.
-7. Use two real devices/sessions for one owner and another unrelated owner. Prove distinct offline commands converge once, forged stream parameters cannot disclose another owner, expired/revoked identity blocks new remote access, and queue receipt acknowledgement differs from download checkpoint completion.
-8. Monitor lag/disk/retained WAL. Remove unused slots only after identifying their associated instance. No slot cleanup was performed here.
-
-For a new dedicated login/publication, the reviewed SQL shape is below. Replace
-the password only inside your development provider setup; never commit it. If
-the role or publication already exists, inspect it instead of rerunning CREATE.
-
-```sql
-CREATE ROLE salapiya_p0_replication WITH REPLICATION BYPASSRLS LOGIN
-  PASSWORD '<new-random-password-from-your-password-manager>';
-GRANT USAGE ON SCHEMA public TO salapiya_p0_replication;
-GRANT SELECT ON public.p0_profile, public.p0_accepted TO salapiya_p0_replication;
-CREATE PUBLICATION powersync FOR TABLE public.p0_profile, public.p0_accepted;
+```powershell
+cd services/salapiya/p0
+npm.cmd ci --ignore-scripts --no-audit --no-fund
+node inspect-cloud.mjs
+node fetch-database-ca.mjs
+node supabase-cli.mjs link --project-ref uxnyxhwqshqpvinvopiv
+node supabase-cli.mjs db push --linked --dry-run
+# Apply only after reviewing the preview and tracked SQL:
+node supabase-cli.mjs db push --linked --yes
+node hosted-tests.mjs
+node deploy-powersync.mjs
+# Apply only a reviewed config diff; already deployed at handoff:
+node deploy-powersync.mjs --apply
+node inspect-health.mjs
 ```
+
+`configure-auth.mjs` merges the exact native callback into Supabase's existing allowlist, leaving Google disabled and Site URL unchanged. `configure-replication.mjs` resumes the existing restricted role/publication, refuses an existing role without its stored original password, and writes only environment references into tracked service YAML. Do not rotate/delete that role or slot as a troubleshooting shortcut.
+
+`hosted-tests.mjs` is append-only: it retains synthetic test actions/receipts and creates fresh SQL race subjects. Four Auth Admin-created, confirmed `example.test` fixture users are retained for reproducible server/native checks; no email is sent, Google is not impersonated and signup policy was not relaxed. Test sessions are independent of the owner's identity.
+
+To run native hosted acceptance, prepare fresh per-user sessions immediately before each test. Use the same emulator application ID `dev.salapiya.salapiya`; `adb run-as` requires an existing debuggable installation. Windows runs first so Android can verify its accepted command. From the service directory:
+
+```powershell
+node prepare-native.mjs windows
+cd ../../../apps/salapiya
+$configPath = Join-Path $env:LOCALAPPDATA 'Salapiya/p0/hosted/windows.json'
+flutter test integration_test/p0_hosted_test.dart -d windows --no-pub "--dart-define=P0_NATIVE_CONFIG_PATH=$configPath"
+cd ../../services/salapiya/p0
+$env:SALAPIYA_ANDROID_DEVICE = 'emulator-5554' # use actual selected emulator
+# Set SALAPIYA_ADB to the actual adb executable if absent from PATH/ANDROID_HOME.
+node prepare-native.mjs android
+cd ../../../apps/salapiya
+flutter test integration_test/p0_hosted_test.dart -d emulator-5554 --no-pub
+```
+
+The Windows define contains a **file path only**. Runtime fixture files contain the public client key and per-user refresh tokens, never administrative/database/replication credentials. Android receives its fixture through stdin into app-private storage; both tests consume and delete their fixture before running. Sessions/PKCE and the reopen key use the secure-storage adapters, and test sessions/keys/temp databases are cleaned afterward. Reprepare fixtures after any test failure; consumed files are intentionally not reusable.
+
+Generated replication password and synthetic fixture passwords remain outside Git under `%LOCALAPPDATA%/Salapiya/p0/hosted/state.json`, protected by the OS user's directory. Windows mode flags alone do not establish custom NTFS ACLs. Protect/back up this server-side development state separately; it never ships with Flutter. Tracked YAML contains `!env SALAPIYA_P0_REPLICATION_PASSWORD`, public endpoints and public CA certificates only. `audit-secrets.mjs` scans working source, proof logs, Windows Debug binaries and decompressed debug APK against actual supplied/admin/generated passwords without printing matches. It is an evidence check for known credentials, not a general security audit.
+
+See [Supabase integration](https://docs.powersync.com/integrations/supabase/guide), [JWT configuration](https://docs.powersync.com/configuration/auth/supabase-auth) and [Sync Streams](https://docs.powersync.com/sync/streams/quickstart). The replication role bypasses RLS as required by CDC, so the reviewed streams are a separate privacy boundary from API RLS. Keep both tests.
 
 ### Google browser PKCE via Supabase
 
@@ -262,19 +304,19 @@ The selected path is system-browser Supabase OAuth on both targets, without a se
 1. In **Google Cloud → Google Auth Platform**, select/create the intended project; configure **Branding** and support/contact details.
 2. In **Audience**, choose External for personal Google accounts and add actual development test users. Internal applies only inside a managed Workspace organization.
 3. In **Data Access**, request only openid, email and profile; no Gmail/Drive/Calendar.
-4. In **Clients**, create a **Web application OAuth client** for the Supabase broker. Add the exact redirect `https://<project-ref>.supabase.co/auth/v1/callback`, copied from Supabase. The native scheme is not Google's redirect URI.
+4. In **Clients**, create a **Web application OAuth client** for the Supabase broker. Add the exact authorized redirect **`https://uxnyxhwqshqpvinvopiv.supabase.co/auth/v1/callback`**. The native scheme is not Google's redirect URI. No native Android client, signing fingerprint, Gmail/Drive permissions or frontend JavaScript origin is needed for this system-browser broker proof.
 5. In **Supabase → Authentication → Sign In / Providers → Google**, enable Google with that client ID/secret. Store the secret only in provider dashboards/password manager.
-6. In **Authentication → URL Configuration → Redirect URLs**, allow exactly `dev.salapiya.p0://auth/callback` for development. Use a legitimate Site URL for a fallback you actually control; no invented domain/broad wildcard redirects.
+6. Supabase **Authentication → URL Configuration → Redirect URLs** already contains exactly `dev.salapiya.p0://auth/callback`, merged by the automation. Existing Site URL was left unchanged; choose a legitimate controlled fallback when preparing a distributable application. Do not add broad wildcard redirects.
 7. Android already declares scheme/host/path and disables competing Flutter deep-link handling. Development application ID remains dev.salapiya.salapiya. A native Android OAuth client/signing fingerprint is only needed if a future reviewed assignment changes to native Google sign-in.
 8. Windows needs protocol registration to the actual chosen development executable, or a later packaged protocol manifest. A temporary per-user registration uses `HKCU\Software\Classes\dev.salapiya.p0`, string **URL Protocol** = empty, and `shell\open\command` default = `"<absolute-executable-path>" "%1"`. No registry/installer registration was performed.
-9. Initialize the hosted proof using PKCE, SecureSessionStorage, SecurePkceStorage and the exact callback predicate before launching Google. Adapters exist; the approved prototype does not yet contain a real login/activation flow.
+9. `initializeProofAuth` already configures PKCE, SecureSessionStorage, SecurePkceStorage and the exact callback predicate. `connectProofGoogle` invokes supported system-browser Supabase OAuth. The approved prototype still has no product login/activation flow; use a bounded test harness after provider configuration. Never send Google passwords, client secrets or refresh tokens through chat. Only confirmation that configuration is complete is needed to continue testing.
 10. Exercise cancellation, wrong account, interrupted callbacks, expired/revoked sessions, restart, second-device retrieval and populated-local/existing-cloud decisions. Local data remains available if sync pauses. Synthetic callbacks cannot prove these outcomes.
 
 Publishing/verification depends on actual scopes/audience/branding. Check [Google app states](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) and [Supabase Google setup](https://supabase.com/docs/guides/auth/social-sign-in/auth-google), rather than assuming private distribution waives requirements.
 
 ### Environment values and safe locations
 
-No real credentials file was created. These names are the next hosted proof's configuration contract; current product main.dart does not automatically read them.
+The supplied ignored `.env.local` is used only by server-side automation. Current product main.dart does not read it or initialize real auth/sync. Public client configuration and server credentials have separate consumers:
 
 | Name/value | Purpose | Safe storage |
 | --- | --- | --- |
@@ -282,19 +324,19 @@ No real credentials file was created. These names are the next hosted proof's co
 | SALAPIYA_SUPABASE_PUBLISHABLE_KEY | Client identification only | External config; never substitute service-role key |
 | SALAPIYA_POWERSYNC_URL | Actual JP endpoint | External client config; nonsecret |
 | SALAPIYA_AUTH_REDIRECT_URI | Exact allowlisted callback above | External client config; nonsecret |
-| SALAPIYA_P0_DATABASE_URL | Future independent-session SQL tests | Server-only environment/password manager/external ignored config |
+| SUPABASE_PROJECT_ID / SUPABASE_ACCESS_TOKEN / SUPABASE_DB_PASSWORD / PS_ADMIN_TOKEN | Verified development automation and independent-session tests | Existing ignored `.env.local`; never client defines/assets |
 | Google OAuth secret | Provider broker secret | Google/Supabase dashboards/password manager |
-| Replication password | PowerSync server login | Password manager/PowerSync connection settings |
+| Replication password | Existing restricted PowerSync server login | External OS-user state and PowerSync server settings; tracked YAML uses environment reference |
 | Session/refresh/PKCE values | Per-installation online identity | Implemented OS secure-storage adapters |
 | Database/private-file keys | Independent random installation protection | OS secure storage; full creation/rotation/loss lifecycle still gated |
 | Recovery secret | User-controlled portable archive access | Separate off-device password manager/copy; never beside real-use archive |
 
-Suggested client file: `%LOCALAPPDATA%\Salapiya\p0\client.json`, outside Git. Future builds may consume **public client values only** from dart-define files. Do not put real tokens/database/recovery secrets in compile-time defines, CLI history, logs or chat. The synthetic transfer fixture is explicitly test-only.
+Future product builds may consume **public client values only** from external configuration. The current hosted test uses the consumed runtime fixture described above; no credential-bearing dart-define file or bundled asset exists. Do not put real tokens/database/recovery secrets in compile-time defines, CLI history, logs or chat. The retained older synthetic transfer fixture is explicitly test-only.
 
-Remaining owner actions/decisions: provider setup/test users, Windows protocol/installer approach, physical device inventory, retention/support limits and explicit budget if free-tier continuity is inadequate. No paid approval is needed for independent local proof work already completed.
+Remaining owner actions/decisions: Google Cloud project/consent/test users and broker client configuration, Windows protocol/installer approach, physical device inventory, retention/support limits and explicit budget if free-tier continuity is inadequate. Supabase SQL and PowerSync connection/streams need no manual setup now. No paid approval was needed or used for this continuation.
 
 ## Git and preservation
 
-Implementation checkpoints: 37b94d5 (pins/probe), 1bc5bcb (money/storage), f1305e8 (receipts/queue), b9235c0 (enrollment/auth storage), 04e6419 (encrypted recovery), 1e6152d (explicit native durability), followed by final evidence consolidation. Final branch HEAD is the reviewable state; this document avoids embedding its own self-referential SHA.
+Prior implementation checkpoints: 37b94d5 (pins/probe), 1bc5bcb (money/storage), f1305e8 (receipts/queue), b9235c0 (enrollment/auth storage), 04e6419 (encrypted recovery), 1e6152d (explicit native durability), then 8e2f9cc (consolidated local proof). This continuation adds fd7ffd3 (scoped migrations/provider automation and hosted concurrency), ec300e5 (live native sync and receipt-aware recovery), followed by final evidence consolidation. Final branch HEAD is the reviewable state; this document avoids embedding its own self-referential SHA.
 
-The branch was based on verified latest D5, not main. No unrelated work, real credentials, web migrations, paid activation or P1 implementation was committed. Unverified/blocked work above remains required despite successful local tests.
+The branch is based on the verified architecture-proof HEAD, not main. No unrelated work, actual secret values, web migrations, paid activation or P1 implementation is committed. Unverified/blocked work above remains required despite successful bounded hosted tests.

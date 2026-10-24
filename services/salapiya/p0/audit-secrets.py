@@ -22,6 +22,7 @@ app = root / "apps/salapiya"
 files.update((app / "build").glob("p0-*.log"))
 files.update((app / "build/windows/x64/runner/Debug").glob("*.exe"))
 files.update((app / "build/windows/x64/runner/Debug").glob("*.dll"))
+files.update((app / "build/windows/x64/runner/Debug").rglob("kernel_blob.bin"))
 files.update((app / "build/app/outputs/flutter-apk").glob("app-debug.apk"))
 
 def contains_secret(stream):
