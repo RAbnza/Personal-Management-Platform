@@ -61,8 +61,9 @@ class LocalLedger {
         "SELECT name FROM sqlite_master WHERE name='proof_enrollment_state'",
       );
       if (guard.isNotEmpty &&
-          (await tx.get('SELECT phase FROM proof_enrollment_state'))['phase'] !=
-              'local') {
+          ['staged', 'collision'].contains(
+            (await tx.get('SELECT phase FROM proof_enrollment_state'))['phase'],
+          )) {
         throw StateError('Enrollment freezes the bounded local graph');
       }
       final prior = await tx.getAll(

@@ -11,6 +11,7 @@ for(const name of ['SUPABASE_PROJECT_ID','SUPABASE_ACCESS_TOKEN','SUPABASE_DB_PA
   if(!process.env[name]) throw Error(`Missing ${name}`);
 }
 export const ref=process.env.SUPABASE_PROJECT_ID;
+if(!/^[a-z]{20}$/.test(ref))throw Error('Invalid development project reference');
 const secrets=new Set(Object.entries(process.env).filter(([k])=>/TOKEN|PASSWORD|SECRET/.test(k)).map(([,v])=>v));
 export function protect(value){if(value)secrets.add(value);return value;}
 export function redacted(value){let text=String(value);for(const secret of secrets){text=text.replaceAll(secret,'[REDACTED]').replaceAll(encodeURIComponent(secret),'[REDACTED]');}return text;}

@@ -90,6 +90,24 @@ try{
     assert.deepEqual(result.map(r=>r.outcome).sort(),['collision','published']);
     assert.equal((await observer.query('SELECT count(*)::int AS n FROM public.p0_accepted WHERE owner_id=$1',[owner])).rows[0].n,1);
   });
-  report({hostedChecks:9,independentBackends:pids.length,identity:'real Supabase password test users; Google not configured'});
+  await run('failed hosted enrollment exposes no partial graph',async()=>{
+    const owner=randomUUID(),enrollment=randomUUID(),profile=randomUUID(),first=randomUUID();
+    const existing=(await observer.query('SELECT id FROM public.p0_accepted LIMIT 1')).rows[0].id;
+    await asOwner(db1,owner,c=>c.query('SELECT p0_stage_enrollment($1,$2,$3)',[enrollment,profile,JSON.stringify([{id:first,amount_minor:'1'},{id:existing,amount_minor:'1'}])]));
+    await assert.rejects(asOwner(db1,owner,c=>c.query('SELECT p0_publish_enrollment($1)',[enrollment])));
+    assert.equal((await observer.query('SELECT count(*)::int AS n FROM public.p0_profile WHERE owner_id=$1',[owner])).rows[0].n,0);
+    assert.equal((await observer.query('SELECT count(*)::int AS n FROM public.p0_accepted WHERE owner_id=$1',[owner])).rows[0].n,0);
+  });
+  await run('recovery review checks current owner and matching payload without writes',async()=>{
+    const id=randomUUID(),body=payload(a);
+    const request=(session,p=body)=>rest('rpc/p0_review_command',session,keys.client,{method:'POST',body:{command_id:id,command_payload:p}});
+    assert.equal((await request(sessionA)).outcome,'missing');
+    await asOwner(db1,a,c=>submit(c,id,body));
+    assert.equal((await request(sessionA)).outcome,'accepted');
+    assert.equal((await request(sessionA,payload(a,'2'))).outcome,'mismatch');
+    await rest('rpc/p0_review_command',sessionB,keys.client,{method:'POST',body:{command_id:id,command_payload:body},expectStatus:403});
+    assert.equal((await observer.query('SELECT count(*)::int AS n FROM salapiya_p0.receipt WHERE owner_id=$1 AND id=$2',[a,id])).rows[0].n,1);
+  });
+  report({hostedChecks:11,independentBackends:pids.length,identity:'real Supabase password test users; Google not configured'});
 }catch(error){report({failedCheck:check,errorCode:error.code||error.name});process.exitCode=1;}
 finally{await Promise.all(clients.map(c=>c.end()));}

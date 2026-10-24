@@ -59,6 +59,6 @@ replication:
         O19yVSxxCIf64Sg=
         -----END CERTIFICATE-----
 client_auth:
-  supabase: true
+  supabase: false
   jwks_uri: https://uxnyxhwqshqpvinvopiv.supabase.co/auth/v1/.well-known/jwks.json
-  audience: [authenticated]
+  additional_audiences: [authenticated]

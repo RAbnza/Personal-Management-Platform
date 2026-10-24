@@ -25,7 +25,7 @@ try{
   const project=await sb('');
   const ca=await readFile(new URL('supabase/certs/supabase-ca.crt',import.meta.url),'utf8');
   // Runtime environment substitution: privileged material never enters tracked YAML.
-  const service=`_type: cloud\nname: Development\nregion: jp\nreplication:\n  connections:\n    - type: postgresql\n      hostname: ${project.database.host}\n      port: 5432\n      database: postgres\n      username: salapiya_p0_replication\n      password:\n        secret: !env SALAPIYA_P0_REPLICATION_PASSWORD\n      sslmode: verify-full\n      cacert: |\n${ca.trimEnd().split('\n').map(l=>'        '+l).join('\n')}\nclient_auth:\n  supabase: true\n  jwks_uri: https://${ref}.supabase.co/auth/v1/.well-known/jwks.json\n  audience: [authenticated]\n`;
+  const service=`_type: cloud\nname: Development\nregion: jp\nreplication:\n  connections:\n    - type: postgresql\n      hostname: ${project.database.host}\n      port: 5432\n      database: postgres\n      username: salapiya_p0_replication\n      password:\n        secret: !env SALAPIYA_P0_REPLICATION_PASSWORD\n      sslmode: verify-full\n      cacert: |\n${ca.trimEnd().split('\n').map(l=>'        '+l).join('\n')}\nclient_auth:\n  supabase: false\n  jwks_uri: https://${ref}.supabase.co/auth/v1/.well-known/jwks.json\n  additional_audiences: [authenticated]\n`;
   await writeFile(new URL('powersync/service.yaml',import.meta.url),service);
   await writeFile(new URL('powersync/cli.yaml',import.meta.url),'type: cloud\ninstance_id: 6adc9162b32a60a89a2e706c\n');
   report({replicationRole:'salapiya_p0_replication',publication:tables,tls:'verify-full',region:'jp'});

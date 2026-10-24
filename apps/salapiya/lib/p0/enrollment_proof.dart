@@ -6,6 +6,8 @@ const proofCallback = 'dev.salapiya.p0://auth/callback';
 bool isProofCallback(Uri uri) =>
     uri.scheme == 'dev.salapiya.p0' &&
     uri.host == 'auth' &&
+    uri.userInfo.isEmpty &&
+    !uri.hasPort &&
     uri.path == '/callback' &&
     uri.fragment.isEmpty &&
     (uri.queryParameters.containsKey('code') ||
@@ -66,6 +68,52 @@ class EnrollmentProof {
   Future<void> collision() => db.execute(
     "UPDATE proof_enrollment_state SET phase='collision' WHERE phase='staged'",
   );
+
+  // Only the bounded graph verified through authenticated server reads can
+  // complete publication. No file/profile activation or implicit merge here.
+  Future<void> completePublication(
+    String owner,
+    String profileId,
+    List<Map<String, dynamic>> accepted,
+  ) => db.writeTransaction((tx) async {
+    final state = await tx.get('SELECT * FROM proof_enrollment_state');
+    if (state['remote_owner'] != owner ||
+        state['local_id'] != profileId ||
+        !['staged', 'published'].contains(state['phase'])) {
+      throw StateError('Enrollment identity mismatch');
+    }
+    if (state['phase'] == 'published') return;
+    final snapshot = jsonDecode(state['snapshot'] as String) as List;
+    for (final source in snapshot) {
+      final matches = accepted
+          .where(
+            (row) =>
+                row['id'] == source['id'] &&
+                row['owner_id'] == owner &&
+                row['amount_minor'] == source['amount_minor'],
+          )
+          .toList();
+      if (matches.length != 1) {
+        throw StateError('Incomplete accepted enrollment graph');
+      }
+      final row = matches.single;
+      final payload = jsonDecode(row['payload'] as String) as Map;
+      if (payload['owner_id'] != owner ||
+          payload['amount_minor'] != source['amount_minor'] ||
+          payload['kind'] != 'expense' ||
+          payload['expected_revision'] != 0 ||
+          payload['version'] != 1) {
+        throw StateError('Accepted enrollment payload mismatch');
+      }
+      await tx.execute(
+        "UPDATE proof_intent SET owner_id=?,payload=?,state='accepted' WHERE id=?",
+        [owner, row['payload'], source['id']],
+      );
+    }
+    await tx.execute(
+      "UPDATE proof_enrollment_state SET phase='published' WHERE id=1",
+    );
+  });
   // Cancelling preserves every record. No implicit merge, overwrite or account transfer.
   Future<void> cancel() => db.execute(
     "UPDATE proof_enrollment_state SET phase='local',enrollment_id=NULL,remote_owner=NULL,snapshot=NULL WHERE phase IN ('staged','collision')",

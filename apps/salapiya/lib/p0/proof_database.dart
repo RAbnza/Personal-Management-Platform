@@ -19,6 +19,7 @@ PowerSyncDatabase openProofDatabase(String path, String key) =>
     PowerSyncDatabase.withFactory(
       _ProofOpenFactory(path, key),
       schema: proofSchema,
+      logger: attachedLogger,
     );
 
 final class _ProofOpenFactory extends NativePowerSyncOpenFactory {
