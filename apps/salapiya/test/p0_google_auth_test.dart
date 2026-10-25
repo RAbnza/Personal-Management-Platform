@@ -7,6 +7,46 @@ import 'package:salapiya/p0/google_auth_proof.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'an active attempt expires before a late callback can exchange',
+    () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      const vault = FlutterSecureStorage(),
+          scope = 'salapiya.p2.active-expiry-test';
+      var now = DateTime.utc(2026, 10, 25);
+      final auth = await initializeProofAuth(
+        'https://p0proof.supabase.co',
+        'synthetic-public-client',
+        scope: scope,
+        detectSessionInUri: false,
+      );
+      final flow = GoogleAuthProof(auth, scope, vault, now: () => now);
+      try {
+        await vault.write(
+          key: '$scope.attempt',
+          value: jsonEncode({
+            'version': 1,
+            'owner': null,
+            'started': now.toIso8601String(),
+          }),
+        );
+        await vault.write(key: flow.verifierSlot, value: 'synthetic-verifier');
+        await flow.restoreAttempt();
+        expect(flow.pending, isTrue);
+        now = now.add(const Duration(minutes: 16));
+        await flow.handle(
+          Uri.parse(
+            'dev.salapiya.p0://auth/callback?code=synthetic-expired-code',
+          ),
+        );
+        expect(flow.outcome, 'expired_attempt_preserved_local_data');
+        expect(flow.client.auth.currentSession, isNull);
+        expect(await vault.read(key: flow.verifierSlot), isNull);
+      } finally {
+        await flow.close();
+      }
+    },
+  );
   test('restart restores guarded attempt; cancel destroys verifier and late callback cannot exchange', () async {
     FlutterSecureStorage.setMockInitialValues({});
     const vault = FlutterSecureStorage();

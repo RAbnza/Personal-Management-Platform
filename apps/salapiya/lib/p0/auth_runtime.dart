@@ -4,8 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'enrollment_proof.dart';
 import 'secure_auth_storage.dart';
 
-// Only the isolated P0 harness initializes this. Local-only product startup
-// remains unchanged and does not require network authentication.
+// Maintained native PKCE initialization shared by proof and production. The
+// product initializes it only for optional connection or a bound online session.
+// Local-only startup does not require network authentication.
 Future<Supabase> initializeProofAuth(
   String url,
   String publicKey, {

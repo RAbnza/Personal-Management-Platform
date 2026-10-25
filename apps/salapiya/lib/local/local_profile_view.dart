@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../connected/connection_view.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -65,6 +67,10 @@ class _LocalBootstrapState extends State<LocalBootstrap>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        runtime?.connected.connected == true) {
+      unawaited(runtime!.connected.syncNow());
+    }
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       unawaited(runtime?.flushPreferences());
@@ -126,7 +132,11 @@ class _LocalBootstrapState extends State<LocalBootstrap>
       listenable: runtime!,
       builder: (context, _) => runtime!.session == null
           ? LocalWelcome(runtime: runtime!)
-          : SalapiyaShell(settings: widget.settings, session: runtime!.session),
+          : SalapiyaShell(
+              key: ValueKey(runtime!.session),
+              settings: widget.settings,
+              session: runtime!.session,
+            ),
     );
   }
 }
@@ -258,9 +268,13 @@ class _LocalWelcomeState extends State<LocalWelcome> {
               ),
               FinancialLine(
                 'Continue with Google',
-                'Upcoming · connected profiles arrive in P2.',
+                'Connect privately or retrieve your existing profile.',
                 icon: Icons.cloud_outlined,
-                onTap: () => showUpcoming(context, 'Google connection'),
+                onTap: () => openDemoPage<void>(
+                  context,
+                  ConnectionPage(runtime: widget.runtime),
+                  'profile/connection',
+                ),
               ),
               FinancialLine(
                 'Restore from backup',
@@ -433,17 +447,19 @@ class _LocalProfileViewState extends State<LocalProfileView> {
             if (section == 'Backup & recovery')
               LocalRecoveryBody(runtime: s.runtime)
             else if (section == 'Connection')
-              const UpcomingView('Optional Google connection')
+              ConnectionBody(runtime: s.runtime)
             else if (section == 'Devices')
-              const ValueBlock(
+              ValueBlock(
                 'THIS INSTALLATION',
-                'Local only.',
-                'The database key is protected by your operating system. Connected device enrollment and revocation arrive in P2.',
+                s.runtime.connected.connected
+                    ? 'Connected installation'
+                    : 'Local only.',
+                'The database key is protected by your operating system. Synchronization is scoped to your bound private profile. Remote device removal is not available in this milestone.',
                 color: Palette.mint,
               )
             else if (section == 'Help') ...[
               const FinanceNotice(
-                'Use accounts to establish opening balances, then record activity after each opening cutoff. Review every financial effect before confirming. Back up before changing devices. No private data is uploaded.',
+                'Use accounts to establish opening balances, then record activity after each opening cutoff. Review every financial effect before confirming. Back up before changing devices. Private data uploads only after you explicitly connect Google.',
               ),
               TextButton(
                 onPressed: () => showLicensePage(
@@ -460,10 +476,10 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                   '${s.profile.profileId}\nPHP · Asia/Manila · encrypted on this installation',
                   color: Palette.lilac,
                 ),
-                aside: const ValueBlock(
+                aside: ValueBlock(
                   'CONNECTED IDENTITY',
-                  'Optional',
-                  'Local only · no cloud profile',
+                  s.runtime.connected.identity,
+                  s.runtime.connected.label,
                   color: Palette.mint,
                 ),
               ),
@@ -509,6 +525,7 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                 onChanged: (v) => settings.change(() => settings.effects = v),
               ),
               DropdownButtonFormField<double>(
+                isExpanded: true,
                 initialValue: settings.textScale ?? 0,
                 decoration: const InputDecoration(labelText: 'Text size'),
                 items: [
@@ -545,8 +562,9 @@ class LocalRecoveryView extends StatelessWidget {
 }
 
 class LocalRecoveryBody extends StatefulWidget {
-  const LocalRecoveryBody({super.key, required this.runtime});
+  const LocalRecoveryBody({super.key, required this.runtime, this.onExported});
   final LocalRuntime runtime;
+  final VoidCallback? onExported;
   @override
   State<LocalRecoveryBody> createState() => _LocalRecoveryBodyState();
 }
@@ -640,6 +658,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
                           'salapiya-${civilToday()}-${newLocalId().substring(0, 8)}.salapiya',
                       bytes: bytes,
                     );
+                    if (uri != null) widget.onExported?.call();
                     if (mounted) {
                       setState(
                         () => message = uri == null
@@ -681,7 +700,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
           ValueBlock(
             'ARCHIVE REVIEW',
             reviewed!['name'] as String,
-            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · local only',
+            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${reviewed!['format'] == 2 ? 'connected recovery requires current Google verification' : 'local only'}',
             color: Palette.mint,
           ),
           if (!initialized)

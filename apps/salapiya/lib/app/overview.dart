@@ -9,6 +9,9 @@ import 'activity_view.dart';
 import 'overview_agenda.dart';
 import 'overview_wallet.dart';
 import '../local/finance_domain.dart';
+import '../local/local_runtime.dart';
+import '../connected/connection_view.dart';
+import 'demo_routes.dart';
 
 class SourceLink extends StatelessWidget {
   const SourceLink({
@@ -90,7 +93,7 @@ class Overview extends StatelessWidget {
       children: [
         if (!session.complete)
           const StatusNotice(
-            'Initial download is incomplete. Financial totals are withheld; the Life preview remains accessible.',
+            'Initial download is incomplete. Complete financial totals are withheld until history is verified.',
             tone: NoticeTone.warning,
           ),
         if (session.scenario == OverviewScenario.waiting)
@@ -98,7 +101,18 @@ class Overview extends StatelessWidget {
             'Waiting for connection. Complete cached money remains readable; last successful sync: 21 Oct, 09:00.',
             tone: NoticeTone.information,
           ),
-        if (session.needsReview)
+        if (session.needsReview && session is LocalSession)
+          SourceLink(
+            title: 'Review private financial changes',
+            subtitle: session.syncLabel,
+            icon: Icons.rule_outlined,
+            onTap: () => openDemoPage<void>(
+              context,
+              ConnectionPage(runtime: (session as LocalSession).runtime),
+              'profile/connection',
+            ),
+          ),
+        if (session.needsReview && !session.production)
           SourceLink(
             title: 'Review a changed group source',
             subtitle: 'Private effect · your approval is required',
@@ -324,7 +338,9 @@ class Overview extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: StatusNotice(
-                'Pending outflow ${session.amount(DemoMoney.expense)}. Projected liquid total ${session.amount(session.projected!)} — not accepted yet.',
+                session.production
+                    ? '${session.syncLabel}. Waiting local work is included once in the projected liquid total ${session.projected == null ? '(history incomplete)' : session.amount(session.projected!)}; the accepted total excludes it.'
+                    : 'Pending outflow ${session.amount(DemoMoney.expense)}. Projected liquid total ${session.amount(session.projected!)} — not accepted yet.',
                 tone: NoticeTone.warning,
               ),
             ),

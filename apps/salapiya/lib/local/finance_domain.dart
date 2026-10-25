@@ -111,12 +111,14 @@ class LocalSnapshot {
     required this.accounts,
     required this.categories,
     required this.revisions,
+    this.projectionConflicts = const {},
   });
   final String owner;
   final int version;
   final List<LocalAccount> accounts;
   final List<LocalCategory> categories;
   final List<LocalRevision> revisions;
+  final Set<String> projectionConflicts;
   Set<String> get superseded =>
       revisions.map((r) => r.previous).nonNulls.toSet();
   List<LocalRevision> get current {

@@ -15,7 +15,10 @@ class LocalFinancialController extends FinancialController {
   }
   final LocalStore store;
   LocalSnapshot snapshot;
+  BigInt acceptedLiquid = BigInt.zero;
   String? lastError;
+  bool connected = false;
+  final Map<String, String> synchronizationStates = {};
   @override
   bool get production => true;
   @override
@@ -244,7 +247,21 @@ class LocalFinancialController extends FinancialController {
     'Production profiles cannot be reset through demo controls.',
   );
   Future<void> reload() async {
-    snapshot = await store.snapshot();
+    final view = await store.financialView();
+    snapshot = view.$1;
+    final accepted = view.$2;
+    acceptedLiquid = sumMinor(
+      accepted.accounts.map((a) => accepted.balance(a.id)),
+    );
+    connected = await store.connection() != null;
+    synchronizationStates.clear();
+    if (connected) {
+      for (final row in await store.db.getAll(
+        'SELECT id,state FROM connected_intent',
+      )) {
+        synchronizationStates[row['id'] as String] = row['state'] as String;
+      }
+    }
     _publish();
     notifyListeners();
   }
@@ -316,7 +333,11 @@ class LocalFinancialController extends FinancialController {
               ? 'Superseded · evidence retained'
               : r.change == 'reverse'
               ? 'Reversed · evidence retained'
-              : 'Saved locally',
+              : !connected
+              ? 'Saved locally'
+              : ['pending', 'accepted'].contains(synchronizationStates[r.id])
+              ? 'Saved on this device - waiting for synchronization'
+              : 'Synced',
           note: [
             r.values['reason'] ?? '',
             r.values['reference'] ?? '',

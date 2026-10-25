@@ -68,7 +68,7 @@ void main() {
         await store.integrity();
         expect((await db.get('PRAGMA foreign_keys')).values.single, 1);
         expect((await db.get('PRAGMA synchronous')).values.single, 2);
-        await db.execute('UPDATE local_schema SET version=2');
+        await db.execute('UPDATE local_schema SET version=999');
         await expectLater(store.migrate(), throwsA(isA<LocalRuleException>()));
         expect(await store.displayName(), 'Private');
       } finally {
@@ -252,7 +252,7 @@ void main() {
         throwsA(isA<LocalRuleException>()),
       );
       expect(
-        () => LocalBackup.validate({...bundle, 'localSchema': 2}),
+        () => LocalBackup.validate({...bundle, 'localSchema': 999}),
         throwsA(anything),
       );
       expect(

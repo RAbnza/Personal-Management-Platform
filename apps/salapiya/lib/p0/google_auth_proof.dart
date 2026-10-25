@@ -12,7 +12,9 @@ import 'enrollment_proof.dart';
 // A single-attempt lifecycle guard around the maintained Supabase PKCE flow.
 // Supabase owns OAuth state validation and code exchange. No tokens/URIs in logs.
 class GoogleAuthProof extends ChangeNotifier {
-  GoogleAuthProof(this.auth, this.scope, this.vault);
+  GoogleAuthProof(this.auth, this.scope, this.vault, {DateTime Function()? now})
+    : now = now ?? DateTime.now;
+  final DateTime Function() now;
   final Supabase auth;
   final String scope;
   final FlutterSecureStorage vault;
@@ -39,7 +41,7 @@ class GoogleAuthProof extends ChangeNotifier {
     final saved = await vault.read(key: '$scope.attempt');
     if (saved != null) {
       final attempt = jsonDecode(saved) as Map<String, dynamic>;
-      if (DateTime.now().toUtc().difference(
+      if (now().toUtc().difference(
             DateTime.parse(attempt['started'] as String),
           ) <
           const Duration(minutes: 15)) {
@@ -59,7 +61,7 @@ class GoogleAuthProof extends ChangeNotifier {
     _attempt = {
       'version': 1,
       'owner': expectedOwner,
-      'started': DateTime.now().toUtc().toIso8601String(),
+      'started': now().toUtc().toIso8601String(),
     };
     await vault.write(key: '$scope.attempt', value: jsonEncode(_attempt));
     outcome = 'waiting_for_google';
@@ -91,6 +93,15 @@ class GoogleAuthProof extends ChangeNotifier {
     if (!isProofCallback(uri) || _handling) return;
     if (!pending) {
       outcome = 'late_callback_ignored';
+      notifyListeners();
+      return;
+    }
+    if (now().toUtc().difference(
+          DateTime.parse(_attempt!['started'] as String),
+        ) >=
+        const Duration(minutes: 15)) {
+      await cancel();
+      outcome = 'expired_attempt_preserved_local_data';
       notifyListeners();
       return;
     }

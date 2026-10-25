@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 
 import '../p0/portable_recovery.dart';
+import '../connected/financial_contract.dart';
 import 'finance_domain.dart';
 import 'local_store.dart';
 
@@ -122,6 +123,15 @@ class LocalProfiles {
           Map<String, String>.from(d['preferences'] as Map),
         );
       }
+      if (d['connected'] case final Map remote) {
+        if (await store.connection() == null) {
+          await store.db.execute(
+            '''INSERT INTO connected_profile(profile_id,remote_owner,email,phase,enrollment_id)
+            VALUES(?,?,?,'published',?)''',
+            [id, remote['owner'], remote['email'], newLocalId()],
+          );
+        }
+      }
       await store.integrity();
       if (d['phase'] != 'ready') {
         await vault.write(jsonEncode({...d, 'phase': 'ready'}));
@@ -164,6 +174,48 @@ class LocalProfiles {
     return _open(d);
   }
 
+  // Preserve the prior descriptor/key in OS secure storage before activating a
+  // different cloud profile. Original database files remain at their own paths.
+  Future<LocalStore> retrieveConnected(
+    String id,
+    String name,
+    String actor,
+    String email, {
+    bool preserveCurrent = false,
+  }) async {
+    final previous = await vault.read();
+    if (previous != null && !preserveCurrent) {
+      reject('An active profile already exists. Review the safe switch first.');
+    }
+    if (!RegExp(r'^[0-9a-f-]{36}$').hasMatch(id) ||
+        name.trim().isEmpty ||
+        name.length > 200) {
+      reject('Invalid cloud profile descriptor.');
+    }
+    final target = File(p.join(directory.path, '$id.sqlite'));
+    if (await target.exists()) {
+      reject(
+        'This cloud profile already has a protected database here. Existing files are preserved; review recovery before switching.',
+      );
+    }
+    await directory.create(recursive: true);
+    final descriptor = {
+      'version': 1,
+      'phase': 'initializing',
+      'id': id,
+      'key': await PortableRecovery.newRecoverySecret(),
+      'name': name,
+      'preferences': <String, String>{},
+      'connected': {'owner': actor, 'email': email},
+      if (previous != null) 'preserved': jsonDecode(previous),
+    };
+    // Save first: failure keeps the old profile active. Successful save is a
+    // resumable activation checkpoint, never deletion of the old key or ledger.
+    await vault.write(jsonEncode(descriptor));
+    await close();
+    return _open(descriptor);
+  }
+
   // Recovery never merges or overwrites an existing profile. Its protected
   // staging descriptor makes final activation resumable across process loss.
   Future<LocalStore> restore(
@@ -195,10 +247,22 @@ class LocalProfiles {
       // source dependency and original ID; never import an arbitrary posting dump.
       for (final row in bundle['commands'] as List) {
         final r = row as Map;
-        await store.commit(
-          LocalCommand.decode(r['id'] as String, r['payload'] as String),
-          recordedAt: r['recorded_at'] as String,
+        final command = LocalCommand.decode(
+          r['id'] as String,
+          r['payload'] as String,
         );
+        if (bundle['format'] == 2) {
+          await store.db.writeTransaction(
+            (tx) => store.commitAccepted(
+              tx,
+              command,
+              fromServer: true,
+              recordedAt: r['recorded_at'] as String,
+            ),
+          );
+        } else {
+          await store.commit(command, recordedAt: r['recorded_at'] as String);
+        }
       }
       for (final row in bundle['drafts'] as List) {
         final r = row as Map;
@@ -209,6 +273,36 @@ class LocalProfiles {
             jsonDecode(r['values_json'] as String) as Map,
           ),
         );
+      }
+      if (bundle['format'] == 2) {
+        final remote = bundle['connection'] as Map;
+        final unpublished = remote['origin'] == 'staged';
+        await store.db.execute(
+          "INSERT INTO connected_profile(profile_id,remote_owner,email,phase,enrollment_id,enrollment_snapshot,enrollment_name) VALUES(?,?,?,'restored',?,?,?)",
+          [
+            id,
+            remote['remote_owner'],
+            remote['email'],
+            unpublished ? remote['enrollment_id'] : newLocalId(),
+            unpublished ? remote['enrollment_snapshot'] : null,
+            unpublished ? remote['enrollment_name'] : null,
+          ],
+        );
+        for (final raw in bundle['intents'] as List) {
+          final r = raw as Map;
+          await store.db.execute(
+            "INSERT INTO connected_intent VALUES(?,?,?,?,?,'restored',?,?)",
+            [
+              r['id'],
+              id,
+              r['payload'],
+              r['envelope'],
+              r['recorded_at'],
+              'restored_requires_current_receipt_review',
+              r['sequence_no'],
+            ],
+          );
+        }
       }
       await store.integrity();
       if (interrupt) throw StateError('Injected restore interruption');
@@ -274,12 +368,35 @@ class LocalBackup {
           'SELECT operation,command_id,values_json FROM local_draft WHERE owner_id=? ORDER BY operation',
           [store.owner],
         );
+        final connection = await store.connectionIn(tx);
+        final connected = connection != null;
         final result = <String, dynamic>{
-          'format': 1,
+          'format': connected ? 2 : 1,
           'localSchema': localSchemaVersion,
           'commandContract': 1,
           'calculationVersion': 1,
-          'authority': 'local',
+          'authority': connected ? 'connected-review-required' : 'local',
+          if (connected)
+            'connection': {
+              'remote_owner': connection['remote_owner'],
+              'email': connection['email'],
+              'origin': connection['phase'],
+              if (connection['phase'] == 'staged' ||
+                  (connection['phase'] == 'restored' &&
+                      connection['enrollment_snapshot'] != null)) ...{
+                'origin': 'staged',
+                'enrollment_id': connection['enrollment_id'],
+                'enrollment_snapshot': connection['enrollment_snapshot'],
+                'enrollment_name': connection['enrollment_name'],
+              },
+            },
+          if (connected)
+            'intents': [
+              for (final r in await tx.getAll(
+                'SELECT id,payload,envelope,recorded_at,sequence_no FROM connected_intent ORDER BY sequence_no',
+              ))
+                Map<String, dynamic>.from(r),
+            ],
           'currency': 'PHP',
           'timezone': 'Asia/Manila',
           'owner': store.owner,
@@ -297,11 +414,12 @@ class LocalBackup {
         return result;
       });
   static void validate(Map<String, dynamic> b) {
-    if (b['format'] != 1 ||
-        b['localSchema'] != localSchemaVersion ||
+    final connected = b['format'] == 2;
+    if (![1, 2].contains(b['format']) ||
+        ![1, localSchemaVersion].contains(b['localSchema']) ||
         b['commandContract'] != 1 ||
         b['calculationVersion'] != 1 ||
-        b['authority'] != 'local' ||
+        b['authority'] != (connected ? 'connected-review-required' : 'local') ||
         b['currency'] != 'PHP' ||
         b['timezone'] != 'Asia/Manila' ||
         b['coverage'] !=
@@ -326,10 +444,53 @@ class LocalBackup {
       final c = LocalCommand.decode(r['id'] as String, r['payload'] as String);
       if (!ids.add(c.id) ||
           c.owner != b['owner'] ||
-          c.expectedVersion != i ||
+          (connected ? c.expectedVersion < 0 : c.expectedVersion != i) ||
           c.payload != r['payload'] ||
           DateTime.tryParse(r['recorded_at'] as String) == null) {
         reject('Archive command history is incompatible.');
+      }
+    }
+    if (connected) {
+      final remote = b['connection'] as Map;
+      if (remote['origin'] == 'staged') {
+        if (!RegExp(r'^[0-9a-f-]{36}$')
+                .hasMatch(remote['enrollment_id'] as String) ||
+            (remote['enrollment_name'] as String).trim().isEmpty ||
+            canonicalJson(
+                  jsonDecode(remote['enrollment_snapshot'] as String),
+                ) !=
+                canonicalJson(commands)) {
+          reject('Invalid unpublished enrollment recovery graph.');
+        }
+      }
+      if (!RegExp(r'^[0-9a-f-]{36}$')
+              .hasMatch(remote['remote_owner'] as String) ||
+          remote['email'] is! String) {
+        reject('Invalid connected recovery identity.');
+      }
+      final intents = b['intents'] as List;
+      if (intents.length > 20000) reject('Unsupported recovery intent count.');
+      final intentIds = <String>{};
+      var last = 0;
+      for (final raw in intents) {
+        final r = raw as Map;
+        final c = LocalCommand.decode(
+          r['id'] as String,
+          r['payload'] as String,
+        );
+        final envelope = jsonDecode(r['envelope'] as String) as Map;
+        if (!intentIds.add(c.id) ||
+            c.owner != b['owner'] ||
+            c.payload != r['payload'] ||
+            envelope['contract'] != 2 ||
+            envelope['profile_id'] != b['owner'] ||
+            envelope['payload'] != c.payload ||
+            r['sequence_no'] is! int ||
+            (r['sequence_no'] as int) <= last ||
+            DateTime.tryParse(r['recorded_at'] as String) == null) {
+          reject('Invalid connected recovery intent.');
+        }
+        last = r['sequence_no'] as int;
       }
     }
     for (final raw in drafts) {

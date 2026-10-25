@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:async';
+
+import '../connected/connected_runtime.dart';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -15,6 +18,7 @@ class LocalRuntime extends ChangeNotifier {
   final LocalProfiles profiles;
   final GallerySettings settings;
   LocalSession? session;
+  late final connected = ConnectedRuntime(this);
   String? preferenceError;
   Future<void> _preferences = Future.value();
   bool _disposed = false;
@@ -29,6 +33,7 @@ class LocalRuntime extends ChangeNotifier {
     );
     try {
       await runtime.reopen();
+      unawaited(runtime.connected.restore());
       return runtime;
     } catch (_) {
       await runtime.profiles.close();
@@ -48,6 +53,8 @@ class LocalRuntime extends ChangeNotifier {
   }
 
   Future<void> activate(LocalStore store) async {
+    settings.removeListener(_persist);
+    final previousSession = session;
     final preferences = await store.preferences();
     settings.themeMode =
         ThemeMode.values
@@ -66,6 +73,7 @@ class LocalRuntime extends ChangeNotifier {
       LocalFinancialController(store, await store.snapshot()),
       this,
     );
+    previousSession?.dispose();
     session!.profile.name = await store.displayName();
     session!.profile.profileId = store.owner;
     session!.profile.devices.clear();
@@ -74,6 +82,7 @@ class LocalRuntime extends ChangeNotifier {
     session!.hideAmounts = preferences['hideAmounts'] == 'true';
     settings.addListener(_persist);
     settings.change(() {});
+    await connected.attach();
     notifyListeners();
   }
 
@@ -113,6 +122,7 @@ class LocalRuntime extends ChangeNotifier {
 
   Future<void> close() async {
     await flushPreferences();
+    await connected.close();
     await profiles.close();
   }
 
@@ -127,14 +137,45 @@ class LocalRuntime extends ChangeNotifier {
 
 class LocalSession extends PrototypeSession {
   LocalSession(LocalFinancialController controller, this.runtime)
-    : super(financial: controller, production: true);
+    : super(financial: controller, production: true) {
+    runtime.connected.addListener(notifyListeners);
+  }
   final LocalRuntime runtime;
   LocalFinancialController get localFinance =>
       finance as LocalFinancialController;
   @override
   bool get empty => finance.accounts.isEmpty;
   @override
-  bool get local => true;
+  bool get local => !runtime.connected.connected;
+  @override
+  bool get complete => runtime.connected.complete;
+  @override
+  bool get pending => runtime.connected.pendingCount > 0;
+  @override
+  BigInt? get accepted => !complete
+      ? null
+      : local
+      ? finance.liquid
+      : localFinance.acceptedLiquid;
+  @override
+  BigInt? get projected => pending && complete ? finance.liquid : null;
+  @override
+  bool get needsReview => runtime.connected.reviewCount > 0;
+  @override
+  String get syncLabel => runtime.connected.label;
+  @override
+  String get coverage => runtime.connected.connected
+      ? !complete
+            ? 'Initial download incomplete. Complete balances are unavailable.'
+            : '${finance.accounts.length} accounts · accepted history and $pendingCount waiting commands · PHP · Asia/Manila'
+      : super.coverage;
+  int get pendingCount => runtime.connected.pendingCount;
+  @override
+  void dispose() {
+    runtime.connected.removeListener(notifyListeners);
+    super.dispose();
+  }
+
   @override
   void togglePrivacy() {
     super.togglePrivacy();

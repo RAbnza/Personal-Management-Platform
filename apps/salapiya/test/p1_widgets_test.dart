@@ -121,7 +121,7 @@ void main() {
         await tester.tap(find.text('Continue with Google'));
         await tester.pumpAndSettle();
         expect(
-          find.textContaining('planned for a later milestone'),
+          find.textContaining('This build supports local use.'),
           findsOneWidget,
         );
         expect(runtime.session, isNull);

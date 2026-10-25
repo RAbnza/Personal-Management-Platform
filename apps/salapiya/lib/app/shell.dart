@@ -301,7 +301,9 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             session.production
-                                ? 'LOCAL ONLY · encrypted on this device · available offline'
+                                ? session.local
+                                      ? 'LOCAL ONLY · encrypted on this device · available offline'
+                                      : '${session.syncLabel} · encrypted on this device'
                                 : 'DEMO · synthetic data · ${session.syncLabel}',
                             style: TextStyle(
                               fontSize: 11,

@@ -86,7 +86,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
         const SizedBox(height: 24),
         if (!widget.session.complete)
           const FinanceNotice(
-            'Financial history is incomplete. Balances and financial actions are unavailable until the demo snapshot is complete.',
+            'Initial download incomplete. Balances and financial actions become available after the accepted history is verified.',
             warning: true,
           )
         else if (c.production && !['Accounts', 'Activity'].contains(tab))

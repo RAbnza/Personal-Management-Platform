@@ -6,12 +6,16 @@ import 'package:sqlite_async/sqlite_async.dart';
 
 import '../p0/exact_money.dart';
 import 'finance_domain.dart';
+import '../connected/financial_contract.dart';
 
-// P0-verified encrypted native factory. No replicated tables or connector.
+part '../connected/connected_store.dart';
+
+// P0-verified encrypted native factory. P1 financial tables remain ordinary
+// local tables; only the bounded P2 command transport/projection use SDK views.
 PowerSyncDatabase openLocalDatabase(String path, String key) =>
     PowerSyncDatabase.withFactory(
       _LocalFactory(path, key),
-      schema: const Schema([]),
+      schema: connectedSchema,
       logger: attachedLogger,
     );
 
@@ -33,7 +37,7 @@ final class _LocalFactory extends NativePowerSyncOpenFactory {
   ];
 }
 
-const localSchemaVersion = 1;
+const localSchemaVersion = 2;
 const defaultLocalCategories = [
   ('food', 'Food & drink', 'expense'),
   ('transport', 'Transport', 'expense'),
@@ -57,10 +61,19 @@ class LocalStore {
     final versions = await tx.getAll('SELECT version FROM local_schema');
     if (versions.isNotEmpty) {
       if (versions.length != 1 ||
-          versions.single['version'] != localSchemaVersion) {
+          ![1, localSchemaVersion].contains(versions.single['version'])) {
         reject(
           'Unsupported database version. Preserve this database and use a compatible Salapiya version.',
         );
+      }
+      await _migrateConnection(tx);
+      if (versions.single['version'] == 1) {
+        if (interrupt) {
+          throw StateError('Injected connected migration interruption');
+        }
+        await tx.execute('UPDATE local_schema SET version=?', [
+          localSchemaVersion,
+        ]);
       }
       return;
     }
@@ -83,6 +96,7 @@ class LocalStore {
     for (final trigger in _triggers) {
       await tx.execute(trigger);
     }
+    await _migrateConnection(tx);
     if (interrupt) {
       throw StateError('Injected migration interruption');
     }
@@ -117,6 +131,7 @@ class LocalStore {
     }
   });
   Future<void> integrity() async {
+    await migrateConnected();
     if ((await db.get('PRAGMA quick_check')).values.single != 'ok' ||
         (await db.getAll('PRAGMA foreign_key_check')).isNotEmpty) {
       reject(
@@ -154,7 +169,12 @@ class LocalStore {
     }
   }
 
-  Future<LocalSnapshot> snapshot() => db.readTransaction(_snapshot);
+  Future<LocalSnapshot> snapshot() => db.readTransaction(connectedSnapshot);
+  Future<(LocalSnapshot, LocalSnapshot)> financialView() =>
+      db.readTransaction((tx) async {
+        final accepted = await _snapshot(tx);
+        return (await connectedSnapshot(tx, accepted: accepted), accepted);
+      });
   Future<LocalSnapshot> _snapshot(SqliteReadContext tx) async {
     final profile = await tx.get(
       'SELECT revision FROM local_profile WHERE id=?',
@@ -241,6 +261,26 @@ class LocalStore {
     String? recordedAt,
     Future<void> Function()? afterRevision,
   }) => db.writeTransaction((tx) async {
+    if ((await connectionIn(tx)) != null) {
+      return queueConnected(tx, command, interrupt: interrupt);
+    }
+    return commitAccepted(
+      tx,
+      command,
+      interrupt: interrupt,
+      recordedAt: recordedAt,
+      afterRevision: afterRevision,
+    );
+  });
+
+  Future<String> commitAccepted(
+    SqliteWriteContext tx,
+    LocalCommand command, {
+    bool interrupt = false,
+    String? recordedAt,
+    Future<void> Function()? afterRevision,
+    bool fromServer = false,
+  }) async {
     if (command.owner != owner) {
       reject('Wrong profile owner.');
     }
@@ -255,7 +295,10 @@ class LocalStore {
       return old.single['result_id'] as String;
     }
     final snap = await _snapshot(tx);
-    final plan = planLocal(snap, command);
+    final plan = planLocal(
+      snap,
+      fromServer ? rebaseCommand(command, snap.version) : command,
+    );
     final sequence = snap.version + 1;
     await tx.execute('INSERT INTO local_command VALUES(?,?,?,?,?,?)', [
       command.id,
@@ -348,7 +391,8 @@ class LocalStore {
       [owner, command.id],
     );
     return command.id;
-  });
+  }
+
   Future<Map<String, String>> preferences() async => Map<String, String>.from(
     jsonDecode(
       (await db.get('SELECT preferences FROM local_profile WHERE id=?', [
@@ -435,8 +479,8 @@ class LocalStore {
       Map<String, dynamic>.from(r),
   ];
   Future<bool> hasReceipt(String id) async => (await db.getAll(
-    'SELECT id FROM local_command WHERE owner_id=? AND id=?',
-    [owner, id],
+    'SELECT id FROM local_command WHERE owner_id=? AND id=? UNION ALL SELECT id FROM connected_intent WHERE profile_id=? AND id=?',
+    [owner, id, owner, id],
   )).isNotEmpty;
   Future<void> close() => db.close();
 }

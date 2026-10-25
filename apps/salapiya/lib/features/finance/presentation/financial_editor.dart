@@ -1258,7 +1258,10 @@ class _FinancialEditorState extends State<FinancialEditor> {
                 ),
                 FinanceNotice(
                   c.production
-                      ? 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.'
+                      ? (c is LocalFinancialController &&
+                                (c as LocalFinancialController).connected
+                            ? 'A successful save is encrypted on this device. Waiting work is included once in your view and becomes synced after server acceptance and download. Drafts stay on this device.'
+                            : 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.')
                       : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
                 ),
               ],
