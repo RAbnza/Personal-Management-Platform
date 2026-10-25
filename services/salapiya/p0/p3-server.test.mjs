@@ -184,6 +184,12 @@ test('S08/S09 private PHP1200 adoption retains one cash movement, expense400/rec
  assert.equal(untouched,0);
  await assert.rejects(asUser(b,tx=>tx.query('SELECT * FROM salapiya_p2.posting')),/permission denied/);
 });
+test('old-archive original receipt review is actor-scoped and never recreates missing commands',async()=>{
+ const original=(await asUser(a,tx=>tx.query('SELECT p3_review_command($1) AS r',[bill]))).rows[0].r;
+ assert.equal(original.outcome,'accepted');assert.equal(original.id,bill);assert.equal(original.owner_id,a);
+ assert.equal((await asUser(b,tx=>tx.query('SELECT p3_review_command($1) AS r',[bill]))).rows[0].r.outcome,'missing');
+ assert.equal((await asUser(a,tx=>tx.query('SELECT p3_review_command($1) AS r',[randomUUID()]))).rows[0].r.outcome,'missing');
+});
 test('ownership transfer, archive and departure require current roles without peer takeover',async()=>{
  await no(a,'leave',{participant:pa,reason:'Owner cannot abandon administration'});
  await ok(a,'transfer',{participant:pm,reason:'Explicit active registered successor'});

@@ -70,6 +70,21 @@ Future<void> p3Select(WidgetTester tester, String key, String label) async {
     () => find.byKey(ValueKey('shared-field-$key')).evaluate().isNotEmpty,
   );
   await localTap(tester, find.byKey(ValueKey('shared-field-$key')));
+  await p3Choice(tester, label);
+}
+
+Future<void> p3Choice(WidgetTester tester, String label) async {
+  // Repeated isolated runs retain the user's/test profile history. Native
+  // dropdowns lazily build long lists; scroll rather than resetting accounts.
+  if (find.text(label).evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      find.text(label),
+      240,
+      scrollable: find.byType(Scrollable).last,
+      maxScrolls: 100,
+    );
+    await localSettle(tester);
+  }
   await localTap(tester, find.text(label).last);
 }
 
@@ -161,7 +176,7 @@ void main() {
           )).isNotEmpty;
         });
         if (const String.fromEnvironment('P3_NATIVE_STAGE') == 'verify') {
-          final local = await store.snapshot();
+          final local = (await store.financialView()).$2;
           expect(local.version, config['expectedProfileVersion']);
           for (final row in config['expectedAccounts'] as List) {
             expect(
@@ -371,7 +386,7 @@ void main() {
         // using a new isolated synthetic private account.
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
         await localTap(tester, find.byTooltip('Create account'));
-        final accountName = 'P3 cash $role ${accepted.version}';
+        final accountName = 'P3 cash $role ${newLocalId().substring(0, 8)}';
         await localEnter(tester, 'name', accountName);
         await localEnter(tester, 'amount', '2000.00');
         await localEnter(tester, 'cutoff', '2026-10-24');
@@ -533,6 +548,69 @@ void main() {
         );
         expect((await reopened.snapshot()).balance(account), cash);
         expect(tester.takeException(), isNull);
+        // Correct and refund the accepted group source through the real editor.
+        // The private adoption is deliberately retained at its prior revision.
+        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+        await localTap(
+          tester,
+          find.byKey(ValueKey('correct-bill-$nativeBill')),
+        );
+        await p3Enter(tester, 'Description', '$title corrected');
+        await p3Enter(
+          tester,
+          'Reason',
+          'Retain original immutable bill history',
+        );
+        await p3Save(tester);
+        await p3Wait(
+          tester,
+          () async =>
+              ((await current()).bills[nativeBill]['revisions'] as List)
+                  .length ==
+              2,
+        );
+        expect((await reopened.snapshot()).balance(account), cash);
+        await localTap(tester, find.byKey(ValueKey('refund-bill-$nativeBill')));
+        await p3Enter(tester, 'Refund total (PHP)', '3.00');
+        await p3Enter(
+          tester,
+          'Native fixture A · actual money received (PHP)',
+          '3.00',
+        );
+        await p3Enter(
+          tester,
+          'Manual one windows · consumed-share credit (PHP)',
+          '3.00',
+        );
+        await p3Enter(
+          tester,
+          'Reason',
+          'Independent merchant money and consumption credit',
+        );
+        await p3Save(tester);
+        await p3Wait(
+          tester,
+          () async => ((await current()).bills[nativeBill]['refunds'] as List)
+              .isNotEmpty,
+        );
+        expect((await reopened.snapshot()).balance(account), cash);
+        final refundId =
+            ((await current()).bills[nativeBill]['refunds'] as List)
+                .single['id'];
+        await localTap(
+          tester,
+          find.byKey(ValueKey('private-refund-$refundId')),
+        );
+        await p3Select(tester, 'account', accountName);
+        await p3Save(tester, private: true);
+        await p3Wait(
+          tester,
+          () async => (await reopened.db.getAll(
+            "SELECT id FROM connected_intent WHERE state IN ('pending','accepted')",
+          )).isEmpty,
+        );
+        cash += BigInt.from(300);
+        expect((await reopened.snapshot()).balance(account), cash);
         // Continue a real Add Expense result into group sharing, then adopt its
         // original action. The group handoff cannot repeat the private cash.
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
@@ -540,8 +618,8 @@ void main() {
         final integratedTitle = 'Integrated purchase $role ${accepted.version}';
         await localEnter(tester, 'name', integratedTitle);
         await localEnter(tester, 'amount', '3.00');
-        await localTap(tester, find.byKey(const ValueKey('field-account')));
-        await localTap(tester, find.text(accountName).last);
+        await localTap(tester, find.byKey(const ValueKey('select-account')));
+        await p3Choice(tester, accountName);
         await localTap(tester, find.byKey(const ValueKey('review-action')));
         await localTap(tester, find.text('Confirm & save'));
         await localWait(
@@ -644,8 +722,8 @@ void main() {
         });
         expect((await recovered.snapshot()).balance(account), cash);
         expect(
-          (await recovered.snapshot()).version,
-          (await reopened.snapshot()).version,
+          (await recovered.financialView()).$2.version,
+          (await reopened.financialView()).$2.version,
         );
         recoveryRepository.dispose();
         await tester.pumpWidget(const SizedBox.shrink());

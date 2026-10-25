@@ -2,6 +2,48 @@ import '../local/finance_domain.dart';
 import '../p0/exact_money.dart';
 
 typedef SharedJson = Map<String, dynamic>;
+bool privateBillNeedsSharedReview(
+  SharedGroup group,
+  String participant,
+  LocalRevision adopted,
+  Iterable<LocalRevision> current,
+  Iterable<SharedJson> reviews,
+) {
+  final key = adopted.values['sharedKey'];
+  if (group.bills[key] == null) return true;
+  final bill = object(group.bills[key]);
+  if (reviews.any(
+    (r) =>
+        r['historicalOnly'] != true &&
+        r['group_id'] == group.id &&
+        r['bill_id'] == key &&
+        r['private_revision'] == adopted.id &&
+        r['source_stamp'] == sharedSourceStamp(bill),
+  )) {
+    return false;
+  }
+  if (adopted.values['sharedRevision'] != group.revision(key!)['id']) {
+    return true;
+  }
+  for (final f in bill['refunds'] as List) {
+    if (sharedMinor(f['received'][participant] ?? '0') == BigInt.zero &&
+        sharedMinor(f['credits'][participant] ?? '0') == BigInt.zero) {
+      continue;
+    }
+    if (!current.any(
+      (r) =>
+          r.values['sharedGroup'] == group.id &&
+          r.values['sharedMode'] == 'refund' &&
+          r.values['sharedKey'] == f['id'] &&
+          r.values['coverage'] == 'adopted' &&
+          r.values['billRevision'] == group.revision(key)['id'],
+    )) {
+      return true;
+    }
+  }
+  return false;
+}
+
 String sharedSourceStamp(SharedJson bill) {
   final refunds =
       (bill['refunds'] as List).map((f) => f['id'] as String).toList()..sort();

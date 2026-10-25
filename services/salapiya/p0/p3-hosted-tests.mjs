@@ -101,6 +101,9 @@ try{
    assert.deepEqual(results.map(r=>r.rows[0].r.outcome).sort(),['accepted','rejected']);
    for(let i=0;i<2;i++)assert.deepEqual(await submit('correct',values,a,ids[i],v),results[i].rows[0].r);
    version=(await snapshot()).version;
+   const accepted=results.findIndex(r=>r.rows[0].r.outcome==='accepted');
+   assert.deepEqual(await rpc('p3_review_command',{command_id:ids[accepted]}),results[accepted].rows[0].r);
+   assert.equal((await rpc('p3_review_command',{command_id:ids[accepted]},b)).outcome,'missing');
  });
  await check('hosted API owner private isolation; offline-removal denial and former retained history excludes later activity',async()=>{
    await ok('remove',{participant:pb,reason:'Synthetic exit'});

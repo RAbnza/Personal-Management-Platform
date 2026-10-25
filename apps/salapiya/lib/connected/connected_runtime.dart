@@ -35,6 +35,7 @@ class ConnectedRuntime extends ChangeNotifier {
       changedPrivateSources = 0;
   LocalStore? _attached;
   bool busy = false, refreshing = false, closed = false;
+  Future<void> _refreshQueue = Future.value();
   bool sessionExpired = false;
   String? error;
   Map<String, dynamic>? binding, cloud;
@@ -161,18 +162,44 @@ class ConnectedRuntime extends ChangeNotifier {
     _attached = store;
     _downloads = store.db
         .watch('SELECT id,sequence_no FROM p2_command ORDER BY sequence_no')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(refresh()));
     _intents = store.db
         .watch(
           'SELECT id,state,reason FROM connected_intent ORDER BY sequence_no',
         )
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(refresh()));
-    _status = store.db.statusStream.listen((_) => unawaited(refresh()));
+    // Queue-stat notifications may follow our own ordinary SQLite writes.
+    // React only to actual connection/download/error transitions, avoiding a
+    // feedback loop while still draining an event that arrived mid-refresh.
+    _status = store.db.statusStream
+        .map(
+          (s) => (
+            s.connected,
+            s.connecting,
+            s.downloading,
+            s.uploading,
+            s.lastSyncedAt,
+            s.uploadError?.toString(),
+            s.downloadError?.toString(),
+          ),
+        )
+        .distinct()
+        .listen((_) => unawaited(refresh()));
     await refresh();
   }
 
-  Future<void> refresh() async {
-    if (refreshing || closed || _attached == null) return;
+  Future<void> refresh() {
+    // Serialize actual data/status transitions. A notification arriving while
+    // reconciliation is running must be processed after that transaction.
+    final next = _refreshQueue.then((_) => _refreshNow());
+    _refreshQueue = next;
+    return next;
+  }
+
+  Future<void> _refreshNow() async {
+    if (closed || _attached == null) return;
     refreshing = true;
     try {
       final store = _attached!;
@@ -220,6 +247,10 @@ class ConnectedRuntime extends ChangeNotifier {
         needMyConfirmation = 0;
         waitingForOthers = 0;
         changedPrivateSources = 0;
+        final privateReviews = (await store.db.getAll(
+          'SELECT * FROM p3_private_review WHERE owner_id=?',
+          [binding?['remote_owner']],
+        )).map((r) => Map<String, dynamic>.from(r)).toList();
         for (final row in await store.db.getAll(
           'SELECT document FROM shared_snapshot_cache WHERE owner_id=?',
           [binding?['remote_owner']],
@@ -246,9 +277,13 @@ class ConnectedRuntime extends ChangeNotifier {
                 r.values['sharedGroup'] == group.id &&
                 r.values['sharedMode'] == 'bill',
           )) {
-            if (group.bills[r.values['sharedKey']] == null ||
-                group.revision(r.values['sharedKey']!)['id'] !=
-                    r.values['sharedRevision']) {
+            if (privateBillNeedsSharedReview(
+              group,
+              me ?? '',
+              r,
+              local.session!.localFinance.snapshot.current,
+              privateReviews,
+            )) {
               changedPrivateSources++;
             }
           }
@@ -695,6 +730,7 @@ class ConnectedRuntime extends ChangeNotifier {
     await _downloads?.cancel();
     await _intents?.cancel();
     await _status?.cancel();
+    await _refreshQueue;
     await _attached?.db.disconnect();
     await flow?.close();
     dispose();

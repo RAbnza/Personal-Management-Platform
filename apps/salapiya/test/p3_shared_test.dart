@@ -194,6 +194,16 @@ void main() {
       );
       expect(plan.position.toString(), expected['receivable']);
       expect(
+        classifyExistingSharedCard(
+          owner: a,
+          evidence: evidence,
+          expectedRevision: c,
+          contribution: evidence.fundedMinor,
+          consumedShare: BigInt.zero,
+        ).position,
+        evidence.fundedMinor,
+      );
+      expect(
         () => classifyExistingSharedCard(
           owner: b,
           evidence: evidence,
@@ -499,6 +509,87 @@ void main() {
           'SELECT version FROM shared_snapshot_cache',
         ))['version'],
         2,
+      );
+    } finally {
+      await f.close();
+    }
+  });
+  test('private refund attention follows current source stamps; historical reviews do not suppress current review', () async {
+    final f = await LocalFixture.open();
+    try {
+      final values = {
+        'name': 'Unpaid source',
+        'sharedAccounting': '2',
+        'sharedMode': 'bill',
+        'sharedGroup': a,
+        'sharedKey': b,
+        'sharedRevision': b,
+        'funding': 'cash',
+        'fundingAmount': '0.00',
+        'shareAmount': '100.00',
+        'category': 'category-food',
+      };
+      final adoptedId = await f.post('shared', values);
+      final adopted = (await f.store.snapshot()).revision(adoptedId);
+      final bill = <String, dynamic>{
+        'revisions': [
+          {'id': b},
+        ],
+        'refunds': <Map<String, dynamic>>[],
+      };
+      final group = SharedGroup({
+        'id': a,
+        'bills': {b: bill},
+      });
+      var current = (await f.store.snapshot()).current;
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, []),
+        isFalse,
+      );
+      (bill['refunds'] as List).add({
+        'id': c,
+        'received': {a: '0'},
+        'credits': {a: '1000'},
+      });
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, []),
+        isTrue,
+      );
+      final review = <String, dynamic>{
+        'group_id': a,
+        'bill_id': b,
+        'private_revision': adoptedId,
+        'source_stamp': sharedSourceStamp(bill),
+      };
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, [review]),
+        isFalse,
+      );
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, [
+          {...review, 'historicalOnly': true},
+        ]),
+        isTrue,
+      );
+      await f.post('shared', {
+        ...values,
+        'sharedMode': 'refund',
+        'sharedKey': c,
+        'sharedRevision': c,
+        'billSource': b,
+        'billRevision': b,
+        'coverage': 'adopted',
+        'shareAmount': '10.00',
+      });
+      current = (await f.store.snapshot()).current;
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, []),
+        isFalse,
+      );
+      (bill['revisions'] as List).add({'id': newLocalId()});
+      expect(
+        privateBillNeedsSharedReview(group, a, adopted, current, [review]),
+        isTrue,
       );
     } finally {
       await f.close();

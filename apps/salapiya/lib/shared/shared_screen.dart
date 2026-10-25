@@ -172,6 +172,135 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
   }
 
   String money(BigInt n) => widget.session.amount(n);
+  Future<void> reviewSavedWork(SharedJson intent) async {
+    if (intent['state'] != 'review') {
+      await repo.retry(intent['id'] as String);
+      return;
+    }
+    final command = object(jsonDecode(intent['payload'] as String));
+    final values = object(command['values']);
+    final group = repo.groups
+        .where((g) => g.id == intent['group_id'])
+        .firstOrNull;
+    final op = command['op'] as String;
+    final canDraft =
+        group != null &&
+        !group.archived &&
+        group.active(group.participant(repo.actor ?? '')) &&
+        ['bill', 'report'].contains(op);
+    final create = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Review saved $op'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                intent['reason'] as String? ??
+                    'This operation was not accepted.',
+              ),
+              const SizedBox(height: 12),
+              if (values['name'] != null) Text(values['name'] as String),
+              if (values['date'] != null) Text(values['date'] as String),
+              if (values['total'] != null)
+                Text('Original total: ${money(sharedMinor(values['total']))}'),
+              if (op == 'bill') ...[
+                for (final p in object(values['paid']).entries)
+                  Text(
+                    '${group?.personName(p.key) ?? 'Earlier participant'} · contributed ${money(sharedMinor(p.value))}',
+                  ),
+                for (final p in object(values['shares']).entries)
+                  Text(
+                    '${group?.personName(p.key) ?? 'Earlier participant'} · consumed ${money(sharedMinor(p.value))}',
+                  ),
+              ],
+              if (op == 'report')
+                Text(
+                  '${group?.personName(values['sender'] as String) ?? 'Earlier sender'} → ${group?.personName(values['recipient'] as String) ?? 'Earlier recipient'} · ${money(sharedMinor(values['amount']))}',
+                ),
+              const SizedBox(height: 12),
+              Text(
+                canDraft
+                    ? 'A corrected draft uses current participants and sources. Review it before sending a new command. This original decision stays in history.'
+                    : 'Review the current group and its permissions before starting a new operation. This original input and decision remain saved.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Close'),
+          ),
+          if (canDraft)
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Create corrected draft'),
+            ),
+        ],
+      ),
+    );
+    if (create != true || group == null) return;
+    final id = newLocalId();
+    final fields = <String, String>{'date': values['date'] as String};
+    if (op == 'bill') {
+      fields.addAll({
+        'name': values['name'] as String,
+        'total': phpDecimal(sharedMinor(values['total'])),
+        'method': values['method'] as String,
+      });
+      for (final person in group.people.keys) {
+        fields['paid:$person'] = phpDecimal(
+          sharedMinor(values['paid'][person] ?? '0'),
+        );
+        fields['include:$person'] =
+            (values['shares'] as Map).containsKey(person) ? 'yes' : 'no';
+        fields['share:$person'] = phpDecimal(
+          sharedMinor(values['shares'][person] ?? '0'),
+        );
+      }
+    } else {
+      fields.addAll({
+        'sender': values['sender'] as String,
+        'recipient': values['recipient'] as String,
+        'mode': values['mode'] as String,
+        'amount': phpDecimal(sharedMinor(values['amount'])),
+        'acknowledge': 'no',
+      });
+      for (final source in group.bills.keys) {
+        fields['allocation:$source'] = phpDecimal(
+          sharedMinor(values['allocations']?[source]?['amount'] ?? '0'),
+        );
+      }
+    }
+    await repo.draft(id, group.id, {
+      'title': op == 'bill'
+          ? 'Corrected shared expense draft'
+          : 'Corrected payment draft',
+      'op': op,
+      'fields': fields,
+    });
+    if (op == 'bill') {
+      final purchase = await repo.store.draft(
+        'shared-purchase:${intent['id']}',
+      );
+      if (purchase != null) {
+        await repo.store.saveDraft('shared-purchase:$id', id, {
+          ...Map<String, String>.from(purchase['values'] as Map),
+          'group': group.id,
+          'bill': id,
+        });
+      }
+    }
+    if (op == 'bill') {
+      await bill(group, draftId: id);
+    } else {
+      await payment(group, draftId: id);
+    }
+  }
+
   Future<void> run(Future<void> Function() action) async {
     try {
       await action();
@@ -265,7 +394,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
     [const SharedField('email', 'Verified Google email')],
     (v) async {
       final token = SharedRepository.invitationToken();
-      await repo.submit(g.id, 'invite', {
+      final invitationId = await repo.submit(g.id, 'invite', {
         'email': v['email'],
         'hash': SharedRepository.tokenHash(token),
         'participant': ?participant,
@@ -275,8 +404,18 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Share this invitation securely'),
-          content: SelectableText(
-            '${g.id}.$token\n\nSingle use · seven days · intended verified Google recipient only. The recipient can paste this code in Join group. This code is shown once.',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText('${g.id}.$token'),
+              const SizedBox(height: 12),
+              const Text(
+                'Single use · seven days · intended verified Google recipient only. The recipient can paste this code in Join group. This code is shown once.',
+              ),
+              const SizedBox(height: 12),
+              SelectableText('Invitation reference: $invitationId'),
+            ],
           ),
           actions: [
             TextButton(
@@ -924,12 +1063,14 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                       children: [
                         if (g.bills[b]['creator'] == me) ...[
                           TextButton(
+                            key: ValueKey('correct-bill-$b'),
                             onPressed: repo.online && active
                                 ? () => run(() => bill(g, source: b))
                                 : null,
                             child: const Text('Correct'),
                           ),
                           TextButton(
+                            key: ValueKey('refund-bill-$b'),
                             onPressed: repo.online && active
                                 ? () => run(
                                     () => bill(g, source: b, refund: true),
@@ -949,6 +1090,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                         ),
                         for (final f in g.bills[b]['refunds'] as List)
                           TextButton(
+                            key: ValueKey('private-refund-${f['id']}'),
                             onPressed: () => run(
                               () =>
                                   privateEffect(g, f['id'] as String, 'refund'),
@@ -1088,6 +1230,15 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
               const FinanceNotice(
                 'Private adoption is independent from group acceptance. No other member’s ledger is changed. Card funding requires the P4 card domain.',
               ),
+              for (final r in repo.reviews.where((r) => r['group_id'] == g.id))
+                FinancialLine(
+                  g.bills.containsKey(r['bill_id'])
+                      ? g.revision(r['bill_id'] as String)['name'] as String
+                      : 'Historical shared source',
+                  '${r['historicalOnly'] == true ? 'Historical archive review · current authorization must be reviewed again' : 'Accepted private retained-evidence review'}\n${r['reason']}\n${r['recorded_at']}',
+                  icon: Icons.history,
+                  color: Palette.mint,
+                ),
               for (final b in g.bills.keys)
                 FinancialLine(
                   g.revision(b)['name'] as String,
@@ -1149,17 +1300,35 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => run(
-                        () => form(
-                          'Revoke invitation',
-                          [const SharedField('invitation', 'Invitation ID')],
-                          (v) async {
-                            await repo.submit(g.id, 'revoke', {
-                              'invitation': v['invitation'],
-                            }, version: g.version);
-                          },
-                        ),
-                      ),
+                      onPressed:
+                          !(g.data['activity'] as List).any(
+                            (e) => e['op'] == 'invite',
+                          )
+                          ? null
+                          : () => run(
+                              () => form(
+                                'Revoke invitation',
+                                [
+                                  SharedField(
+                                    'invitation',
+                                    'Issued invitation',
+                                    options: {
+                                      for (final e
+                                          in (g.data['activity'] as List).where(
+                                            (e) => e['op'] == 'invite',
+                                          ))
+                                        e['id'] as String:
+                                            '${e['at']} · reference ${(e['id'] as String).substring(0, 8)}',
+                                    },
+                                  ),
+                                ],
+                                (v) async {
+                                  await repo.submit(g.id, 'revoke', {
+                                    'invitation': v['invitation'],
+                                  }, version: g.version);
+                                },
+                              ),
+                            ),
                       child: const Text('Revoke invitation'),
                     ),
                   ],
@@ -1239,6 +1408,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
               (i) => i['state'] != 'reconciled',
             ))
               FinancialLine(
+                key: ValueKey('shared-intent-${i['id']}'),
                 object(jsonDecode(i['payload'] as String))['op'] as String,
                 '${i['state'] == 'accepted'
                     ? 'Accepted · waiting for entitled download'
@@ -1249,7 +1419,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                     : 'Rejected / needs review'}\n${i['reason'] ?? ''}',
                 icon: Icons.cloud_queue,
                 color: Palette.peach,
-                onTap: () => run(() => repo.retry(i['id'] as String)),
+                onTap: () => run(() => reviewSavedWork(i)),
               ),
           ],
         ],
@@ -1314,6 +1484,18 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
     final integratedDraft = mode == 'bill'
         ? await store.draft('shared-purchase:$key')
         : null;
+    if (linked == null &&
+        integratedDraft != null &&
+        !snapshot.current.any(
+          (r) =>
+              r.id == (integratedDraft['values'] as Map)['privateSource'] &&
+              r.kind == 'expense' &&
+              !r.values.containsKey('sharedGroup'),
+        )) {
+      reject(
+        'The saved private purchase changed. Review its current Money history before adopting this bill. Actual spending is preserved.',
+      );
+    }
     final payment = snapshot.current
         .where(
           (r) =>

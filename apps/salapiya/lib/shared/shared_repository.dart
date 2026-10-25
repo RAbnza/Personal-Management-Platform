@@ -21,6 +21,8 @@ class SharedRepository extends ChangeNotifier {
   List<SharedJson> drafts = [];
   StreamSubscription<dynamic>? _drafts;
   StreamSubscription<dynamic>? _resources;
+  StreamSubscription<dynamic>? _reviews;
+  List<SharedJson> reviews = [];
   String? error;
   String? get actor => runtime.connected.binding?['remote_owner'] as String?;
   bool get online =>
@@ -29,17 +31,25 @@ class SharedRepository extends ChangeNotifier {
       runtime.connected.binding?['paused'] == 0 &&
       runtime.connected.binding?['phase'] == 'connected';
   Future<void> open() async {
+    _reviews = store.db
+        .watch('SELECT id FROM p3_private_review')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
+        .listen((_) => unawaited(reload()));
     _resources = store.db
         .watch('SELECT id,version FROM p3_resource')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(reload()));
     _drafts = store.db
         .watch('SELECT id,updated_at FROM shared_draft')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(reload()));
     _records = store.db
         .watch('SELECT id,version FROM p3_group')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(reload()));
     _intents = store.db
         .watch('SELECT id,state FROM shared_intent')
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(reload()));
     await reload();
   }
@@ -63,6 +73,20 @@ class SharedRepository extends ChangeNotifier {
       drafts = (await store.db.getAll(
         'SELECT * FROM shared_draft ORDER BY updated_at DESC',
       )).map(object).toList();
+      reviews = [
+        ...(await store.db.getAll(
+          'SELECT * FROM p3_private_review WHERE owner_id=? ORDER BY recorded_at DESC',
+          [user],
+        )).map(object),
+        ...(await store.db.getAll('SELECT payload FROM shared_review_history'))
+            .map(
+              (r) => {
+                ...object(jsonDecode(r['payload'] as String)),
+                'historicalOnly': true,
+              },
+            )
+            .where((r) => r['owner_id'] == user),
+      ];
     } catch (_) {
       error = 'Shared records could not be read. Your stored evidence is preserved; reopen or retry.';
     }
@@ -187,6 +211,7 @@ class SharedRepository extends ChangeNotifier {
     unawaited(_intents?.cancel());
     unawaited(_drafts?.cancel());
     unawaited(_resources?.cancel());
+    unawaited(_reviews?.cancel());
     super.dispose();
   }
 }
