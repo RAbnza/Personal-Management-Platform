@@ -9,3 +9,9 @@ streams:
   private_actions:
     auto_subscribe: true
     query: SELECT * FROM p0_accepted WHERE owner_id = auth.user_id()
+  p2_private_profile:
+    auto_subscribe: true
+    query: SELECT * FROM p2_profile WHERE owner_id = auth.user_id()
+  p2_private_commands:
+    auto_subscribe: true
+    query: SELECT * FROM p2_command WHERE owner_id = auth.user_id()

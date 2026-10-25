@@ -1,0 +1,740 @@
+{
+  "contract": 2,
+  "profile": "10000000-0000-4000-8000-000000000001",
+  "commands": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "kind": "account",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "name": "Wallet",
+        "kind": "Cash",
+        "cutoff": "2026-10-01",
+        "amount": "10000.00"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":0,\"kind\":\"account\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"10000.00\",\"cutoff\":\"2026-10-01\",\"date\":\"2026-10-02\",\"kind\":\"Cash\",\"name\":\"Wallet\"}}",
+      "plan": {
+        "account": {
+          "id": "20000000-0000-4000-8000-000000000001",
+          "name": "Wallet",
+          "kind": "Cash",
+          "cutoff": "2026-10-01",
+          "institution": "",
+          "notes": ""
+        },
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000001",
+          "actionId": "20000000-0000-4000-8000-000000000001",
+          "kind": "opening",
+          "change": "create",
+          "date": "2026-10-01",
+          "title": "Opening balance · Wallet",
+          "amount": "1000000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-01",
+            "acknowledge": "false",
+            "name": "Opening balance · Wallet",
+            "kind": "Cash",
+            "cutoff": "2026-10-01",
+            "amount": "10000.00"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "1000000",
+              "date": "2026-10-01",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-1000000",
+              "date": "2026-10-01",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "1000000"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "kind": "account",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "name": "Bank",
+        "kind": "Bank",
+        "cutoff": "2026-10-01",
+        "amount": "500.00",
+        "institution": "Synthetic"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":1,\"kind\":\"account\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"500.00\",\"cutoff\":\"2026-10-01\",\"date\":\"2026-10-02\",\"institution\":\"Synthetic\",\"kind\":\"Bank\",\"name\":\"Bank\"}}",
+      "plan": {
+        "account": {
+          "id": "20000000-0000-4000-8000-000000000002",
+          "name": "Bank",
+          "kind": "Bank",
+          "cutoff": "2026-10-01",
+          "institution": "Synthetic",
+          "notes": ""
+        },
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000002",
+          "actionId": "20000000-0000-4000-8000-000000000002",
+          "kind": "opening",
+          "change": "create",
+          "date": "2026-10-01",
+          "title": "Opening balance · Bank",
+          "amount": "50000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-01",
+            "acknowledge": "false",
+            "name": "Opening balance · Bank",
+            "kind": "Bank",
+            "cutoff": "2026-10-01",
+            "amount": "500.00",
+            "institution": "Synthetic"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "50000",
+              "date": "2026-10-01",
+              "account": "20000000-0000-4000-8000-000000000002",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-50000",
+              "date": "2026-10-01",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "1000000",
+        "20000000-0000-4000-8000-000000000002": "50000"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000003",
+      "kind": "expense",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "name": "Shared category portions",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "amount": "100.01",
+        "category": "category-food",
+        "split": "true",
+        "splitAmount": "33.34",
+        "splitCategory": "category-food",
+        "splitCount": "3",
+        "split2Amount": "33.33",
+        "split2Category": "category-groceries"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":2,\"kind\":\"expense\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"100.01\",\"category\":\"category-food\",\"date\":\"2026-10-02\",\"name\":\"Shared category portions\",\"split\":\"true\",\"split2Amount\":\"33.33\",\"split2Category\":\"category-groceries\",\"splitAmount\":\"33.34\",\"splitCategory\":\"category-food\",\"splitCount\":\"3\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000003",
+          "actionId": "20000000-0000-4000-8000-000000000003",
+          "kind": "expense",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Shared category portions",
+          "amount": "10001",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "name": "Shared category portions",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "amount": "100.01",
+            "category": "category-food",
+            "split": "true",
+            "splitAmount": "33.34",
+            "splitCategory": "category-food",
+            "splitCount": "3",
+            "split2Amount": "33.33",
+            "split2Category": "category-groceries"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-10001",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "3334",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-food"
+            },
+            {
+              "ledger": "expense",
+              "amount": "3333",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-groceries"
+            },
+            {
+              "ledger": "expense",
+              "amount": "3334",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-food"
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "989999",
+        "20000000-0000-4000-8000-000000000002": "50000"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000004",
+      "kind": "transfer",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "destination": "20000000-0000-4000-8000-000000000002",
+        "amount": "200.00",
+        "fee": "1.00",
+        "feeTreatment": "withheld",
+        "feeCategory": "category-fees",
+        "feeCount": "2",
+        "extraFee1Amount": "0.50",
+        "extraFee1Treatment": "separate",
+        "extraFee1Account": "20000000-0000-4000-8000-000000000002",
+        "extraFee1Category": "category-fees",
+        "extraFee1Date": "2026-10-03"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":3,\"kind\":\"transfer\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"200.00\",\"date\":\"2026-10-02\",\"destination\":\"20000000-0000-4000-8000-000000000002\",\"extraFee1Account\":\"20000000-0000-4000-8000-000000000002\",\"extraFee1Amount\":\"0.50\",\"extraFee1Category\":\"category-fees\",\"extraFee1Date\":\"2026-10-03\",\"extraFee1Treatment\":\"separate\",\"fee\":\"1.00\",\"feeCategory\":\"category-fees\",\"feeCount\":\"2\",\"feeTreatment\":\"withheld\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000004",
+          "actionId": "20000000-0000-4000-8000-000000000004",
+          "kind": "transfer",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Account transfer",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "destination": "20000000-0000-4000-8000-000000000002",
+            "amount": "200.00",
+            "fee": "1.00",
+            "feeTreatment": "withheld",
+            "feeCategory": "category-fees",
+            "feeCount": "2",
+            "extraFee1Amount": "0.50",
+            "extraFee1Treatment": "separate",
+            "extraFee1Account": "20000000-0000-4000-8000-000000000002",
+            "extraFee1Category": "category-fees",
+            "extraFee1Date": "2026-10-03",
+            "name": "Account transfer"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-20000",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "cash",
+              "amount": "20000",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000002",
+              "category": null
+            },
+            {
+              "ledger": "cash",
+              "amount": "-100",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "100",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-fees"
+            },
+            {
+              "ledger": "cash",
+              "amount": "-50",
+              "date": "2026-10-03",
+              "account": "20000000-0000-4000-8000-000000000002",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "50",
+              "date": "2026-10-03",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "969899",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000005",
+      "kind": "correction",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "source": "20000000-0000-4000-8000-000000000003",
+        "sourceVersion": "1",
+        "reason": "Correct receipt",
+        "name": "Shared category portions",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "amount": "100.02",
+        "category": "category-food",
+        "split": "true",
+        "splitAmount": "33.34",
+        "splitCategory": "category-food",
+        "splitCount": "3",
+        "split2Amount": "33.34",
+        "split2Category": "category-groceries"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":4,\"kind\":\"correction\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"100.02\",\"category\":\"category-food\",\"date\":\"2026-10-02\",\"name\":\"Shared category portions\",\"reason\":\"Correct receipt\",\"source\":\"20000000-0000-4000-8000-000000000003\",\"sourceVersion\":\"1\",\"split\":\"true\",\"split2Amount\":\"33.34\",\"split2Category\":\"category-groceries\",\"splitAmount\":\"33.34\",\"splitCategory\":\"category-food\",\"splitCount\":\"3\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000005",
+          "actionId": "20000000-0000-4000-8000-000000000003",
+          "kind": "expense",
+          "change": "replace",
+          "date": "2026-10-02",
+          "title": "Shared category portions",
+          "amount": "10002",
+          "number": 2,
+          "previous": "20000000-0000-4000-8000-000000000003",
+          "source": null,
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "name": "Shared category portions",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "amount": "100.02",
+            "category": "category-food",
+            "split": "true",
+            "splitAmount": "33.34",
+            "splitCategory": "category-food",
+            "splitCount": "3",
+            "split2Amount": "33.34",
+            "split2Category": "category-groceries",
+            "source": "20000000-0000-4000-8000-000000000003",
+            "sourceVersion": "1",
+            "reason": "Correct receipt"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-10002",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "3334",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-food"
+            },
+            {
+              "ledger": "expense",
+              "amount": "3334",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-groceries"
+            },
+            {
+              "ledger": "expense",
+              "amount": "3334",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-food"
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "969898",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000006",
+      "kind": "refund",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "source": "20000000-0000-4000-8000-000000000005",
+        "sourceVersion": "2",
+        "reason": "Returned portions",
+        "name": "Partial refund",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "amount": "20.01",
+        "refundMultiple": "true",
+        "refundCount": "2",
+        "refundPosting": "20000000-0000-4000-8000-000000000005-p2",
+        "refundFirstAmount": "10.01",
+        "refund1Posting": "20000000-0000-4000-8000-000000000005-p3",
+        "refund1Amount": "10.00"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":5,\"kind\":\"refund\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"20.01\",\"date\":\"2026-10-02\",\"name\":\"Partial refund\",\"reason\":\"Returned portions\",\"refund1Amount\":\"10.00\",\"refund1Posting\":\"20000000-0000-4000-8000-000000000005-p3\",\"refundCount\":\"2\",\"refundFirstAmount\":\"10.01\",\"refundMultiple\":\"true\",\"refundPosting\":\"20000000-0000-4000-8000-000000000005-p2\",\"source\":\"20000000-0000-4000-8000-000000000005\",\"sourceVersion\":\"2\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000006",
+          "actionId": "20000000-0000-4000-8000-000000000006",
+          "kind": "refund",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Partial refund",
+          "amount": "2001",
+          "number": 1,
+          "previous": null,
+          "source": "20000000-0000-4000-8000-000000000005",
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "source": "20000000-0000-4000-8000-000000000005",
+            "sourceVersion": "2",
+            "reason": "Returned portions",
+            "name": "Partial refund",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "amount": "20.01",
+            "refundMultiple": "true",
+            "refundCount": "2",
+            "refundPosting": "20000000-0000-4000-8000-000000000005-p2",
+            "refundFirstAmount": "10.01",
+            "refund1Posting": "20000000-0000-4000-8000-000000000005-p3",
+            "refund1Amount": "10.00",
+            "refundCategory": "category-food",
+            "refundAllocations": "[{\"posting\":\"20000000-0000-4000-8000-000000000005-p2\",\"category\":\"category-food\",\"amount_minor\":\"1001\"},{\"posting\":\"20000000-0000-4000-8000-000000000005-p3\",\"category\":\"category-groceries\",\"amount_minor\":\"1000\"}]"
+          },
+          "postings": [
+            {
+              "ledger": "expense",
+              "amount": "-1001",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-food"
+            },
+            {
+              "ledger": "expense",
+              "amount": "-1000",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "category-groceries"
+            },
+            {
+              "ledger": "cash",
+              "amount": "2001",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "971899",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000007",
+      "kind": "reversal",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "source": "20000000-0000-4000-8000-000000000006",
+        "sourceVersion": "1",
+        "reason": "Refund reversed"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":6,\"kind\":\"reversal\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-02\",\"reason\":\"Refund reversed\",\"source\":\"20000000-0000-4000-8000-000000000006\",\"sourceVersion\":\"1\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000007",
+          "actionId": "20000000-0000-4000-8000-000000000006",
+          "kind": "refund",
+          "change": "reverse",
+          "date": "2026-10-02",
+          "title": "Reversal · Partial refund",
+          "amount": "2001",
+          "number": 2,
+          "previous": "20000000-0000-4000-8000-000000000006",
+          "source": "20000000-0000-4000-8000-000000000005",
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "source": "20000000-0000-4000-8000-000000000006",
+            "sourceVersion": "1",
+            "reason": "Refund reversed",
+            "name": "Reversal · Partial refund",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "amount": "20.01",
+            "refundMultiple": "true",
+            "refundCount": "2",
+            "refundPosting": "20000000-0000-4000-8000-000000000005-p2",
+            "refundFirstAmount": "10.01",
+            "refund1Posting": "20000000-0000-4000-8000-000000000005-p3",
+            "refund1Amount": "10.00",
+            "refundCategory": "category-food",
+            "refundAllocations": "[{\"posting\":\"20000000-0000-4000-8000-000000000005-p2\",\"category\":\"category-food\",\"amount_minor\":\"1001\"},{\"posting\":\"20000000-0000-4000-8000-000000000005-p3\",\"category\":\"category-groceries\",\"amount_minor\":\"1000\"}]"
+          },
+          "postings": []
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "969898",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000008",
+      "kind": "reconcile",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "amount": "9700.00"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":7,\"kind\":\"reconcile\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"9700.00\",\"date\":\"2026-10-02\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000008",
+          "actionId": "20000000-0000-4000-8000-000000000008",
+          "kind": "reconcile",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Reconciliation · Wallet",
+          "amount": "102",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "amount": "9700.00",
+            "name": "Reconciliation · Wallet",
+            "observed": "970000",
+            "calculated": "969898",
+            "difference": "102",
+            "version": "7",
+            "sourceCount": "4"
+          },
+          "postings": []
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "969898",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000009",
+      "kind": "adjustment",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "account": "20000000-0000-4000-8000-000000000001",
+        "source": "20000000-0000-4000-8000-000000000008",
+        "sourceVersion": "1",
+        "reason": "Observed cash",
+        "mode": "adjustment"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":8,\"kind\":\"adjustment\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"date\":\"2026-10-02\",\"mode\":\"adjustment\",\"reason\":\"Observed cash\",\"source\":\"20000000-0000-4000-8000-000000000008\",\"sourceVersion\":\"1\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000009",
+          "actionId": "20000000-0000-4000-8000-000000000009",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Balance adjustment",
+          "amount": "102",
+          "number": 1,
+          "previous": null,
+          "source": "20000000-0000-4000-8000-000000000008",
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "account": "20000000-0000-4000-8000-000000000001",
+            "source": "20000000-0000-4000-8000-000000000008",
+            "sourceVersion": "1",
+            "reason": "Observed cash",
+            "mode": "adjustment",
+            "name": "Balance adjustment"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "102",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-102",
+              "date": "2026-10-02",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "970000",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000010",
+      "kind": "category",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "name": "Other earnings",
+        "classification": "income"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":9,\"kind\":\"category\",\"values\":{\"acknowledge\":\"false\",\"classification\":\"income\",\"date\":\"2026-10-02\",\"name\":\"Other earnings\"}}",
+      "plan": {
+        "account": null,
+        "category": {
+          "id": "20000000-0000-4000-8000-000000000010",
+          "name": "Other earnings",
+          "kind": "income"
+        },
+        "archiveId": null,
+        "revision": null
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "970000",
+        "20000000-0000-4000-8000-000000000002": "69950"
+      }
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000011",
+      "kind": "income",
+      "values": {
+        "date": "2026-10-02",
+        "acknowledge": "false",
+        "name": "Salary",
+        "account": "20000000-0000-4000-8000-000000000002",
+        "amount": "50.50",
+        "category": "20000000-0000-4000-8000-000000000010",
+        "incomeClass": "earned"
+      },
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"10000000-0000-4000-8000-000000000001\",\"expectedVersion\":10,\"kind\":\"income\",\"values\":{\"account\":\"20000000-0000-4000-8000-000000000002\",\"acknowledge\":\"false\",\"amount\":\"50.50\",\"category\":\"20000000-0000-4000-8000-000000000010\",\"date\":\"2026-10-02\",\"incomeClass\":\"earned\",\"name\":\"Salary\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "20000000-0000-4000-8000-000000000011",
+          "actionId": "20000000-0000-4000-8000-000000000011",
+          "kind": "income",
+          "change": "create",
+          "date": "2026-10-02",
+          "title": "Salary",
+          "amount": "5050",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-02",
+            "acknowledge": "false",
+            "name": "Salary",
+            "account": "20000000-0000-4000-8000-000000000002",
+            "amount": "50.50",
+            "category": "20000000-0000-4000-8000-000000000010",
+            "incomeClass": "earned"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "5050",
+              "date": "2026-10-02",
+              "account": "20000000-0000-4000-8000-000000000002",
+              "category": null
+            },
+            {
+              "ledger": "income",
+              "amount": "-5050",
+              "date": "2026-10-02",
+              "account": null,
+              "category": "20000000-0000-4000-8000-000000000010"
+            }
+          ]
+        }
+      },
+      "balances": {
+        "20000000-0000-4000-8000-000000000001": "970000",
+        "20000000-0000-4000-8000-000000000002": "75000"
+      }
+    }
+  ]
+}
