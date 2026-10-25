@@ -26,11 +26,11 @@ try{
  const local=(kind,values)=>JSON.stringify({contract:1,authority:'local',owner:profile,expectedVersion:0,kind,values:Object.fromEntries(Object.entries(values).sort(([a],[b])=>a.localeCompare(b)))});
  const env=(payload,base=0)=>JSON.stringify({contract:2,profile_id:profile,payload,base_revision:base});
  const submit=(id,payload,base=0)=>rpc('p2_submit_command',{command_id:id,command_payload:env(payload,base)});
- const withSession=async(client,fn)=>{
-   const claims=JSON.parse(Buffer.from(session.access_token.split('.')[1],'base64url').toString());
+ const withSession=async(client,fn,selectedSession=session)=>{
+   const claims=JSON.parse(Buffer.from(selectedSession.access_token.split('.')[1],'base64url').toString());
    await client.query('BEGIN');
    try{await client.query('SET LOCAL ROLE authenticated');
-     await client.query("SELECT set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",[session.user.id,JSON.stringify(claims)]);
+     await client.query("SELECT set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",[selectedSession.user.id,JSON.stringify(claims)]);
      const r=await fn(client);await client.query('COMMIT');return r;
    }catch(e){await client.query('ROLLBACK');throw e;}
  };
@@ -62,6 +62,18 @@ try{
    await assert.rejects(submit(id,payload.replace('2.34','2.35')));
    assert.equal((await db.query('SELECT count(*)::int AS n FROM p2_command WHERE id=$1',[id])).rows[0].n,1);
  });
+ await check('concurrent financial source corrections serialize and preserve the losing intent receipt',async()=>{
+   const id=randomUUID(),account=f.commands[0].id;
+   const source=local('expense',{account,date:'2026-10-25',name:'Synthetic correction race',amount:'10.00',category:'category-food'});
+   assert.equal((await submit(id,source)).outcome,'accepted');
+   const base=(await boundary()).revision,ids=[randomUUID(),randomUUID()];
+   const outcomes=await Promise.all([db,peer].map((client,i)=>withSession(client,c=>c.query('SELECT p2_submit_command($1,$2) AS result',[
+     ids[i],env(local('correction',{account,date:'2026-10-25',name:'Synthetic corrected source',amount:i?'4.56':'1.23',category:'category-food',source:id,sourceVersion:'1',reason:'Competing receipt evidence'}),base),
+   ]))));
+   assert.deepEqual(outcomes.map(r=>r.rows[0].result.outcome).sort(),['accepted','rejected']);
+   assert.equal((await db.query('SELECT count(*)::int AS n FROM salapiya_p2.revision WHERE action_id=$1',[id])).rows[0].n,2);
+   assert.equal((await db.query('SELECT count(*)::int AS n FROM salapiya_p2.receipt WHERE id=ANY($1::uuid[])',[ids])).rows[0].n,2);
+ });
  await check('A14 signed JWT RLS/forged profile/source isolation and direct write denial',async()=>{
    assert.deepEqual(await rest(`p2_profile?id=eq.${profile}`,other,keys.client),[]);
    assert.deepEqual(await rest(`p2_command?profile_id=eq.${profile}`,other,keys.client),[]);
@@ -82,6 +94,25 @@ try{
    await authRequest('/logout?scope=local',keys.client,{bearer:temporary.access_token});
    await assert.rejects(rpc('p2_profile_boundary',{},temporary));
    await assert.rejects(rpc('p2_review_command',{command_id:randomUUID(),command_payload:f.commands[0].payload},temporary));
+ });
+ await check('independent hosted publication/cancellation race resolves once without unfreezing a published profile',async()=>{
+   const race=await signIn(state.users.raceOwner,keys.client);
+   const existing=await rpc('p2_profile_boundary',{},race);
+   if(existing){
+     assert.equal((await rpc('p2_cancel_enrollment',{enrollment_id:state.p2.cancelRaceEnrollment,profile_id:existing.id},race)).outcome,'published');
+     return;
+   }
+   const id=randomUUID(),p=randomUUID();state.p2.cancelRaceEnrollment=id;await saveState(state);
+   assert.equal((await rpc('p2_stage_enrollment',{enrollment_id:id,profile_id:p,display_name:'Synthetic cancellation race',snapshot:[]},race)).outcome,'staged');
+   const outcomes=await Promise.all([
+     withSession(db,c=>c.query('SELECT p2_publish_enrollment($1) AS result',[id]),race),
+     withSession(peer,c=>c.query('SELECT p2_cancel_enrollment($1,$2) AS result',[id,p]),race),
+   ]);
+   const published=outcomes[0].rows[0].result.outcome;
+   assert.ok(['published','cancelled'].includes(published));
+   assert.equal(outcomes[1].rows[0].result.outcome,published);
+   const after=await rpc('p2_profile_boundary',{},race);
+   assert.equal(after?.id??null,published==='published'?p:null);
  });
  const consumption=(await db.query(`SELECT pg_database_size(current_database())::text AS database_bytes,
    (SELECT sum(pg_total_relation_size(c.oid))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace

@@ -30,7 +30,7 @@ const asOwner=(owner,fn)=>db.transaction(async tx=>{
 });
 const rpc=(owner,name,args=[])=>asOwner(owner,tx=>tx.query(`SELECT ${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).then(r=>r.rows[0].result);
 const envelope=(payload,base=0,p=profile)=>JSON.stringify({contract:2,profile_id:p,payload,base_revision:base});
-const cmd=(kind,values,owner=profile)=>JSON.stringify({contract:1,authority:'local',owner,expectedVersion:0,kind,values});
+const cmd=(kind,values,owner=profile)=>JSON.stringify({contract:1,authority:'local',owner,expectedVersion:0,kind,values:Object.fromEntries(Object.entries(values).sort(([a],[b])=>a<b?-1:a>b?1:0))});
 const submit=(id,payload,base=0,owner=actor)=>rpc(owner,'p2_submit_command',[id,envelope(payload,base)]);
 
 test('P2 complete P1 graph parity: stage invisibility, exact plans, immutable publication and replay',async()=>{
@@ -103,5 +103,44 @@ test('enrollment collision/cancel and invalid full graph never expose partial pr
  await rpc(owner,'p2_stage_enrollment',[id,p,'Invalid graph',JSON.stringify([{id:randomUUID(),payload,recorded_at:'2026-10-25T00:00:00Z'}])]);
  await assert.rejects(rpc(owner,'p2_publish_enrollment',[id]),/financial graph rejected/);
  assert.equal(await rpc(owner,'p2_profile_boundary'),null);
+});
+
+test('server exact boundaries, invalid dates/classifications/foreign dependencies and dependent-source restrictions',async()=>{
+ const account=fixture.commands[1].id;
+ for(const amount of ['0','-1','01.00','1.001','1e3','1000000000.01']) {
+   assert.equal((await submit(randomUUID(),cmd('expense',{account,date:'2026-10-25',name:'Invalid amount',amount,category:'category-food'}))).outcome,'rejected');
+ }
+ for(const date of ['','2026-02-30','1899-12-31','2026-10-01']) {
+   assert.equal((await submit(randomUUID(),cmd('income',{account,date,name:'Invalid date',amount:'1.00',category:'category-income',incomeClass:'gift'}))).outcome,'rejected');
+ }
+ assert.equal((await submit(randomUUID(),cmd('expense',{account,date:'2026-10-25',name:'Wrong classification',amount:'1.00',category:'category-income'}))).outcome,'rejected');
+ assert.equal((await submit(randomUUID(),cmd('expense',{account:randomUUID(),date:'2026-10-25',name:'Foreign account',amount:'1.00',category:'category-food'}))).outcome,'rejected');
+ const id=randomUUID();
+ assert.equal((await submit(id,cmd('expense',{account,date:'2026-10-25',name:'Dependent source',amount:'10.00',category:'category-food'}))).outcome,'accepted');
+ let base=(await rpc(actor,'p2_profile_boundary')).revision;
+ assert.equal((await submit(randomUUID(),cmd('refund',{account,date:'2026-10-25',name:'Refund',source:id,sourceVersion:'1',amount:'1.00',reason:'Partial return',refundPosting:id+'-p2'}),base)).outcome,'accepted');
+ base=(await rpc(actor,'p2_profile_boundary')).revision;
+ assert.equal((await submit(randomUUID(),cmd('reversal',{source:id,sourceVersion:'1',reason:'Blocked dependent reversal'}),base)).outcome,'rejected');
+ assert.equal((await submit(randomUUID(),cmd('reconcile',{account,date:'2026-10-25',amount:'-92233720368547758.08'}),base)).outcome,'accepted');
+});
+test('canonical native recipes retain Unicode/control escapes and reject an unreadable payload representation',async()=>{
+ const payload=cmd('income',{account:fixture.commands[1].id,date:'2026-10-25',name:'Café 🍜',notes:'line\n"quoted"\\reference',amount:'1.00',category:'category-income',incomeClass:'gift'});
+ assert.equal((await submit(randomUUID(),payload)).outcome,'accepted');
+ await assert.rejects(submit(randomUUID(),JSON.stringify(JSON.parse(payload),null,2)),/noncanonical/);
+});
+test('cancelled enrollment fences late staging/publication and never rolls back published money',async()=>{
+ const owner=randomUUID();
+ await db.query('INSERT INTO auth.users(id) VALUES($1)',[owner]);await db.query('INSERT INTO auth.sessions VALUES($1,$1)',[owner]);
+ for(const stagedFirst of [false,true]){
+   const id=randomUUID(),p=randomUUID();
+   if(stagedFirst)assert.equal((await rpc(owner,'p2_stage_enrollment',[id,p,'Cancelled graph','[]'])).outcome,'staged');
+   assert.equal((await rpc(owner,'p2_cancel_enrollment',[id,p])).outcome,'cancelled');
+   assert.equal((await rpc(owner,'p2_stage_enrollment',[id,p,'Cancelled graph','[]'])).outcome,'cancelled');
+   assert.equal((await rpc(owner,'p2_publish_enrollment',[id])).outcome,'cancelled');
+   assert.equal(await rpc(owner,'p2_profile_boundary'),null);
+ }
+ const before=await rpc(actor,'p2_profile_boundary');
+ assert.equal((await rpc(actor,'p2_cancel_enrollment',[enrollment,profile])).outcome,'published');
+ assert.deepEqual(await rpc(actor,'p2_profile_boundary'),before);
 });
 after(()=>db.close());

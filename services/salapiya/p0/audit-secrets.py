@@ -20,6 +20,7 @@ paths = subprocess.check_output(
 files = {root / path for path in paths if path}
 app = root / "apps/salapiya"
 files.update((app / "build").glob("p0-*.log"))
+files.update((app / "build").glob("p2-*.log"))
 files.update((app / "build/windows/x64/runner/Debug").glob("*.exe"))
 files.update((app / "build/windows/x64/runner/Debug").glob("*.dll"))
 files.update((app / "build/windows/x64/runner/Debug").rglob("kernel_blob.bin"))
