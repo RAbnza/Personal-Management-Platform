@@ -20,6 +20,7 @@ class SharedRepository extends ChangeNotifier {
   List<SharedJson> intents = [];
   List<SharedJson> drafts = [];
   StreamSubscription<dynamic>? _drafts;
+  StreamSubscription<dynamic>? _resources;
   String? error;
   String? get actor => runtime.connected.binding?['remote_owner'] as String?;
   bool get online =>
@@ -28,6 +29,9 @@ class SharedRepository extends ChangeNotifier {
       runtime.connected.binding?['paused'] == 0 &&
       runtime.connected.binding?['phase'] == 'connected';
   Future<void> open() async {
+    _resources = store.db
+        .watch('SELECT id,version FROM p3_resource')
+        .listen((_) => unawaited(reload()));
     _drafts = store.db
         .watch('SELECT id,updated_at FROM shared_draft')
         .listen((_) => unawaited(reload()));
@@ -45,7 +49,7 @@ class SharedRepository extends ChangeNotifier {
       await store.reconcileShared();
       final user = actor;
       final rows = await store.db.getAll(
-        'SELECT document FROM p3_group WHERE owner_id=? ORDER BY id',
+        'SELECT document FROM shared_snapshot_cache WHERE owner_id=? ORDER BY group_id',
         [user],
       );
       groups = rows
@@ -182,6 +186,7 @@ class SharedRepository extends ChangeNotifier {
     unawaited(_records?.cancel());
     unawaited(_intents?.cancel());
     unawaited(_drafts?.cancel());
+    unawaited(_resources?.cancel());
     super.dispose();
   }
 }

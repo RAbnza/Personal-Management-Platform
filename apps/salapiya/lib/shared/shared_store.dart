@@ -6,7 +6,8 @@ Future<void> _migrateShared(SqliteWriteContext tx) async {
   );
   final versions = await tx.getAll('SELECT version FROM shared_schema');
   if (versions.isNotEmpty) {
-    if (versions.length != 1 || ![1, 2].contains(versions.single['version'])) {
+    if (versions.length != 1 ||
+        ![1, 2, 3].contains(versions.single['version'])) {
       reject('Unsupported shared storage version; preserve your database.');
     }
     if (versions.single['version'] == 1) {
@@ -14,6 +15,10 @@ Future<void> _migrateShared(SqliteWriteContext tx) async {
         'CREATE TABLE shared_review_history(id TEXT PRIMARY KEY,payload TEXT NOT NULL) STRICT',
       );
       await tx.execute('UPDATE shared_schema SET version=2');
+    }
+    if (versions.single['version'] != 3) {
+      await _createSharedSnapshots(tx);
+      await tx.execute('UPDATE shared_schema SET version=3');
     }
     return;
   }
@@ -65,7 +70,8 @@ Future<void> _migrateShared(SqliteWriteContext tx) async {
   ]) {
     await tx.execute(sql);
   }
-  await tx.execute('INSERT INTO shared_schema VALUES(2)');
+  await _createSharedSnapshots(tx);
+  await tx.execute('INSERT INTO shared_schema VALUES(3)');
 }
 
 extension SharedLocalStore on LocalStore {
@@ -135,6 +141,7 @@ extension SharedLocalStore on LocalStore {
   }
 
   Future<void> reconcileShared() async {
+    await reconcileSharedSnapshots();
     if ((await db.getAll(
       "SELECT id FROM shared_intent WHERE state='accepted' LIMIT 1",
     )).isEmpty) {
@@ -145,7 +152,7 @@ extension SharedLocalStore on LocalStore {
         "SELECT * FROM shared_intent WHERE state='accepted'",
       )) {
         final snapshots = await tx.getAll(
-          'SELECT document FROM p3_group WHERE owner_id=? AND group_id=?',
+          'SELECT document FROM shared_snapshot_cache WHERE owner_id=? AND group_id=?',
           [intent['actor'], intent['group_id']],
         );
         if (snapshots.isEmpty) continue;

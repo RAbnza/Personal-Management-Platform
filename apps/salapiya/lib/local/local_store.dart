@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:powersync/powersync.dart';
 import 'package:powersync/native.dart';
 import 'package:sqlite_async/sqlite_async.dart';
@@ -10,6 +12,7 @@ import '../connected/financial_contract.dart';
 
 part '../connected/connected_store.dart';
 part '../shared/shared_store.dart';
+part '../shared/shared_snapshots.dart';
 
 // P0-verified encrypted native factory. P1 financial tables remain ordinary
 // local tables; only the bounded P2 command transport/projection use SDK views.
@@ -38,7 +41,7 @@ final class _LocalFactory extends NativePowerSyncOpenFactory {
   ];
 }
 
-const localSchemaVersion = 3;
+const localSchemaVersion = 4;
 const defaultLocalCategories = [
   ('food', 'Food & drink', 'expense'),
   ('transport', 'Transport', 'expense'),
@@ -62,7 +65,7 @@ class LocalStore {
     final versions = await tx.getAll('SELECT version FROM local_schema');
     if (versions.isNotEmpty) {
       if (versions.length != 1 ||
-          ![1, 2, localSchemaVersion].contains(versions.single['version'])) {
+          ![1, 2, 3, localSchemaVersion].contains(versions.single['version'])) {
         reject(
           'Unsupported database version. Preserve this database and use a compatible Salapiya version.',
         );

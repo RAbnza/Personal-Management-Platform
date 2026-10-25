@@ -479,7 +479,7 @@ class LocalBackup {
   static void validate(Map<String, dynamic> b) {
     final connected = [2, 3].contains(b['format']);
     if (![1, 2, 3].contains(b['format']) ||
-        ![1, 2, localSchemaVersion].contains(b['localSchema']) ||
+        ![1, 2, 3, localSchemaVersion].contains(b['localSchema']) ||
         b['commandContract'] != 1 ||
         b['calculationVersion'] != 1 ||
         b['authority'] != (connected ? 'connected-review-required' : 'local') ||

@@ -1,7 +1,8 @@
 import path from 'node:path';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
-import {fixtures,signIn} from './auth-fixtures.mjs';
+import {fixtures,signIn,rest} from './auth-fixtures.mjs';
+import {connectHosted} from './database.mjs';
 import {privateDir} from './private-state.mjs';
 import {powersyncClient} from './powersync-client.mjs';
 import {report,ref} from './cloud.mjs';
@@ -11,6 +12,17 @@ try{
  const [owner,other]=await Promise.all([signIn(state.users.ownerA,keys.client),signIn(state.users.ownerB,keys.client)]);
  const {client,context}=await powersyncClient();const status=await client.getInstanceStatus(context);
  const config={url:`https://${ref}.supabase.co`,publicKey:keys.client,endpoint:status.instance_url,role,...state.p3,refreshToken:owner.refresh_token,otherRefreshToken:other.refresh_token};
+ if(process.argv.includes('--verify')){
+   const db=await connectHosted();try{
+     config.expectedAccounts=(await db.query("SELECT a.id,salapiya_p2.balance(a.profile_id,a.id,'9999-12-31')::text AS amount FROM salapiya_p2.account a WHERE a.profile_id=$1 ORDER BY a.id",[state.p3.profile])).rows;
+     const row=(await rest(`p3_group?group_id=eq.${state.p3.nativeGroup}`,owner,keys.client))[0];
+     config.expectedGroupVersion=JSON.parse(row.document).version;
+     const edges=(await db.query('SELECT salapiya_p3.edges($1) AS edges',[row.document])).rows[0].edges;
+     const positions={};for(const edge of edges){positions[edge.sender]=(positions[edge.sender]??0n)-BigInt(edge.amount);positions[edge.recipient]=(positions[edge.recipient]??0n)+BigInt(edge.amount);}
+     config.expectedPositions=Object.fromEntries(Object.entries(positions).map(([id,n])=>[id,String(n)]));
+     config.expectedProfileVersion=(await rest('rpc/p2_profile_boundary',owner,keys.client,{method:'POST',body:{}})).revision;
+   }finally{await db.end();}
+ }
  const dir=path.join(privateDir,'p3',role);await mkdir(dir,{recursive:true});
  await writeFile(path.join(dir,'defines.json'),JSON.stringify({SALAPIYA_SUPABASE_URL:config.url,SALAPIYA_PUBLIC_KEY:config.publicKey,SALAPIYA_POWERSYNC_URL:config.endpoint}));
  await writeFile(path.join(dir,'config.json'),JSON.stringify(config),{mode:0o600});

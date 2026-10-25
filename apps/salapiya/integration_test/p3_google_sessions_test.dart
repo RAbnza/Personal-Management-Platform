@@ -48,7 +48,7 @@ void main() {
           url,
           key,
           authOptions: const AuthClientOptions(
-            autoRefreshToken: false,
+            autoRefreshToken: true,
             authFlowType: AuthFlowType.pkce,
           ),
         );
@@ -213,7 +213,17 @@ void main() {
           );
           expect(rows, hasLength(1));
           final doc = jsonDecode(rows.single['document'] as String) as Map;
-          expect(doc['bills'][bill]['revisions'][0]['total'], '10000');
+          expect(doc['complete'], isTrue);
+          final resources = await db.getAll(
+            "SELECT payload FROM p3_resource WHERE group_id=? AND kind='bill' AND source_id=?",
+            [g, bill],
+          );
+          expect(resources, hasLength(1));
+          expect(
+            (jsonDecode(resources.single['payload'] as String)
+                as Map)['revisions'][0]['total'],
+            '10000',
+          );
           expect(
             await db.getAll('SELECT id FROM p2_command WHERE owner_id<>?', [
               client.auth.currentUser!.id,

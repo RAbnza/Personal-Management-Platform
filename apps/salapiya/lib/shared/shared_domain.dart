@@ -176,6 +176,31 @@ class SharedGroup {
     return out;
   }
 
+  List<SharedEdge> get reciprocalPairs {
+    final pairs = <(String, String), BigInt>{};
+    for (final e in edges()) {
+      final forward = e.sender.compareTo(e.recipient) < 0;
+      final key = forward ? (e.sender, e.recipient) : (e.recipient, e.sender);
+      pairs[key] =
+          (pairs[key] ?? BigInt.zero) + (forward ? e.amount : -e.amount);
+    }
+    final keys = pairs.keys.toList()
+      ..sort((a, b) {
+        final first = a.$1.compareTo(b.$1);
+        return first == 0 ? a.$2.compareTo(b.$2) : first;
+      });
+    return [
+      for (final key in keys)
+        if (pairs[key] != BigInt.zero)
+          SharedEdge(
+            pairs[key]! > BigInt.zero ? key.$1 : key.$2,
+            pairs[key]! > BigInt.zero ? key.$2 : key.$1,
+            pairs[key]!.abs(),
+            source: 'reciprocal',
+          ),
+    ];
+  }
+
   List<SharedEdge> get suggestions =>
       !complete || settlements.values.any((s) => s['state'] == 'disputed')
       ? []

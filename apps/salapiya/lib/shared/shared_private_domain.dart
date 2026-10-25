@@ -17,7 +17,11 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
       'Card-backed posting requires the P4 card domain; no cash or liability was posted.',
     );
   }
-  BigInt amount(String k) => component(parsePhp(value(k)), positive: false);
+  BigInt amount(String k) {
+    final n = parsePhp(value(k));
+    return n == BigInt.zero ? n : component(n, positive: false);
+  }
+
   final paid = amount('fundingAmount'), share = amount('shareAmount');
   final oldId = value('source');
   LocalRevision? old;
@@ -29,7 +33,17 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     if (value('reason').trim().isEmpty) {
       reject('Explain the private source reconciliation.');
     }
-    if (s.current.any((r) => r.source == oldId)) {
+    final dependencies = s.current.where((r) => r.source == oldId).toList();
+    final restoredPayment =
+        mode == 'payment' &&
+        dependencies.every(
+          (r) =>
+              r.values['sharedMode'] == 'clear' &&
+              s.current.any(
+                (u) => u.source == r.id && u.values['sharedMode'] == 'unclear',
+              ),
+        );
+    if (dependencies.isNotEmpty && !restoredPayment) {
       reject('Resolve dependent private evidence first.');
     }
   }
@@ -77,6 +91,35 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     post(n >= BigInt.zero ? 'shared_receivable' : 'shared_payable', n);
   }
 
+  void offsetPosition(BigInt n) {
+    if (value('sharedAccounting') != '2') {
+      position(n);
+      return;
+    }
+    final existing = s.current
+        .where((r) => r.id != oldId && r.values['sharedGroup'] == group)
+        .expand((r) => r.postings);
+    final payable = sumMinor(
+      existing.where((p) => p.ledger == 'shared_payable').map((p) => p.amount),
+    );
+    final receivable = sumMinor(
+      existing
+          .where((p) => p.ledger == 'shared_receivable')
+          .map((p) => p.amount),
+    );
+    final payableAvailable = payable < BigInt.zero ? -payable : BigInt.zero,
+        receivableAvailable = receivable > BigInt.zero
+            ? receivable
+            : BigInt.zero;
+    final payableDelta = n > BigInt.zero
+        ? (n < payableAvailable ? n : payableAvailable)
+        : n < BigInt.zero
+        ? n + (-n < receivableAvailable ? -n : receivableAvailable)
+        : BigInt.zero;
+    post('shared_payable', payableDelta);
+    post('shared_receivable', n - payableDelta);
+  }
+
   var kind = 'expense', total = paid;
   if (mode == 'bill') {
     if (old != null) {
@@ -111,6 +154,18 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     if (!outgoing && value('direction') != 'in') {
       reject('Choose actual payment direction.');
     }
+    if (old != null &&
+        (old.values['sharedMode'] != 'payment' ||
+            old.values['sharedGroup'] != group ||
+            old.values['sharedKey'] == sourceKey ||
+            old.values['fundingAmount'] != value('fundingAmount') ||
+            old.values['direction'] != value('direction') ||
+            old.values['account'] != value('account') ||
+            old.date != date)) {
+      reject(
+        'Reusing actual money requires the same group, parties, date, account and amount.',
+      );
+    }
     cash(outgoing ? -paid : paid);
     post('shared_clearing', outgoing ? paid : -paid);
     kind = 'adjustment';
@@ -128,7 +183,7 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     }
     if (adopted) {
       expense(-share);
-      position(share - paid);
+      offsetPosition(share - paid);
     } else {
       post('shared_clearing', -paid);
     }
@@ -148,11 +203,17 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
       reject('Private clearing source changed or was already restored.');
     }
     final outgoing = clearing.values['direction'] == 'out';
-    post('shared_clearing', outgoing ? paid : -paid);
-    post(
-      outgoing ? 'shared_payable' : 'shared_receivable',
-      outgoing ? -paid : paid,
-    );
+    if (value('sharedAccounting') == '2') {
+      for (final p in clearing.postings) {
+        post(p.ledger, -p.amount);
+      }
+    } else {
+      post('shared_clearing', outgoing ? paid : -paid);
+      post(
+        outgoing ? 'shared_payable' : 'shared_receivable',
+        outgoing ? -paid : paid,
+      );
+    }
     kind = 'adjustment';
   } else {
     if (old != null || paid == BigInt.zero || share != BigInt.zero) {
@@ -169,10 +230,14 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     }
     final outgoing = payment.values['direction'] == 'out';
     post('shared_clearing', outgoing ? -paid : paid);
-    post(
-      outgoing ? 'shared_payable' : 'shared_receivable',
-      outgoing ? paid : -paid,
-    );
+    if (value('sharedAccounting') == '2') {
+      offsetPosition(outgoing ? paid : -paid);
+    } else {
+      post(
+        outgoing ? 'shared_payable' : 'shared_receivable',
+        outgoing ? paid : -paid,
+      );
+    }
     kind = 'adjustment';
   }
   if (old != null &&
@@ -183,7 +248,7 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
           old.values['account'] != value('account'))) {
     reject('Refund reclassification retains actual accepted money.');
   }
-  if (old != null && !['bill', 'refund'].contains(mode)) {
+  if (old != null && !['bill', 'refund', 'payment'].contains(mode)) {
     reject(
       'Payment/refund cash corrections require their separate retained-evidence review.',
     );

@@ -221,7 +221,7 @@ class ConnectedRuntime extends ChangeNotifier {
         waitingForOthers = 0;
         changedPrivateSources = 0;
         for (final row in await store.db.getAll(
-          'SELECT document FROM p3_group WHERE owner_id=?',
+          'SELECT document FROM shared_snapshot_cache WHERE owner_id=?',
           [binding?['remote_owner']],
         )) {
           final group = SharedGroup(
@@ -577,20 +577,28 @@ class ConnectedRuntime extends ChangeNotifier {
     LocalStore store,
     List<Map<String, dynamic>> boundary,
   ) async {
+    await store.reconcileSharedSnapshots();
     for (final expected in boundary) {
       final rows = await store.db.getAll(
-        'SELECT version,document FROM p3_group WHERE id=? AND owner_id=?',
+        'SELECT g.version,g.document,c.version AS cached_version,c.metadata_hash FROM p3_group g LEFT JOIN shared_snapshot_cache c ON c.owner_id=g.owner_id AND c.group_id=g.group_id WHERE g.id=? AND g.owner_id=?',
         [expected['id'], binding?['remote_owner']],
       );
       if (rows.length != 1 ||
-          (rows.single['version'] as int) < (expected['version'] as int))
+          rows.single['cached_version'] != rows.single['version'] ||
+          rows.single['metadata_hash'] !=
+              sha256
+                  .convert(utf8.encode(rows.single['document'] as String))
+                  .toString() ||
+          (rows.single['version'] as int) < (expected['version'] as int)) {
         return false;
+      }
       if (rows.single['version'] == expected['version'] &&
           sha256
                   .convert(utf8.encode(rows.single['document'] as String))
                   .toString() !=
-              expected['digest'])
+              expected['digest']) {
         return false;
+      }
     }
     return true;
   }

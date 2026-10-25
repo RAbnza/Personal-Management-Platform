@@ -88,15 +88,17 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pumpAndSettle();
-          await tester.runAsync(runtime.close);
-          runtime.dispose();
-          runtime.settings.dispose();
-          settings.dispose();
           // SDK shutdown can schedule timers in this widget test's fake clock.
           // Pump it while the real encrypted database closes; do not leave an
           // outstanding cancellation behind for the next platform fixture.
           var databaseClosed = false;
-          final closing = f.close().whenComplete(() => databaseClosed = true);
+          final closing = (() async {
+            await runtime.close();
+            runtime.dispose();
+            runtime.settings.dispose();
+            settings.dispose();
+            await f.close();
+          })().whenComplete(() => databaseClosed = true);
           for (var i = 0; i < 200 && !databaseClosed; i++) {
             await tester.pump(const Duration(milliseconds: 20));
             await tester.runAsync(

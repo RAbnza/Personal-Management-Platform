@@ -59,6 +59,11 @@ try{
    await ok('resolve',{settlement:manual,state:'reversed',reason:'Retain actual cash evidence'});
    const disputed=randomUUID();await ok('report',{sender:pb,recipient:pa,date:'2026-10-25',amount:'100',mode:'custom',acknowledge:false},b,disputed);
    await ok('resolve',{settlement:disputed,state:'disputed',reason:'Not received'});await ok('resolve',{settlement:disputed,state:'cancelled',reason:'Wrong report'},b);
+   const full=randomUUID(),due=(await db.query('SELECT salapiya_p3.due(salapiya_p3.edges($1),$2,$3)::text AS n',[await snapshot(),pb,pa])).rows[0].n;
+   await no('report',{sender:pb,recipient:pa,date:'2026-10-25',amount:'1',mode:'full',acknowledge:false},b);
+   await ok('report',{sender:pb,recipient:pa,date:'2026-10-25',amount:due,mode:'full',acknowledge:false},b,full);
+   assert.equal((await snapshot()).settlements[full].advance,'0');
+   await ok('resolve',{settlement:full,state:'cancelled',reason:'Keep full source allocation proof'},b);
  });
  await check('hosted reviewed manual identity claim preserves historical manual receipt limitations',async()=>{
    const candidate=await signIn(state.users.raceOwner,keys.client),token=randomBytes(32).toString('hex');
@@ -83,7 +88,7 @@ try{
    await rpc('p3_retain_private_evidence',{command_id:randomUUID(),profile_id:profile,group_id:g,bill_id:dinner,private_revision:adoption,source_stamp:dinner+':',reason:'Retain private funding evidence'});
    assert.equal((await rpc('p2_profile_boundary',{})).revision,before);
    const refund=randomUUID();await ok('refund',{bill:dinner,revision:dinner,date:'2026-10-25',total:'30000',received:{[pa]:'30000'},credits:{[pb]:'20000',[pm]:'10000'},reason:'Merchant refund after confirmed settlement'},a,refund);
-   await post(randomUUID(),'shared',{name:'P3 merchant return',date:'2026-10-25',sharedMode:'refund',sharedGroup:g,sharedKey:refund,sharedRevision:refund,billSource:dinner,billRevision:dinner,coverage:'adopted',fundingAmount:'300.00',shareAmount:'0.00',account,category:'category-food',funding:'cash'});
+   await post(randomUUID(),'shared',{name:'P3 merchant return',date:'2026-10-25',sharedAccounting:'2',sharedMode:'refund',sharedGroup:g,sharedKey:refund,sharedRevision:refund,billSource:dinner,billRevision:dinner,coverage:'adopted',fundingAmount:'300.00',shareAmount:'0.00',account,category:'category-food',funding:'cash'});
    assert.equal((await db.query("SELECT salapiya_p2.balance($1,$2,'9999-12-31')::text AS n",[profile,account])).rows[0].n,'110000');
    assert.deepEqual(await rest(`p2_command?id=eq.${adoption}`,b,keys.client),[]);
    assert.ok(!JSON.stringify(await snapshot()).includes(account));
@@ -112,6 +117,7 @@ try{
  const current=await snapshot(),former=await snapshot(b);
  state.p3={group:g,nativeGroup:native,nativeName,person,profile:(await rpc('p2_profile_boundary',{})).id,peer:b.user.id,former:pb,excludedBill:Object.keys(current.bills).find(k=>!former.bills[k])};
  await saveState(state);
- const storage=await db.query('SELECT count(*)::int AS snapshots,sum(octet_length(document))::text AS snapshot_bytes FROM p3_group WHERE group_id=ANY($1::uuid[])',[[g,native]]);
- timings.sort((a,b)=>a-b);report({passed:true,checks:7,command_p95_ms:Math.round(timings[Math.floor(timings.length*.95)]),storage:storage.rows[0],nativeFixtureReady:true});
+ const storage=await db.query('SELECT count(*)::int AS snapshots,sum(octet_length(document))::text AS api_snapshot_bytes,sum(octet_length(sync_document))::text AS cdc_metadata_bytes FROM p3_group WHERE group_id=ANY($1::uuid[])',[[g,native]]);
+ const resources=await db.query('SELECT count(*)::int AS resources,sum(octet_length(payload))::text AS cdc_resource_bytes FROM p3_resource WHERE group_id=ANY($1::uuid[])',[[g,native]]);
+ timings.sort((a,b)=>a-b);report({passed:true,checks:7,command_p95_ms:Math.round(timings[Math.floor(timings.length*.95)]),storage:{...storage.rows[0],...resources.rows[0]},nativeFixtureReady:true});
 }catch(e){report({failure:e.code||e.message,reason:e.message});process.exitCode=1;}finally{await db?.end();await peer?.end();}

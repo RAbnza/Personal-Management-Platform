@@ -9,6 +9,8 @@ import 'package:salapiya/p0/portable_recovery.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
+
 import 'local_test_support.dart';
 
 const a = '10000000-0000-4000-8000-000000000001';
@@ -62,6 +64,7 @@ void main() {
         await tx.execute('DROP TABLE shared_draft');
         await tx.execute('DROP TABLE shared_schema');
         await tx.execute('DROP TABLE shared_review_history');
+        await tx.execute('DROP TABLE shared_snapshot_cache');
         await tx.execute('UPDATE local_schema SET version=2');
       });
       await expectLater(f.store.migrate(interrupt: true), throwsA(anything));
@@ -77,7 +80,7 @@ void main() {
       await f.store.integrity();
       expect(
         (await f.store.db.get('SELECT version FROM local_schema'))['version'],
-        3,
+        localSchemaVersion,
       );
       expect(
         await f.store.db.getAll('SELECT * FROM local_posting ORDER BY id'),
@@ -202,6 +205,305 @@ void main() {
       );
     },
   );
+  test('refund clearing reclassification and closed-report cash reuse preserve one actual movement', () async {
+    final f = await LocalFixture.open();
+    try {
+      final account = await f.account('Private effect fixture', '2000.00');
+      final refundKey = newLocalId();
+      final base = {
+        'name': 'Private source',
+        'sharedAccounting': '2',
+        'sharedGroup': a,
+        'sharedKey': refundKey,
+        'sharedRevision': refundKey,
+        'funding': 'cash',
+        'fundingAmount': '300.00',
+        'shareAmount': '100.00',
+        'account': account,
+        'category': 'category-food',
+        'billSource': b,
+        'billRevision': c,
+      };
+      final refund = await f.post('shared', {
+        ...base,
+        'sharedMode': 'refund',
+        'coverage': 'clearing',
+      });
+      expect((await f.store.snapshot()).balance(account), BigInt.from(230000));
+      await f.post('shared', {
+        ...base,
+        'sharedMode': 'bill',
+        'sharedKey': b,
+        'sharedRevision': c,
+        'fundingAmount': '1200.00',
+        'shareAmount': '400.00',
+      });
+      await f.post('shared', {
+        ...base,
+        'sharedMode': 'refund',
+        'coverage': 'adopted',
+        'source': refund,
+        'sourceVersion': '1',
+        'reason': 'Complete adopted coverage; preserve refund cash',
+      });
+      expect((await f.store.snapshot()).balance(account), BigInt.from(110000));
+      final paymentKey = newLocalId(),
+          values = {
+            ...base,
+            'sharedMode': 'payment',
+            'sharedKey': paymentKey,
+            'sharedRevision': paymentKey,
+            'fundingAmount': '100.00',
+            'shareAmount': '0.00',
+            'direction': 'in',
+          };
+      final payment = await f.post('shared', values);
+      final clear = await f.post('shared', {
+        ...values,
+        'sharedMode': 'clear',
+        'paymentSource': payment,
+      });
+      await f.post('shared', {
+        ...values,
+        'sharedMode': 'unclear',
+        'paymentSource': clear,
+        'reason': 'Retain actual cash after reversal',
+      });
+      final reassigned = await f.post('shared', {
+        ...values,
+        'sharedKey': newLocalId(),
+        'sharedRevision': newLocalId(),
+        'source': payment,
+        'sourceVersion': '1',
+        'reason': 'Reuse identical actual money',
+      });
+      final snapshot = await f.store.snapshot();
+      expect(snapshot.balance(account), BigInt.from(120000));
+      expect(snapshot.revision(reassigned).actionId, payment);
+      expect(
+        sumMinor(
+          snapshot.current
+              .expand((r) => r.postings)
+              .where((p) => p.ledger == 'shared_receivable')
+              .map((p) => p.amount),
+        ),
+        BigInt.from(60000),
+      );
+      expect(
+        sumMinor(
+          snapshot.current
+              .expand((r) => r.postings)
+              .where((p) => p.ledger == 'shared_payable')
+              .map((p) => p.amount),
+        ),
+        BigInt.zero,
+      );
+      expect(
+        sumMinor(
+          snapshot.current
+              .expand((r) => r.postings)
+              .where((p) => p.ledger == 'expense')
+              .map((p) => p.amount),
+        ),
+        BigInt.from(30000),
+      );
+      await f.store.integrity();
+    } finally {
+      await f.close();
+    }
+  });
+  test('unpaid share credits offset the existing payable; clearing reversal restores exact buckets', () async {
+    final f = await LocalFixture.open();
+    try {
+      final account = await f.account('Unpaid share', '2000.00');
+      final base = {
+        'name': 'Unpaid consumption',
+        'sharedAccounting': '2',
+        'sharedGroup': a,
+        'sharedKey': b,
+        'sharedRevision': c,
+        'funding': 'cash',
+        'fundingAmount': '0.00',
+        'shareAmount': '100.00',
+        'account': account,
+        'category': 'category-food',
+      };
+      await f.post('shared', {...base, 'sharedMode': 'bill'});
+      final refund = newLocalId();
+      final credited = await f.post('shared', {
+        ...base,
+        'sharedMode': 'refund',
+        'sharedKey': refund,
+        'sharedRevision': refund,
+        'shareAmount': '30.00',
+        'billSource': b,
+        'billRevision': c,
+        'coverage': 'adopted',
+      });
+      expect(
+        (await f.store.snapshot())
+            .revision(credited)
+            .postings
+            .where((p) => p.ledger == 'shared_payable')
+            .single
+            .amount,
+        BigInt.from(3000),
+      );
+      final payment = newLocalId();
+      final values = {
+        ...base,
+        'sharedMode': 'payment',
+        'sharedKey': payment,
+        'sharedRevision': payment,
+        'fundingAmount': '70.00',
+        'shareAmount': '0.00',
+        'direction': 'out',
+      };
+      final paid = await f.post('shared', values);
+      final cleared = await f.post('shared', {
+        ...values,
+        'sharedMode': 'clear',
+        'paymentSource': paid,
+      });
+      final clearPosts = (await f.store.snapshot()).revision(cleared).postings;
+      expect(
+        clearPosts.where((p) => p.ledger == 'shared_payable').single.amount,
+        BigInt.from(7000),
+      );
+      final reversed = await f.post('shared', {
+        ...values,
+        'sharedMode': 'unclear',
+        'paymentSource': cleared,
+        'reason': 'Keep actual outgoing cash',
+      });
+      expect(
+        (await f.store.snapshot())
+            .revision(reversed)
+            .postings
+            .map((p) => p.amount)
+            .toList(),
+        clearPosts.map((p) => -p.amount).toList(),
+      );
+      expect((await f.store.snapshot()).balance(account), BigInt.from(193000));
+      await f.store.integrity();
+    } finally {
+      await f.close();
+    }
+  });
+  test('incremental group downloads replace the accepted cache only at a complete authenticated digest', () async {
+    final f = await LocalFixture.open();
+    try {
+      var bill = <String, dynamic>{
+        'creator': a,
+        'revisions': [
+          {
+            'id': c,
+            'name': 'Original',
+            'total': '10000',
+            'paid': {a: '10000'},
+            'shares': {a: '3334', b: '3333', c: '3333'},
+          },
+        ],
+        'refunds': [],
+      };
+      String payload() => jsonEncode(bill);
+      String digest(int version) => sha256
+          .convert(
+            utf8.encode(
+              'bill:$c:$version:${sha256.convert(utf8.encode(payload()))}',
+            ),
+          )
+          .toString();
+      Map<String, dynamic> metadata(int version) => {
+        'id': b,
+        'name': 'Coherent group',
+        'version': version,
+        'owner': a,
+        'people': {a: {}, b: {}, c: {}},
+        'archived': false,
+        'complete': true,
+        'projection': 2,
+        'audienceVersion': version,
+        'resourceCount': 1,
+        'resourceDigest': digest(version),
+      };
+      await f.store.db.execute(
+        'INSERT INTO p3_group(id,owner_id,group_id,version,document) VALUES(?,?,?,?,?)',
+        ['$b:$a', a, b, 1, jsonEncode(metadata(1))],
+      );
+      await f.store.reconcileSharedSnapshots();
+      expect(
+        await f.store.db.getAll('SELECT * FROM shared_snapshot_cache'),
+        isEmpty,
+      );
+      await f.store.db.execute(
+        'INSERT INTO p3_resource(id,owner_id,group_id,kind,source_id,version,payload) VALUES(?,?,?,?,?,?,?)',
+        ['resource', a, b, 'bill', c, 1, '{}'],
+      );
+      await f.store.reconcileSharedSnapshots();
+      expect(
+        await f.store.db.getAll('SELECT * FROM shared_snapshot_cache'),
+        isEmpty,
+      );
+      await f.store.db.execute('UPDATE p3_resource SET payload=? WHERE id=?', [
+        payload(),
+        'resource',
+      ]);
+      await f.store.reconcileSharedSnapshots();
+      expect(
+        (await f.store.db.get(
+          'SELECT version FROM shared_snapshot_cache',
+        ))['version'],
+        1,
+      );
+      bill = {
+        ...bill,
+        'revisions': [
+          ...(bill['revisions'] as List),
+          {
+            ...(bill['revisions'] as List).first as Map,
+            'id': newLocalId(),
+            'name': 'Corrected',
+          },
+        ],
+      };
+      await f.store.db.execute('UPDATE p3_group SET version=2,document=?', [
+        jsonEncode(metadata(2)),
+      ]);
+      await f.store.reconcileSharedSnapshots();
+      expect(
+        (await f.store.db.get(
+          'SELECT version FROM shared_snapshot_cache',
+        ))['version'],
+        1,
+      );
+      await f.store.db.execute('UPDATE p3_resource SET version=2,payload=?', [
+        payload(),
+      ]);
+      await f.store.reconcileSharedSnapshots();
+      final cached = await f.store.db.get(
+        'SELECT * FROM shared_snapshot_cache',
+      );
+      expect(cached['version'], 2);
+      expect(
+        ((jsonDecode(cached['document'] as String)
+                    as Map)['bills'][c]['revisions']
+                as List)
+            .length,
+        2,
+      );
+      await f.store.db.execute('UPDATE p3_group SET version=3');
+      await f.store.reconcileSharedSnapshots();
+      expect(
+        (await f.store.db.get(
+          'SELECT version FROM shared_snapshot_cache',
+        ))['version'],
+        2,
+      );
+    } finally {
+      await f.close();
+    }
+  });
   test('canonical PHP100 split, independent axes, exact large values and invalid serialization', () {
     expect(equalShares(BigInt.from(10000), [c, b, a]), {
       a: '3334',
@@ -266,6 +568,12 @@ void main() {
       },
     });
     expect(g.due(b, a), BigInt.from(30000));
+    expect(
+      g.reciprocalPairs
+          .firstWhere((e) => e.sender == b && e.recipient == a)
+          .amount,
+      BigInt.from(30000),
+    );
     expect(g.positions()[a], BigInt.from(70000));
     expect(g.positions(projected: true)[a], BigInt.from(55000));
     expect(g.settlementAllocation(b, a, BigInt.from(30000))['allocations'], {

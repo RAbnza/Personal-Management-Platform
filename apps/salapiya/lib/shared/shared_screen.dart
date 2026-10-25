@@ -37,9 +37,10 @@ Future<void> sharePrivatePurchase(
     );
   }
   final groups =
-      (await store.db.getAll('SELECT document FROM p3_group WHERE owner_id=?', [
-            binding['remote_owner'],
-          ]))
+      (await store.db.getAll(
+            'SELECT document FROM shared_snapshot_cache WHERE owner_id=?',
+            [binding['remote_owner']],
+          ))
           .map((r) => SharedGroup(object(jsonDecode(r['document'] as String))))
           .where(
             (g) =>
@@ -594,8 +595,9 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
         if (v['mode'] == 'selected') {
           for (final id in g.bills.keys) {
             final n = parsePhp(v['allocation:$id']!);
-            if (n > BigInt.zero)
+            if (n > BigInt.zero) {
               selected[id] = {'amount': '$n', 'revision': g.revision(id)['id']};
+            }
           }
         }
         final p = g.settlementAllocation(
@@ -605,8 +607,9 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
           selected: v['mode'] == 'selected' ? selected : null,
         );
         if ((p['advance'] != '0' || p['overNet'] == true) &&
-            v['acknowledge'] != 'yes')
+            v['acknowledge'] != 'yes') {
           reject('Acknowledge the advance / over-net payment.');
+        }
         return [
           '${g.personName(sender)} → ${g.personName(recipient)}: ${money(amount)}',
           for (final a in object(p['allocations']).entries)
@@ -998,6 +1001,15 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                   ],
                 ),
             if (tab == 'Balances') ...[
+              const SectionHeading('Reciprocal pair balances'),
+              for (final pair in g.reciprocalPairs)
+                FinancialLine(
+                  '${g.personName(pair.sender)} → ${g.personName(pair.recipient)}',
+                  'Confirmed source obligations after reciprocal netting',
+                  value: money(pair.amount),
+                  icon: Icons.compare_arrows,
+                  color: Palette.mint,
+                ),
               const FinanceNotice(
                 'Suggestions are nonposting proposals requiring agreement. Paying an unrelated person does not erase a source obligation. Disputes pause suggestions.',
               ),
@@ -1398,6 +1410,26 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                 r.id: '${r.title} · ${phpDecimal(r.amount)} PHP',
             },
           ),
+        if (mode == 'payment' && linked == null)
+          SharedField(
+            'existingPayment',
+            'Reuse an already recorded payment',
+            options: {
+              '': 'Record a new actual cash movement',
+              for (final r in snapshot.current.where(
+                (r) =>
+                    r.values['sharedMode'] == 'payment' &&
+                    r.values['sharedGroup'] == g.id &&
+                    r.values['sharedKey'] != key &&
+                    [
+                      'cancelled',
+                      'reversed',
+                    ].contains(g.settlements[r.values['sharedKey']]?['state']),
+              ))
+                r.id:
+                    '${r.title} · ${r.date} · ${r.values['fundingAmount']} PHP · same parties, date, account and amount required',
+            },
+          ),
         SharedField(
           'fundingAmount',
           'Actual private funding (PHP)',
@@ -1437,11 +1469,14 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
       (v) async {
         final old =
             linked ??
-            snapshot.current.where((r) => r.id == v['existing']).firstOrNull;
+            snapshot.current
+                .where((r) => r.id == (v['existing'] ?? v['existingPayment']))
+                .firstOrNull;
         final values = <String, String>{
           'name': 'Shared $mode · ${mode == 'bill' ? source['name'] : g.name}',
           'date': v['date']!,
           'sharedMode': mode,
+          'sharedAccounting': '2',
           'sharedGroup': g.id,
           'sharedKey': key,
           'sharedRevision': source['id'] as String,

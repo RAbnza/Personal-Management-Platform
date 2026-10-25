@@ -37,7 +37,7 @@ SharedCardClassification classifyExistingSharedCard({
       evidence.liabilityMinor != contribution) {
     reject('Current owned P4 card purchase evidence is required.');
   }
-  component(contribution, positive: false);
-  component(consumedShare, positive: false);
+  component(contribution, positive: true);
+  if (consumedShare != BigInt.zero) component(consumedShare, positive: true);
   return SharedCardClassification(consumedShare, contribution - consumedShare);
 }

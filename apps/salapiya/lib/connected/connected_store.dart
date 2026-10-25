@@ -1,6 +1,14 @@
 part of '../local/local_store.dart';
 
 const connectedSchema = Schema([
+  Table('p3_resource', [
+    Column.text('owner_id'),
+    Column.text('group_id'),
+    Column.text('kind'),
+    Column.text('source_id'),
+    Column.integer('version'),
+    Column.text('payload'),
+  ]),
   Table('p3_private_review', [
     Column.text('owner_id'),
     Column.text('profile_id'),

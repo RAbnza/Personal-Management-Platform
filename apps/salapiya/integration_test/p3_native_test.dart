@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:salapiya/connected/command_connector.dart';
@@ -18,6 +19,8 @@ import 'package:salapiya/p0/auth_runtime.dart';
 import 'package:salapiya/p0/google_auth_proof.dart';
 import 'package:salapiya/shared/shared_domain.dart';
 import 'package:salapiya/shared/shared_screen.dart';
+import 'package:salapiya/shared/shared_repository.dart';
+import 'package:salapiya/p0/portable_recovery.dart';
 
 import '../test/local_money_journey.dart';
 import 'p2_native_test.dart' show PrivateDownload;
@@ -41,6 +44,7 @@ Future<void> p3Wait(
 
 Future<void> p3Enter(WidgetTester tester, String label, String value) async {
   final field = find.widgetWithText(TextField, label);
+  await localWait(tester, () => field.evaluate().isNotEmpty);
   await tester.ensureVisible(field);
   await tester.pumpAndSettle();
   final editable = find.descendant(
@@ -61,14 +65,29 @@ Future<void> p3Enter(WidgetTester tester, String label, String value) async {
 }
 
 Future<void> p3Select(WidgetTester tester, String key, String label) async {
+  await localWait(
+    tester,
+    () => find.byKey(ValueKey('shared-field-$key')).evaluate().isNotEmpty,
+  );
   await localTap(tester, find.byKey(ValueKey('shared-field-$key')));
   await localTap(tester, find.text(label).last);
 }
 
 Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
+  await localWait(tester, () => find.text('Review').evaluate().isNotEmpty);
   await localTap(tester, find.text('Review').last);
+  await localWait(
+    tester,
+    () => find.text('Save reviewed values').evaluate().isNotEmpty,
+  );
   await localTap(tester, find.text('Save reviewed values'));
-  if (private) await localTap(tester, find.text('Save my private action'));
+  if (private) {
+    await localWait(
+      tester,
+      () => find.text('Save my private action').evaluate().isNotEmpty,
+    );
+    await localTap(tester, find.text('Save my private action'));
+  }
 }
 
 void main() {
@@ -93,16 +112,19 @@ void main() {
       );
       final runtime = LocalRuntime(profiles, settings);
       try {
+        // Supabase restores persisted sessions asynchronously after initialize.
+        // A fresh fixture scope avoids an old B session racing this A sign-in.
+        final authScope = 'salapiya.p3.native.auth.$role.${newLocalId()}';
         final auth = await initializeProofAuth(
           config['url'] as String,
           config['publicKey'] as String,
-          scope: 'salapiya.p3.native.auth.$role',
+          scope: authScope,
           detectSessionInUri: false,
         );
         await auth.client.auth.setSession(config['refreshToken'] as String);
         runtime.connected.flow = GoogleAuthProof(
           auth,
-          'salapiya.p3.native.auth.$role',
+          authScope,
           const FlutterSecureStorage(),
         );
         await runtime.reopen();
@@ -125,13 +147,51 @@ void main() {
         await tester.runAsync(runtime.connected.syncNow);
         await localSettle(tester);
         final store = runtime.session!.localFinance.store;
-        await p3Wait(
-          tester,
-          () async => (await store.db.getAll(
-            'SELECT id FROM p3_group WHERE group_id=?',
+        var downloadAttempts = 0;
+        await p3Wait(tester, () async {
+          await store.reconcileSharedSnapshots();
+          if (++downloadAttempts == 400) {
+            debugPrint(
+              'P3 download diagnostics: groups=${(await store.db.getAll("SELECT id FROM p3_group")).length}, resources=${(await store.db.getAll("SELECT id FROM p3_resource")).length}, connected=${store.db.currentStatus.connected}, error=${runtime.connected.error}',
+            );
+          }
+          return (await store.db.getAll(
+            'SELECT group_id FROM shared_snapshot_cache WHERE group_id=?',
             [config['nativeGroup']],
-          )).isNotEmpty,
-        );
+          )).isNotEmpty;
+        });
+        if (const String.fromEnvironment('P3_NATIVE_STAGE') == 'verify') {
+          final local = await store.snapshot();
+          expect(local.version, config['expectedProfileVersion']);
+          for (final row in config['expectedAccounts'] as List) {
+            expect(
+              local.balance(row['id'] as String).toString(),
+              row['amount'],
+            );
+          }
+          final group = SharedGroup(
+            object(
+              jsonDecode(
+                (await store.db.get(
+                      'SELECT document FROM shared_snapshot_cache WHERE group_id=?',
+                      [config['nativeGroup']],
+                    ))['document']
+                    as String,
+              ),
+            ),
+          );
+          expect(group.version, config['expectedGroupVersion']);
+          for (final p in object(config['expectedPositions']).entries) {
+            expect(group.positions()[p.key].toString(), p.value);
+          }
+          expect(
+            group.people.values
+                .where((p) => p['user'] == auth.client.auth.currentUser!.id)
+                .length,
+            1,
+          );
+          return;
+        }
         final baseline = (await store.db.get(
           'SELECT count(*) n FROM local_command',
         ))['n'];
@@ -159,7 +219,7 @@ void main() {
             object(
               jsonDecode(
                 (await store.db.get(
-                      'SELECT document FROM p3_group WHERE group_id=?',
+                      'SELECT document FROM shared_snapshot_cache WHERE group_id=?',
                       [config['nativeGroup']],
                     ))['document']
                     as String,
@@ -174,7 +234,7 @@ void main() {
           await localWait(tester, () => find.text(name).evaluate().isNotEmpty);
         }
         final raw = await store.db.get(
-          'SELECT document FROM p3_group WHERE group_id=?',
+          'SELECT document FROM shared_snapshot_cache WHERE group_id=?',
           [config['nativeGroup']],
         );
         final group = SharedGroup(
@@ -201,6 +261,11 @@ void main() {
         // Real loopback HTTP 503 failures exercise the production connector's
         // SDK transaction without shutting down either hosted provider. Then
         // discard a genuinely committed hosted response and reopen the queue.
+        final archiveSecret = await PortableRecovery.newRecoverySecret();
+        final oldArchive = await LocalBackup.seal(
+          await LocalBackup.capture(store),
+          archiveSecret,
+        );
         final failureServer = await HttpServer.bind(
           InternetAddress.loopbackIPv4,
           0,
@@ -285,7 +350,7 @@ void main() {
           object(
             jsonDecode(
               (await reopened.db.get(
-                    'SELECT document FROM p3_group WHERE group_id=?',
+                    'SELECT document FROM shared_snapshot_cache WHERE group_id=?',
                     [config['nativeGroup']],
                   ))['document']
                   as String,
@@ -341,7 +406,7 @@ void main() {
               .text(config['nativeName'] as String? ?? 'P3 native shared group')
               .last,
         );
-        await localTap(tester, find.text('Bills'));
+        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
         await localTap(
           tester,
           find.byKey(ValueKey('private-bill-$nativeBill')),
@@ -387,7 +452,7 @@ void main() {
           object(
             jsonDecode(
               (await reopened.db.get(
-                    'SELECT document FROM p3_group WHERE group_id=?',
+                    'SELECT document FROM shared_snapshot_cache WHERE group_id=?',
                     [config['nativeGroup']],
                   ))['document']
                   as String,
@@ -402,7 +467,7 @@ void main() {
           (await current()).positions(),
           isNot((await current()).positions(projected: true)),
         );
-        await localTap(tester, find.text('Payments'));
+        await localTap(tester, find.widgetWithText(ChoiceChip, 'Payments'));
         await localTap(
           tester,
           find.byKey(ValueKey('private-payment-$payment')),
@@ -415,7 +480,7 @@ void main() {
             "SELECT id FROM connected_intent WHERE state IN ('pending','accepted')",
           )).isEmpty,
         );
-        final cash = (await reopened.snapshot()).balance(account);
+        var cash = (await reopened.snapshot()).balance(account);
         expect(cash, BigInt.from(190100));
         await localTap(tester, find.byKey(ValueKey('payment-$payment')));
         await p3Save(tester);
@@ -468,8 +533,130 @@ void main() {
         );
         expect((await reopened.snapshot()).balance(account), cash);
         expect(tester.takeException(), isNull);
+        // Continue a real Add Expense result into group sharing, then adopt its
+        // original action. The group handoff cannot repeat the private cash.
+        await localTap(tester, find.byKey(const ValueKey('nav-money')));
+        await localTap(tester, find.text('Add expense'));
+        final integratedTitle = 'Integrated purchase $role ${accepted.version}';
+        await localEnter(tester, 'name', integratedTitle);
+        await localEnter(tester, 'amount', '3.00');
+        await localTap(tester, find.byKey(const ValueKey('field-account')));
+        await localTap(tester, find.text(accountName).last);
+        await localTap(tester, find.byKey(const ValueKey('review-action')));
+        await localTap(tester, find.text('Confirm & save'));
+        await localWait(
+          tester,
+          () => find.text('Share this purchase').evaluate().isNotEmpty,
+        );
+        await p3Wait(
+          tester,
+          () async => (await reopened.db.getAll(
+            "SELECT id FROM connected_intent WHERE state IN ('pending','accepted')",
+          )).isEmpty,
+        );
+        expect(
+          (await reopened.snapshot()).balance(account),
+          cash - BigInt.from(300),
+        );
+        cash -= BigInt.from(300);
+        await localTap(tester, find.text('Share this purchase'));
+        await localTap(tester, find.text(config['nativeName'] as String).last);
+        await localWait(
+          tester,
+          () => find.text('Share your saved purchase').evaluate().isNotEmpty,
+        );
+        await p3Save(tester);
+        await localTap(tester, find.text('Done'));
+        await localTap(tester, find.byKey(const ValueKey('nav-shared')));
+        await p3Wait(
+          tester,
+          () async => (await current()).bills.values.any(
+            (b) => (b['revisions'] as List).last['name'] == integratedTitle,
+          ),
+        );
+        final integratedBill = (await current()).bills.entries
+            .firstWhere(
+              (b) =>
+                  (b.value['revisions'] as List).last['name'] ==
+                  integratedTitle,
+            )
+            .key;
+        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+        await localTap(
+          tester,
+          find.byKey(ValueKey('private-bill-$integratedBill')),
+        );
+        await p3Select(tester, 'account', accountName);
+        await p3Enter(
+          tester,
+          'Reason / source review',
+          'Keep the original actual purchase',
+        );
+        await p3Save(tester, private: true);
+        await p3Wait(
+          tester,
+          () async => (await reopened.db.getAll(
+            "SELECT id FROM connected_intent WHERE state IN ('pending','accepted')",
+          )).isEmpty,
+        );
+        expect((await reopened.snapshot()).balance(account), cash);
+        expect(tester.takeException(), isNull);
+        // A genuinely older encrypted archive holds the original group command
+        // before its server acceptance. A fresh independently keyed profile must
+        // review its original receipt and download current authority/history.
+        final restoredId = newLocalId();
+        final recoveryProfiles = LocalProfiles(
+          Directory('${support.path}/p3-recovery-$role-$restoredId'),
+          OsProfileVault(slot: 'salapiya.p3.recovery.$role.$restoredId'),
+        );
+        final recovered = await recoveryProfiles.restore(
+          await LocalBackup.unseal(oldArchive, archiveSecret),
+        );
+        expect(await recovered.db.getAll('SELECT id FROM p3_group'), isEmpty);
+        expect((await recovered.connection())!['phase'], 'restored');
+        final recoveryRuntime = LocalRuntime(
+          recoveryProfiles,
+          GallerySettings(),
+        );
+        recoveryRuntime.connected.flow = runtime.connected.flow;
+        await recoveryRuntime.activate(recovered);
+        await tester.pumpWidget(
+          SalapiyaApp(
+            production: true,
+            settings: recoveryRuntime.settings,
+            localRuntime: recoveryRuntime,
+          ),
+        );
+        await tester.runAsync(recoveryRuntime.connected.syncNow);
+        expect(recoveryRuntime.connected.error, isNull);
+        final recoveryRepository = SharedRepository(recoveryRuntime, recovered);
+        await recoveryRepository.open();
+        for (final row in await recovered.db.getAll(
+          "SELECT id FROM shared_intent WHERE state='restored'",
+        )) {
+          await recoveryRepository.retry(row['id'] as String);
+        }
+        await p3Wait(tester, () async {
+          await recovered.reconcileShared();
+          return (await recovered.db.getAll(
+            "SELECT id FROM shared_intent WHERE state IN ('pending','accepted','restored')",
+          )).isEmpty;
+        });
+        expect((await recovered.snapshot()).balance(account), cash);
+        expect(
+          (await recovered.snapshot()).version,
+          (await reopened.snapshot()).version,
+        );
+        recoveryRepository.dispose();
+        await tester.pumpWidget(const SizedBox.shrink());
+        recoveryRuntime.connected.flow = null;
+        await recoveryRuntime.close();
         // A separate live PowerSync connection uses the former member's signed JWT.
-        final peerSession = (await auth.client.auth.setSession(
+        final peerClient = SupabaseClient(
+          config['url'] as String,
+          config['publicKey'] as String,
+        );
+        final peerSession = (await peerClient.auth.setSession(
           config['otherRefreshToken'] as String,
         )).session!;
         final peerDb = openLocalDatabase(
@@ -490,7 +677,20 @@ void main() {
           object(jsonDecode(records.single['document'] as String)),
         );
         expect(former.complete, isFalse);
-        expect(former.bills.containsKey(config['excludedBill']), isFalse);
+        expect(
+          await peerDb.getAll(
+            "SELECT id FROM p3_resource WHERE group_id=? AND kind='bill' AND source_id=?",
+            [config['group'], config['excludedBill']],
+          ),
+          isEmpty,
+        );
+        expect(
+          await peerDb.getAll(
+            "SELECT id FROM p3_resource WHERE group_id=? AND kind='bill'",
+            [config['group']],
+          ),
+          isNotEmpty,
+        );
         expect(
           await peerDb.getAll('SELECT id FROM p3_group WHERE group_id=?', [
             config['nativeGroup'],
@@ -498,8 +698,10 @@ void main() {
           isEmpty,
         );
         await peerDb.close();
+        await peerClient.dispose();
         await tester.pumpWidget(const SizedBox.shrink());
       } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
         await runtime.close();
       }
     },
