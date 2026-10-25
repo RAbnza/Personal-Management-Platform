@@ -77,23 +77,34 @@ Future<void> enroll(LocalStore store) async {
 }
 
 void main() {
-  test('an unpublished enrollment archive preserves its frozen graph without granting authority to recreate published history',()async{
-    final f=await LocalFixture.open();final dir=await Directory.systemTemp.createTemp('salapiya-p2-stage-backup-');
-    final restoredProfiles=LocalProfiles(dir,MemoryProfileVault());
+  test('an unpublished enrollment archive preserves its frozen graph without granting authority to recreate published history', () async {
+    final f = await LocalFixture.open();
+    final dir = await Directory.systemTemp.createTemp(
+      'salapiya-p2-stage-backup-',
+    );
+    final restoredProfiles = LocalProfiles(dir, MemoryProfileVault());
     try {
       await f.account('Unpublished wallet');
-      await f.store.stageConnection(actor,'synthetic@example.test',newLocalId());
-      final staged=(await f.store.connection())!;
-      final bundle=await LocalBackup.capture(f.store);
-      expect((bundle['connection'] as Map)['origin'],'staged');
-      final restored=await restoredProfiles.restore(bundle);
-      final state=(await restored.connection())!;
-      expect(state['phase'],'restored');
-      expect(state['enrollment_id'],staged['enrollment_id']);
-      expect(state['enrollment_snapshot'],staged['enrollment_snapshot']);
-      expect(state['enrollment_name'],staged['enrollment_name']);
-      expect(await restored.db.getNextCrudTransaction(),isNull);
-    }finally{await restoredProfiles.close();await dir.delete(recursive:true);await f.close();}
+      await f.store.stageConnection(
+        actor,
+        'synthetic@example.test',
+        newLocalId(),
+      );
+      final staged = (await f.store.connection())!;
+      final bundle = await LocalBackup.capture(f.store);
+      expect((bundle['connection'] as Map)['origin'], 'staged');
+      final restored = await restoredProfiles.restore(bundle);
+      final state = (await restored.connection())!;
+      expect(state['phase'], 'restored');
+      expect(state['enrollment_id'], staged['enrollment_id']);
+      expect(state['enrollment_snapshot'], staged['enrollment_snapshot']);
+      expect(state['enrollment_name'], staged['enrollment_name']);
+      expect(await restored.db.getNextCrudTransaction(), isNull);
+    } finally {
+      await restoredProfiles.close();
+      await dir.delete(recursive: true);
+      await f.close();
+    }
   });
   test('production Overview separates accepted money from the exact durable pending projection', () async {
     final f = await LocalFixture.open();

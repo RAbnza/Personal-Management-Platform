@@ -260,10 +260,11 @@ class ConnectedRuntime extends ChangeNotifier {
     await initializeAuth();
     final user = flow!.client.auth.currentUser;
     if (user == null) reject('Finish Google sign-in first.');
-    if (binding != null && binding!['remote_owner'] != user.id)
+    if (binding != null && binding!['remote_owner'] != user.id) {
       reject(
         'Reconnect with the Google identity already bound to this profile.',
       );
+    }
     cloud = await boundary();
     final store = local.session?.localFinance.store;
     if (store == null) {
@@ -421,8 +422,9 @@ class ConnectedRuntime extends ChangeNotifier {
           'profile_id': state['profile_id'],
         },
       ) as Map;
-      if (result['profile_id'] != state['profile_id'])
+      if (result['profile_id'] != state['profile_id']) {
         reject('Cancellation identity mismatch. Local records are preserved.');
+      }
       if (result['outcome'] == 'published') {
         await local.session!.localFinance.store.db.execute(
           "UPDATE connected_profile SET phase='published' WHERE profile_id=?",
@@ -432,10 +434,11 @@ class ConnectedRuntime extends ChangeNotifier {
           'Publication completed. Resume synchronization with this profile.',
         );
       }
-      if (result['outcome'] != 'cancelled')
+      if (result['outcome'] != 'cancelled') {
         reject(
           'Cancellation is not yet verified. Resume connection before recording more activity.',
         );
+      }
       await local.session!.localFinance.store.cancelStaging();
     }
     if (flow?.pending == true) await flow!.cancel();
@@ -462,8 +465,9 @@ class ConnectedRuntime extends ChangeNotifier {
         (await store.db.get(
               "SELECT count(*) n FROM connected_intent WHERE state='restored'",
             ))['n'] !=
-            0)
+            0) {
       await _reviewRestored();
+    }
     if (!store.db.currentStatus.connected ||
         store.db.currentStatus.uploadError != null ||
         store.db.currentStatus.downloadError != null) {

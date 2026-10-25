@@ -21,9 +21,12 @@ files = {root / path for path in paths if path}
 app = root / "apps/salapiya"
 files.update((app / "build").glob("p0-*.log"))
 files.update((app / "build").glob("p2-*.log"))
-files.update((app / "build/windows/x64/runner/Debug").glob("*.exe"))
-files.update((app / "build/windows/x64/runner/Debug").glob("*.dll"))
-files.update((app / "build/windows/x64/runner/Debug").rglob("kernel_blob.bin"))
+for configuration in ("Debug", "Release"):
+    native = app / "build/windows/x64/runner" / configuration
+    files.update(native.glob("*.exe"))
+    files.update(native.glob("*.dll"))
+    files.update(native.rglob("kernel_blob.bin"))
+    files.update(native.rglob("app.so"))
 files.update((app / "build/app/outputs/flutter-apk").glob("app-debug.apk"))
 
 def contains_secret(stream):
@@ -54,5 +57,5 @@ for file in sorted(files):
                     if contains_secret(stream):
                         hits.append(label + ":" + member.filename)
 print(json.dumps({"credentialScanFiles": scanned, "matchingPaths": hits,
-                  "scope": "working source, proof logs, Debug Windows binaries and decompressed debug APK"}))
+                  "scope": "working source, P0/P2 logs, Debug/Release Windows binaries and decompressed debug APK"}))
 sys.exit(bool(hits))

@@ -7,11 +7,14 @@ import {report,ref} from './cloud.mjs';
 try{
  const role=process.argv[2];if(!['windows','android'].includes(role))throw Error('Choose native role');
  const {keys,state}=await fixtures();
+ const fresh=process.argv[3]==='fresh';
  if(!state.p2?.profile)throw Error('Run the hosted P2 fixture first');
- const [owner,other]=await Promise.all([signIn(state.users.ownerA,keys.client),signIn(state.users.ownerB,keys.client)]);
+ const user=fresh?(role==='windows'?state.users.ownerB:state.nativeUser):state.users.ownerA;
+ if(!user)throw Error('The existing fresh native fixture is unavailable; do not create or reset identities');
+ const [owner,other]=await Promise.all([signIn(user,keys.client),signIn(state.users.ownerB,keys.client)]);
  const config={url:`https://${ref}.supabase.co`,publicKey:keys.client,
    role,profile:state.p2.profile,refreshToken:owner.refresh_token,otherRefreshToken:other.refresh_token};
- const dir=path.join(privateDir,'p2',role);await mkdir(dir,{recursive:true});
+ const dir=path.join(privateDir,'p2',fresh?`fresh-${role}`:role);await mkdir(dir,{recursive:true});
  await writeFile(path.join(dir,'config.json'),JSON.stringify(config),{mode:0o600});
  if(role==='android'){
    const adb=process.env.SALAPIYA_ADB,serial=process.env.SALAPIYA_ANDROID_DEVICE;
@@ -20,5 +23,5 @@ try{
      {input:JSON.stringify(config),encoding:'utf8',windowsHide:true,stdio:['pipe','ignore','pipe']});
    if(result.status!==0)throw Error('Unable to stage private config without replacing application data');
  }
- await saveState(state);report({prepared:role,credentials:'OS-user/app-private file only; consumed by test',publicKeysOnlyInBuild:true});
+ await saveState(state);report({prepared:role,fresh,credentials:'OS-user/app-private file only; consumed by test',publicKeysOnlyInBuild:true});
 }catch(e){report({failure:e.code||e.message});process.exitCode=1;}

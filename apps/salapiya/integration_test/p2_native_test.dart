@@ -339,7 +339,7 @@ Future<void> verifyTransportOutage(
         token: auth.client.auth.currentSession!.accessToken,
         userId: auth.client.auth.currentUser!.id,
       ),
-      submit: (_, __) async {
+      submit: (_, _) async {
         uploadAttempts++;
         final request = await http.postUrl(Uri.parse('$endpoint/p2-upload'));
         final response = await request.close();

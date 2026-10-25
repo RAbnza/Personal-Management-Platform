@@ -50,10 +50,11 @@ void main() {
       final actualSettings = runtime.settings;
       try {
         await runtime.reopen();
-        if (action == 'reauth_wrong' && runtime.session == null)
+        if (action == 'reauth_wrong' && runtime.session == null) {
           reject(
             'The existing Google acceptance profile is required for reauthentication.',
           );
+        }
         if (runtime.session == null && action != 'retrieve') {
           await runtime.create('P2 synthetic $role $action', ThemeMode.system);
           final store = runtime.session!.localFinance.store;

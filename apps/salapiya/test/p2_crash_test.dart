@@ -23,10 +23,11 @@ void main() {
         try {
           final deadline = DateTime.now().add(const Duration(seconds: 60));
           while (!await File('$path.ready').exists()) {
-            if (DateTime.now().isAfter(deadline))
+            if (DateTime.now().isAfter(deadline)) {
               fail(
                 'P2 worker did not reach the transaction boundary: ${utf8.decode(errors, allowMalformed: true)}',
               );
+            }
             await Future<void>.delayed(const Duration(milliseconds: 100));
           }
           if (Platform.isWindows) {
