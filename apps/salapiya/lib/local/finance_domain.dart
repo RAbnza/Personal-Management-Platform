@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import '../p0/exact_money.dart';
+part '../shared/shared_private_domain.dart';
 
 // Native M01–M03 rules. The UI and SQLite writer use this same planner.
 // Signed postings: cash/expense are debits, income/equity are credits.
@@ -225,6 +226,14 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
 
   if (v.values.any((x) => x.length > 20000) || v.length > 512) {
     reject('The form exceeds the supported size.');
+  }
+  if (cmd.kind == 'shared') return planSharedPrivate(s, cmd);
+  if (['correction', 'reversal', 'refund'].contains(cmd.kind) &&
+      value('source').isNotEmpty &&
+      s.revision(value('source')).values.containsKey('sharedGroup')) {
+    reject(
+      'Use explicit Shared Expenses private reconciliation for linked money.',
+    );
   }
   BigInt amount(String key, {bool zero = false, bool signed = false}) {
     try {

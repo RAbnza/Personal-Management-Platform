@@ -15,3 +15,9 @@ streams:
   p2_private_commands:
     auto_subscribe: true
     query: SELECT * FROM p2_command WHERE owner_id = auth.user_id()
+  p3_entitled_groups:
+    auto_subscribe: true
+    query: SELECT * FROM p3_group WHERE owner_id = auth.user_id()
+  p3_private_evidence_review:
+    auto_subscribe: true
+    query: SELECT * FROM p3_private_review WHERE owner_id = auth.user_id()

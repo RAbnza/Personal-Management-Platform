@@ -9,6 +9,7 @@ import 'finance_domain.dart';
 import '../connected/financial_contract.dart';
 
 part '../connected/connected_store.dart';
+part '../shared/shared_store.dart';
 
 // P0-verified encrypted native factory. P1 financial tables remain ordinary
 // local tables; only the bounded P2 command transport/projection use SDK views.
@@ -37,7 +38,7 @@ final class _LocalFactory extends NativePowerSyncOpenFactory {
   ];
 }
 
-const localSchemaVersion = 2;
+const localSchemaVersion = 3;
 const defaultLocalCategories = [
   ('food', 'Food & drink', 'expense'),
   ('transport', 'Transport', 'expense'),
@@ -61,13 +62,14 @@ class LocalStore {
     final versions = await tx.getAll('SELECT version FROM local_schema');
     if (versions.isNotEmpty) {
       if (versions.length != 1 ||
-          ![1, localSchemaVersion].contains(versions.single['version'])) {
+          ![1, 2, localSchemaVersion].contains(versions.single['version'])) {
         reject(
           'Unsupported database version. Preserve this database and use a compatible Salapiya version.',
         );
       }
       await _migrateConnection(tx);
-      if (versions.single['version'] == 1) {
+      await _migrateShared(tx);
+      if (versions.single['version'] != localSchemaVersion) {
         if (interrupt) {
           throw StateError('Injected connected migration interruption');
         }
@@ -97,6 +99,7 @@ class LocalStore {
       await tx.execute(trigger);
     }
     await _migrateConnection(tx);
+    await _migrateShared(tx);
     if (interrupt) {
       throw StateError('Injected migration interruption');
     }
@@ -507,12 +510,12 @@ const _schema = [
     FOREIGN KEY(source_id,owner_id) REFERENCES local_revision(id,owner_id),
     FOREIGN KEY(command_id,owner_id) REFERENCES local_command(id,owner_id)) STRICT''',
   '''CREATE TABLE local_posting(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision_id TEXT NOT NULL,
-    ledger TEXT NOT NULL CHECK(ledger IN ('cash','expense','income','equity')), account_id TEXT, category_id TEXT,
+    ledger TEXT NOT NULL CHECK(ledger IN ('cash','expense','income','equity','shared_receivable','shared_payable','shared_clearing')), account_id TEXT, category_id TEXT,
     effective_date TEXT NOT NULL, amount_minor INTEGER NOT NULL CHECK(amount_minor<>0 AND amount_minor BETWEEN -100000000000 AND 100000000000),
     contract INTEGER NOT NULL CHECK(contract=1),
     CHECK((ledger='cash' AND account_id IS NOT NULL AND category_id IS NULL) OR
       (ledger IN ('expense','income') AND account_id IS NULL AND category_id IS NOT NULL) OR
-      (ledger='equity' AND account_id IS NULL AND category_id IS NULL)),
+      (ledger IN ('equity','shared_receivable','shared_payable','shared_clearing') AND account_id IS NULL AND category_id IS NULL)),
     FOREIGN KEY(revision_id,owner_id) REFERENCES local_revision(id,owner_id),
     FOREIGN KEY(account_id,owner_id) REFERENCES local_account(id,owner_id),
     FOREIGN KEY(category_id,owner_id) REFERENCES local_category(id,owner_id)) STRICT''',

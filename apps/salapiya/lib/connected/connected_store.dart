@@ -1,6 +1,23 @@
 part of '../local/local_store.dart';
 
 const connectedSchema = Schema([
+  Table('p3_private_review', [
+    Column.text('owner_id'),
+    Column.text('profile_id'),
+    Column.text('group_id'),
+    Column.text('bill_id'),
+    Column.text('private_revision'),
+    Column.text('source_stamp'),
+    Column.text('reason'),
+    Column.text('recorded_at'),
+  ]),
+  Table.insertOnly('p3_transport', [Column.text('payload')]),
+  Table('p3_group', [
+    Column.text('owner_id'),
+    Column.text('group_id'),
+    Column.integer('version'),
+    Column.text('document'),
+  ]),
   Table.insertOnly('p2_transport', [Column.text('payload')]),
   Table('p2_profile', [
     Column.text('owner_id'),

@@ -12,6 +12,7 @@ import '../local/finance_domain.dart';
 import '../local/local_runtime.dart';
 import '../connected/connection_view.dart';
 import 'demo_routes.dart';
+import '../shared/shared_attention.dart';
 
 class SourceLink extends StatelessWidget {
   const SourceLink({
@@ -91,6 +92,11 @@ class Overview extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (session is LocalSession)
+          SharedAttention(
+            session: session as LocalSession,
+            open: () => open(PreviewSource.settlement),
+          ),
         if (!session.complete)
           const StatusNotice(
             'Initial download is incomplete. Complete financial totals are withheld until history is verified.',

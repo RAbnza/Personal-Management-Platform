@@ -203,7 +203,7 @@ void main() {
       await f.store.integrity();
       expect(
         (await f.store.db.get('SELECT version FROM local_schema'))['version'],
-        2,
+        localSchemaVersion,
       );
       expect((await f.store.snapshot()).accounts.single.id, id);
       expect(
@@ -505,7 +505,7 @@ void main() {
       });
       final secret = await PortableRecovery.newRecoverySecret(),
           bundle = await LocalBackup.capture(f.store);
-      expect(bundle['format'], 2);
+      expect(bundle['format'], 3);
       expect(jsonEncode(bundle), isNot(contains('access_token')));
       final archive = await LocalBackup.seal(bundle, secret);
       final restored = await profiles.restore(

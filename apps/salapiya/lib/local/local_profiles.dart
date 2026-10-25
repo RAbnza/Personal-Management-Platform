@@ -251,7 +251,7 @@ class LocalProfiles {
           r['id'] as String,
           r['payload'] as String,
         );
-        if (bundle['format'] == 2) {
+        if ([2, 3].contains(bundle['format'])) {
           await store.db.writeTransaction(
             (tx) => store.commitAccepted(
               tx,
@@ -274,7 +274,7 @@ class LocalProfiles {
           ),
         );
       }
-      if (bundle['format'] == 2) {
+      if ([2, 3].contains(bundle['format'])) {
         final remote = bundle['connection'] as Map;
         final unpublished = remote['origin'] == 'staged';
         await store.db.execute(
@@ -302,6 +302,39 @@ class LocalProfiles {
               r['sequence_no'],
             ],
           );
+        }
+      }
+      if (bundle['format'] == 3) {
+        for (final raw in bundle['sharedReviews'] as List? ?? []) {
+          final r = Map<String, dynamic>.from(raw as Map);
+          await store.db.execute(
+            'INSERT INTO shared_review_history VALUES(?,?)',
+            [r['id'], jsonEncode(r)],
+          );
+        }
+        final remote = bundle['connection'] as Map;
+        for (final raw in bundle['sharedIntents'] as List) {
+          final r = raw as Map;
+          await store.db.execute(
+            "INSERT INTO shared_intent VALUES(?,?,?,?, 'restored',?,NULL,?,0)",
+            [
+              r['id'],
+              remote['remote_owner'],
+              r['group_id'],
+              r['payload'],
+              'Restored history is not current membership authority; review original receipt online.',
+              r['recorded_at'],
+            ],
+          );
+        }
+        for (final raw in bundle['sharedDrafts'] as List) {
+          final r = raw as Map;
+          await store.db.execute('INSERT INTO shared_draft VALUES(?,?,?,?)', [
+            r['id'],
+            r['group_id'],
+            r['payload'],
+            r['updated_at'],
+          ]);
         }
       }
       await store.integrity();
@@ -371,7 +404,7 @@ class LocalBackup {
         final connection = await store.connectionIn(tx);
         final connected = connection != null;
         final result = <String, dynamic>{
-          'format': connected ? 2 : 1,
+          'format': connected ? 3 : 1,
           'localSchema': localSchemaVersion,
           'commandContract': 1,
           'calculationVersion': 1,
@@ -397,6 +430,36 @@ class LocalBackup {
               ))
                 Map<String, dynamic>.from(r),
             ],
+          if (connected)
+            'sharedIntents': [
+              for (final r in await tx.getAll(
+                'SELECT id,group_id,payload,recorded_at FROM shared_intent ORDER BY recorded_at',
+              ))
+                if ([
+                  'bill',
+                  'report',
+                ].contains((jsonDecode(r['payload'] as String) as Map)['op']))
+                  Map<String, dynamic>.from(r),
+            ],
+          if (connected)
+            'sharedDrafts': [
+              for (final r in await tx.getAll('SELECT * FROM shared_draft'))
+                Map<String, dynamic>.from(r),
+            ],
+          if (connected)
+            'sharedReviews': {
+              for (final row in await tx.getAll(
+                'SELECT payload FROM shared_review_history',
+              ))
+                (jsonDecode(row['payload'] as String) as Map)['id']: jsonDecode(
+                  row['payload'] as String,
+                ),
+              for (final row in await tx.getAll(
+                'SELECT * FROM p3_private_review WHERE profile_id=?',
+                [store.owner],
+              ))
+                row['id']: Map<String, dynamic>.from(row),
+            }.values.toList(),
           'currency': 'PHP',
           'timezone': 'Asia/Manila',
           'owner': store.owner,
@@ -414,9 +477,9 @@ class LocalBackup {
         return result;
       });
   static void validate(Map<String, dynamic> b) {
-    final connected = b['format'] == 2;
-    if (![1, 2].contains(b['format']) ||
-        ![1, localSchemaVersion].contains(b['localSchema']) ||
+    final connected = [2, 3].contains(b['format']);
+    if (![1, 2, 3].contains(b['format']) ||
+        ![1, 2, localSchemaVersion].contains(b['localSchema']) ||
         b['commandContract'] != 1 ||
         b['calculationVersion'] != 1 ||
         b['authority'] != (connected ? 'connected-review-required' : 'local') ||
@@ -491,6 +554,44 @@ class LocalBackup {
           reject('Invalid connected recovery intent.');
         }
         last = r['sequence_no'] as int;
+      }
+    }
+    if (b['format'] == 3) {
+      if ((b['sharedReviews'] as List? ?? []).length > 20000) {
+        reject('Unsupported private review history count.');
+      }
+      for (final raw in b['sharedReviews'] as List? ?? []) {
+        final r = raw as Map;
+        if (r['profile_id'] != b['owner'] ||
+            r['owner_id'] != (b['connection'] as Map)['remote_owner'] ||
+            r['id'] is! String ||
+            r['reason'] is! String) {
+          reject('Invalid owned private review evidence.');
+        }
+      }
+      if ((b['sharedIntents'] as List).length > 20000 ||
+          (b['sharedDrafts'] as List).length > 100) {
+        reject('Unsupported shared recovery counts.');
+      }
+      final sharedIds = <String>{};
+      for (final raw in b['sharedIntents'] as List) {
+        final r = raw as Map;
+        final payload = jsonDecode(r['payload'] as String) as Map;
+        if (!sharedIds.add(r['id'] as String) ||
+            !['bill', 'report'].contains(payload['op']) ||
+            payload['contract'] != 3 ||
+            payload['group'] != r['group_id'] ||
+            DateTime.tryParse(r['recorded_at'] as String) == null) {
+          reject('Invalid original shared recovery intent.');
+        }
+      }
+      for (final raw in b['sharedDrafts'] as List) {
+        final r = raw as Map;
+        if ((r['payload'] as String).length > 131072 ||
+            DateTime.tryParse(r['updated_at'] as String) == null) {
+          reject('Invalid shared draft.');
+        }
+        jsonDecode(r['payload'] as String);
       }
     }
     for (final raw in drafts) {

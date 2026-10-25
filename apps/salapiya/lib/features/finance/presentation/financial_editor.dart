@@ -10,6 +10,7 @@ import '../contracts/financial_models.dart';
 import 'financial_widgets.dart';
 import '../../../local/local_finance_controller.dart';
 import '../../../local/finance_domain.dart';
+import '../../../shared/shared_screen.dart';
 
 Future<void> openFinancialEditor(
   BuildContext context,
@@ -1336,6 +1337,31 @@ class _FinancialEditorState extends State<FinancialEditor> {
       spacing: 12,
       runSpacing: 12,
       children: [
+        if (c is LocalFinancialController &&
+            action == FinancialAction.expense &&
+            result == DemoOutcome.accepted)
+          FilledButton(
+            onPressed: () async {
+              try {
+                await sharePrivatePurchase(
+                  context,
+                  c as LocalFinancialController,
+                  command,
+                );
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        e is LocalRuleException ? e.message : 'Group sharing could not complete. Your private purchase remains saved.',
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Share this purchase'),
+          ),
         if (result == DemoOutcome.pending || result == DemoOutcome.unknown)
           FilledButton(
             onPressed: () async {

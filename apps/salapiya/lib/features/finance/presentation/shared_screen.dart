@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../local/local_runtime.dart';
+import '../../../shared/shared_screen.dart';
+
 import '../../../app/demo_routes.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
@@ -33,6 +36,9 @@ class _SharedScreenState extends State<SharedScreen> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: c,
     builder: (context, _) {
+      if (widget.session case final LocalSession session) {
+        return NativeSharedScreen(session: session, initial: widget.initial);
+      }
       final positions = c.groupPositions(projected: projected);
       final total = ExactFinance.sum(
         c.groupBills.map((b) => b.total - b.refunded),

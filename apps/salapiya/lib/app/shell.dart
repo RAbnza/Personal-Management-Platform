@@ -58,7 +58,13 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
 
   void source(PreviewSource source) {
     if (session.production &&
-        ![PreviewSource.accounts, PreviewSource.activity].contains(source)) {
+        ![
+          PreviewSource.accounts,
+          PreviewSource.activity,
+          PreviewSource.group,
+          PreviewSource.settlement,
+          PreviewSource.privateReview,
+        ].contains(source)) {
       open(
         FinancePage(title: source.label, child: UpcomingView(source.label)),
         'upcoming/${source.name}',
@@ -345,6 +351,8 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                               key: ObjectKey(session.finance),
                                               session: session,
                                             )
+                                          : destination == AppDestination.shared
+                                          ? SharedScreen(session: session)
                                           : session.production
                                           ? UpcomingView(destination.label)
                                           : destination == AppDestination.debts

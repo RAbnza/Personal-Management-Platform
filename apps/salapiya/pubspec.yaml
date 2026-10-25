@@ -17,6 +17,7 @@ dependencies:
   supabase_flutter: 2.18.3
   flutter_secure_storage: 11.2.0
   cryptography: 2.9.0
+  crypto: 3.0.7
   path_provider: 2.1.5
   path: 1.9.1
   app_links: 7.2.2

@@ -16,12 +16,14 @@ class FinancialConnector extends PowerSyncBackendConnector {
     required this.actor,
     required this.credentials,
     required this.submit,
+    this.submitShared,
     this.changed,
   });
   final LocalStore store;
   final String actor;
   final Future<PowerSyncCredentials?> Function() credentials;
   final SubmitFinancialCommand submit;
+  final SubmitFinancialCommand? submitShared;
   final void Function()? changed;
 
   factory FinancialConnector.supabase(
@@ -35,6 +37,17 @@ class FinancialConnector extends PowerSyncBackendConnector {
       store: store,
       actor: actor,
       changed: changed,
+      submitShared: (id, payload) async {
+        if (client.auth.currentUser?.id != actor) {
+          throw StateError('Reauthentication required');
+        }
+        return Map<String, dynamic>.from(
+          await client.rpc(
+            'p3_submit_command',
+            params: {'command_id': id, 'command_payload': payload},
+          ) as Map,
+        );
+      },
       credentials: () async {
         var s = client.auth.currentSession;
         if (s == null || s.user.id != actor) return null;
@@ -86,6 +99,28 @@ class FinancialConnector extends PowerSyncBackendConnector {
       throw StateError('Synchronization is paused pending connection review');
     }
     for (final entry in transaction.crud) {
+      if (entry.table == 'p3_transport' && entry.op == UpdateType.put) {
+        final payload = entry.opData?['payload'] as String;
+        final intent = await database.get(
+          'SELECT * FROM shared_intent WHERE id=?',
+          [entry.id],
+        );
+        if (intent['actor'] != actor || intent['payload'] != payload) {
+          throw StateError('Shared queue differs from original intent');
+        }
+        if (['restored', 'review', 'reconciled'].contains(intent['state'])) {
+          continue;
+        }
+        if (submitShared == null) {
+          throw StateError('Shared command transport unavailable');
+        }
+        await store.recordSharedReceipt(
+          entry.id,
+          actor,
+          await submitShared!(entry.id, payload),
+        );
+        continue;
+      }
       if (entry.table != 'p2_transport' || entry.op != UpdateType.put) {
         throw StateError('Unexpected transport operation');
       }

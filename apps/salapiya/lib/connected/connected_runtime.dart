@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +13,7 @@ import '../local/local_store.dart';
 import '../p0/auth_runtime.dart';
 import '../p0/google_auth_proof.dart';
 import 'command_connector.dart';
+import '../shared/shared_domain.dart';
 
 class ConnectedRuntime extends ChangeNotifier {
   ConnectedRuntime(this.local);
@@ -25,6 +28,11 @@ class ConnectedRuntime extends ChangeNotifier {
   GoogleAuthProof? flow;
   Future<void>? _authOpening;
   StreamSubscription<dynamic>? _downloads, _intents, _status;
+  int sharedPendingCount = 0,
+      sharedReviewCount = 0,
+      needMyConfirmation = 0,
+      waitingForOthers = 0,
+      changedPrivateSources = 0;
   LocalStore? _attached;
   bool busy = false, refreshing = false, closed = false;
   bool sessionExpired = false;
@@ -48,7 +56,7 @@ class ConnectedRuntime extends ChangeNotifier {
     }
     if (binding!['phase'] == 'restored') return 'Needs review';
     if (!complete) return 'Initial download incomplete';
-    if (reviewCount > 0) return 'Needs review';
+    if (reviewCount > 0 || sharedReviewCount > 0) return 'Needs review';
     if (sessionExpired ||
         (flow != null && flow!.client.auth.currentSession == null)) {
       return 'Session expired / reconnect required';
@@ -67,7 +75,9 @@ class ConnectedRuntime extends ChangeNotifier {
         status?.downloadError != null) {
       return 'Waiting for connection';
     }
-    return pendingCount > 0 ? 'Waiting for connection' : 'Synced';
+    return pendingCount + sharedPendingCount > 0
+        ? 'Waiting for connection'
+        : 'Synced';
   }
 
   void changed() {
@@ -167,6 +177,7 @@ class ConnectedRuntime extends ChangeNotifier {
     try {
       final store = _attached!;
       await store.reconcileDownloaded();
+      await store.reconcileShared();
       binding = await store.connection();
       final uploadError = store.db.currentStatus.uploadError;
       if (binding != null &&
@@ -199,6 +210,49 @@ class ConnectedRuntime extends ChangeNotifier {
           }
         }
         reviewCount = reviews.length;
+        final shared = await store.db.getAll('SELECT state FROM shared_intent');
+        sharedPendingCount = shared
+            .where((r) => ['pending', 'accepted'].contains(r['state']))
+            .length;
+        sharedReviewCount = shared
+            .where((r) => ['review', 'restored'].contains(r['state']))
+            .length;
+        needMyConfirmation = 0;
+        waitingForOthers = 0;
+        changedPrivateSources = 0;
+        for (final row in await store.db.getAll(
+          'SELECT document FROM p3_group WHERE owner_id=?',
+          [binding?['remote_owner']],
+        )) {
+          final group = SharedGroup(
+            Map<String, dynamic>.from(
+              jsonDecode(row['document'] as String) as Map,
+            ),
+          );
+          final me = group.participant(
+            binding?['remote_owner'] as String? ?? '',
+          );
+          for (final s in group.settlements.values) {
+            if (s['state'] == 'pending') {
+              if (s['recipient'] == me) {
+                needMyConfirmation++;
+              } else if (s['sender'] == me) {
+                waitingForOthers++;
+              }
+            }
+          }
+          for (final r in local.session!.localFinance.snapshot.current.where(
+            (r) =>
+                r.values['sharedGroup'] == group.id &&
+                r.values['sharedMode'] == 'bill',
+          )) {
+            if (group.bills[r.values['sharedKey']] == null ||
+                group.revision(r.values['sharedKey']!)['id'] !=
+                    r.values['sharedRevision']) {
+              changedPrivateSources++;
+            }
+          }
+        }
       }
     } catch (e) {
       error = e is LocalRuleException ? e.message : 'Synchronization could not be verified. Local records and waiting work are preserved.';
@@ -461,6 +515,11 @@ class ConnectedRuntime extends ChangeNotifier {
       );
     }
     sessionExpired = false;
+    final groupBoundary = List<Map<String, dynamic>>.from(
+      (await flow!.client.rpc('p3_group_boundary') as List).map(
+        (r) => Map<String, dynamic>.from(r as Map),
+      ),
+    );
     if (binding!['phase'] == 'restored' ||
         (await store.db.get(
               "SELECT count(*) n FROM connected_intent WHERE state='restored'",
@@ -486,7 +545,8 @@ class ConnectedRuntime extends ChangeNotifier {
     while (!closed &&
         DateTime.now().difference(started) < const Duration(seconds: 45)) {
       if (await store.reconcileDownloaded(requiredBoundary: target) &&
-          store.db.currentStatus.connected) {
+          store.db.currentStatus.connected &&
+          await _groupsCovered(store, groupBoundary)) {
         // This timestamp follows a current authenticated boundary read plus
         // matching downloaded coverage, including an idle unchanged profile.
         await store.db.execute(
@@ -513,6 +573,28 @@ class ConnectedRuntime extends ChangeNotifier {
     }
     await _connect();
   });
+  Future<bool> _groupsCovered(
+    LocalStore store,
+    List<Map<String, dynamic>> boundary,
+  ) async {
+    for (final expected in boundary) {
+      final rows = await store.db.getAll(
+        'SELECT version,document FROM p3_group WHERE id=? AND owner_id=?',
+        [expected['id'], binding?['remote_owner']],
+      );
+      if (rows.length != 1 ||
+          (rows.single['version'] as int) < (expected['version'] as int))
+        return false;
+      if (rows.single['version'] == expected['version'] &&
+          sha256
+                  .convert(utf8.encode(rows.single['document'] as String))
+                  .toString() !=
+              expected['digest'])
+        return false;
+    }
+    return true;
+  }
+
   Future<void> pause(bool paused) => run(() async {
     if (_attached == null || binding == null) return;
     await _attached!.db.execute(

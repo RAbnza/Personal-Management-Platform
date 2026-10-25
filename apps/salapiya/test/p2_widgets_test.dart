@@ -92,7 +92,19 @@ void main() {
           runtime.dispose();
           runtime.settings.dispose();
           settings.dispose();
-          await tester.runAsync(f.close);
+          // SDK shutdown can schedule timers in this widget test's fake clock.
+          // Pump it while the real encrypted database closes; do not leave an
+          // outstanding cancellation behind for the next platform fixture.
+          var databaseClosed = false;
+          final closing = f.close().whenComplete(() => databaseClosed = true);
+          for (var i = 0; i < 200 && !databaseClosed; i++) {
+            await tester.pump(const Duration(milliseconds: 20));
+            await tester.runAsync(
+              () => Future<void>.delayed(const Duration(milliseconds: 10)),
+            );
+          }
+          expect(databaseClosed, isTrue);
+          await closing;
         }
       },
     );
