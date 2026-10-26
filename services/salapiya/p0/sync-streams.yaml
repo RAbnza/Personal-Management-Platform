@@ -15,6 +15,9 @@ streams:
   p2_private_commands:
     auto_subscribe: true
     query: SELECT * FROM p2_command WHERE owner_id = auth.user_id()
+  p5_private_life:
+    auto_subscribe: true
+    query: SELECT * FROM p5_command WHERE owner_id = auth.user_id()
   p3_entitled_groups:
     auto_subscribe: true
     query: SELECT id, owner_id, group_id, version, sync_document AS document FROM p3_group WHERE owner_id = auth.user_id()
