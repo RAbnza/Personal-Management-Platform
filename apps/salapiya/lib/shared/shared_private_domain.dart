@@ -3,7 +3,7 @@ part of '../local/finance_domain.dart';
 // P3 extends the established private command, immutable revision and journal
 // contract. It never accepts a client-supplied posting plan or another owner.
 LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
-  final v = cmd.values;
+  final v = Map<String, String>.from(cmd.values);
   String value(String k) => v[k] ?? '';
   final mode = value('sharedMode'), date = civilDate(value('date'));
   final group = value('sharedGroup'), sourceKey = value('sharedKey');
@@ -12,10 +12,9 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
       value('sharedRevision').isEmpty) {
     reject('A versioned group source is required.');
   }
-  if (value('funding') == 'card') {
-    reject(
-      'Card-backed posting requires the P4 card domain; no cash or liability was posted.',
-    );
+  final cardFunded = value('funding') == 'card';
+  if (cardFunded && !['bill', 'refund'].contains(mode)) {
+    reject('Group settlement payments require actual cash evidence.');
   }
   BigInt amount(String k) {
     final n = parsePhp(value(k));
@@ -33,7 +32,9 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     if (value('reason').trim().isEmpty) {
       reject('Explain the private source reconciliation.');
     }
-    final dependencies = s.current.where((r) => r.source == oldId).toList();
+    final dependencies = s.current
+        .where((r) => r.source == oldId && financeType(r) != 'financialFile')
+        .toList();
     final restoredPayment =
         mode == 'payment' &&
         dependencies.every(
@@ -121,6 +122,47 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
   }
 
   var kind = 'expense', total = paid;
+  if (cardFunded) {
+    if (old == null ||
+        !['cardPurchase', 'cardRefund'].contains(financeType(old))) {
+      reject(
+        'First record the actual card purchase or refund in Money, then adopt its immutable evidence.',
+      );
+    }
+    final card = financeSource(s, old.values['card'] ?? '', {'creditCard'});
+    final recognizedCardMovement = sumMinor(
+      old.postings
+          .where((p) => p.ledger == 'card_liability')
+          .map((p) => p.amount),
+    );
+    if (recognizedCardMovement != (mode == 'bill' ? -paid : paid)) {
+      reject(
+        'Immutable card liability evidence does not match the actual funded amount.',
+      );
+    }
+    if (value('card') != card.actionId ||
+        old.date != date ||
+        (mode == 'bill' &&
+            (financeType(old) != 'cardPurchase' ||
+                (old.values['sharedGroup'] == null
+                    ? old.amount != paid
+                    : parsePhp(old.values['fundingAmount']!) != paid))) ||
+        (mode == 'refund' &&
+            (financeType(old) != 'cardRefund' ||
+                (old.values['sharedGroup'] == null
+                    ? old.amount != paid
+                    : parsePhp(old.values['fundingAmount']!) != paid)))) {
+      reject('Retain the exact owned card funding, amount and date.');
+    }
+    v.addAll({
+      'card': card.actionId,
+      'financeType': financeType(old),
+      'financeContract': '1',
+      'postingDate': old.values['postingDate'] ?? old.date,
+    });
+    v['account'] = old.values['account'] ?? '';
+    if (mode == 'refund') v['purchase'] = old.values['purchase']!;
+  }
   if (mode == 'bill') {
     if (old != null) {
       if (old.values['sharedGroup'] == null) {
@@ -128,7 +170,7 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
             old.amount != paid ||
             old.date != date ||
             old.values['split'] == 'true' ||
-            old.values['account'] != value('account')) {
+            (!cardFunded && old.values['account'] != value('account'))) {
           reject(
             'Existing purchase adoption must retain its exact cash funding, date and account.',
           );
@@ -142,7 +184,11 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
         reject('Acknowledge an actual funding correction explicitly.');
       }
     }
-    cash(-paid);
+    if (cardFunded) {
+      post('card_liability', -paid);
+    } else {
+      cash(-paid);
+    }
     expense(share);
     position(paid - share);
     total = share;
@@ -170,7 +216,11 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
     post('shared_clearing', outgoing ? paid : -paid);
     kind = 'adjustment';
   } else if (mode == 'refund') {
-    cash(paid);
+    if (cardFunded) {
+      post('card_liability', paid);
+    } else {
+      cash(paid);
+    }
     final adopted = s.current.any(
       (r) =>
           r.values['sharedMode'] == 'bill' &&
@@ -242,6 +292,7 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
   }
   if (old != null &&
       mode == 'refund' &&
+      !(cardFunded && old.values['sharedGroup'] == null) &&
       (old.values['sharedGroup'] != group ||
           old.values['sharedKey'] != sourceKey ||
           old.values['fundingAmount'] != value('fundingAmount') ||
@@ -298,7 +349,9 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
       postings: posts,
       number: (old?.number ?? 0) + 1,
       previous: old?.id,
-      source: ['clear', 'unclear'].contains(mode)
+      source: cardFunded && mode == 'refund'
+          ? old?.source
+          : ['clear', 'unclear'].contains(mode)
           ? value('paymentSource')
           : null,
     ),

@@ -4,6 +4,9 @@ import '../design_system/components.dart';
 import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
 import '../prototype/scenarios.dart';
+import '../local/local_finance_controller.dart';
+import '../local/finance_domain.dart';
+import '../finance/source_list.dart';
 
 class OverviewAgenda extends StatefulWidget {
   const OverviewAgenda({super.key, required this.session, required this.open});
@@ -50,6 +53,24 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
   Widget build(BuildContext context) {
     final session = widget.session;
     if (session.production) {
+      if (session.complete && session.finance is LocalFinancialController) {
+        return EditorialSurface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeading('On the horizon'),
+              FinancialDueList(
+                controller: session.finance as LocalFinancialController,
+                from: civilToday(),
+                through: DateTime.parse('${civilToday()}T00:00:00Z')
+                    .add(const Duration(days: 30))
+                    .toIso8601String()
+                    .substring(0, 10),
+              ),
+            ],
+          ),
+        );
+      }
       return const EditorialSurface(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,7 +78,7 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
             SectionHeading('On the horizon'),
             SizedBox(height: 16),
             Text(
-              'Plans, reminders and Life workflows will arrive in a later milestone. No scheduled commitments have been recorded.',
+              'Financial due coverage becomes available after the accepted history is complete.',
             ),
           ],
         ),

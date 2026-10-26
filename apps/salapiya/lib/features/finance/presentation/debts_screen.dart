@@ -8,6 +8,8 @@ import '../contracts/financial_models.dart';
 import 'financial_editor.dart';
 import 'financial_widgets.dart';
 import '../../supporting/presentation/files_screen.dart';
+import '../../../local/local_finance_controller.dart';
+import '../../../finance/debt_screen.dart';
 
 class DebtsScreen extends StatelessWidget {
   const DebtsScreen({super.key, required this.session});
@@ -17,6 +19,9 @@ class DebtsScreen extends StatelessWidget {
     listenable: session.finance,
     builder: (context, _) {
       final c = session.finance;
+      if (c is LocalFinancialController) {
+        return NativeDebtsScreen(controller: c);
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

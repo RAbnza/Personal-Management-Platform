@@ -1,0 +1,381 @@
+{
+  "profile": "50000000-0000-4000-8000-000000000000",
+  "root": "50000000-0000-4000-8000-000000000005",
+  "commands": [
+    {
+      "id": "50000000-0000-4000-8000-000000000001",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":0,\"kind\":\"account\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"1000.00\",\"cutoff\":\"2026-10-10\",\"date\":\"2026-10-21\",\"kind\":\"Cash\",\"name\":\"Parity historical wallet\"}}",
+      "plan": {
+        "account": {
+          "id": "50000000-0000-4000-8000-000000000001",
+          "name": "Parity historical wallet",
+          "kind": "Cash",
+          "cutoff": "2026-10-10",
+          "institution": "",
+          "notes": ""
+        },
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "50000000-0000-4000-8000-000000000001",
+          "actionId": "50000000-0000-4000-8000-000000000001",
+          "kind": "opening",
+          "change": "create",
+          "date": "2026-10-10",
+          "title": "Opening balance · Parity historical wallet",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "acknowledge": "false",
+            "amount": "1000.00",
+            "cutoff": "2026-10-10",
+            "date": "2026-10-10",
+            "kind": "Cash",
+            "name": "Opening balance · Parity historical wallet"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "100000",
+              "date": "2026-10-10",
+              "account": "50000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-100000",
+              "date": "2026-10-10",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000002",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":1,\"kind\":\"cashImport\",\"values\":{\"acknowledge\":\"false\",\"assumptions\":\"{\\\"sourceFormat\\\":\\\"pmp-cash-activity\\\",\\\"formatVersion\\\":1,\\\"currency\\\":\\\"PHP\\\",\\\"account\\\":\\\"50000000-0000-4000-8000-000000000001\\\",\\\"mapping\\\":{\\\"date\\\":\\\"date\\\",\\\"kind\\\":\\\"kind\\\",\\\"amountMinor\\\":\\\"amount_minor\\\",\\\"classification\\\":\\\"classification\\\",\\\"description\\\":\\\"description\\\",\\\"reference\\\":\\\"reference\\\"},\\\"dateInterpretation\\\":\\\"YYYY-MM-DD\\\",\\\"cutoffStrategy\\\":\\\"rebase_history\\\",\\\"earlierDate\\\":\\\"2026-10-01\\\",\\\"earlierMinor\\\":\\\"70000\\\"}\",\"checksum\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"date\":\"2026-10-26\",\"header\":\"[\\\"date\\\",\\\"kind\\\",\\\"amount_minor\\\",\\\"classification\\\",\\\"description\\\",\\\"reference\\\"]\",\"name\":\"Version-1 history\",\"rowCount\":\"2\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "50000000-0000-4000-8000-000000000002",
+          "actionId": "50000000-0000-4000-8000-000000000002",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-26",
+          "title": "Version-1 history",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "acknowledge": "false",
+            "assumptions": "{\"sourceFormat\":\"pmp-cash-activity\",\"formatVersion\":1,\"currency\":\"PHP\",\"account\":\"50000000-0000-4000-8000-000000000001\",\"mapping\":{\"date\":\"date\",\"kind\":\"kind\",\"amountMinor\":\"amount_minor\",\"classification\":\"classification\",\"description\":\"description\",\"reference\":\"reference\"},\"dateInterpretation\":\"YYYY-MM-DD\",\"cutoffStrategy\":\"rebase_history\",\"earlierDate\":\"2026-10-01\",\"earlierMinor\":\"70000\"}",
+            "checksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "date": "2026-10-26",
+            "header": "[\"date\",\"kind\",\"amount_minor\",\"classification\",\"description\",\"reference\"]",
+            "name": "Version-1 history",
+            "rowCount": "2",
+            "financeType": "cashImport",
+            "financeContract": "1",
+            "cutoff": "2026-10-10"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "08adb1fa-5ab0-5cd1-9f3a-eadb3dc230ca",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":2,\"kind\":\"cashImportChunk\",\"values\":{\"acknowledge\":\"false\",\"batch\":\"50000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-26\",\"name\":\"Original staged rows\",\"offset\":\"0\",\"row0\":\"[\\\"2026-10-05\\\",\\\"income\\\",\\\"50000\\\",\\\"earned\\\",\\\"Historical salary\\\",\\\"old-income\\\"]\",\"row1\":\"[\\\"2026-10-06\\\",\\\"expense\\\",\\\"20000\\\",\\\"expense\\\",\\\"Historical purchase\\\",\\\"old-purchase\\\"]\",\"rowCount\":\"2\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "08adb1fa-5ab0-5cd1-9f3a-eadb3dc230ca",
+          "actionId": "08adb1fa-5ab0-5cd1-9f3a-eadb3dc230ca",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-26",
+          "title": "Original staged rows",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": "50000000-0000-4000-8000-000000000002",
+          "values": {
+            "acknowledge": "false",
+            "batch": "50000000-0000-4000-8000-000000000002",
+            "date": "2026-10-26",
+            "name": "Original staged rows",
+            "offset": "0",
+            "row0": "[\"2026-10-05\",\"income\",\"50000\",\"earned\",\"Historical salary\",\"old-income\"]",
+            "row1": "[\"2026-10-06\",\"expense\",\"20000\",\"expense\",\"Historical purchase\",\"old-purchase\"]",
+            "rowCount": "2",
+            "financeType": "cashImportChunk",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000003",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":3,\"kind\":\"cashImportPreview\",\"values\":{\"acknowledge\":\"false\",\"batch\":\"50000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-26\",\"name\":\"Current immutable preview\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "50000000-0000-4000-8000-000000000003",
+          "actionId": "50000000-0000-4000-8000-000000000003",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-26",
+          "title": "Current immutable preview",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": "50000000-0000-4000-8000-000000000002",
+          "values": {
+            "acknowledge": "false",
+            "batch": "50000000-0000-4000-8000-000000000002",
+            "date": "2026-10-26",
+            "name": "Current immutable preview",
+            "financeType": "cashImportPreview",
+            "financeContract": "1",
+            "row0": "{\"amountMinor\":\"50000\",\"classification\":\"earned\",\"date\":\"2026-10-05\",\"errors\":[],\"fingerprint\":\"a6444cdd98be8a1b36f3b69b3f4544df0ccbb6c970f701a70254f062ff0a74cd\",\"kind\":\"income\",\"name\":\"Historical salary\",\"reference\":\"old-income\",\"rowCommand\":\"5e158c0f-024b-50f8-a984-8772abe34bc5\",\"sourceRowHash\":\"a6444cdd98be8a1b36f3b69b3f4544df0ccbb6c970f701a70254f062ff0a74cd\",\"warnings\":[]}",
+            "row1": "{\"amountMinor\":\"20000\",\"classification\":\"expense\",\"date\":\"2026-10-06\",\"errors\":[],\"fingerprint\":\"9a768f6ee57c4b398b04f6e06077e9be4fa5860cd69dcab9cfb491598d595261\",\"kind\":\"expense\",\"name\":\"Historical purchase\",\"reference\":\"old-purchase\",\"rowCommand\":\"e46dd59b-99a7-5bf0-a5ad-efb2a7ac21b7\",\"sourceRowHash\":\"9a768f6ee57c4b398b04f6e06077e9be4fa5860cd69dcab9cfb491598d595261\",\"warnings\":[]}",
+            "rowCount": "2",
+            "sourceStamp": "64746b5fc9dd834fee52db4863ef3599cd8729827adcbbfcd4235abf1028a638",
+            "cutoff": "2026-10-10",
+            "openingMinor": "100000",
+            "openingSource": "50000000-0000-4000-8000-000000000001"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000004",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":4,\"kind\":\"cashImportDecision\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-26\",\"name\":\"Explicit row review\",\"preview\":\"50000000-0000-4000-8000-000000000003\",\"row0\":\"{\\\"include\\\":true,\\\"acknowledgeDuplicates\\\":false,\\\"category\\\":\\\"category-income\\\"}\",\"row1\":\"{\\\"include\\\":true,\\\"acknowledgeDuplicates\\\":false,\\\"category\\\":\\\"category-food\\\"}\",\"rowCount\":\"2\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "50000000-0000-4000-8000-000000000004",
+          "actionId": "50000000-0000-4000-8000-000000000004",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-26",
+          "title": "Explicit row review",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": "50000000-0000-4000-8000-000000000003",
+          "values": {
+            "acknowledge": "false",
+            "date": "2026-10-26",
+            "name": "Explicit row review",
+            "preview": "50000000-0000-4000-8000-000000000003",
+            "row0": "{\"include\":true,\"acknowledgeDuplicates\":false,\"category\":\"category-income\"}",
+            "row1": "{\"include\":true,\"acknowledgeDuplicates\":false,\"category\":\"category-food\"}",
+            "rowCount": "2",
+            "financeType": "cashImportDecision",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "50000000-0000-4000-8000-000000000005",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":5,\"kind\":\"cashImportProcess\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-26\",\"decision\":\"50000000-0000-4000-8000-000000000004\",\"name\":\"Atomic history processing\",\"rowNumbers\":\"[0,1]\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "50000000-0000-4000-8000-000000000005",
+          "actionId": "50000000-0000-4000-8000-000000000005",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-26",
+          "title": "Atomic history processing",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": "50000000-0000-4000-8000-000000000004",
+          "values": {
+            "acknowledge": "false",
+            "date": "2026-10-26",
+            "decision": "50000000-0000-4000-8000-000000000004",
+            "name": "Atomic history processing",
+            "rowNumbers": "[0,1]",
+            "financeType": "cashImportProcess",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "60501894-9d7a-5718-b08e-49595e22f5c2",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":6,\"kind\":\"cashOpeningRebase\",\"values\":{\"account\":\"50000000-0000-4000-8000-000000000001\",\"date\":\"2026-10-26\",\"decision\":\"50000000-0000-4000-8000-000000000004\",\"importProcess\":\"50000000-0000-4000-8000-000000000005\",\"name\":\"Confirmed historical opening rebase\"}}",
+      "plan": {
+        "cutoffUpdate": {
+          "account": "50000000-0000-4000-8000-000000000001",
+          "from": "2026-10-10",
+          "to": "2026-10-01"
+        },
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60501894-9d7a-5718-b08e-49595e22f5c2",
+          "actionId": "50000000-0000-4000-8000-000000000001",
+          "kind": "opening",
+          "change": "replace",
+          "date": "2026-10-01",
+          "title": "Confirmed historical opening rebase",
+          "amount": "70000",
+          "number": 2,
+          "previous": "50000000-0000-4000-8000-000000000001",
+          "source": "50000000-0000-4000-8000-000000000005",
+          "values": {
+            "account": "50000000-0000-4000-8000-000000000001",
+            "date": "2026-10-26",
+            "decision": "50000000-0000-4000-8000-000000000004",
+            "importProcess": "50000000-0000-4000-8000-000000000005",
+            "name": "Confirmed historical opening rebase",
+            "financeType": "cashOpeningRebase",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "70000",
+              "date": "2026-10-01",
+              "account": "50000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-70000",
+              "date": "2026-10-01",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5e158c0f-024b-50f8-a984-8772abe34bc5",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":7,\"kind\":\"income\",\"values\":{\"account\":\"50000000-0000-4000-8000-000000000001\",\"acknowledge\":\"true\",\"amount\":\"500.00\",\"category\":\"category-income\",\"date\":\"2026-10-05\",\"importBatch\":\"50000000-0000-4000-8000-000000000002\",\"importFile\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"importFingerprint\":\"a6444cdd98be8a1b36f3b69b3f4544df0ccbb6c970f701a70254f062ff0a74cd\",\"importProcess\":\"50000000-0000-4000-8000-000000000005\",\"importRow\":\"1\",\"incomeClass\":\"earned\",\"name\":\"Historical salary\",\"reference\":\"old-income\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "5e158c0f-024b-50f8-a984-8772abe34bc5",
+          "actionId": "5e158c0f-024b-50f8-a984-8772abe34bc5",
+          "kind": "income",
+          "change": "create",
+          "date": "2026-10-05",
+          "title": "Historical salary",
+          "amount": "50000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "account": "50000000-0000-4000-8000-000000000001",
+            "acknowledge": "true",
+            "amount": "500.00",
+            "category": "category-income",
+            "date": "2026-10-05",
+            "importBatch": "50000000-0000-4000-8000-000000000002",
+            "importFile": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "importFingerprint": "a6444cdd98be8a1b36f3b69b3f4544df0ccbb6c970f701a70254f062ff0a74cd",
+            "importProcess": "50000000-0000-4000-8000-000000000005",
+            "importRow": "1",
+            "incomeClass": "earned",
+            "name": "Historical salary",
+            "reference": "old-income"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "50000",
+              "date": "2026-10-05",
+              "account": "50000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "income",
+              "amount": "-50000",
+              "date": "2026-10-05",
+              "account": null,
+              "category": "category-income"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e46dd59b-99a7-5bf0-a5ad-efb2a7ac21b7",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"50000000-0000-4000-8000-000000000000\",\"expectedVersion\":8,\"kind\":\"expense\",\"values\":{\"account\":\"50000000-0000-4000-8000-000000000001\",\"acknowledge\":\"true\",\"amount\":\"200.00\",\"category\":\"category-food\",\"date\":\"2026-10-06\",\"importBatch\":\"50000000-0000-4000-8000-000000000002\",\"importFile\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"importFingerprint\":\"9a768f6ee57c4b398b04f6e06077e9be4fa5860cd69dcab9cfb491598d595261\",\"importProcess\":\"50000000-0000-4000-8000-000000000005\",\"importRow\":\"2\",\"name\":\"Historical purchase\",\"reference\":\"old-purchase\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "e46dd59b-99a7-5bf0-a5ad-efb2a7ac21b7",
+          "actionId": "e46dd59b-99a7-5bf0-a5ad-efb2a7ac21b7",
+          "kind": "expense",
+          "change": "create",
+          "date": "2026-10-06",
+          "title": "Historical purchase",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "account": "50000000-0000-4000-8000-000000000001",
+            "acknowledge": "true",
+            "amount": "200.00",
+            "category": "category-food",
+            "date": "2026-10-06",
+            "importBatch": "50000000-0000-4000-8000-000000000002",
+            "importFile": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "importFingerprint": "9a768f6ee57c4b398b04f6e06077e9be4fa5860cd69dcab9cfb491598d595261",
+            "importProcess": "50000000-0000-4000-8000-000000000005",
+            "importRow": "2",
+            "name": "Historical purchase",
+            "reference": "old-purchase"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-20000",
+              "date": "2026-10-06",
+              "account": "50000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "20000",
+              "date": "2026-10-06",
+              "account": null,
+              "category": "category-food"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -18,6 +18,9 @@ class LocalFinancialController extends FinancialController {
   BigInt acceptedLiquid = BigInt.zero;
   String? lastError;
   bool connected = false;
+  bool Function()? privacyHidden;
+  bool get amountsHidden => privacyHidden?.call() ?? false;
+  String decimal(BigInt value) => amountsHidden ? '••••' : phpDecimal(value);
   final Map<String, String> synchronizationStates = {};
   @override
   bool get production => true;
@@ -87,6 +90,14 @@ class LocalFinancialController extends FinancialController {
       'feeAccount': activeAccounts.firstOrNull?.id ?? '',
       'feeDate': '',
       'mode': 'compare',
+      'funding': 'cash',
+      'card':
+          snapshot.current
+              .where((r) => financeType(r) == 'creditCard')
+              .firstOrNull
+              ?.actionId ??
+          '',
+      'postingDate': date,
     };
     if (action == FinancialAction.account) result['amount'] = '0.00';
     if (source != null) {
@@ -150,7 +161,10 @@ class LocalFinancialController extends FinancialController {
     String commandId,
   ) {
     final errors = <String>[], effects = <String>[];
-    var cash = <String, BigInt>{}, spending = BigInt.zero, amount = BigInt.zero;
+    var cash = <String, BigInt>{},
+        spending = BigInt.zero,
+        amount = BigInt.zero,
+        card = BigInt.zero;
     try {
       final p = planLocal(
         snapshot,
@@ -164,6 +178,7 @@ class LocalFinancialController extends FinancialController {
             cash[a] = (cash[a] ?? BigInt.zero) + posting.amount;
           }
           if (posting.ledger == 'expense') spending += posting.amount;
+          if (posting.ledger == 'card_liability') card -= posting.amount;
         }
       }
     } catch (e) {
@@ -183,7 +198,7 @@ class LocalFinancialController extends FinancialController {
       effects: List.unmodifiable(effects),
       errors: List.unmodifiable(errors),
       cash: Map.unmodifiable(cash),
-      card: BigInt.zero,
+      card: card,
       spending: spending,
       amount: amount,
     );
@@ -251,7 +266,9 @@ class LocalFinancialController extends FinancialController {
     snapshot = view.$1;
     final accepted = view.$2;
     acceptedLiquid = sumMinor(
-      accepted.accounts.map((a) => accepted.balance(a.id)),
+      accepted.accounts.map(
+        (a) => accepted.balance(a.id, through: civilToday()),
+      ),
     );
     connected = await store.connection() != null;
     synchronizationStates.clear();
@@ -271,6 +288,12 @@ class LocalFinancialController extends FinancialController {
     accounts.clear();
     categories.clear();
     records.clear();
+    cardBalance = -sumMinor(
+      snapshot.current
+          .expand((r) => r.postings)
+          .where((p) => p.ledger == 'card_liability')
+          .map((p) => p.amount),
+    );
     categories.addAll(snapshot.categories.map((c) => c.name));
     for (final a in snapshot.accounts) {
       final opening = sumMinor(
@@ -284,7 +307,7 @@ class LocalFinancialController extends FinancialController {
         FinancialAccount(
           a.id,
           a.name,
-          snapshot.balance(a.id),
+          snapshot.balance(a.id, through: civilToday()),
           cutoff: a.cutoff,
           kind: a.kind,
           archived: a.archived,
@@ -315,6 +338,11 @@ class LocalFinancialController extends FinancialController {
               ? spending.keys.join(' / ')
               : categoryName(r.values['category']),
           cash: cash,
+          card: -sumMinor(
+            r.postings
+                .where((p) => p.ledger == 'card_liability')
+                .map((p) => p.amount),
+          ),
           affectedAccounts: {
             ...cash.keys,
             if (r.values['account'] case final String id) id,

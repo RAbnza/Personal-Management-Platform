@@ -200,6 +200,7 @@ extension ConnectedLocalStore on LocalStore {
       );
     }
     final snap = await connectedSnapshot(tx);
+    _freshPlanningReview(snap, c);
     planLocal(snap, c);
     if (dependencySensitive(c)) {
       final n = await tx.get(

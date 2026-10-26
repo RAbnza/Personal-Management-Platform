@@ -138,6 +138,7 @@ class LocalRuntime extends ChangeNotifier {
 class LocalSession extends PrototypeSession {
   LocalSession(LocalFinancialController controller, this.runtime)
     : super(financial: controller, production: true) {
+    controller.privacyHidden = () => hideAmounts;
     runtime.connected.addListener(notifyListeners);
   }
   final LocalRuntime runtime;
@@ -179,6 +180,7 @@ class LocalSession extends PrototypeSession {
   @override
   void togglePrivacy() {
     super.togglePrivacy();
+    localFinance.changed();
     runtime._persist();
   }
 

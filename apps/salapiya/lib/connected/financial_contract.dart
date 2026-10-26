@@ -5,6 +5,7 @@ import '../local/finance_domain.dart';
 // A small, versioned financial boundary, shared by projection, enrollment and
 // parity tests. This is domain evidence, never a client-authorized ledger write.
 Map<String, dynamic> financialPlanJson(LocalPlan p) => {
+  if (p.cutoffUpdate != null) 'cutoffUpdate': p.cutoffUpdate,
   'account': p.account == null
       ? null
       : {
@@ -82,8 +83,20 @@ LocalSnapshot applyFinancialPlan(LocalSnapshot s, LocalPlan p) => LocalSnapshot(
           a.id,
           a.name,
           a.kind,
-          a.cutoff,
+          p.cutoffUpdate?['account'] == a.id
+              ? p.cutoffUpdate!['to']!
+              : a.cutoff,
           true,
+          a.institution,
+          a.notes,
+        )
+      else if (p.cutoffUpdate?['account'] == a.id)
+        LocalAccount(
+          a.id,
+          a.name,
+          a.kind,
+          p.cutoffUpdate!['to']!,
+          a.archived,
           a.institution,
           a.notes,
         )
@@ -95,5 +108,21 @@ LocalSnapshot applyFinancialPlan(LocalSnapshot s, LocalPlan p) => LocalSnapshot(
   revisions: [...s.revisions, if (p.revision != null) p.revision!],
 );
 
-bool dependencySensitive(LocalCommand c) =>
-    !['account', 'category', 'income', 'expense', 'transfer'].contains(c.kind);
+bool dependencySensitive(LocalCommand c) => ![
+  'account',
+  'category',
+  'income',
+  'expense',
+  'transfer',
+  'creditCard',
+  'cardAuthorization',
+  'cardPurchase',
+  'cardPayment',
+  'cardFee',
+  'cardInterest',
+  'debtImport',
+  'borrowing',
+  'debtPayment',
+  'financialFile',
+  'fileDetach',
+].contains(c.kind);

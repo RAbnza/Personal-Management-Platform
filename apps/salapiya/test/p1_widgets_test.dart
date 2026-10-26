@@ -10,6 +10,30 @@ import 'package:salapiya/local/local_profiles.dart';
 import 'package:salapiya/local/local_runtime.dart';
 
 import 'local_test_support.dart';
+import 'local_money_journey.dart' show localSettle, localTap;
+
+Future<void> closeWithWidgetClock(
+  WidgetTester tester,
+  Future<void> Function() work,
+) async {
+  Future<void>? closing;
+  var closed = false;
+  await tester.runAsync(() async {
+    closing = work().whenComplete(() => closed = true);
+  });
+  for (var i = 0; i < 200 && !closed; i++) {
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+  }
+  expect(
+    closed,
+    isTrue,
+    reason: 'Native cleanup must release its asynchronous leases',
+  );
+  await tester.runAsync(() => closing!);
+}
 
 void main() {
   for (final mobile in [false, true]) {
@@ -47,19 +71,19 @@ void main() {
           await tester.pumpWidget(
             SalapiyaApp(session: runtime.session, settings: settings),
           );
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           expect(find.text('Your day, in balance.'), findsOneWidget);
           expect(find.textContaining('Tala reported'), findsNothing);
           expect(find.textContaining('DEMO ·'), findsNothing);
           expect(runtime.session!.finance.liquid, BigInt.from(10000));
           expect(find.text('Real receipt'), findsOneWidget);
           await tester.tap(find.byKey(const ValueKey('nav-money')));
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           expect(find.text('Make room for living.'), findsOneWidget);
           expect(find.text('Real wallet'), findsWidgets);
           await tester.tap(find.byKey(const ValueKey('nav-debts')));
-          await tester.pumpAndSettle();
-          expect(find.text('Your space is ready to grow.'), findsOneWidget);
+          await localSettle(tester);
+          expect(find.text('One step closer.'), findsOneWidget);
           expect(find.text('Home essentials loan'), findsNothing);
           // Both navigation systems stay usable with enlarged text and Midnight.
           await tester.runAsync(() async {
@@ -69,26 +93,27 @@ void main() {
             });
             await runtime.flushPreferences();
           });
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           expect(tester.takeException(), isNull);
           await tester.tap(
             mobile
                 ? find.byKey(const ValueKey('navigation-fallback'))
                 : find.byTooltip('Navigation · 5 destinations'),
           );
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           await tester.tap(find.text('Money'));
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           expect(find.text('Make room for living.'), findsOneWidget);
           expect(tester.takeException(), isNull);
         } finally {
           debugDefaultTargetPlatformOverride = null;
           await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpAndSettle();
+          await localSettle(tester);
           await tester.runAsync(runtime.flushPreferences);
+          await closeWithWidgetClock(tester, runtime.close);
           runtime.dispose();
           settings.dispose();
-          await tester.runAsync(f.close);
+          await closeWithWidgetClock(tester, f.close);
         }
       },
     );
@@ -113,13 +138,13 @@ void main() {
             localRuntime: runtime,
           ),
         );
-        await tester.pumpAndSettle();
+        await localSettle(tester);
         expect(find.text('Create a local offline profile'), findsOneWidget);
         expect(find.text('Continue with Google'), findsOneWidget);
         expect(find.text('Restore from backup'), findsOneWidget);
         await tester.ensureVisible(find.text('Continue with Google'));
-        await tester.tap(find.text('Continue with Google'));
-        await tester.pumpAndSettle();
+        await localTap(tester, find.text('Continue with Google'));
+        await localSettle(tester);
         expect(
           find.textContaining('This build supports local use.'),
           findsOneWidget,
@@ -127,8 +152,8 @@ void main() {
         expect(runtime.session, isNull);
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpAndSettle();
-        await tester.runAsync(runtime.close);
+        await localSettle(tester);
+        await closeWithWidgetClock(tester, runtime.close);
         runtime.dispose();
         settings.dispose();
         await tester.runAsync(() => dir.delete(recursive: true));

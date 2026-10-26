@@ -25,14 +25,14 @@ class LocalFixture {
   LocalFixture(this.directory, this.store);
   final Directory directory;
   final LocalStore store;
-  static Future<LocalFixture> open() async {
+  static Future<LocalFixture> open({String? owner}) async {
     final directory = await Directory.systemTemp.createTemp('salapiya-p1-');
     final db = openLocalDatabase(
       '${directory.path}/local.sqlite',
       'synthetic-p1-key',
     );
     await db.initialize();
-    final store = LocalStore(db, newLocalId());
+    final store = LocalStore(db, owner ?? newLocalId());
     await store.migrate();
     await store.initializeProfile('Synthetic private owner', {});
     return LocalFixture(directory, store);
@@ -48,7 +48,13 @@ class LocalFixture {
     owner: store.owner,
     expectedVersion: version ?? (await store.snapshot()).version,
     kind: kind,
-    values: {'date': '2026-10-21', 'acknowledge': 'false', ...values},
+    values: {
+      'date': ['reservation', 'savingsReallocation'].contains(kind)
+          ? civilToday()
+          : '2026-10-21',
+      'acknowledge': 'false',
+      ...values,
+    },
   );
   Future<String> post(String kind, Map<String, String> values) async {
     final c = await command(kind, values);

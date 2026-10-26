@@ -472,6 +472,21 @@ class LocalBackup {
               .toList(),
           'drafts': drafts.map((r) => Map<String, dynamic>.from(r)).toList(),
           'coverage': 'local-profile-preferences-all-commands-and-drafts-no-attachments-no-cloud-authority',
+          'financialCoverage': {
+            'contract': 1,
+            'financialRecipe': 1,
+            'supportingFileMetadata': commands
+                .where(
+                  (r) =>
+                      LocalCommand.decode(
+                        r['id'] as String,
+                        r['payload'] as String,
+                      ).kind ==
+                      'financialFile',
+                )
+                .length,
+            'attachmentByteObjects': 0,
+          },
         };
         validate(result);
         return result;
@@ -479,7 +494,7 @@ class LocalBackup {
   static void validate(Map<String, dynamic> b) {
     final connected = [2, 3].contains(b['format']);
     if (![1, 2, 3].contains(b['format']) ||
-        ![1, 2, 3, localSchemaVersion].contains(b['localSchema']) ||
+        ![1, 2, 3, 4, 5, localSchemaVersion].contains(b['localSchema']) ||
         b['commandContract'] != 1 ||
         b['calculationVersion'] != 1 ||
         b['authority'] != (connected ? 'connected-review-required' : 'local') ||
@@ -495,6 +510,24 @@ class LocalBackup {
       reject('Unsupported or invalid local archive.');
     }
     final commands = b['commands'] as List, drafts = b['drafts'] as List;
+    if (b['financialCoverage'] case final Map coverage) {
+      if (coverage['contract'] != 1 ||
+          coverage['financialRecipe'] != 1 ||
+          coverage['attachmentByteObjects'] != 0 ||
+          coverage['supportingFileMetadata'] !=
+              commands.where((raw) {
+                final r = raw as Map;
+                return LocalCommand.decode(
+                      r['id'] as String,
+                      r['payload'] as String,
+                    ).kind ==
+                    'financialFile';
+              }).length) {
+        reject(
+          'Unsupported or inconsistent financial archive coverage. Attachment bytes are not restored by this archive.',
+        );
+      }
+    }
     Map<String, String>.from(b['preferences'] as Map);
     if (commands.length > 20000 ||
         drafts.length > 100 ||

@@ -22,6 +22,8 @@ dependencies:
   path: 1.9.1
   app_links: 7.2.2
   file_picker: 13.2.0
+  timezone: 0.11.2
+  csv: 8.0.0
 
 hooks:
   user_defines:

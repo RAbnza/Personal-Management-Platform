@@ -86,8 +86,8 @@ void main() {
         });
         await tester.pumpAndSettle();
         final frame = find.byType(EditorialSurface).first;
-        final surface = tester.widget<Container>(
-          find.descendant(of: frame, matching: find.byType(Container)).first,
+        final surface = tester.widget<Padding>(
+          find.descendant(of: frame, matching: find.byType(Padding)).first,
         );
         expect(surface.padding, const EdgeInsets.all(24));
         expect(find.text('Made with care.\nClear by design.'), findsOneWidget);

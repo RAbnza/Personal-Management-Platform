@@ -1228,7 +1228,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
             ],
             if (tab == 'Private review') ...[
               const FinanceNotice(
-                'Private adoption is independent from group acceptance. No other member’s ledger is changed. Card funding requires the P4 card domain.',
+                'Private adoption is independent from group acceptance. No other member’s ledger is changed. Card funding adopts an already recorded private card purchase or refund.',
               ),
               for (final r in repo.reviews.where((r) => r['group_id'] == g.id))
                 FinancialLine(
@@ -1612,6 +1612,20 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                     '${r.title} · ${r.date} · ${r.values['fundingAmount']} PHP · same parties, date, account and amount required',
             },
           ),
+        if (mode == 'refund' && linked == null)
+          SharedField(
+            'existingCardRefund',
+            'Adopt an actual card refund (optional)',
+            options: {
+              '': 'Record cash refund / no card credit',
+              for (final r in snapshot.current.where(
+                (r) =>
+                    financeType(r) == 'cardRefund' &&
+                    !r.values.containsKey('sharedGroup'),
+              ))
+                r.id: '${r.title} · ${phpDecimal(r.amount)} PHP · ${r.date}',
+            },
+          ),
         SharedField(
           'fundingAmount',
           'Actual private funding (PHP)',
@@ -1652,7 +1666,13 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
         final old =
             linked ??
             snapshot.current
-                .where((r) => r.id == (v['existing'] ?? v['existingPayment']))
+                .where(
+                  (r) =>
+                      r.id ==
+                      (v['existing'] ??
+                          v['existingPayment'] ??
+                          v['existingCardRefund']),
+                )
                 .firstOrNull;
         final values = <String, String>{
           'name': 'Shared $mode · ${mode == 'bill' ? source['name'] : g.name}',
@@ -1667,7 +1687,8 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
           'account': v['account']!,
           'category': v['category']!,
           'reason': v['reason']!,
-          'funding': 'cash',
+          'funding': old?.values['card'] == null ? 'cash' : 'card',
+          if (old?.values['card'] != null) 'card': old!.values['card']!,
           'acknowledge': v['acknowledge']!,
           'acknowledgeFunding': v['acknowledgeFunding'] ?? 'false',
           if (old != null) ...{

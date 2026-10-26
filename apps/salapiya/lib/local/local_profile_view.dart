@@ -458,8 +458,28 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                 color: Palette.mint,
               )
             else if (section == 'Help') ...[
+              const SectionHeading('Financial evidence and planning'),
               const FinanceNotice(
                 'Use accounts to establish opening balances, then record activity after each opening cutoff. Review every financial effect before confirming. Back up before changing devices. Private data uploads only after you explicitly connect Google.',
+              ),
+              const FinanceNotice(
+                'Card purchases record spending and liability once. Card payments reduce cash and liability; available credit and overpayments are not liquid cash. Provider statements and installment schedules are evidence, not new spending. Review unknown allocations before relying on projected dues.',
+              ),
+              const FinanceNotice(
+                'Debt proceeds are borrowing, not income. Separate recognized liability, principal evidence, contractual dues, actual payments and uncertain clearing. A payoff must reconcile provider evidence; avoided future charges do not reverse expenses that were never posted.',
+              ),
+              const FinanceNotice(
+                'Recurring expectations never post money when a date arrives. Link actual transactions explicitly. Budgets and savings reservations do not protect cash from real spending. Forecasts are read-only estimates and disclose excluded or incomplete evidence.',
+              ),
+              const SectionHeading('Imports, files and recovery'),
+              const FinanceNotice(
+                'CSV imports support only the documented PHP cash-activity contract. Review mapping, duplicates and every included row. Historical imports require an exact earlier opening and atomic rebase. Cancellation retains already committed chunks; resolve an uncertain original command before retrying.',
+              ),
+              const FinanceNotice(
+                'Supporting files remain unscanned and encrypted on this device. Cloud bytes are unavailable. Standard encrypted financial backups contain attachment metadata but zero file-byte objects. Keep original files and the separate recovery secret. A fresh restore validates command recipes and cannot roll back accepted cloud history or revive revoked shared authority.',
+              ),
+              const FinanceNotice(
+                'Archiving a financial definition preserves history. Signing out ends this device’s connected session; it does not delete financial records or leave a group. Account deletion, retention certification and distribution safeguards remain separate release work. Financial due sources appear in Overview; device notifications and the broader Calendar await the native scheduling milestone.',
               ),
               TextButton(
                 onPressed: () => showLicensePage(
@@ -607,7 +627,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
         const FinanceHeading(
           'YOUR SAFETY NET',
           'Keep a way back.',
-          'Portable recovery uses a separate generated secret. The archive includes local records, preferences and drafts. Attachments and cloud authority are excluded.',
+          'Portable recovery uses a separate generated secret. The archive includes financial commands, source relationships, supporting-file metadata, preferences and drafts. Attachment bytes and cloud authority are excluded. Keep original files separately.',
         ),
         if (initialized) ...[
           OutlinedButton(
@@ -700,7 +720,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
           ValueBlock(
             'ARCHIVE REVIEW',
             reviewed!['name'] as String,
-            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${reviewed!['format'] == 2 ? 'connected recovery requires current Google verification' : 'local only'}',
+            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${[2, 3].contains(reviewed!['format']) ? 'connected recovery requires current Google verification' : 'local only'}\nAttachment byte objects included: 0. Metadata is not proof that original bytes were recovered.',
             color: Palette.mint,
           ),
           if (!initialized)

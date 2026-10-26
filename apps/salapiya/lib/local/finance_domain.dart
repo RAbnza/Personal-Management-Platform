@@ -1,8 +1,21 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart' as crypto;
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:csv/csv.dart' as csv;
+
 import '../p0/exact_money.dart';
 part '../shared/shared_private_domain.dart';
+part '../finance/finance_rules.dart';
+part '../finance/card_rules.dart';
+part '../finance/debt_rules.dart';
+part '../finance/planning_rules.dart';
+part '../finance/recurrence_rules.dart';
+part '../finance/planning_queries.dart';
+part '../finance/cash_import_rules.dart';
+part '../finance/file_rules.dart';
 
 // Native M01–M03 rules. The UI and SQLite writer use this same planner.
 // Signed postings: cash/expense are debits, income/equity are credits.
@@ -197,6 +210,7 @@ class LocalPlan {
     this.category,
     this.archiveId,
     this.comparison,
+    this.cutoffUpdate,
     required this.effects,
   });
   final LocalRevision? revision;
@@ -204,6 +218,7 @@ class LocalPlan {
   final LocalCategory? category;
   final String? archiveId;
   final Map<String, String>? comparison;
+  final Map<String, String>? cutoffUpdate;
   final List<String> effects;
 }
 
@@ -224,10 +239,53 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
     return x;
   }
 
-  if (v.values.any((x) => x.length > 20000) || v.length > 512) {
+  if (v.values.any(
+        (x) => x.length > (cmd.kind == 'cashImportChunk' ? 40000 : 20000),
+      ) ||
+      v.length > 512) {
     reject('The form exceeds the supported size.');
   }
+  if (v['financeContract'] != null && v['financeContract'] != '1') {
+    reject(
+      'Unsupported financial recipe version. Preserve the original intent and update Salapiya.',
+    );
+  }
+  if ([
+        'account',
+        'category',
+        'income',
+        'expense',
+        'transfer',
+        'correction',
+        'reversal',
+        'refund',
+        'reconcile',
+        'adjustment',
+        'archive',
+      ].contains(cmd.kind) &&
+      !(cmd.kind == 'expense' && v['funding'] == 'card') &&
+      (v.containsKey('financeType') || v.containsKey('financeContract'))) {
+    reject(
+      'Financial source classification is assigned by its dedicated command, not by form metadata.',
+    );
+  }
+  if (nativeFileCommands.contains(cmd.kind)) return planFinancialFile(s, cmd);
+  if (nativeCashImportCommands.contains(cmd.kind)) {
+    return planCashImport(s, cmd);
+  }
+  if (v.containsKey('importProcess')) validateCashImportChild(s, cmd);
+  if (nativeFinanceCommands.contains(cmd.kind) ||
+      (cmd.kind == 'expense' && v['funding'] == 'card')) {
+    return planNativeFinance(s, cmd);
+  }
   if (cmd.kind == 'shared') return planSharedPrivate(s, cmd);
+  if (['correction', 'reversal', 'refund'].contains(cmd.kind) &&
+      value('source').isNotEmpty &&
+      s.revision(value('source')).values.containsKey('financeType')) {
+    reject(
+      'Use this financial source’s dedicated correction or refund workflow.',
+    );
+  }
   if (['correction', 'reversal', 'refund'].contains(cmd.kind) &&
       value('source').isNotEmpty &&
       s.revision(value('source')).values.containsKey('sharedGroup')) {
@@ -315,6 +373,7 @@ LocalPlan planLocal(LocalSnapshot s, LocalCommand cmd) {
     if (s.current.any(
       (r) =>
           r.source != null &&
+          financeType(r) != 'financialFile' &&
           s.revision(r.source!).actionId == replaced!.actionId,
     )) {
       reject(

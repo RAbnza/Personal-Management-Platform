@@ -19,6 +19,9 @@ import '../features/finance/presentation/shared_screen.dart';
 import '../features/life/presentation/life_screen.dart';
 import '../features/life/application/life_controller.dart';
 import '../local/local_profile_view.dart';
+import '../local/local_finance_controller.dart';
+import '../finance/finance_screen.dart';
+import '../finance/debt_screen.dart';
 
 class SalapiyaShell extends StatefulWidget {
   const SalapiyaShell({super.key, required this.settings, this.session});
@@ -61,6 +64,12 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
         ![
           PreviewSource.accounts,
           PreviewSource.activity,
+          PreviewSource.cards,
+          PreviewSource.planning,
+          PreviewSource.reports,
+          PreviewSource.electricity,
+          PreviewSource.debt,
+          PreviewSource.debtHistory,
           PreviewSource.group,
           PreviewSource.settlement,
           PreviewSource.privateReview,
@@ -164,7 +173,15 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
       for (final definition in definitions.where(
         (d) =>
             !session.production ||
-            ['Add expense', 'Record income', 'Transfer money'].contains(d.$1),
+            [
+              'Add expense',
+              'Record income',
+              'Transfer money',
+              'Record payment',
+              'Record debt payment',
+              'Add existing debt',
+              'Record borrowing',
+            ].contains(d.$1),
       ))
         FloatingQuickAction(
           label: definition.$1,
@@ -183,6 +200,23 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
   }
 
   Widget actionPage(String label) {
+    if (session.production &&
+        [
+          'Record payment',
+          'Record debt payment',
+          'Add existing debt',
+          'Record borrowing',
+        ].contains(label)) {
+      return NativeFinanceEditor(
+        controller: session.finance as LocalFinancialController,
+        operation: switch (label) {
+          'Add existing debt' => 'debtImport',
+          'Record borrowing' => 'borrowing',
+          _ => 'debtPayment',
+        },
+        title: label,
+      );
+    }
     final action = switch (label) {
       'Add expense' => FinancialAction.expense,
       'Record income' => FinancialAction.income,
@@ -353,6 +387,14 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                             )
                                           : destination == AppDestination.shared
                                           ? SharedScreen(session: session)
+                                          : session.production &&
+                                                destination ==
+                                                    AppDestination.debts
+                                          ? NativeDebtsScreen(
+                                              controller:
+                                                  session.finance
+                                                      as LocalFinancialController,
+                                            )
                                           : session.production
                                           ? UpcomingView(destination.label)
                                           : destination == AppDestination.debts

@@ -16,6 +16,12 @@ import '../../supporting/presentation/files_screen.dart';
 import '../../../local/local_finance_controller.dart';
 import '../../../local/local_profile_view.dart';
 import '../../../local/finance_domain.dart';
+import '../../../finance/finance_screen.dart';
+import '../../../finance/planning_screen.dart';
+import '../../../finance/reports_screen.dart';
+import '../../../finance/import_screen.dart';
+import '../../../finance/files_screen.dart';
+import '../../../local/local_runtime.dart';
 
 class MoneyScreen extends StatefulWidget {
   const MoneyScreen({
@@ -89,6 +95,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
             'Initial download incomplete. Balances and financial actions become available after the accepted history is verified.',
             warning: true,
           )
+        else if (c.production && tab == 'Cards')
+          NativeCardsScreen(controller: c as LocalFinancialController)
+        else if (c.production && tab == 'Planning')
+          NativePlanningScreen(controller: c as LocalFinancialController)
+        else if (c.production && tab == 'Reports')
+          NativeReportsScreen(controller: c as LocalFinancialController)
+        else if (c.production && tab == 'Import')
+          NativeImportScreen(
+            controller: c as LocalFinancialController,
+            synchronize: widget.session is LocalSession
+                ? (widget.session as LocalSession).runtime.connected.syncNow
+                : null,
+          )
+        else if (c.production && tab == 'Files')
+          NativeFilesScreen(session: widget.session as LocalSession)
         else if (c.production && !['Accounts', 'Activity'].contains(tab))
           UpcomingView(tab)
         else if (tab == 'Files')
@@ -283,7 +304,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 FinancialLine(
                   'Review imported history',
                   c.production
-                      ? 'Upcoming · CSV imports are not yet available'
+                      ? 'Review CSV rows, duplicates and opening cutoff'
                       : 'CSV preview · duplicates · opening cutoff',
                   icon: Icons.upload_file_outlined,
                   onTap: () => setState(() => tab = 'Import'),
@@ -720,6 +741,15 @@ class TransactionDetail extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SectionHeading('Contextual actions'),
+                  if (c is LocalFinancialController &&
+                      c.snapshot
+                          .revision(r.id)
+                          .values
+                          .containsKey('financeType'))
+                    OutlinedButton(
+                      onPressed: () => openFinanceDetail(context, c, r.id),
+                      child: const Text('Open financial source & corrections'),
+                    ),
                   if (c is LocalFinancialController && r.kind == 'reconcile')
                     OutlinedButton(
                       onPressed: () => openFinancialEditor(
@@ -742,7 +772,11 @@ class TransactionDetail extends StatelessWidget {
                         ],
                       ].contains(r.kind) &&
                       (c is! LocalFinancialController ||
-                          c.isCurrent(r.id))) ...[
+                          (c.isCurrent(r.id) &&
+                              !c.snapshot
+                                  .revision(r.id)
+                                  .values
+                                  .containsKey('financeType')))) ...[
                     for (final a in [
                       FinancialAction.correction,
                       if (c.production

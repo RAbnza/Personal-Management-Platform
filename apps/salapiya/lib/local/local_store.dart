@@ -13,6 +13,7 @@ import '../connected/financial_contract.dart';
 part '../connected/connected_store.dart';
 part '../shared/shared_store.dart';
 part '../shared/shared_snapshots.dart';
+part '../finance/finance_store.dart';
 
 // P0-verified encrypted native factory. P1 financial tables remain ordinary
 // local tables; only the bounded P2 command transport/projection use SDK views.
@@ -41,7 +42,7 @@ final class _LocalFactory extends NativePowerSyncOpenFactory {
   ];
 }
 
-const localSchemaVersion = 4;
+const localSchemaVersion = 6;
 const defaultLocalCategories = [
   ('food', 'Food & drink', 'expense'),
   ('transport', 'Transport', 'expense'),
@@ -65,13 +66,22 @@ class LocalStore {
     final versions = await tx.getAll('SELECT version FROM local_schema');
     if (versions.isNotEmpty) {
       if (versions.length != 1 ||
-          ![1, 2, 3, localSchemaVersion].contains(versions.single['version'])) {
+          ![
+            1,
+            2,
+            3,
+            4,
+            5,
+            localSchemaVersion,
+          ].contains(versions.single['version'])) {
         reject(
           'Unsupported database version. Preserve this database and use a compatible Salapiya version.',
         );
       }
       await _migrateConnection(tx);
       await _migrateShared(tx);
+      await _migrateFinance(tx);
+      await _migrateCashImport(tx);
       if (versions.single['version'] != localSchemaVersion) {
         if (interrupt) {
           throw StateError('Injected connected migration interruption');
@@ -103,6 +113,8 @@ class LocalStore {
     }
     await _migrateConnection(tx);
     await _migrateShared(tx);
+    await _migrateFinance(tx);
+    await _migrateCashImport(tx);
     if (interrupt) {
       throw StateError('Injected migration interruption');
     }
@@ -270,6 +282,23 @@ class LocalStore {
     if ((await connectionIn(tx)) != null) {
       return queueConnected(tx, command, interrupt: interrupt);
     }
+    if (command.kind == 'cashImportProcess' && recordedAt == null) {
+      final existing = await tx.getAll(
+        'SELECT id FROM local_command WHERE id=?',
+        [command.id],
+      );
+      if (existing.isEmpty) {
+        await commitAccepted(tx, command);
+        final children = cashImportChildren(await _snapshot(tx), command);
+        for (var i = 0; i < children.length; i++) {
+          await commitAccepted(tx, children[i]);
+          if (interrupt && i == 0) {
+            throw StateError('Injected atomic cash import interruption');
+          }
+        }
+        return command.id;
+      }
+    }
     return commitAccepted(
       tx,
       command,
@@ -301,6 +330,7 @@ class LocalStore {
       return old.single['result_id'] as String;
     }
     final snap = await _snapshot(tx);
+    if (!fromServer && recordedAt == null) _freshPlanningReview(snap, command);
     final plan = planLocal(
       snap,
       fromServer ? rebaseCommand(command, snap.version) : command,
@@ -337,6 +367,12 @@ class LocalStore {
       await tx.execute(
         'UPDATE local_account SET archived=1 WHERE id=? AND owner_id=?',
         [id, owner],
+      );
+    }
+    if (plan.cutoffUpdate case final update?) {
+      await tx.execute(
+        'UPDATE local_account SET cutoff=? WHERE id=? AND owner_id=?',
+        [update['to'], update['account'], owner],
       );
     }
     if (plan.revision case final r?) {
@@ -432,8 +468,11 @@ class LocalStore {
     Map<String, String> values,
   ) async {
     if (operation.length > 200 ||
-        values.length > 512 ||
-        values.values.any((v) => v.length > 20000)) {
+        values.length > (operation.startsWith('cash-import:') ? 560 : 512) ||
+        values.values.any(
+          (v) =>
+              v.length > (operation.startsWith('cash-import:') ? 40000 : 20000),
+        )) {
       reject('Draft exceeds the supported size.');
     }
     await db.writeTransaction((tx) async {
@@ -513,12 +552,12 @@ const _schema = [
     FOREIGN KEY(source_id,owner_id) REFERENCES local_revision(id,owner_id),
     FOREIGN KEY(command_id,owner_id) REFERENCES local_command(id,owner_id)) STRICT''',
   '''CREATE TABLE local_posting(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision_id TEXT NOT NULL,
-    ledger TEXT NOT NULL CHECK(ledger IN ('cash','expense','income','equity','shared_receivable','shared_payable','shared_clearing')), account_id TEXT, category_id TEXT,
+    ledger TEXT NOT NULL CHECK(ledger IN ('cash','expense','income','equity','shared_receivable','shared_payable','shared_clearing','card_liability','debt_liability','debt_clearing')), account_id TEXT, category_id TEXT,
     effective_date TEXT NOT NULL, amount_minor INTEGER NOT NULL CHECK(amount_minor<>0 AND amount_minor BETWEEN -100000000000 AND 100000000000),
     contract INTEGER NOT NULL CHECK(contract=1),
     CHECK((ledger='cash' AND account_id IS NOT NULL AND category_id IS NULL) OR
       (ledger IN ('expense','income') AND account_id IS NULL AND category_id IS NOT NULL) OR
-      (ledger IN ('equity','shared_receivable','shared_payable','shared_clearing') AND account_id IS NULL AND category_id IS NULL)),
+      (ledger IN ('equity','shared_receivable','shared_payable','shared_clearing','card_liability','debt_liability','debt_clearing') AND account_id IS NULL AND category_id IS NULL)),
     FOREIGN KEY(revision_id,owner_id) REFERENCES local_revision(id,owner_id),
     FOREIGN KEY(account_id,owner_id) REFERENCES local_account(id,owner_id),
     FOREIGN KEY(category_id,owner_id) REFERENCES local_category(id,owner_id)) STRICT''',

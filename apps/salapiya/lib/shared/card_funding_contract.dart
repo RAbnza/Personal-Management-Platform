@@ -3,7 +3,8 @@ import '../p0/exact_money.dart';
 
 /// P4 must supply immutable owned purchase/refund evidence. P3 only changes the
 /// consumed-share classification; adopting an existing card purchase must add
-/// neither cash nor card liability. This contract is not a production adapter.
+/// neither cash nor card liability. Production integration is implemented by
+/// planSharedPrivate using the same immutable card journal evidence.
 class SharedCardEvidence {
   const SharedCardEvidence({
     required this.owner,

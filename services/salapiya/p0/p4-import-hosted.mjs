@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {randomUUID,createHash} from 'node:crypto';
+import {fixtures,signIn,rest} from './auth-fixtures.mjs';
+import {connectHosted} from './database.mjs';
+import {report} from './cloud.mjs';
+let db;
+try {
+ const {keys,state}=await fixtures(),session=await signIn(state.users.ownerA,keys.client);
+ db=await connectHosted();
+ const rpc=(name,body)=>rest(`rpc/${name}`,session,keys.client,{method:'POST',body});
+ const boundary=()=>rpc('p2_profile_boundary',{}),profile=(await boundary()).id;
+ if(profile!==(state.p3?.profile??state.p2?.profile))throw Error('Existing synthetic profile identity mismatch');
+ const canonical=(kind,values)=>JSON.stringify({contract:1,authority:'local',owner:profile,expectedVersion:0,kind,values:Object.fromEntries(Object.entries(values).sort(([a],[b])=>a<b?-1:a>b?1:0))});
+ const post=async(kind,values,id=randomUUID())=>{
+  const payload=canonical(kind,values),envelope=JSON.stringify({contract:2,profile_id:profile,payload,base_revision:(await boundary()).revision});
+  const result=await rpc('p2_submit_command',{command_id:id,command_payload:envelope});
+  assert.equal(result.outcome,'accepted',`${kind}: ${result.reason}`);return {id,result,envelope};
+ };
+ const stable=(batch,key)=>{const b=createHash('sha256').update(`pmp/import/v1/${profile}/${batch}/${key}`).digest().subarray(0,16);b[6]=(b[6]&15)|80;b[8]=(b[8]&63)|128;const h=b.toString('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;};
+ const fixture=JSON.parse(await readFile(new URL('../../../contracts/salapiya/p4_import.json',import.meta.url),'utf8'));
+ const values=kind=>JSON.parse(fixture.commands.find(c=>JSON.parse(c.payload).kind===kind).payload).values;
+ const account=(await post('account',{...values('account'),name:'P4 hosted atomic CSV wallet'})).id;
+ const head={...values('cashImport'),date:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'})};
+ const assumptions=JSON.parse(head.assumptions);assumptions.account=account;head.assumptions=JSON.stringify(assumptions);
+ const batch=(await post('cashImport',head)).id;
+ await post('cashImportChunk',{...values('cashImportChunk'),batch},stable(batch,'stage/0'));
+ const preview=(await post('cashImportPreview',{name:'Hosted current reviewed preview',date:head.date,batch})).id;
+ const decision=(await post('cashImportDecision',{...values('cashImportDecision'),preview,date:head.date})).id;
+ const process=await post('cashImportProcess',{...values('cashImportProcess'),date:head.date,decision});
+ assert.deepEqual(await rpc('p2_submit_command',{command_id:process.id,command_payload:process.envelope}),process.result);
+ const balance=await db.query("SELECT salapiya_p2.balance($1,$2,'9999-12-31')::text AS amount",[profile,account]);assert.equal(balance.rows[0].amount,'100000');
+ assert.equal((await db.query('SELECT cutoff FROM salapiya_p2.account WHERE profile_id=$1 AND id=$2',[profile,account])).rows[0].cutoff,'2026-10-01');
+ for(const key of ['rebase','1','2'])assert.equal((await db.query('SELECT count(*)::int AS n FROM p2_command WHERE profile_id=$1 AND id=$2',[profile,stable(batch,key)])).rows[0].n,1);
+ const attachment=await post('financialFile',{name:'synthetic-receipt.pdf',date:head.date,sourceRevision:stable(batch,'2'),mime:'application/pdf',size:'10',checksum:'a'.repeat(64)});
+ const plan=JSON.parse((await rest(`p2_command?id=eq.${attachment.id}`,session,keys.client))[0].plan);
+ assert.equal(plan.revision.values.cloudState,'unavailable_unscanned');assert.deepEqual(plan.revision.postings,[]);
+ await post('correction',{source:stable(batch,'2'),sourceVersion:'1',reason:'Hosted source correction retains original attachment',name:'Corrected imported purchase',date:'2026-10-12',account,amount:'200.01',category:'category-food'});
+ assert.equal((await db.query('SELECT source_id::text AS source FROM salapiya_p2.revision WHERE profile_id=$1 AND id=$2',[profile,attachment.id])).rows[0].source,stable(batch,'2'));
+ report({p4HostedImport:true,atomicRebase:true,originalReceipt:true,stableRowIdentities:true,fileMetadataOnly:true,historicalAttachmentRetained:true,existingResources:true});
+}catch(e){report({p4HostedImportFailure:e.message});process.exitCode=1;}finally{await db?.end();}

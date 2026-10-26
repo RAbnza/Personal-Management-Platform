@@ -839,7 +839,26 @@ class _FinancialEditorState extends State<FinancialEditor> {
         return [
           text('name', 'Description'),
           amount(),
-          account(),
+          if (kind == 'expense') ...[
+            select('funding', 'Paid with', {
+              'cash': 'Cash / bank / wallet',
+              'card': 'Credit card',
+            }),
+            if (values['funding'] == 'card') ...[
+              select('card', 'Credit card', {
+                for (final r in local.snapshot.current.where(
+                  (r) => financeType(r) == 'creditCard',
+                ))
+                  r.actionId: r.title,
+              }),
+              text('postingDate', 'Provider posting date · YYYY-MM-DD'),
+              const FinanceNotice(
+                'Recognize spending and posted card liability once. Cash stays unchanged.',
+              ),
+            ] else
+              account(),
+          ] else
+            account(),
           date(),
           categories('category', 'Category', kind!),
           if (kind == 'income') ...[
