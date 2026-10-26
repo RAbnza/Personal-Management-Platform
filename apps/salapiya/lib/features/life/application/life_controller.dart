@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'dart:async';
+
 import '../../planning/application/planning_controller.dart';
 import '../../finance/application/financial_controller.dart';
 
@@ -76,11 +78,18 @@ class AgendaItem {
     this.time,
     this.version, {
     this.amount,
+    this.sourceGeneration,
+    this.utc,
+    this.timezone = 'Asia/Manila',
   });
   final String id, sourceId, kind, title, date, time;
   final int version;
   final BigInt? amount;
-  String get generation => '$id:$version:$date:$time:$amount';
+  final String? sourceGeneration;
+  final DateTime? utc;
+  final String timezone;
+  String get generation =>
+      sourceGeneration ?? '$id:$version:$date:$time:$amount';
 }
 
 class ReminderChoice {
@@ -90,8 +99,8 @@ class ReminderChoice {
 }
 
 class LifeController extends ChangeNotifier {
-  LifeController() {
-    reset();
+  LifeController({bool demo = true}) {
+    if (demo) reset();
   }
   final List<LifeEntry> entries = [];
   final List<PersonalEvent> events = [];
@@ -235,7 +244,11 @@ class LifeController extends ChangeNotifier {
     changed();
   }
 
-  void saveEntry(LifeKind kind, Map<String, String> v, {LifeEntry? old}) {
+  FutureOr<void> saveEntry(
+    LifeKind kind,
+    Map<String, String> v, {
+    LifeEntry? old,
+  }) {
     final due = v['due'] ?? '';
     if (due.isNotEmpty) dateValue(due);
     final total = kind == LifeKind.task
@@ -266,7 +279,7 @@ class LifeController extends ChangeNotifier {
     changed();
   }
 
-  void progress(LifeEntry e, int value, String note) {
+  FutureOr<void> progress(LifeEntry e, int value, String note) {
     if (value < 0 || value > e.total || e.archived) {
       throw const FormatException('Choose valid progress on an active record.');
     }
@@ -277,7 +290,7 @@ class LifeController extends ChangeNotifier {
     changed();
   }
 
-  void archive(LifeEntry e) {
+  FutureOr<void> archive(LifeEntry e) {
     e.archived = !e.archived;
     e.version++;
     e.history.add(
@@ -288,7 +301,7 @@ class LifeController extends ChangeNotifier {
     changed();
   }
 
-  void saveEvent(Map<String, String> v, {PersonalEvent? old}) {
+  FutureOr<void> saveEvent(Map<String, String> v, {PersonalEvent? old}) {
     dateValue(v['date']!);
     validateTime(v['time']!);
     final e =
@@ -320,7 +333,10 @@ class LifeController extends ChangeNotifier {
     }
   }
 
-  void saveApplication(Map<String, String> v, {CareerApplication? old}) {
+  FutureOr<void> saveApplication(
+    Map<String, String> v, {
+    CareerApplication? old,
+  }) {
     dateValue(v['date']!);
     final a =
         old ??
@@ -344,7 +360,7 @@ class LifeController extends ChangeNotifier {
     changed();
   }
 
-  void saveCareerEvent(
+  FutureOr<void> saveCareerEvent(
     CareerApplication a,
     Map<String, String> v, {
     CareerEvent? old,
@@ -476,9 +492,30 @@ class LifeController extends ChangeNotifier {
     return r?.state ?? 'Planned on this device · demo only';
   }
 
-  void reminder(AgendaItem item, String mode, String action) {
+  FutureOr<void> reminder(AgendaItem item, String mode, String action) {
     reminders[item.id] = ReminderChoice(item.generation, mode, action);
     reminderHistory.add('${item.title} · $mode · $action · ${item.generation}');
+    changed();
+  }
+
+  FutureOr<void> cancelEvent(PersonalEvent e, String reason) {
+    e.cancelled = !e.cancelled;
+    e.version++;
+    e.history.add('${e.cancelled ? 'Cancelled' : 'Restored'} · $reason');
+    changed();
+  }
+
+  FutureOr<void> archiveApplication(CareerApplication a) {
+    a.archived = !a.archived;
+    a.version++;
+    a.history.add(a.archived ? 'Archived' : 'Restored');
+    changed();
+  }
+
+  FutureOr<void> completeCareerEvent(CareerApplication a, CareerEvent e) {
+    e.complete = !e.complete;
+    e.version++;
+    a.history.add('${e.kind} ${e.complete ? 'completed' : 'reopened'}');
     changed();
   }
 }

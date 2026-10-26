@@ -5,8 +5,9 @@ import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
 import '../prototype/scenarios.dart';
 import '../local/local_finance_controller.dart';
-import '../local/finance_domain.dart';
-import '../finance/source_list.dart';
+import '../life/life_controller.dart';
+import '../life/life_domain.dart';
+import '../features/life/presentation/life_screen.dart';
 
 class OverviewAgenda extends StatefulWidget {
   const OverviewAgenda({super.key, required this.session, required this.open});
@@ -53,20 +54,57 @@ class _OverviewAgendaState extends State<OverviewAgenda> {
   Widget build(BuildContext context) {
     final session = widget.session;
     if (session.production) {
-      if (session.complete && session.finance is LocalFinancialController) {
+      if (session.finance is LocalFinancialController &&
+          session.life is DurableLifeController) {
+        final c = session.life as DurableLifeController,
+            today = LifeTime.today();
+        final through = DateTime.parse('${today}T00:00:00Z')
+            .add(const Duration(days: 30))
+            .toIso8601String()
+            .substring(0, 10);
+        final from = DateTime.parse('${today}T00:00:00Z')
+            .subtract(const Duration(days: 30))
+            .toIso8601String()
+            .substring(0, 10);
+        final agenda = c.agendaWindow(
+          session.finance,
+          from,
+          through,
+          financial: session.complete,
+        );
         return EditorialSurface(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SectionHeading('On the horizon'),
-              FinancialDueList(
-                controller: session.finance as LocalFinancialController,
-                from: civilToday(),
-                through: DateTime.parse('${civilToday()}T00:00:00Z')
-                    .add(const Duration(days: 30))
-                    .toIso8601String()
-                    .substring(0, 10),
+              SectionHeading(
+                'On the horizon',
+                trailing: IconButton(
+                  tooltip: 'Open Calendar and Agenda',
+                  onPressed: () => openLifeSource(context, session, null),
+                  icon: const Icon(Icons.north_east),
+                ),
               ),
+              Text(
+                '${c.coverage}. ${session.complete ? 'Financial sources included.' : 'Financial due coverage is incomplete.'}',
+              ),
+              for (final item in agenda.take(8))
+                TextButton(
+                  onPressed: () => openLifeSource(context, session, item),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${item.date.compareTo(today) < 0
+                          ? 'Overdue'
+                          : item.date == today
+                          ? 'Today'
+                          : 'Upcoming'} · ${item.date} · ${item.time} · ${item.kind}\n${item.title}',
+                    ),
+                  ),
+                ),
+              if (agenda.isEmpty)
+                const Text(
+                  'No current commitments in the next 30 days or preceding 30-day attention window.',
+                ),
             ],
           ),
         );

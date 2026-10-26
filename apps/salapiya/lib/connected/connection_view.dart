@@ -108,7 +108,7 @@ class _ConnectionBodyState extends State<ConnectionBody> {
           ValueBlock(
             'CONNECTION',
             c.label,
-            '${c.identity}\n${c.pendingCount} waiting · ${c.reviewCount} need review',
+            '${c.identity}\n${c.pendingCount} financial waiting · ${c.reviewCount} financial review · ${c.lifePendingCount} Life waiting · ${c.lifeReviewCount} Life review (open Life)',
             color: Palette.mint,
           ),
           if (c.binding?['last_sync'] != null)

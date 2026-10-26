@@ -1,6 +1,13 @@
 part of '../local/local_store.dart';
 
 const connectedSchema = Schema([
+  Table('p5_command', [
+    Column.text('owner_id'),
+    Column.text('profile_id'),
+    Column.text('payload'),
+    Column.integer('sequence_no'),
+    Column.text('recorded_at'),
+  ]),
   Table('p3_resource', [
     Column.text('owner_id'),
     Column.text('group_id'),

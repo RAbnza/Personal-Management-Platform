@@ -12,6 +12,7 @@ import '../prototype/scenarios.dart';
 import 'local_finance_controller.dart';
 import 'local_profiles.dart';
 import 'local_store.dart';
+import '../life/life_controller.dart';
 
 class LocalRuntime extends ChangeNotifier {
   LocalRuntime(this.profiles, this.settings);
@@ -69,9 +70,12 @@ class LocalRuntime extends ChangeNotifier {
       1.5,
       2.0,
     ].where((v) => '$v' == preferences['textScale']).firstOrNull;
+    final life = DurableLifeController(store);
+    await life.initialize();
     session = LocalSession(
       LocalFinancialController(store, await store.snapshot()),
       this,
+      life,
     );
     previousSession?.dispose();
     session!.profile.name = await store.displayName();
@@ -80,6 +84,10 @@ class LocalRuntime extends ChangeNotifier {
     session!.profile.devices['This installation'] =
         'Local only · encrypted storage';
     session!.hideAmounts = preferences['hideAmounts'] == 'true';
+    await life.startReminders(
+      session!.finance,
+      complete: () => session?.complete ?? false,
+    );
     settings.addListener(_persist);
     settings.change(() {});
     await connected.attach();
@@ -122,6 +130,7 @@ class LocalRuntime extends ChangeNotifier {
 
   Future<void> close() async {
     await flushPreferences();
+    await (session?.life as DurableLifeController?)?.close();
     await connected.close();
     await profiles.close();
   }
@@ -136,8 +145,11 @@ class LocalRuntime extends ChangeNotifier {
 }
 
 class LocalSession extends PrototypeSession {
-  LocalSession(LocalFinancialController controller, this.runtime)
-    : super(financial: controller, production: true) {
+  LocalSession(
+    LocalFinancialController controller,
+    this.runtime,
+    DurableLifeController life,
+  ) : super(financial: controller, lifeController: life, production: true) {
     controller.privacyHidden = () => hideAmounts;
     runtime.connected.addListener(notifyListeners);
   }

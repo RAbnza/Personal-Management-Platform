@@ -14,6 +14,7 @@ import '../p0/auth_runtime.dart';
 import '../p0/google_auth_proof.dart';
 import 'command_connector.dart';
 import '../shared/shared_domain.dart';
+import '../life/life_controller.dart';
 
 class ConnectedRuntime extends ChangeNotifier {
   ConnectedRuntime(this.local);
@@ -27,7 +28,8 @@ class ConnectedRuntime extends ChangeNotifier {
       url.isNotEmpty && publicKey.isNotEmpty && endpoint.isNotEmpty;
   GoogleAuthProof? flow;
   Future<void>? _authOpening;
-  StreamSubscription<dynamic>? _downloads, _intents, _status;
+  StreamSubscription<dynamic>? _downloads, _intents, _status, _lifeChanges;
+  int lifePendingCount = 0, lifeReviewCount = 0;
   int sharedPendingCount = 0,
       sharedReviewCount = 0,
       needMyConfirmation = 0,
@@ -57,7 +59,8 @@ class ConnectedRuntime extends ChangeNotifier {
     }
     if (binding!['phase'] == 'restored') return 'Needs review';
     if (!complete) return 'Initial download incomplete';
-    if (reviewCount > 0 || sharedReviewCount > 0) return 'Needs review';
+    if (reviewCount > 0 || sharedReviewCount > 0 || lifeReviewCount > 0)
+      return 'Needs review';
     if (sessionExpired ||
         (flow != null && flow!.client.auth.currentSession == null)) {
       return 'Session expired / reconnect required';
@@ -76,7 +79,7 @@ class ConnectedRuntime extends ChangeNotifier {
         status?.downloadError != null) {
       return 'Waiting for connection';
     }
-    return pendingCount + sharedPendingCount > 0
+    return pendingCount + sharedPendingCount + lifePendingCount > 0
         ? 'Waiting for connection'
         : 'Synced';
   }
@@ -158,6 +161,7 @@ class ConnectedRuntime extends ChangeNotifier {
     }
     await _downloads?.cancel();
     await _intents?.cancel();
+    await _lifeChanges?.cancel();
     await _status?.cancel();
     _attached = store;
     _downloads = store.db
@@ -168,6 +172,12 @@ class ConnectedRuntime extends ChangeNotifier {
         .watch(
           'SELECT id,state,reason FROM connected_intent ORDER BY sequence_no',
         )
+        .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
+        .listen((_) => unawaited(refresh()));
+    _lifeChanges = store.db
+        .watch('''SELECT id,state||coalesce(reason,'') AS token FROM life_intent
+      UNION ALL SELECT id,payload FROM p5_command
+      UNION ALL SELECT intent_id,recorded_at FROM life_review_resolution''')
         .distinct((a, b) => jsonEncode(a) == jsonEncode(b))
         .listen((_) => unawaited(refresh()));
     // Queue-stat notifications may follow our own ordinary SQLite writes.
@@ -205,6 +215,19 @@ class ConnectedRuntime extends ChangeNotifier {
       final store = _attached!;
       await store.reconcileDownloaded();
       await store.reconcileShared();
+      await store.reconcileLife();
+      await store.publishLocalLife();
+      final lifeIntents = await store.lifeIntents();
+      lifePendingCount = lifeIntents
+          .where((r) => ['pending', 'accepted'].contains(r['state']))
+          .length;
+      lifeReviewCount = lifeIntents
+          .where(
+            (r) =>
+                r['resolved_at'] == null &&
+                ['review', 'restored'].contains(r['state']),
+          )
+          .length;
       binding = await store.connection();
       final uploadError = store.db.currentStatus.uploadError;
       if (binding != null &&
@@ -555,6 +578,15 @@ class ConnectedRuntime extends ChangeNotifier {
         (r) => Map<String, dynamic>.from(r as Map),
       ),
     );
+    final lifeBoundary = Map<String, dynamic>.from(
+      await flow!.client.rpc('p5_boundary') as Map,
+    );
+    await store.db.execute(
+      "INSERT INTO life_device VALUES('life:boundary',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      ['${lifeBoundary['revision']}'],
+    );
+    final life = local.session!.life as DurableLifeController;
+    life.initialComplete = false;
     if (binding!['phase'] == 'restored' ||
         (await store.db.get(
               "SELECT count(*) n FROM connected_intent WHERE state='restored'",
@@ -581,7 +613,30 @@ class ConnectedRuntime extends ChangeNotifier {
         DateTime.now().difference(started) < const Duration(seconds: 45)) {
       if (await store.reconcileDownloaded(requiredBoundary: target) &&
           store.db.currentStatus.connected &&
-          await _groupsCovered(store, groupBoundary)) {
+          await _groupsCovered(store, groupBoundary) &&
+          (await store.db.get(
+                    'SELECT count(*) n FROM p5_command WHERE profile_id=? AND owner_id=?',
+                    [store.owner, user.id],
+                  ))['n']
+                  as int >=
+              (lifeBoundary['revision'] as int)) {
+        await store.reconcileLife();
+        for (final row in (await store.lifeIntents()).where(
+          (r) => r['state'] == 'restored',
+        )) {
+          final receipt = await flow!.client.rpc(
+            'p5_receipt',
+            params: {'command_id': row['id']},
+          );
+          await store.reviewRestoredLife(
+            row['id'] as String,
+            receipt == null ? null : Map<String, dynamic>.from(receipt as Map),
+            user.id,
+          );
+        }
+        await store.publishLocalLife();
+        life.initialComplete = true;
+        await life.reload();
         // This timestamp follows a current authenticated boundary read plus
         // matching downloaded coverage, including an idle unchanged profile.
         await store.db.execute(
@@ -729,6 +784,7 @@ class ConnectedRuntime extends ChangeNotifier {
     closed = true;
     await _downloads?.cancel();
     await _intents?.cancel();
+    await _lifeChanges?.cancel();
     await _status?.cancel();
     await _refreshQueue;
     await _attached?.db.disconnect();

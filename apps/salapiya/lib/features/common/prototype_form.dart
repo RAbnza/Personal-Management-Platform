@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'dart:async';
+
 import '../../app/demo_routes.dart';
 import '../finance/presentation/financial_widgets.dart';
 
@@ -24,7 +26,7 @@ Future<void> reviewForm(
   BuildContext context, {
   required String title,
   required List<DemoField> fields,
-  required void Function(Map<String, String>) save,
+  required FutureOr<void> Function(Map<String, String>) save,
   String explanation = 'This changes only the synthetic prototype in memory.',
   int Function()? revision,
   String? draftKey,
@@ -53,7 +55,7 @@ class PrototypeForm extends StatefulWidget {
   });
   final String title, explanation, draftKey;
   final List<DemoField> fields;
-  final void Function(Map<String, String>) save;
+  final FutureOr<void> Function(Map<String, String>) save;
   final int Function()? revision;
   @override
   State<PrototypeForm> createState() => _PrototypeFormState();
@@ -85,7 +87,7 @@ class _PrototypeFormState extends State<PrototypeForm> {
     prototypeDrafts[widget.draftKey] = Map.of(values);
   }
 
-  void submit() {
+  Future<void> submit() async {
     if (!reviewing) {
       final missing = widget.fields.where(
         (f) => f.required && (values[f.id] ?? '').trim().isEmpty,
@@ -116,7 +118,7 @@ class _PrototypeFormState extends State<PrototypeForm> {
       return;
     }
     try {
-      widget.save(Map.unmodifiable(values));
+      await widget.save(Map.unmodifiable(values));
       prototypeDrafts.remove(widget.draftKey);
       setState(() {
         done = true;

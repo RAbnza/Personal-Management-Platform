@@ -10,6 +10,7 @@ import '../p0/portable_recovery.dart';
 import '../connected/financial_contract.dart';
 import 'finance_domain.dart';
 import 'local_store.dart';
+import '../life/life_domain.dart';
 
 abstract interface class ProfileVault {
   Future<String?> read();
@@ -337,6 +338,12 @@ class LocalProfiles {
           ]);
         }
       }
+      if (bundle['life'] case final Map life) {
+        await store.restoreLifeArchive(
+          Map<String, dynamic>.from(life),
+          connected: [2, 3].contains(bundle['format']),
+        );
+      }
       await store.integrity();
       if (interrupt) throw StateError('Injected restore interruption');
     } finally {
@@ -487,6 +494,7 @@ class LocalBackup {
                 .length,
             'attachmentByteObjects': 0,
           },
+          'life': await store.captureLifeArchive(tx),
         };
         validate(result);
         return result;
@@ -494,7 +502,7 @@ class LocalBackup {
   static void validate(Map<String, dynamic> b) {
     final connected = [2, 3].contains(b['format']);
     if (![1, 2, 3].contains(b['format']) ||
-        ![1, 2, 3, 4, 5, localSchemaVersion].contains(b['localSchema']) ||
+        ![1, 2, 3, 4, 5, 6, localSchemaVersion].contains(b['localSchema']) ||
         b['commandContract'] != 1 ||
         b['calculationVersion'] != 1 ||
         b['authority'] != (connected ? 'connected-review-required' : 'local') ||
@@ -510,6 +518,13 @@ class LocalBackup {
       reject('Unsupported or invalid local archive.');
     }
     final commands = b['commands'] as List, drafts = b['drafts'] as List;
+    if (b['life'] case final Map life) {
+      validateLifeArchive(
+        Map<String, dynamic>.from(life),
+        b['owner'] as String,
+        connected: connected,
+      );
+    }
     if (b['financialCoverage'] case final Map coverage) {
       if (coverage['contract'] != 1 ||
           coverage['financialRecipe'] != 1 ||

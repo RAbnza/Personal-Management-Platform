@@ -17,6 +17,7 @@ class FinancialConnector extends PowerSyncBackendConnector {
     required this.credentials,
     required this.submit,
     this.submitShared,
+    this.submitLife,
     this.changed,
   });
   final LocalStore store;
@@ -24,6 +25,7 @@ class FinancialConnector extends PowerSyncBackendConnector {
   final Future<PowerSyncCredentials?> Function() credentials;
   final SubmitFinancialCommand submit;
   final SubmitFinancialCommand? submitShared;
+  final SubmitFinancialCommand? submitLife;
   final void Function()? changed;
 
   factory FinancialConnector.supabase(
@@ -37,6 +39,28 @@ class FinancialConnector extends PowerSyncBackendConnector {
       store: store,
       actor: actor,
       changed: changed,
+      submitLife: (id, payload) async {
+        if (client.auth.currentUser?.id != actor) {
+          throw StateError('Reauthentication required');
+        }
+        try {
+          return Map<String, dynamic>.from(
+            await client.rpc(
+              'p5_submit_command',
+              params: {'command_id': id, 'command_payload': payload},
+            ) as Map,
+          );
+        } on PostgrestException catch (e) {
+          if (!(e.code?.startsWith('22') ?? false)) rethrow;
+          return {
+            'id': id,
+            'owner_id': actor,
+            'profile_id': store.owner,
+            'outcome': 'rejected',
+            'reason': 'Command identity or payload requires review.',
+          };
+        }
+      },
       submitShared: (id, payload) async {
         if (client.auth.currentUser?.id != actor) {
           throw StateError('Reauthentication required');
@@ -126,6 +150,28 @@ class FinancialConnector extends PowerSyncBackendConnector {
       }
       final envelope = entry.opData?['payload'] as String;
       final body = jsonDecode(envelope) as Map;
+      if (body['contract'] == 5) {
+        final intent = await database.get(
+          'SELECT * FROM life_intent WHERE id=?',
+          [entry.id],
+        );
+        if (intent['owner_id'] != store.owner ||
+            intent['payload'] != body['payload']) {
+          throw StateError('Life queue differs from original intent');
+        }
+        if (['restored', 'review', 'reconciled'].contains(intent['state'])) {
+          continue;
+        }
+        if (submitLife == null) {
+          throw StateError('Life command transport unavailable');
+        }
+        await store.recordLifeReceipt(
+          entry.id,
+          actor,
+          await submitLife!(entry.id, body['payload'] as String),
+        );
+        continue;
+      }
       final intent = await database.get(
         'SELECT * FROM connected_intent WHERE id=?',
         [entry.id],

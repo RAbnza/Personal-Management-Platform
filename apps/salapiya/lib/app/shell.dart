@@ -22,6 +22,7 @@ import '../local/local_profile_view.dart';
 import '../local/local_finance_controller.dart';
 import '../finance/finance_screen.dart';
 import '../finance/debt_screen.dart';
+import '../life/life_controller.dart';
 
 class SalapiyaShell extends StatefulWidget {
   const SalapiyaShell({super.key, required this.settings, this.session});
@@ -32,6 +33,21 @@ class SalapiyaShell extends StatefulWidget {
 }
 
 class _SalapiyaShellState extends State<SalapiyaShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final life = session.life;
+      if (life is DurableLifeController && life.device != null) {
+        life.device!.navigate = (item) {
+          if (mounted) openLifeSource(context, session, item);
+        };
+        life.device!.openPendingTap();
+      }
+    });
+  }
+
   late final PrototypeSession session = widget.session ?? PrototypeSession();
   final scrolls = [for (final _ in AppDestination.values) ScrollController()];
   AppDestination selected = AppDestination.overview;
@@ -40,6 +56,8 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
   double dockHeight = 112;
   @override
   void dispose() {
+    final life = session.life;
+    if (life is DurableLifeController) life.device?.navigate = null;
     for (final controller in scrolls) {
       controller.dispose();
     }
@@ -73,6 +91,11 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
           PreviewSource.group,
           PreviewSource.settlement,
           PreviewSource.privateReview,
+          PreviewSource.agenda,
+          PreviewSource.task,
+          PreviewSource.learning,
+          PreviewSource.books,
+          PreviewSource.career,
         ].contains(source)) {
       open(
         FinancePage(title: source.label, child: UpcomingView(source.label)),
@@ -181,6 +204,8 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
               'Record debt payment',
               'Add existing debt',
               'Record borrowing',
+              'Add task',
+              'Add event',
             ].contains(d.$1),
       ))
         FloatingQuickAction(
@@ -395,8 +420,10 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                                   session.finance
                                                       as LocalFinancialController,
                                             )
-                                          : session.production
-                                          ? UpcomingView(destination.label)
+                                          : session.production &&
+                                                destination ==
+                                                    AppDestination.life
+                                          ? LifeScreen(session: session)
                                           : destination == AppDestination.debts
                                           ? DebtsScreen(session: session)
                                           : destination == AppDestination.shared

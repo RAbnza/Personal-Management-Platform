@@ -34,8 +34,15 @@ enum OverviewScenario {
 /// One memory-only scenario controller; no persistence or network adapters.
 /// Coverage, transport and receipt state stay separate from display scenarios.
 class PrototypeSession extends ChangeNotifier {
-  PrototypeSession({FinancialController? financial, this.production = false})
-    : finance = financial ?? FinancialController() {
+  PrototypeSession({
+    FinancialController? financial,
+    LifeController? lifeController,
+    this.production = false,
+  }) : finance = financial ?? FinancialController() {
+    if (lifeController != null) {
+      life.dispose();
+      life = lifeController;
+    }
     if (production) {
       planning.reset(empty: true);
       life.reset(empty: true);

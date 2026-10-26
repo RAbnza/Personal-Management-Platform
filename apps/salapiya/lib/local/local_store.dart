@@ -9,11 +9,13 @@ import 'package:sqlite_async/sqlite_async.dart';
 import '../p0/exact_money.dart';
 import 'finance_domain.dart';
 import '../connected/financial_contract.dart';
+import '../life/life_domain.dart';
 
 part '../connected/connected_store.dart';
 part '../shared/shared_store.dart';
 part '../shared/shared_snapshots.dart';
 part '../finance/finance_store.dart';
+part '../life/life_store.dart';
 
 // P0-verified encrypted native factory. P1 financial tables remain ordinary
 // local tables; only the bounded P2 command transport/projection use SDK views.
@@ -42,7 +44,7 @@ final class _LocalFactory extends NativePowerSyncOpenFactory {
   ];
 }
 
-const localSchemaVersion = 6;
+const localSchemaVersion = 7;
 const defaultLocalCategories = [
   ('food', 'Food & drink', 'expense'),
   ('transport', 'Transport', 'expense'),
@@ -72,6 +74,7 @@ class LocalStore {
             3,
             4,
             5,
+            6,
             localSchemaVersion,
           ].contains(versions.single['version'])) {
         reject(
@@ -82,6 +85,7 @@ class LocalStore {
       await _migrateShared(tx);
       await _migrateFinance(tx);
       await _migrateCashImport(tx);
+      await _migrateLife(tx);
       if (versions.single['version'] != localSchemaVersion) {
         if (interrupt) {
           throw StateError('Injected connected migration interruption');
@@ -115,6 +119,7 @@ class LocalStore {
     await _migrateShared(tx);
     await _migrateFinance(tx);
     await _migrateCashImport(tx);
+    await _migrateLife(tx);
     if (interrupt) {
       throw StateError('Injected migration interruption');
     }

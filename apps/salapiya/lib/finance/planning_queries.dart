@@ -216,7 +216,7 @@ List<FinancialReminderSource> financialReminderSources(
         }
       }
     }
-    if (financeType(r) == 'statement') {
+    if (financeType(r) == 'statement' && r.values['verified'] == 'true') {
       final allocated = sumMinor(
         s.current
             .where(
@@ -241,8 +241,39 @@ List<FinancialReminderSource> financialReminderSources(
         );
       }
     }
+    if (financeType(r) == 'installment' &&
+        r.values['verified'] == 'true' &&
+        r.values['status'] != 'suspended') {
+      for (final row in financeSchedule(r.values['schedule']!)) {
+        final applied = sumMinor(
+          s.current
+              .where(
+                (p) =>
+                    financeType(p) == 'installmentApplication' &&
+                    p.values['plan'] == r.id &&
+                    p.values['row'] == row.id &&
+                    p.date.compareTo(today) <= 0,
+              )
+              .map((p) => p.amount),
+        );
+        final remaining = row.amount - row.paid - applied;
+        if (remaining > BigInt.zero) {
+          result.add(
+            FinancialReminderSource(
+              'installment:${r.actionId}:${row.id}',
+              '${r.number}:${row.date}:${row.paid}:$applied',
+              r.id,
+              r.title,
+              row.date,
+              remaining,
+              'Card installment due',
+            ),
+          );
+        }
+      }
+    }
   }
-  for (final o in recurringOccurrences(s, from, through, previews: true)) {
+  for (final o in recurringOccurrences(s, from, through, previews: false)) {
     if (['planned', 'linked'].contains(o.state) && o.remaining > BigInt.zero) {
       result.add(
         FinancialReminderSource(

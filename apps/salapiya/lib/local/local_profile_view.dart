@@ -17,6 +17,8 @@ import '../p0/portable_recovery.dart';
 import 'finance_domain.dart';
 import 'local_profiles.dart';
 import 'local_runtime.dart';
+import '../life/life_settings.dart';
+import '../life/reminder_widgets.dart';
 
 class LocalBootstrap extends StatefulWidget {
   const LocalBootstrap({super.key, required this.settings, this.runtime});
@@ -459,6 +461,23 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                 color: Palette.mint,
               )
             else if (section == 'Help') ...[
+              const SectionHeading('Life, Calendar and device reminders'),
+              TextButton(
+                onPressed: () => openDemoPage<void>(
+                  context,
+                  LifeSettings(session: s),
+                  'life/help',
+                ),
+                child: const Text('Life preferences and help'),
+              ),
+              TextButton(
+                onPressed: () => openDemoPage<void>(
+                  context,
+                  NativeReminderCenter(session: s),
+                  'life/reminders',
+                ),
+                child: const Text('Device reminder settings'),
+              ),
               const SectionHeading('Financial evidence and planning'),
               const FinanceNotice(
                 'Use accounts to establish opening balances, then record activity after each opening cutoff. Review every financial effect before confirming. Back up before changing devices. Private data uploads only after you explicitly connect Google.',
@@ -480,7 +499,7 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                 'Supporting files remain unscanned and encrypted on this device. Cloud bytes are unavailable. Standard encrypted financial backups contain attachment metadata but zero file-byte objects. Keep original files and the separate recovery secret. A fresh restore validates command recipes and cannot roll back accepted cloud history or revive revoked shared authority.',
               ),
               const FinanceNotice(
-                'Archiving a financial definition preserves history. Signing out ends this device’s connected session; it does not delete financial records or leave a group. Account deletion, retention certification and distribution safeguards remain separate release work. Financial due sources appear in Overview; device notifications and the broader Calendar await the native scheduling milestone.',
+                'Archiving preserves history. Signing out ends this device’s session and preserves downloaded private records. Calendar and Overview combine authoritative Life and financial due sources. Device-local reminders require opt-in; delivery never completes a business action. Signed distribution and full lifecycle certification remain release work.',
               ),
               TextButton(
                 onPressed: () => showLicensePage(
@@ -628,7 +647,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
         const FinanceHeading(
           'YOUR SAFETY NET',
           'Keep a way back.',
-          'Portable recovery uses a separate generated secret. The archive includes financial commands, source relationships, supporting-file metadata, preferences and drafts. Attachment bytes and cloud authority are excluded. Keep original files separately.',
+          'Portable recovery uses a separate generated secret. Archives include financial evidence, Life records and history, original pending intents, document metadata, visibility preferences and protected drafts. File bytes, notification consent and OS schedule IDs are excluded. Keep original files separately; destination reminders start off.',
         ),
         if (initialized) ...[
           OutlinedButton(
@@ -720,7 +739,7 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
           ValueBlock(
             'ARCHIVE REVIEW',
             reviewed!['name'] as String,
-            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${[2, 3].contains(reviewed!['format']) ? 'connected recovery requires current Google verification' : 'local only'}\nAttachment byte objects included: 0. Metadata is not proof that original bytes were recovered.',
+            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${[2, 3].contains(reviewed!['format']) ? 'connected recovery requires current Google verification' : 'local only'}\n${((reviewed!['life'] as Map?)?['revisions'] as List? ?? const []).length} Life revisions ? ${((reviewed!['life'] as Map?)?['intents'] as List? ?? const []).length} original Life intents.\nAttachment byte objects included: 0. Metadata is not proof that original bytes were recovered.',
             color: Palette.mint,
           ),
           if (!initialized)
