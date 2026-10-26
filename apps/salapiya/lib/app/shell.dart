@@ -41,7 +41,18 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
       final life = session.life;
       if (life is DurableLifeController && life.device != null) {
         life.device!.navigate = (item) {
-          if (mounted) openLifeSource(context, session, item);
+          if (!mounted) return;
+          if (item == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'This reminder source changed or is no longer available. Open Life to review current commitments.',
+                ),
+              ),
+            );
+            return;
+          }
+          openLifeSource(context, session, item);
         };
         life.device!.openPendingTap();
       }

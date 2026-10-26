@@ -59,8 +59,9 @@ class ConnectedRuntime extends ChangeNotifier {
     }
     if (binding!['phase'] == 'restored') return 'Needs review';
     if (!complete) return 'Initial download incomplete';
-    if (reviewCount > 0 || sharedReviewCount > 0 || lifeReviewCount > 0)
+    if (reviewCount > 0 || sharedReviewCount > 0 || lifeReviewCount > 0) {
       return 'Needs review';
+    }
     if (sessionExpired ||
         (flow != null && flow!.client.auth.currentSession == null)) {
       return 'Session expired / reconnect required';

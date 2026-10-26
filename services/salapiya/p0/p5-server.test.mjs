@@ -74,6 +74,15 @@ test('Career canonical stage and outcome are independent, and dated no-response 
  assert.equal(observed,'Declined offer');
 });
 test('noncanonical transport is retained as a rejection rather than poisoning CDC',async()=>{const body=JSON.parse(fixture.commands[0].payload);body.record=randomUUID();const raw=JSON.stringify(body,null,2);assert.equal((await rpc(owner,'p5_submit_command',[randomUUID(),raw])).outcome,'rejected');});
+test('inherited Book ratings preserve exact zero-to-five decimal strings without floating point',async()=>{
+ const template=JSON.parse(fixture.commands.find(r=>JSON.parse(r.payload).type==='book').payload);
+ for(const rating of ['0','4.1250','5.0000','-0.0000','5.0001','-0.0001','NaN','1e0','01','1.00001',5,null]){
+  const body={...template,record:randomUUID(),fields:{...template.fields,rating}};
+  const result=await submit(randomUUID(),JSON.stringify(body));
+  assert.equal(result.outcome,['0','4.1250','5.0000','-0.0000'].includes(rating)?'accepted':'rejected',rating);
+ }
+});
+
 test('expired/revoked session cannot replay even an existing accepted receipt',async()=>{
  await db.query('DELETE FROM auth.sessions WHERE user_id=$1',[owner]);const row=fixture.commands[0];await assert.rejects(submit(row.id,row.payload),/session/i);
 });

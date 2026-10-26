@@ -204,11 +204,12 @@ extension LifeLocalStore on LocalStore {
       if (old.any((r) => r['payload'] != c.payload)) {
         lifeReject('Command ID reused with a changed payload.');
       }
-      if (draft != null)
+      if (draft != null) {
         await tx.execute(
           'DELETE FROM local_draft WHERE owner_id=? AND operation=?',
           [owner, draft],
         );
+      }
       return;
     }
     final binding = await connectionIn(tx);
@@ -220,7 +221,13 @@ extension LifeLocalStore on LocalStore {
           'Finish connection/recovery review first. Your draft remains protected.',
         );
       }
-      applyLifeCommand(await lifeRecordsIn(tx), c);
+      final current = await lifeRecordsIn(tx);
+      if (c.expectedVersion == 0 && current.length >= 10000) {
+        lifeReject(
+          'Life record capacity reached. Preserve existing history before enlarging this workspace.',
+        );
+      }
+      applyLifeCommand(current, c);
       await _queueLife(tx, c);
     }
     if (draft != null) {
@@ -233,6 +240,12 @@ extension LifeLocalStore on LocalStore {
     if (interrupt) throw StateError('Injected Life transaction interruption');
   });
   Future<void> _queueLife(SqliteWriteContext tx, LifeCommand c) async {
+    if (((await tx.get('SELECT count(*) n FROM life_intent'))['n'] as int) >=
+        20000) {
+      lifeReject(
+        'Life intent capacity reached. Preserve existing evidence before enlarging this workspace.',
+      );
+    }
     final next = (await tx.get(
       'SELECT coalesce(max(sequence_no),0)+1 n FROM life_intent',
     ))['n'];

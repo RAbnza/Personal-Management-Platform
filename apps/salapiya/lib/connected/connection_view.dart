@@ -37,7 +37,7 @@ class _ConnectionBodyState extends State<ConnectionBody> {
         title: const Text('Enable private synchronization?'),
         content: Text(
           'Selected Google identity: ${c.identity}\n\n'
-          'Connecting uploads your private Money profile, financial evidence and account/category information to Salapiya’s configured Supabase and PowerSync services. '
+          'Connecting uploads your private Money and Life records, financial evidence, Career details and document metadata to Salapiya’s configured Supabase and PowerSync services. Document bytes remain on the device. '
           'Google supplies identity. Drafts and device preferences stay on this device. '
           'Authorized service administrators may access cloud data; this is not end-to-end encryption. '
           'Existing cloud history is downloaded before complete totals are shown.',
@@ -108,7 +108,7 @@ class _ConnectionBodyState extends State<ConnectionBody> {
           ValueBlock(
             'CONNECTION',
             c.label,
-            '${c.identity}\n${c.pendingCount} financial waiting · ${c.reviewCount} financial review · ${c.lifePendingCount} Life waiting · ${c.lifeReviewCount} Life review (open Life)',
+            '${c.identity}\nFinancial: ${c.pendingCount} waiting · ${c.reviewCount} for review. Life: ${c.lifePendingCount} waiting · ${c.lifeReviewCount} for review (open Life).',
             color: Palette.mint,
           ),
           if (c.binding?['last_sync'] != null)

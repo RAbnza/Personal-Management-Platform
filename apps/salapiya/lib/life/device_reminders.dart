@@ -134,14 +134,16 @@ class DeviceReminders extends ChangeNotifier with WidgetsBindingObserver {
     preferences = next;
     if (wasEnabled &&
         next['enabled'] != true &&
-        device is NativeNotificationDevice)
+        device is NativeNotificationDevice) {
       await (device as NativeNotificationDevice).cancel(999);
+    }
     if (request &&
         !wasEnabled &&
         next['enabled'] == true &&
         allowed &&
-        device is NativeNotificationDevice)
+        device is NativeNotificationDevice) {
       await (device as NativeNotificationDevice).confirmDeviceOptIn();
+    }
     await reconcile();
   }
 
@@ -464,8 +466,9 @@ class DeviceReminders extends ChangeNotifier with WidgetsBindingObserver {
     _timer?.cancel();
     _binding?.removeObserver(this);
     await _work;
-    if (device is NativeNotificationDevice)
+    if (device is NativeNotificationDevice) {
       await (device as NativeNotificationDevice).detach();
+    }
   }
 
   @override

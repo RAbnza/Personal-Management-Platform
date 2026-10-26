@@ -50,6 +50,15 @@ try{
   assert.deepEqual(responses.map(r=>r.outcome).sort(),['accepted','rejected']);
   for(let i=0;i<updates.length;i++)assert.deepEqual(await rpc('p5_submit_command',{command_id:updates[i].id,command_payload:updates[i].payload}),responses[i]);
  });
+ await check('hosted Book rating retains exact inherited decimal strings and rejects numeric JSON',async()=>{
+  const base=JSON.parse(commands.find(c=>JSON.parse(c.payload).type==='book').payload);
+  const body={...base,record:randomUUID(),fields:{...base.fields,rating:'4.1250'}};
+  const id=randomUUID(),payload=JSON.stringify(body);
+  assert.equal((await rpc('p5_submit_command',{command_id:id,command_payload:payload})).outcome,'accepted');
+  assert.equal((await rest(`p5_command?id=eq.${id}`,session,keys.client))[0].payload,payload);
+  for(const rating of ['5.0001','-0.0001',5])assert.equal((await rpc('p5_submit_command',{command_id:randomUUID(),command_payload:JSON.stringify({...body,record:randomUUID(),fields:{...body.fields,rating}})})).outcome,'rejected');
+  assert.equal((await rpc('p2_profile_boundary',{})).revision,financialBefore);
+ });
  await check('hosted forced RLS, restricted replication and exact publication membership',async()=>{
   const rows=(await db.query("SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid='public.p5_command'::regclass")).rows;assert.ok(rows[0].relrowsecurity&&rows[0].relforcerowsecurity);
   const grants=(await db.query("SELECT has_table_privilege('salapiya_p0_replication','public.p5_command','SELECT') allowed,has_schema_privilege('authenticated','salapiya_p5','USAGE') private_access")).rows[0];assert.equal(grants.allowed,true);assert.equal(grants.private_access,false);

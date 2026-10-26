@@ -211,7 +211,7 @@ final class BookRecord extends ProgressRecord {
   @override
   LifeType get type => LifeType.book;
   String get author => fields['detail']!;
-  int? get rating => int.tryParse(fields['rating']!);
+  String? get rating => fields['rating']!.isEmpty ? null : fields['rating'];
 }
 
 sealed class ScheduledRecord extends LifeRecord {
@@ -394,10 +394,24 @@ Map<String, String> validateLifeFields(
       }
       v['total'] = '$total';
       v['progress'] = '$progress';
-      if (type == LifeType.book &&
-          v['rating']!.isNotEmpty &&
-          !['1', '2', '3', '4', '5'].contains(v['rating'])) {
-        lifeReject('Rating must be between 1 and 5.');
+      if (type == LifeType.book && v['rating']!.isNotEmpty) {
+        final rating = v['rating']!;
+        if (!RegExp(r'^-?(0|[1-9]\d{0,11})(\.\d{1,4})?$').hasMatch(rating)) {
+          lifeReject(
+            'Rating must be an exact decimal from 0 to 5, with at most four decimal places.',
+          );
+        }
+        final negative = rating.startsWith('-'),
+            parts = rating.replaceFirst('-', '').split('.');
+        var scaled =
+            BigInt.parse(parts[0]) * BigInt.from(10000) +
+            BigInt.parse((parts.length == 2 ? parts[1] : '').padRight(4, '0'));
+        if (negative) {
+          scaled = -scaled;
+        }
+        if (scaled < BigInt.zero || scaled > BigInt.from(50000)) {
+          lifeReject('Rating must be between 0 and 5.');
+        }
       }
     }
   } else if (type == LifeType.document) {

@@ -107,7 +107,7 @@ Future<void> editLifeEntry(
       if (kind == LifeKind.book)
         DemoField(
           'rating',
-          'Rating (optional 1–5)',
+          'Rating (optional 0–5, up to 4 decimal places)',
           value:
               (s.life as DurableLifeController).fields(entry?.id)['rating'] ??
               '',
@@ -236,7 +236,11 @@ class _LifeScreenState extends State<LifeScreen> {
   late String tab = widget.initial;
   String query = '', filter = 'Active', stage = 'All', source = 'All';
   late DateTime selected = widget.session.production
-      ? DateTime.parse(LifeTime.today())
+      ? DateTime.parse(
+          LifeTime.today(
+            (widget.session.life as DurableLifeController).displayTimezone,
+          ),
+        )
       : DateTime(2026, 10, 23);
   late DateTime month = DateTime(selected.year, selected.month);
   int page = 0;
@@ -502,7 +506,11 @@ class _LifeScreenState extends State<LifeScreen> {
             TextButton(
               onPressed: () => setState(() {
                 selected = s.production
-                    ? DateTime.parse(LifeTime.today())
+                    ? DateTime.parse(
+                        LifeTime.today(
+                          (c as DurableLifeController).displayTimezone,
+                        ),
+                      )
                     : DateTime(2026, 10, 21);
                 month = DateTime(selected.year, selected.month);
               }),
@@ -1513,7 +1521,7 @@ class _LifeScreenState extends State<LifeScreen> {
     FinancePage(
       title: a.company,
       child: ListenableBuilder(
-        listenable: c,
+        listenable: s,
         builder: (context, _) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1582,7 +1590,30 @@ class _LifeScreenState extends State<LifeScreen> {
                             ].contains(v.key) &&
                             v.value.isNotEmpty,
                       ))
-                FinancialLine(value.key, value.value),
+                FinancialLine(
+                  const {
+                        'postingUrl': 'Posting URL',
+                        'source': 'Found through',
+                        'date': 'Submitted on',
+                        'stageDate': 'Stage recorded for',
+                        'arrangement': 'Work arrangement',
+                        'salaryMin': 'Minimum expected salary',
+                        'salaryMax': 'Maximum expected salary',
+                        'currency': 'Currency',
+                        'salaryPeriod': 'Salary period',
+                        'technologies': 'Technologies',
+                        'description': 'Job description snapshot',
+                        'contact': 'Recruiter or contact',
+                        'resume': 'Resume version used',
+                        'nextAction': 'Next action',
+                        'followUp': 'Follow-up date',
+                      }[value.key] ??
+                      value.key,
+                  s.hideAmounts &&
+                          ['salaryMin', 'salaryMax'].contains(value.key)
+                      ? 'Hidden'
+                      : value.value,
+                ),
             ],
             const SizedBox(height: 24),
             const SectionHeading('Conversations & milestones'),
@@ -1662,7 +1693,11 @@ class _LifeScreenState extends State<LifeScreen> {
               ),
             const SectionHeading('Application history'),
             if (c is DurableLifeController)
-              LifeHistory(controller: c as DurableLifeController, record: a.id)
+              LifeHistory(
+                controller: c as DurableLifeController,
+                record: a.id,
+                hideAmounts: s.hideAmounts,
+              )
             else
               for (final h in a.history.reversed)
                 FinancialLine('History', h, icon: Icons.history),

@@ -27,14 +27,16 @@ abstract interface class NotificationDevice {
 class NativeNotificationDevice implements NotificationDevice {
   static NativeNotificationDevice? _active;
   void Function(String)? _onTap;
+  bool _statusHandlerInstalled = false;
   static const statusChannel = MethodChannel(
     'dev.salapiya/native_notification_status',
   );
   void Function()? onClockChanged;
   final plugin = FlutterLocalNotificationsPlugin();
   Future<void> confirmDeviceOptIn() async {
-    if (Platform.isWindows)
+    if (Platform.isWindows) {
       await statusChannel.invokeMethod<void>('showConfirmation');
+    }
   }
 
   Future<void> showTest() async {
@@ -67,12 +69,14 @@ class NativeNotificationDevice implements NotificationDevice {
     _onTap = onTap;
     _active = this;
     LifeTime.initialize();
-    if (Platform.isWindows)
+    if (Platform.isWindows) {
       await statusChannel.invokeMethod<void>('registerDevelopmentIdentity');
+    }
     if (Platform.isWindows) {
       statusChannel.setMethodCallHandler((call) async {
         if (call.method == 'clockChanged') onClockChanged?.call();
       });
+      _statusHandlerInstalled = true;
     }
     final initialized = await plugin.initialize(
       settings: const InitializationSettings(
@@ -87,8 +91,9 @@ class NativeNotificationDevice implements NotificationDevice {
         if (response.payload != null) _active?._onTap?.call(response.payload!);
       },
     );
-    if (initialized != true)
+    if (initialized != true) {
       throw StateError('Native notification registration failed.');
+    }
     final android = plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -118,8 +123,9 @@ class NativeNotificationDevice implements NotificationDevice {
         // Unpackaged Windows can report ERROR_NOT_FOUND before first toast
         // registration. Unknown is preserved; opted-in scheduling is verified
         // through the OS pending API, never labeled as permission granted.
-        if (e.code == 'status_unavailable' && e.details == -2147023728)
+        if (e.code == 'status_unavailable' && e.details == -2147023728) {
           return null;
+        }
         rethrow;
       }
     }
@@ -166,8 +172,9 @@ class NativeNotificationDevice implements NotificationDevice {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload,
     );
-    if (Platform.isWindows)
+    if (Platform.isWindows) {
       await statusChannel.invokeMethod<void>('groupScheduled', id);
+    }
   }
 
   @override
@@ -175,8 +182,9 @@ class NativeNotificationDevice implements NotificationDevice {
     await plugin.cancel(id: id);
     // The library removes pending unpackaged toasts. Its shown-toast path is
     // package-only; this narrow AppID overload removes our own shown toast.
-    if (Platform.isWindows)
+    if (Platform.isWindows) {
       await statusChannel.invokeMethod<void>('cancelPresented', id);
+    }
   }
 
   Future<Set<int>> presented() async => Platform.isWindows
@@ -191,7 +199,10 @@ class NativeNotificationDevice implements NotificationDevice {
     _onTap = null;
     if (identical(_active, this)) {
       _active = null;
-      if (Platform.isWindows) statusChannel.setMethodCallHandler(null);
+      if (_statusHandlerInstalled) {
+        statusChannel.setMethodCallHandler(null);
+        _statusHandlerInstalled = false;
+      }
     }
   }
 }

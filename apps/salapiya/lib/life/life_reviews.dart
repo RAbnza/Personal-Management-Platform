@@ -42,7 +42,10 @@ class LifeReviews extends StatelessWidget {
                   for (final value in original.fields.entries)
                     FinancialLine(
                       value.key,
-                      'Current: ${current?.fields[value.key] ?? 'unavailable'}\nRetained edit: ${value.value}',
+                      session.hideAmounts &&
+                              ['salaryMin', 'salaryMax'].contains(value.key)
+                          ? 'Current: Hidden\nRetained edit: Hidden'
+                          : 'Current: ${current?.fields[value.key] ?? 'unavailable'}\nRetained edit: ${value.value}',
                     ),
                   if (current != null || original.expectedVersion == 0)
                     TextButton(

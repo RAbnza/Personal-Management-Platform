@@ -9,9 +9,11 @@ class LifeHistory extends StatefulWidget {
     super.key,
     required this.controller,
     required this.record,
+    this.hideAmounts = false,
   });
   final DurableLifeController controller;
   final String record;
+  final bool hideAmounts;
   @override
   State<LifeHistory> createState() => _LifeHistoryState();
 }
@@ -56,7 +58,12 @@ class _LifeHistoryState extends State<LifeHistory> {
                     for (final value in c.fields.entries)
                       FinancialLine(
                         value.key,
-                        value.value.isEmpty ? '—' : value.value,
+                        widget.hideAmounts &&
+                                ['salaryMin', 'salaryMax'].contains(value.key)
+                            ? 'Hidden'
+                            : value.value.isEmpty
+                            ? '—'
+                            : value.value,
                       ),
                   ],
                 );
