@@ -60,7 +60,16 @@ bool financeDependsOn(LocalRevision r, LocalRevision source) =>
       'plan',
       'activity',
       'authorization',
+      'chargeSource',
     ].any((k) => r.values[k] == source.id) ||
+    (r.values['debtComponentContract'] == '1' &&
+        [
+          'debtPayment',
+          'debtClassification',
+          'debtPayoff',
+        ].contains(financeType(r)) &&
+        debtAllocations(r.values['reductionSources'] ?? '')
+            .containsKey(source.id)) ||
     (r.values['card'] == source.actionId &&
         financeType(source) == 'creditCard') ||
     (r.values['debt'] == source.actionId &&
@@ -260,6 +269,7 @@ class FinanceRuleContext {
     if (sumMinor(posts.map((p) => p.amount)) != BigInt.zero) {
       reject('The financial evidence is unbalanced.');
     }
+    validateDebtProjection(this);
     final accounts = [
       ...posts,
       ...?old?.postings,

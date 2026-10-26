@@ -1,167 +1,309 @@
-# P4 — Complete Financial Scope
+# P4 - Complete Financial Scope
 
 Work in progress, October 26, 2026 (Asia/Manila).
-Branch: `feat/salapiya-p4-complete-finance`, based on verified P3
+Branch: `feat/salapiya-p4-complete-finance`; verified P3 base:
 `26e59618691d6b29f0a2396d781791e910a96d24`.
 
-## Acceptance decision
+## Readiness decision
 
-**P4 is not yet accepted.** This is the single primary P4 handoff and is being
-updated during the continuous assignment. Implementation and evidence below are
-bounded; missing or unexecuted work is not a passing acceptance result.
-P5 Life and P6 distribution work have not started.
+**P4 acceptance remains open.** This is the single primary P4 handoff. Implemented
+features and executed evidence are distinguished below. Missing native journeys
+are not covered by successful compilation or backend tests. P5 and P6 have not
+started. Cloud file bytes fail closed under the explicitly authorized free-tier
+exception; their production storage/scanning boundary remains a release blocker.
 
-## Implementation and preserved contracts
+## Implementation and financial meaning
 
-`apps/salapiya/lib/finance/` extends the existing P1/P2 command journal and P3
-private integration. It does not introduce a second ledger, balance store or
-synchronization engine. The existing normal production shell routes Cards,
-Debts and Planning to persisted native workflows. Existing expense entry accepts
-card funding. Review, original IDs, encrypted drafts, explicit errors, immutable
-revisions and source history are retained.
+The normal production Flutter shell uses the existing P1 journal, P2 durable
+commands and P3 private integration. There is no second balance store or sync
+engine. `apps/salapiya/lib/finance/` supplies the following implementation:
 
-- `card_rules.dart`: card metadata/opening evidence, posted purchases with
-  separate transaction/provider posting dates, pending authorization evidence,
-  repayments, fees, interest, refunds, statements, provider membership,
-  allocations, explicit installment schedules and applications.
-- `debt_rules.dart`: imported recognized liability, borrowing/net proceeds,
-  withheld/financed fees, financed purchases, actual payments, unknown clearing,
-  later noncash classification, explicit schedules and stable-obligation
-  revisions, provider-confirmed payoff and imported-unknown waiver treatment.
-- `planning_rules.dart`, `recurrence_rules.dart`, `planning_queries.dart`:
-  recurrence grammar/generation/overrides/actual links, budgets, goals,
-  reservations/reallocation and read-only source projections. Queries and UI
-  integration remain under development.
-- `finance_screen.dart`, `debt_screen.dart`, `planning_screen.dart`: production
-  reviewed editors, source/history, debt/card detail and planning management.
-- `shared/shared_private_domain.dart`, `shared/shared_screen.dart`: explicit
-  adoption of actual private card purchases and refunds. Group payloads contain
-  neither card identity nor private funding/account information.
+| Code | Behavior |
+| --- | --- |
+| `card_rules.dart`, `finance_screen.dart` | Card metadata/opening, pending authorization, unified expense funding and splits, distinct transaction/provider posting dates, payments, credit, fees, interest, refunds, statement evidence, membership, allocations and explicit installment schedules/applications |
+| `debt_rules.dart`, `debt_screen.dart` | Existing debt import, original versus outstanding principal, borrowing, withheld/financed fees, financed purchase, actual payments, unresolved clearing and later classification, stable schedule revisions, source-specific recognized charges/waivers, avoided future charges, residual evidence and exact payoff |
+| `planning_rules.dart`, `recurrence_rules.dart` | IANA daily/selected-weekly/monthly rules, skip/last-valid day, bounded counts and dates, explicit generation, immutable future replacement, occurrence override/terminal states, partial actual links and exact unlink; category budgets; savings goals/reservations/reallocation/lifecycle |
+| `planning_queries.dart`, `planning_screen.dart`, `source_list.dart` | Read-only forecasts, explicit statement or installment payment bases, source exclusions/overlap disclosures, actual opening/future cash bridge, reservation uncertainty and stable/versioned financial due projections |
+| `reports_screen.dart`, `source_list.dart` | Complete applicable current journals before pagination, exact dates/account/category filters, equal-period comparisons, cash/spend/income/debt/card/shared/clearing classifications, immutable source navigation and formula-safe CSV |
+| `cash_import_rules.dart`, `import_screen.dart` | Reviewed pmp-cash-activity version 1 PHP income/expense history, strict bounded parsing, per-row inclusion/category/duplicate consent, durable staging, provenance, stable child IDs, process/cancel/resume and atomic historical opening rebase |
+| `file_rules.dart`, `file_store.dart`, `files_screen.dart`, `bounded_file_read.dart` | Private metadata, source history, encrypted local objects, bounded provider streams, actual byte presence, safe image preview, original-byte export, explicit local-copy removal and retained orphan inventory; fresh-restore original-byte recovery |
 
-Native postings use the existing signed debit convention and exact BigInt minor
-units. Money stays canonical decimal strings at JSON boundaries. Purchases post
-expense/card liability once; payments post cash/liability only. Statements,
-installment plans and planning definitions have zero postings. Card credit,
-credit limits, uncertain debt clearing and reservations are not liquid cash.
-Cash, spending, principal classification, recognized liability and contractual
-dues remain distinct. Unknown principal/interest is not inferred.
+`lib/shared/shared_private_domain.dart` and `shared_screen.dart` adopt actual
+private card purchases/refunds into P3. The original card movement is retained;
+only personal consumption and private group receivable/payable are reclassified.
+Group streams contain no private card ID. Description-only correction of an
+existing exact-share bill now retains its recorded exact shares instead of
+silently defaulting to Equal.
 
-The inherited card, debt, recurrence, budget, savings and forecast references in
-`docs/reference/` remain authoritative for semantics. The Salapiya blueprint
-governs native product decisions. Web sources, tests, migrations and pnpm tools
-are preserved.
+All authoritative money is BigInt integer minor units and canonical decimal
+strings. Purchases recognize expense and card liability once; payments recognize
+cash and liability once. Credit/available limits are not liquid assets.
+Statements and schedules never create another purchase. Provider posting-date
+statement comparisons show exact differences but neither invent membership nor
+adjust balances. Minimum satisfaction and allocation order remain unknown without
+evidence. Current card/debt totals and due coverage exclude future-dated actuals.
+Civil date interval arithmetic uses UTC calendar dates, independent of DST.
 
-## Storage, authority and synchronization
+Debt original principal is historical evidence, distinct from known outstanding
+principal. New component evidence is opt-in `debtComponentContract: 1`; old
+recipes retain their original interpretation. Explicit principal and recognized
+charge reductions must sum to the recognized reduction and remain within source
+capacity. Unknown reductions preserve conservative supported principal ranges.
+Recognized-charge waivers offset the original expense category only; an imported
+unknown opening waiver uses equity within remaining original opening capacity.
+Financed fees can be waived from their original borrowing source; already paid
+withheld fees cannot. Avoided unposted charges produce no postings. A retained
+payoff must remain reconciled after correction/reversal; closure never forces a
+balance to zero.
 
-SQLite schema 6 retains the schema-5 card liability, debt liability and debt clearing journal
-classifications, introduced by rebuilding only the journal leaf transactionally. Schema 6 adds a narrowly authorized opening-cutoff transition for atomic historical imports. It copies
-existing integer amounts, identities, ownership FKs and seals with FK enforcement
-enabled. It preserves P1–P3 records and accepts supported archive schemas 1–5.
-New domain evidence uses the existing immutable revisions and original commands;
-backup replay must validate their recipes rather than import arbitrary postings.
+Historical V1-V3 references remain authoritative for monetary semantics:
+`docs/reference/v2/` cards/statements, recurrence, budgets, savings, forecasts,
+files/imports, and the historical debt acceptance rules. The approved Salapiya
+blueprint controls native direction and identity. Existing web code, migrations,
+tests and pnpm tooling remain executable and preserved.
 
-Forward PostgreSQL migrations `20261026002100`–`20261026002600` independently
-enforce cards, private card sharing, debts and planning through the existing
-authenticated P2 command boundary. They were previewed and applied to the existing
-verified `salapiya-dev` project in Tokyo. A transient management API HTTP 502
-occurred before the first apply attempt; the subsequent verified attempt applied
-exactly the six reviewed migrations. No reset, provider replacement, paid
-activation or financial-history deletion occurred. Migrations 027?031 were subsequently previewed and applied to the same verified existing project: frozen replay/fresh review dates, atomic cash import and cutoff rebase, financial classification guards, private file metadata, and historical installment capacity. No attachment byte storage or scanning service was enabled.
+## Persistence, authority and recovery
 
-PowerSync continues to transport original commands and owner-filtered accepted
-P2 projections. No binary files or independently writable balances are added to
-streams. Pending intent, server acceptance and downloaded reconciliation remain
-separate. New ordinary card/debt recording can be retained offline; dependent
-allocation/correction/capacity management uses the existing connected online
-finalization boundary. Local-only management remains offline.
+SQLite schema 6 accepts supported schemas 1-6. Schema 5 transactionally rebuilds
+only the journal leaf to add card liability, debt liability and debt clearing.
+Schema 6 permits a narrowly authorized opening-cutoff transition during an atomic
+unsealed cash-opening rebase. Ownership FKs, original IDs, integer amounts,
+immutable history and seals remain enforced; web migrations are never replayed
+in SQLite. Existing accepted P1-P3 histories are not reset.
 
-## Current M01–M17 traceability
+Forward PostgreSQL migrations 021-033 extend the authenticated P2 boundary:
 
-| Row | Implementation / present evidence | Remaining acceptance |
+| Migration | Authority |
+| --- | --- |
+| 021-023 | Cards, actual private card sharing and ordinary offline card intent |
+| 024-025 | Debt domain and ordinary offline debt intent |
+| 026-027 | Planning, frozen replay/fresh review dates and correction guards |
+| 028-029 | Atomic cash-import roots/children/cutoff rebase, classification/provenance and original card movement guards |
+| 030-031 | Metadata-only private supporting files and historical installment/payment capacity |
+| 032-033 | Versioned debt components, source charge allocation/waivers, residuals, retained closure integrity and imported-opening waiver capacity |
+
+All were previewed and applied to the verified existing `salapiya-dev` project
+in Tokyo using `supabase-cli.mjs`, whose target check requires exact project
+identity, region and healthy state. Migration 033's dry run listed only 033;
+its subsequent apply succeeded. Applied migrations are retained unchanged.
+No project/provider replacement, paid activation or hosted history reset occurred.
+
+Local command contract 1 and transport contract 2 remain in use. PostgreSQL
+independently computes recipes/postings; client ledgers are not accepted as
+financial authority. Original immutable receipts survive retries. PowerSync
+carries existing owner-filtered accepted commands and projections; pending intent,
+server acceptance and downloaded reconciliation are separate. Atomic import
+children reconcile as contiguous accepted history. No file blobs enter streams.
+
+Encrypted backup formats 1 (local) and 3 (connected) remain supported. P4 adds
+validated optional financial coverage contract 1 / recipe contract 1, with
+attachment metadata counts and **zero byte objects**. Older archives without the
+additive coverage are accepted under existing validation. Fresh replay validates
+all recipes and original IDs in a separately keyed database. Archive secrets,
+OS database keys and cloud credentials are separate. Restore cannot replace an
+active profile, roll back accepted cloud history or revive revoked group access.
+Original supporting bytes must be retained separately and can be reselected after
+restore only when their exact immutable size/hash/type metadata agrees.
+
+## Offline and finalization policy
+
+All implemented local-only commands remain offline. Connected profiles retain
+ordinary intent and encrypted drafts under the existing P2 model:
+
+| Commands / actions | Connected policy |
+| --- | --- |
+| account, category, income, expense (including card-funded), transfer | Durable local pending command; later acceptance and download |
+| creditCard, cardAuthorization, cardPurchase, cardPayment, cardFee, cardInterest | Durable local pending command; no module-wide online restriction |
+| debtImport, borrowing, debtPayment | Durable actual evidence/pending command; server revalidates dependency/capacity conflicts |
+| financialFile, fileDetach | Durable metadata intent; local bytes remain encrypted on this device; cloud bytes unavailable |
+| refund, correction, reversal, adjustment, archive | Draft/review offline; connected acceptance requires fresh online authority |
+| cardRefund, statement, statementLink, cardAllocation, installment, installmentApplication, financeCorrection, financeReversal | Draft/review offline; dependency-sensitive online finalization |
+| debtClassification, debtSchedule, debtPayoff, debtAdjustment | Draft/review offline; dependency/capacity-sensitive online finalization |
+| recurrence, recurrenceGenerate, occurrenceOverride, recurringLink, recurringUnlink | Draft/review offline; connected finalization online |
+| budget, savingsGoal, reservation, savingsReallocation | Draft/review offline; connected finalization online, actual-date capacity rechecked |
+| cashImport, cashImportChunk, cashImportPreview, cashImportDecision, cashImportProcess, cashImportCancel | Durable draft/staging/review locally; connected command finalization online; uncertain originals resolved before retry |
+| Reports, forecasts, due projections, local file preview/export, archive capture | Read-only/local; coverage and pending status disclosed; no new money |
+| P3 group/private commands | Existing authenticated group roles and private acceptance/freshness policy preserved |
+
+Rejected/stale commands retain original receipt and review state. A local save is
+never represented as remote reconciliation. Complex management is not used as a
+reason to make ordinary card/debt recording online-only.
+
+## M01-M17 traceability
+
+Native evidence refers to normal production composition with real persisted
+controllers and OS facilities. Isolated synthetic test profiles are used, not
+replacement product screens.
+
+| Row | Production scope and current evidence | Remaining acceptance |
 | --- | --- | --- |
-| M01–M03 | Existing production profile/accounts/cash preserved; focused P2/P3 SQL regressions pass | Consolidated affected native regressions pending |
-| M04 | Native imported debt, borrowing/net proceeds/fees/financed purchase; Dart/PostgreSQL parity | Wider inherited debt fixtures and hosted/native options pending |
-| M05 | Payments, clearing/classification, explicit schedules and stable-obligation revision; Windows/Android production journey passed | Additional allocation mapping, component and conflict cases pending |
-| M06 | Exact provider payoff/closure and imported-unknown waiver; Windows/Android journey passed | Recognized-charge waiver/residual alternatives need completion/evidence |
-| M07 | Real card domain and unified expense funding; Windows/Android production purchase/payment/credit passed | Full native refund/fee/correction matrix pending |
-| M08 | Statements, allocations, installment schedules/applications; Dart/PostgreSQL parity, hosted allocation race passed | Individual native evidence/reconciliation workflows pending |
-| M09 | Rules, explicit generation, overrides, partial actual links and exact link reversal; local/domain and hosted parity passed | Native journey and full supersession/coverage matrix pending |
-| M10 | Period/category/basis/zero/archived-overlap rules and actual comparison; local/hosted parity passed | Native journey and report integration pending |
-| M11 | Actual-cash reservations, release/reallocation, lifecycle and supported ranges; local/hosted parity passed | Native journey and date/recovery acceptance pending |
-| M12 | Read-only projection implementation in progress | Native UI, coverage and full forecast parity pending |
-| M13 | Production integration in progress | Complete reports, filters/export/Overview acceptance pending |
-| M14 | Encrypted local objects, metadata/source history, AEAD/checksum checks, actual presence, safe bounded image preview, original-byte export, retained interrupted selections | Native picker acceptance pending; cloud bytes fail closed because production storage/scanning remains unverified |
-| M15 | Maintained CSV parser with strict contract wrapper, explicit review/decisions, durable staging, stable child IDs, atomic cutoff rebase, cancellation and batch resume; local/SQL/hosted checks passed | Native picker/UI journeys pending |
-| M16 | Financial source projection implementation in progress | Source invalidation/UI acceptance; P5 owns broader Calendar/native scheduling |
-| M17 | Existing encrypted archive/recovery retained and schema compatibility extended | New-domain restore, attachment coverage and lifecycle/help acceptance pending |
+| M01-M03 | Existing profile/account/cash contracts retained; focused P1 widget/crash and P2/P3 SQL regressions passed | Final consolidated Flutter run and real Google regression pending |
+| M04 | Debt import, original/outstanding principal, proceeds, withheld/financed fees and financed purchase; local/SQL/hosted parity; original native debt journeys passed on both platforms | Expanded component native journey passed both platforms; wider native borrowing options not executed |
+| M05 | Actual unknown/known payments, later clearing classification, allocation mappings, stable schedule revisions; original Windows/Android journey passed | Expanded component journey passed Windows/Android |
+| M06 | Exact payoff, source-specific recognized waiver, avoided unposted amount and residual; independent Dart/SQL/hosted fixture passed | Expanded native waiver/residual journey passed Windows/Android |
+| M07 | Card purchase/payment/credit and encrypted reopen passed native Windows/Android; real hosted sharing/refund passed Windows | Android hosted sharing/refund rerun pending |
+| M08 | Statement comparison, explicit membership/allocations and installment applications; local/SQL parity, real hosted allocation race | Wider native statement/installment/revision journey not executed |
+| M09 | Rules/generation/overrides/partial actual links; local/SQL/hosted parity and native planning journey passed Windows/Android | Full native timezone/supersession matrix not executed |
+| M10 | Zero budget, bounds, overlap including archives and net/gross bases; local/hosted and native planning evidence | Wider native correction/refund matrix not executed |
+| M11 | Actual-cash reservations/reallocation/lifecycle and supported funding ranges; native underfunding passed both platforms | Wider connected capacity races not executed |
+| M12 | Read-only exact actual/expected bridge, explicit card bases, exclusions and uncertainty; local/domain and both native planning journeys passed | Full native source-option matrix not executed |
+| M13 | Complete filtered reports, history, comparisons, Overview dues and real CSV export | Final native filtered-export assertions in progress |
+| M14 | Local encrypted file/link/type/size/AAD/hash/availability; Windows real picker/preview and fresh-restore exact original recovery passed; Android original picker journey passed | Extended Android fresh restore pending; cloud storage/scanning blocked |
+| M15 | Reviewed strict cash CSV, stable batches, atomic cutoff rebase, cancellation and retries; local/SQL/hosted and native pick/import passed both platforms | Larger native capacity/interruption matrix not executed |
+| M16 | Stable/versioned debt, statement and recurring sources, due revisions invalidate stale versions, Overview source navigation | Native notifications/broader Calendar belong to P5; no notification delivery claimed |
+| M17 | Full-domain independent encrypted replay, metadata-only byte coverage, wrong-secret/corruption refusal; Windows actual save/fresh restore/reselect passed | Extended Android native restore and final lifecycle regression pending |
 
 ## Executed evidence
 
-- `integration_test/p4_cards_test.dart`: **passed native production end-to-end**
-  on Windows and Android API 37 emulator, using separate synthetic profile/vault
-  namespaces and a network-denying local composition. A PHP1,200 purchase leaves
-  cash unchanged; a PHP1,500 payment yields PHP300 noncash card credit without
-  another expense. Encrypted reopen/integrity checks pass. The first Windows run
-  reached its assertions but failed in test cleanup because the runtime was
-  closed twice; the corrected complete rerun passed. The failed run is not a pass.
-- `integration_test/p4_debts_test.dart`: **passed native production end-to-end**
-  on Windows and Android. PHP6,400 imported liability creates no cash; PHP1,000
-  unknown payment enters clearing, then provider classification reduces liability
-  PHP900 and recognizes PHP100 interest without another cash payment. A schedule
-  revision retains its original allocation. PHP5,500 confirmed payoff closes the
-  reconciled liability. The Android emulator was restarted without wiping data
-  after it was no longer connected; the completed Android run passed.
-- `test/p4_finance_test.dart`, `p4_shared_card_test.dart`, `p4_planning_test.dart`:
-  **10 local/domain tests passed** in the consolidated focused run. Canonical
-  fixtures are deterministic in `contracts/salapiya/p4_finance.json`; regeneration
-  is opt-in with `P4_WRITE_FIXTURES=true`. Ordinary test runs compare the fixture.
-- `p4-server.test.mjs`, `p2-server.test.mjs`, `p3-server.test.mjs`:
-  **21 backend tests passed**, applying the full forward migration chain in
-  PGlite. This is local PostgreSQL-engine evidence, not hosted synchronization.
-- `p4-hosted-tests.mjs`: **5 hosted checks passed** using existing synthetic
-  identities, signed Data API calls and independent actual PostgreSQL sessions.
-  Exact card/debt/planning plans append to the existing synthetic P2/P3 profile;
-  original receipts replay once; foreign/private access and direct writes are
-  denied; competing allocations retain one acceptance and one rejection; card
-  sharing/refund leaves liability −111,000, expense 37,000 and receivable 74,000
-  minor units with no cash or clearing duplication and no card ID in group data.
+- `p4_cards_test.dart`: native Windows and Android local production pass. Purchase
+  PHP1,200 leaves cash unchanged; payment PHP1,500 produces PHP300 noncash card
+  credit, with no repeat expense; encrypted reopen and integrity passed.
+- Original `p4_debts_test.dart`: native Windows/Android local production pass.
+  Import PHP6,400, unknown cash payment PHP1,000, later reduction PHP900 and
+  interest PHP100, retained schedule allocations after revision, then confirmed
+  PHP5,500 payoff. Expanded component/waiver/residual journey also passed Windows (01:58) and Android (01:50): principal 800 -> 600, source charge allocation/waiver, avoided unposted interest, one-cent residual charge/waiver and exact closure; final cash PHP2,400 and spending PHP200.
+- `p4_planning_test.dart`: native Windows/Android local production pass for
+  goal/reservation, zero budget, recurrence/generation, actual underfunding,
+  partial actual link/unlink and read-only forecast.
+- `p4_connected_cards_test.dart`: **native Windows real hosted pass** after the
+  exact-share correction fix. Actual SDK, durable offline intent, pause/resume,
+  accepted original receipts and downloaded CDC; actual purchase/adoption,
+  corrected group source/private re-review, actual card refund and private refund
+  adoption. Exact final card-related totals: liability -111000, expense 37000,
+  receivable 74000 minor units; no cash replay and no card ID in group document.
+  Android has no retained completed passing result yet. P3 scenario 31 is not
+  marked fully passed until both targets succeed.
+- `p4_portability_test.dart`, opt-in native pickers: **Windows full pass**, log
+  `build/p4-portability-windows-rerun.log`, 03:32, +1. Real PNG selection and
+  verified preview, real cash CSV preview/post (cash PHP980 -> PHP1,055), report
+  Save dialog, encrypted archive Save, new profile/key Restore Open, actual absent
+  byte coverage, exact original PNG reselection/re-encryption and preview with no
+  added journal command. Android's original three-picker journey passed; extended
+  archive/fresh-restore journey remains pending. Recovery secrets stay in test
+  memory and were not printed.
+- `p4_finance_test`, `p4_shared_card_test`, `p4_planning_test`, `p4_import_test`,
+  `p4_files_test`, `p4_forecast_recovery_test`: prior consolidated **20 local/domain
+  tests passed**. Imports include malformed/unsupported/future input, immutable
+  provenance/duplicates, 50-row cancellation, interrupted historical rebase and
+  exact conservation. Files include AEAD/AAD/key/tamper/hash/absence and historical
+  attachment source after legitimate correction.
+- Latest focused run: **6 tests passed** across `p4_debt_components_test`,
+  `p4_provider_dates_test`, `p4_forecast_recovery_test`. Includes conservative
+  unknown components, source cap/waiver/financed fee/residual/closure, provider
+  posting-date comparison, future allocation cutoff, forecasts and fresh replay.
+- `p4_capacity_reports_test`: **1 local test passed** at the full 500-row limit,
+  processing ten 50-row batches with original-command retries, exact cash and
+  no duplicate income; 501 rows are refused. Full 501-income export exceeds UI
+  pagination, preserves filters/exact amounts and escapes a formula description.
+- `p4_bounded_file_test`: **1 local test passed**, including a provider stream
+  larger than its declared size; byte bounds do not rely on reported length.
+- Focused affected P1 widgets/floating actions/P2 crash tests: **21 passed serially**.
+- Latest focused PostgreSQL suite: **25 tests passed** (`p2-server`, `p3-server`,
+  `p4-server`, `p4-import-server`, `p4-debt-server`), applying migrations 001-033.
+  PGlite engine tests are backend evidence, not hosted CDC proof.
+- `p4-hosted-tests.mjs`: **5 real hosted checks passed** for exact graph plans,
+  original receipts/mismatch, foreign/RLS/direct-write denial, independent-session
+  allocation race (one accepted/one rejected), and real card sharing/refund.
+- `p4-import-hosted.mjs`: **real hosted pass** for atomic cutoff/history equation,
+  stable child IDs/original receipt, metadata-only file state and legitimate source
+  correction retaining original source FK.
+- `p4-debt-hosted.mjs`: **real hosted pass**, all 12 deterministic mapped command
+  plans match independent server authority and original receipt retries, including
+  imported principal, recognized charge allocation/waiver, avoided amount,
+  residual, closure and borrowing financed-fee waiver.
+- `dart analyze lib test integration_test`: **passed**, no issues, after the debt
+  component/provider date changes. Latest empty-reference fix still needs final
+  analysis in consolidated validation.
+- Latest checkpoint credential scan: 2,046 source/artifact files, zero matches. Scan includes P3/P4 native logs and must be repeated after final builds.
 
-**P3 inherited scenario 31 remains short of full native hosted acceptance.**
-Local and hosted authority tests pass, and native card purchase/payment passes on
-both platforms, but the complete hosted card-funded sharing/refund/correction
-journey has not yet been exercised on both native targets. No full pass is claimed.
+Deterministic opt-in golden fixtures live in `contracts/salapiya/p4_finance.json`,
+`p4_import.json`, and `p4_debt_components.json`. Ordinary runs compare exact plans;
+fixture regeneration uses `P4_WRITE_FIXTURES=true`.
 
-## Operational boundaries and outstanding work
+## Failed/interrupted runs and operational observations
 
-All tests use synthetic data and isolated native storage. The pre-existing
-untracked `apps/salapiya/android/build/` directory is preserved. No credentials,
-OAuth secrets, sessions or recovery secrets are intended for tracked artifacts.
-Free-tier resources are reused. Actual long-term quota/wire-volume certification,
-retention operations, physical-device accessibility and distribution remain P6;
-the small hosted fixture is not a sustainability guarantee.
+No failed or interrupted attempt is counted as passing:
 
-The new pure-Dart timezone dependency is pinned to `timezone 0.11.2` (BSD-2-Clause)
-for named IANA calendars, using bundled data without a runtime network request.
-The publisher's [package documentation](https://pub.dev/packages/timezone)
-describes the embedded database and Flutter initialization. Its bundled timezone
-data version is a dependency fact, not a claim that future political timezone
-changes are already covered.
+- Initial Windows card run passed assertions but double-closed cleanup; corrected
+  complete rerun passed.
+- Broad default-concurrency Flutter run was interrupted after 171 passing tests:
+  stale inherited theme assertion and native DLL collision with a process-kill
+  worker. P1 teardown used a fake-clock wait and an obsolete placeholder assertion;
+  these were corrected and the affected 21-test serial rerun passed. Final broad
+  serial run remains pending.
+- Early hosted native attempts exposed a test pause/reconnect race, a stale source
+  label and the real exact-share correction UI bug. Windows full corrected rerun
+  passed. Android compilation once failed during an incomplete concurrent library
+  edit; another host tool session lost its output, so no Android pass is claimed.
+- Expanded Windows debt journey caught empty optional schedule references being
+  treated as valid IDs. The view and domain lookups now require nonempty IDs;
+  corrected complete Windows and Android reruns passed.
+- One Windows portability run selected a mismatching original after restore;
+  validation correctly refused it, and the test timed out. Correct full-path
+  rerun completed all six native dialogs and passed.
+- An Android picker attempt failed end-of-test SemanticsHandle cleanup after
+  external accessibility inspection near completion. A clean original journey
+  rerun passed; no interrupted/cleanup-failed run is substituted for it.
+- Flutter 3.47.7 native `flutter test` defaults to uninstalling the package. This
+  removed an emulator synthetic installation/cache during earlier acceptance;
+  hosted accepted history remained intact. Subsequent native runs explicitly use
+  `--no-uninstall`, retain installation state and never wipe the emulator.
+- Computer Use availability has varied during this session. Windows's completed
+  native dialog proof used the working CUA API. The older node_repl helper
+  currently reports `failed to write kernel assets`; this is tooling failure,
+  not successful UI evidence.
 
-Owner actions are not currently required. The remaining implementation and
-acceptance work continues within the original authorized assignment. This file
-will record actual blockers and the final readiness decision before completion.
+## Files, privacy, free tier and release boundaries
 
-## Additional checkpoint evidence (October 26)
+Local attachment objects use AES-GCM with a purpose/owner-derived key from the
+protected profile key, immutable metadata AAD and hash checks on read/export.
+Opaque paths, flushed staging/rename, 10 MiB/file, 1,000 retained objects and
+1 GiB/device bounds apply. PNG/JPEG decoded dimensions are bounded; PDF is offered
+as original export, without claiming a safe embedded renderer. Extension/signature
+agreement is a format hint, never a malware-scan result. Archived links cannot
+be opened as active attachments. Removed local copies do not delete financial
+source history; orphans remain visible for explicit review.
 
-- `test/p4_import_test.dart`: **5 local/domain tests passed**, including quoted fields, malformed/future/unsupported coverage, stable row provenance and idempotency, interrupted historical rebase rollback/conservation, and cancellation after a committed 50-row chunk. `contracts/salapiya/p4_import.json` is an opt-in generated deterministic Dart/SQL fixture.
-- `test/p4_files_test.dart`: **2 local tests passed** for profile-purpose-derived AES-GCM encrypted objects, metadata AAD, wrong keys, tampering, checksum/size checks, actual missing bytes, retained originals, format-hints-only semantics and historical source links after correction.
-- `test/p4_forecast_recovery_test.dart`: **3 local/domain tests passed** for exact bridge and installment basis, explicit expected-source exclusions and real-cash exclusion denial, mutually exclusive card bases/horizon bounds, stable reminder identity with revised version/date, and independent encrypted P4 restore. The archive preserves source recipes and import drafts, includes metadata coverage contract 1 and zero attachment byte objects, rejects wrong secrets/corruption, and cannot replace an active profile.
-- Full focused P2/P3/P4 PostgreSQL run: **23 backend tests passed** with migrations 001?031. This includes independently computed import roots/children and exact golden plans.
-- `p4-import-hosted.mjs`: **passed actual hosted authority checks** against the existing synthetic private profile: exact conserved opening rebase, stable historical row identities, original root receipt retry, metadata-only file state, and a legitimate financial correction retaining the original attachment source FK. This proves hosted SQL authority, not native CDC acceptance.
-- `integration_test/p4_planning_test.dart`: **passed native production journeys on Windows and Android** for goal/reservation, zero budget, recurrence/generation, actual underfunding, partial actual link/unlink and read-only forecast. One settings instance is now shared by test runtime and app.
-- Overview now projects actual debt/card/recurring source dues. History and daily/contribution views page complete datasets. P5 still owns device notification scheduling, permissions and broader Calendar behavior; these have not been certified.
-- `flutter analyze`: **passed** after the new file/import/report/forecast/recovery UI integration.
-- A broad default-concurrency Flutter run was interrupted after 171 passing tests: an inherited theme test expected the old Container surface, and the process-kill worker collided on the Windows native DLL. Inherited P1 widget tests also exposed fake-clock native teardown waits and an obsolete debt placeholder assertion. The tests now assert the current Material/Padding surface and real debt screen, advance the widget clock during bounded native cleanup, and use serial reruns. No interrupted run is counted as a full pass.
-- Credential audit scanned **2,028 files with zero matches**, including working source and available native binaries/APK. Repeat after final builds and before final push.
+Cloud metadata says `unavailable_unscanned` and `device-local-only`. Upload,
+download, provider authorization/scanning, cloud transfer recovery and keep-offline
+certification are **blocked**, not faked. Viable future options require a verified
+private object policy plus maintained scanning/quarantine within existing free
+resources, or an explicitly approved changed operational boundary. No paid service
+has been introduced or purchased.
 
-The pinned `csv 8.0.0` package is used with dynamic numeric typing disabled. Its [publisher documentation](https://pub.dev/packages/csv) describes the current parser API. A strict bounded lexical and financial-contract wrapper rejects tolerant-parser ambiguities before any financial posting.
+Supabase, PowerSync JP Development and Google OAuth development resources are
+reused. The fixture traffic is bounded synthetic append-only history; it is not a
+quota certification for twenty users. Measure actual DB growth, command JSON/CDC
+wire volume, connection limits, retention and backup size before P6 release.
+Local attachment caps do not imply free hosted byte allowance. No recurring
+artificial keepalive, extra instance, worker or binary replication was added.
+
+Production amount privacy masks new display totals and raw source fields. CSV and
+original-byte export are explicit private file operations. No card/account/debt
+private identities are added to group data. Credentials/configs remain in ignored
+private directories and OS slots, not Dart defines containing refresh secrets.
+
+Direct pure-Dart dependencies are pinned: [timezone 0.11.2](https://pub.dev/packages/timezone)
+for bundled IANA rules and [csv 8.0.0](https://pub.dev/packages/csv) with numeric
+inference disabled. The parser is surrounded by strict lexical/financial bounds.
+The bundled timezone database needs maintained updates when civil rules change.
+
+## P5 handoff boundary and remaining work
+
+P4 financial reminder sources expose stable ID, source revision/version, date,
+amount and kind; revisions invalidate stale projections and never create money.
+Overview consumes these sources without duplicating calendar entries. P5 must
+own notification permission, platform/background scheduling, delivery/reboot/timezone
+rescheduling and broader Calendar UI. No native notification delivery is claimed.
+Physical-device acceptance, distribution, signing and release-scale performance
+remain P6. P4 does not begin Life Tasks, Career or unrelated trackers.
+
+The production Profile Help explains money classifications, planning uncertainty,
+imports, local-only file bytes, backup coverage, archive/sign-out and notification
+boundaries. Existing profile/recovery and private/group authority lifecycles are
+preserved. Account deletion/retention certification remains explicit release work.
+
+Owner action is not currently required. Independent implementation/verification
+continues within the authorized assignment. Before final publication: complete
+remaining native runs, consolidated serial Flutter checks/builds/credential audit,
+update this readiness decision with actual evidence, commit and push this branch.

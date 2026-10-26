@@ -291,7 +291,11 @@ class LocalFinancialController extends FinancialController {
     cardBalance = -sumMinor(
       snapshot.current
           .expand((r) => r.postings)
-          .where((p) => p.ledger == 'card_liability')
+          .where(
+            (p) =>
+                p.ledger == 'card_liability' &&
+                p.date.compareTo(civilToday()) <= 0,
+          )
           .map((p) => p.amount),
     );
     categories.addAll(snapshot.categories.map((c) => c.name));

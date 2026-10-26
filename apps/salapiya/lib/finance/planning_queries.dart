@@ -64,7 +64,7 @@ List<RecurringOccurrence> recurringOccurrences(
       final end = boundary(rule);
       var windowEnd = through;
       if (end != null && end.compareTo(windowEnd) <= 0) {
-        windowEnd = DateTime.parse(end)
+        windowEnd = DateTime.parse('${end}T00:00:00Z')
             .subtract(const Duration(days: 1))
             .toIso8601String()
             .substring(0, 10);
@@ -131,6 +131,24 @@ List<RecurringOccurrence> recurringOccurrences(
   return result;
 }
 
+/// Provider-date comparison only. Membership and settlement remain explicit.
+BigInt statementRecordedBalance(LocalSnapshot s, LocalRevision statement) =>
+    -sumMinor(
+      s.current
+          .where((r) => r.values['card'] == statement.values['card'])
+          .expand(
+            (r) => r.postings.where(
+              (p) =>
+                  p.ledger == 'card_liability' &&
+                  (r.values['postingDate'] ?? p.date).compareTo(
+                        statement.values['end']!,
+                      ) <=
+                      0,
+            ),
+          )
+          .map((p) => p.amount),
+    );
+
 class FinancialReminderSource {
   const FinancialReminderSource(
     this.id,
@@ -148,14 +166,18 @@ class FinancialReminderSource {
 List<FinancialReminderSource> financialReminderSources(
   LocalSnapshot s,
   String from,
-  String through,
-) {
+  String through, {
+  String? asOf,
+}) {
+  final today = asOf ?? civilToday();
+  planningDate(today);
   final result = <FinancialReminderSource>[];
   for (final r in s.current) {
     if (financeType(r) == 'debtSchedule' &&
         !s.current.any(
           (p) =>
               financeType(p) == 'debtPayoff' &&
+              p.date.compareTo(today) <= 0 &&
               p.values['debt'] == r.values['debt'],
         )) {
       for (final row in financeSchedule(r.values['schedule']!)) {
@@ -166,7 +188,8 @@ List<FinancialReminderSource> financialReminderSources(
                   .where(
                     (p) =>
                         financeType(p) == 'debtPayment' &&
-                        p.values['scheduleSource'] != null &&
+                        p.date.compareTo(today) <= 0 &&
+                        (p.values['scheduleSource'] ?? '').isNotEmpty &&
                         s.revision(p.values['scheduleSource']!).actionId ==
                             r.actionId,
                   )
@@ -199,6 +222,7 @@ List<FinancialReminderSource> financialReminderSources(
             .where(
               (p) =>
                   financeType(p) == 'cardAllocation' &&
+                  p.date.compareTo(today) <= 0 &&
                   p.values['statement'] == r.id,
             )
             .map((p) => p.amount),

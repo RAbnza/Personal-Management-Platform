@@ -13,6 +13,7 @@ import '../local/finance_domain.dart';
 import '../local/local_runtime.dart';
 import 'file_store.dart';
 import 'finance_screen.dart';
+import 'bounded_file_read.dart';
 
 class NativeFilesScreen extends StatefulWidget {
   const NativeFilesScreen({super.key, required this.session});
@@ -93,7 +94,10 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
     if (length == null || length < 1 || length > FinancialFileStore.maxBytes) {
       reject('Choose PDF, JPEG or PNG up to 10 MiB.');
     }
-    final bytes = await picked.readAsBytes(),
+    final bytes = await readBoundedFinancialFile(
+          picked,
+          FinancialFileStore.maxBytes,
+        ),
         name = p.basename(picked.name),
         mime = FinancialFileStore.validateFormat(name, bytes),
         id = newLocalId();
@@ -180,7 +184,10 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
     }
     final values = Map<String, String>.from(retained!['values'] as Map),
         id = retained!['command'] as String;
-    final bytes = await picked.readAsBytes();
+    final bytes = await readBoundedFinancialFile(
+      picked,
+      FinancialFileStore.maxBytes,
+    );
     await files.write(id, values, bytes);
     await finish(id, values);
   }
@@ -237,6 +244,22 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> restoreOriginal(LocalRevision r) async {
+    if (financialFileDetached(c.snapshot, r.id)) {
+      reject(
+        'This source link is archived. Create a new reviewed attachment link instead.',
+      );
+    }
+    final picked = await FilePicker.pickFile();
+    if (picked == null) return;
+    final bytes = await readBoundedFinancialFile(
+      picked,
+      FinancialFileStore.maxBytes,
+    );
+    await files.write(r.id, r.values, bytes);
+    message = 'Original bytes match the immutable checksum and are encrypted with this profile’s current protected key. No new financial source or cloud transfer was created.';
   }
 
   Future<void> export(LocalRevision r) async {
@@ -378,6 +401,14 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
                   Wrap(
                     spacing: 8,
                     children: [
+                      TextButton(
+                        onPressed: busy
+                            ? null
+                            : () => run(() => restoreOriginal(r)),
+                        child: const Text(
+                          'Restore local bytes from identical original',
+                        ),
+                      ),
                       if (r.values['mime'] != 'application/pdf')
                         TextButton(
                           onPressed: busy ? null : () => run(() => preview(r)),

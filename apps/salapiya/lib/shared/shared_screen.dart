@@ -512,11 +512,11 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
           value: r == null || refund ? '' : phpDecimal(sharedMinor(r['total'])),
         ),
         if (!refund)
-          const SharedField(
+          SharedField(
             'method',
             'Split method',
-            value: 'equal',
-            options: {
+            value: r == null ? 'equal' : 'exact',
+            options: const {
               'equal': 'Equal · canonical participant order',
               'exact': 'Exact / custom',
             },

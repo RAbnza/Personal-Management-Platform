@@ -91,6 +91,19 @@ class FinancialFileStore {
       await readMetadata(id, metadata);
       return;
     }
+    var objects = 0, storedBytes = 0;
+    await for (final item in directory.list(followLinks: false)) {
+      if (item is File) {
+        objects++;
+        storedBytes += await item.length();
+      }
+    }
+    if (objects >= 1000 ||
+        storedBytes + bytes.length + header.length + 28 > 1024 * 1024 * 1024) {
+      reject(
+        'This device’s retained file objects exceed the 1,000-object / 1 GiB storage bound. Existing and orphan bytes are preserved. Export and explicitly remove reviewed local copies before adding another.',
+      );
+    }
     final box = await cipher.encrypt(
       bytes,
       secretKey: await key(),
@@ -149,6 +162,11 @@ class FinancialFileStore {
   Future<Uint8List> read(String id) async {
     final s = await store.snapshot();
     final file = financeSource(s, id, {'financialFile'});
+    if (financialFileDetached(s, id)) {
+      reject(
+        'The attachment link is archived. Its encrypted bytes are retained but are not available through an unlinked source. Attach an independently selected original to create a new reviewed link.',
+      );
+    }
     s.revision(file.values['sourceRevision']!);
     return readMetadata(id, file.values);
   }

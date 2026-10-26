@@ -8,6 +8,17 @@ import '../local/finance_domain.dart';
 import '../local/local_finance_controller.dart';
 import 'finance_screen.dart';
 
+String _principalEvidence(
+  LocalFinancialController c,
+  LocalSnapshot s,
+  LocalRevision debt,
+) {
+  final range = debtPrincipalRange(s, debt, civilToday());
+  return range == null
+      ? 'Outstanding principal: unknown; original principal is separate historical evidence.'
+      : 'Outstanding principal supported range: ${c.decimal(range.$1)}–${c.decimal(range.$2)} PHP.';
+}
+
 class NativeDebtsScreen extends StatelessWidget {
   const NativeDebtsScreen({super.key, required this.controller});
   final LocalFinancialController controller;
@@ -31,6 +42,7 @@ class NativeDebtsScreen extends StatelessWidget {
                 'debtClassification': 'Classify payment',
                 'debtSchedule': 'Provider schedule',
                 'debtPayoff': 'Early settlement',
+                'debtAdjustment': 'Provider charge / waiver / residual',
               }.entries)
                 OutlinedButton(
                   onPressed: () => openNativeFinance(
@@ -48,10 +60,10 @@ class NativeDebtsScreen extends StatelessWidget {
           )) ...[
             SectionHeading(debt.title),
             FinanceNotice(
-              'Recognized liability: ${controller.decimal(-financeBalance(s, 'debt_liability', 'debt', debt.actionId))} PHP\n'
-              'Unresolved payment clearing: ${controller.decimal(financeBalance(s, 'debt_clearing', 'debt', debt.actionId))} PHP\n'
-              'Outstanding principal: requires complete provider allocation evidence.\n'
-              '${s.current.any((r) => financeType(r) == 'debtPayoff' && r.values['debt'] == debt.actionId) ? 'Closed with reconciled payoff evidence. Future dues are cancelled; history is retained.' : 'Active. Schedules never create a liability or prove payment.'}',
+              'Recognized liability: ${controller.decimal(-financeBalance(s, 'debt_liability', 'debt', debt.actionId, through: civilToday()))} PHP\n'
+              'Unresolved payment clearing: ${controller.decimal(financeBalance(s, 'debt_clearing', 'debt', debt.actionId, through: civilToday()))} PHP\n'
+              '${_principalEvidence(controller, s, debt)}\n'
+              '${s.current.any((r) => financeType(r) == 'debtPayoff' && r.date.compareTo(civilToday()) <= 0 && r.values['debt'] == debt.actionId) ? 'Closed with reconciled payoff evidence. Future dues are cancelled; history is retained.' : 'Active. Schedules never create a liability or prove payment.'}',
             ),
             for (final schedule in s.current.where(
               (r) =>
@@ -75,7 +87,9 @@ class NativeDebtsScreen extends StatelessWidget {
                               .where(
                                 (r) =>
                                     financeType(r) == 'debtPayment' &&
-                                    r.values['scheduleSource'] != null &&
+                                    r.date.compareTo(civilToday()) <= 0 &&
+                                    (r.values['scheduleSource'] ?? '')
+                                        .isNotEmpty &&
                                     s
                                             .revision(
                                               r.values['scheduleSource']!,
@@ -94,6 +108,7 @@ class NativeDebtsScreen extends StatelessWidget {
                     final closed = s.current.any(
                       (r) =>
                           financeType(r) == 'debtPayoff' &&
+                          r.date.compareTo(civilToday()) <= 0 &&
                           r.values['debt'] == debt.actionId,
                     );
                     final remaining = row.amount - paid;

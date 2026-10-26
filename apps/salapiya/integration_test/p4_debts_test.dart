@@ -160,6 +160,149 @@ void main() {
           BigInt.zero,
         );
         expect(c.recognizedSpending, BigInt.from(10000));
+        await localTap(tester, find.text('Add existing debt').first);
+        await localWait(
+          tester,
+          () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+        );
+        await nativeEnter(tester, 'name', 'Native component loan');
+        await nativeEnter(tester, 'lender', 'Provider');
+        await nativeEnter(tester, 'amount', '1000.00');
+        await nativeEnter(tester, 'principal', '2000.00');
+        await nativeEnter(tester, 'outstandingPrincipal', '800.00');
+        await nativeSave(tester);
+        final componentDebt = c.snapshot.current
+            .singleWhere((r) => r.title == 'Native component loan')
+            .actionId;
+        Future<String> adjustment(
+          String name,
+          String kind,
+          String amount, {
+          String? source,
+        }) async {
+          await localTap(
+            tester,
+            find.text('Provider charge / waiver / residual').first,
+          );
+          await localWait(
+            tester,
+            () =>
+                find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+          );
+          await nativeEnter(tester, 'name', name);
+          await debtSelect(tester, 'debt', 'Native component loan ·');
+          await nativeEnter(tester, 'amount', amount);
+          await debtSelect(
+            tester,
+            'adjustmentKind',
+            {
+              'recognized_charge': 'New recognized charge',
+              'recognized_waiver': 'Waive existing recognized liability',
+              'rounding_charge': 'Provider-confirmed residual charge',
+              'rounding_waiver': 'Provider-confirmed residual waiver',
+              'avoided_future': 'Avoided future unposted charge (no money)',
+            }[kind]!,
+          );
+          await debtSelect(tester, 'category', 'Fees');
+          if (source != null) {
+            await debtSelect(
+              tester,
+              'waiverBasis',
+              'Original recognized charge source',
+            );
+            await debtSelect(tester, 'chargeSource', '$source ·');
+          }
+          await nativeEnter(
+            tester,
+            'reason',
+            'Exact synthetic provider evidence',
+          );
+          await nativeEnter(tester, 'reference', name);
+          await debtSelect(
+            tester,
+            'verified',
+            'I confirm these provider facts',
+          );
+          await nativeSave(tester);
+          return c.snapshot.current.singleWhere((r) => r.title == name).id;
+        }
+
+        final charge = await adjustment(
+          'Native recognized interest',
+          'recognized_charge',
+          '100.00',
+        );
+        await localTap(tester, find.text('Record debt payment').first);
+        await localWait(
+          tester,
+          () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+        );
+        await nativeEnter(tester, 'name', 'Native known components');
+        await debtSelect(tester, 'debt', 'Native component loan ·');
+        await debtSelect(tester, 'account', 'Debt wallet');
+        await nativeEnter(tester, 'amount', '300.00');
+        await nativeEnter(tester, 'reduction', '250.00');
+        await nativeEnter(tester, 'principalReduction', '200.00');
+        await nativeEnter(tester, 'reductionSources', '$charge,50.00');
+        await nativeEnter(tester, 'interest', '50.00');
+        await nativeEnter(tester, 'unapplied', '300.00');
+        await debtSelect(
+          tester,
+          'certainty',
+          'Confirmed individual components',
+        );
+        await nativeSave(tester);
+        expect(
+          debtPrincipalRange(
+            c.snapshot,
+            c.snapshot.revision(componentDebt),
+            civilToday(),
+          ),
+          (BigInt.from(60000), BigInt.from(60000)),
+        );
+        await adjustment(
+          'Native remaining interest waiver',
+          'recognized_waiver',
+          '50.00',
+          source: 'Native recognized interest',
+        );
+        await adjustment(
+          'Native avoided future interest',
+          'avoided_future',
+          '200.00',
+        );
+        await adjustment('Native residual charge', 'rounding_charge', '0.01');
+        await adjustment(
+          'Native residual waiver',
+          'rounding_waiver',
+          '0.01',
+          source: 'Native residual charge',
+        );
+        await localTap(tester, find.text('Early settlement').first);
+        await localWait(
+          tester,
+          () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+        );
+        await nativeEnter(tester, 'name', 'Native component closure');
+        await debtSelect(tester, 'debt', 'Native component loan ·');
+        await debtSelect(tester, 'account', 'Debt wallet');
+        await nativeEnter(tester, 'amount', '800.00');
+        await nativeEnter(tester, 'providerPayoff', '800.00');
+        await nativeEnter(tester, 'reduction', '800.00');
+        await nativeEnter(
+          tester,
+          'reason',
+          'Reconciled after explicit source waiver and residual',
+        );
+        await nativeEnter(tester, 'reference', 'Component closure');
+        await debtSelect(tester, 'verified', 'I confirm these provider facts');
+        await nativeSave(tester);
+        expect(c.snapshot.balance(account), BigInt.from(240000));
+        expect(
+          financeBalance(c.snapshot, 'debt_liability', 'debt', componentDebt),
+          BigInt.zero,
+        );
+        expect(c.recognizedSpending, BigInt.from(20000));
         await tester.runAsync(c.store.integrity);
         expect(network.attempts, 0);
       } finally {

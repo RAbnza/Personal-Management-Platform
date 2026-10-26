@@ -149,10 +149,12 @@ class _NativeReportsScreenState extends State<NativeReportsScreen> {
           .where((v) => ['pending', 'accepted'].contains(v))
           .length;
       final previousDays = error == null
-          ? DateTime.parse(end).difference(DateTime.parse(start)).inDays
+          ? DateTime.parse('${end}T00:00:00Z')
+                .difference(DateTime.parse('${start}T00:00:00Z'))
+                .inDays
           : 0;
       final previousStart = error == null
-          ? DateTime.parse(start)
+          ? DateTime.parse('${start}T00:00:00Z')
                 .subtract(Duration(days: previousDays))
                 .toIso8601String()
                 .substring(0, 10)

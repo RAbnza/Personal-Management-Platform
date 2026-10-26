@@ -10,6 +10,7 @@ import '../features/finance/presentation/financial_widgets.dart';
 import '../local/finance_domain.dart';
 import '../local/local_finance_controller.dart';
 import '../p0/exact_money.dart';
+import 'bounded_file_read.dart';
 
 Future<void> submitCashImport(
   LocalFinancialController c,
@@ -216,7 +217,8 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
     if (length == null || length > 1024 * 1024) {
       reject('Select a UTF-8 cash-history CSV up to 1 MiB.');
     }
-    final bytes = await file.readAsBytes(), rows = parseCashCsv(bytes);
+    final bytes = await readBoundedFinancialFile(file, 1024 * 1024),
+        rows = parseCashCsv(bytes);
     draftId = newLocalId();
     draft = {
       'batch': newLocalId(),

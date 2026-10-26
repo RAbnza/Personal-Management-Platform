@@ -74,7 +74,9 @@ void planPlanning(FinanceRuleContext c) {
       c.total = c.money('amount', zero: true, wide: true);
       final start = planningDate(c.text('start')),
           end = planningDate(c.text('endExclusive'), exclusive: true);
-      final days = DateTime.parse(end).difference(DateTime.parse(start)).inDays;
+      final days = DateTime.parse('${end}T00:00:00Z')
+          .difference(DateTime.parse('${start}T00:00:00Z'))
+          .inDays;
       if (days < 1 || days > 366) {
         reject('Budget periods use 1–366 days with an exclusive end.');
       }

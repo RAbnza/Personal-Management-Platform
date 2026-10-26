@@ -7,10 +7,16 @@ const nativeDebtCommands = {
   'debtClassification',
   'debtSchedule',
   'debtPayoff',
+  'debtAdjustment',
 };
 
 void planDebt(FinanceRuleContext c) {
   final s = c.s, v = c.v, op = c.operation;
+  if (v['debtComponentContract'] != null && v['debtComponentContract'] != '1') {
+    reject(
+      'Unsupported debt component evidence version. Preserve the original source.',
+    );
+  }
   if (['debtImport', 'borrowing'].contains(op)) {
     c.text('lender', max: 200);
     if (![
@@ -24,6 +30,14 @@ void planDebt(FinanceRuleContext c) {
     if (c.value('principal').isNotEmpty) c.money('principal');
     v['debt'] = c.old?.actionId ?? c.command.id;
     c.total = c.money('amount');
+    if (op == 'debtImport' &&
+        v['debtComponentContract'] == '1' &&
+        c.value('outstandingPrincipal').isNotEmpty &&
+        c.money('outstandingPrincipal', zero: true) > c.total) {
+      reject(
+        'Known outstanding principal cannot exceed the imported recognized liability. Original principal is separate historical evidence.',
+      );
+    }
     if (op == 'debtImport') {
       c.post('debt_liability', -c.total);
       c.post('equity', c.total);
@@ -86,6 +100,81 @@ void planDebt(FinanceRuleContext c) {
     excluding: c.old?.id,
   );
   switch (op) {
+    case 'debtAdjustment':
+      c.total = c.money('amount');
+      c.text('reason');
+      c.text('reference');
+      if (c.value('verified') != 'true') {
+        reject('Confirm the provider adjustment and its exact classification.');
+      }
+      final adjustment = c.value('adjustmentKind');
+      if (['recognized_charge', 'rounding_charge'].contains(adjustment)) {
+        if (!['interest', 'fee', 'penalty'].contains(c.value('chargeType'))) {
+          reject('Classify the recognized charge as interest, fee or penalty.');
+        }
+        c.post('debt_liability', -c.total);
+        c.expense(c.total);
+        c.source = debt.id;
+      } else if ([
+        'recognized_waiver',
+        'rounding_waiver',
+      ].contains(adjustment)) {
+        if (c.total > liability) reject('Waiver exceeds recognized liability.');
+        if (c.value('waiverBasis') == 'imported_unknown' &&
+            financeType(debt) == 'debtImport') {
+          if (c.total >
+              debtOpeningWaiverCapacity(s, debt, excluding: c.old?.id)) {
+            reject(
+              'The opening-basis waiver exceeds supported remaining imported opening evidence; use the original recognized charge source for separately posted charges.',
+            );
+          }
+          c.post('equity', -c.total);
+          c.source = debt.id;
+        } else if (c.value('waiverBasis') == 'recognized_charge') {
+          final charge = c.ref('chargeSource', {'debtAdjustment', 'borrowing'});
+          final remaining = debtChargeRemaining(
+            s,
+            charge,
+            excluding: c.old?.id,
+          );
+          if (charge.values['debt'] != debt.actionId ||
+              charge.date.compareTo(c.date) > 0 ||
+              !recognizedDebtCharge(charge) ||
+              remaining == null ||
+              c.total > remaining) {
+            reject(
+              'Waiver needs this debt’s unpaid original recognized charge. Resolve unknown reductions before offsetting its expense.',
+            );
+          }
+          c.post(
+            'expense',
+            -c.total,
+            category: s
+                .category(
+                  financeType(charge) == 'borrowing'
+                      ? charge.values['feeCategory']!
+                      : charge.values['category']!,
+                  'expense',
+                )
+                .id,
+          );
+          c.source = charge.id;
+        } else {
+          reject(
+            'Choose a supported original recognized charge or disclosed imported-opening waiver.',
+          );
+        }
+        c.post('debt_liability', c.total);
+      } else if (adjustment == 'avoided_future') {
+        c.source = debt.id;
+      } else {
+        reject(
+          'Choose an explicit provider charge, waiver, rounding treatment or avoided future charge.',
+        );
+      }
+      c.effects.add(
+        'Provider adjustment evidence only: recognized charges/waivers change liability with their supported counterpart; avoided unposted charges have no postings. No cash payment is invented.',
+      );
     case 'debtPayment':
       c.total = c.money('amount');
       final external = c.money('externalFee', zero: true);
@@ -146,7 +235,7 @@ void planDebt(FinanceRuleContext c) {
                   (r) =>
                       r.id != c.old?.id &&
                       financeType(r) == 'debtPayment' &&
-                      r.values['scheduleSource'] != null &&
+                      (r.values['scheduleSource'] ?? '').isNotEmpty &&
                       s.revision(r.values['scheduleSource']!).actionId ==
                           schedule.actionId,
                 )
@@ -203,7 +292,7 @@ void planDebt(FinanceRuleContext c) {
                 .where(
                   (r) =>
                       financeType(r) == 'debtPayment' &&
-                      r.values['scheduleSource'] != null &&
+                      (r.values['scheduleSource'] ?? '').isNotEmpty &&
                       s.revision(r.values['scheduleSource']!).actionId ==
                           c.old!.actionId,
                 )
@@ -281,7 +370,8 @@ void planDebt(FinanceRuleContext c) {
       if (fee != BigInt.zero) c.expense(fee, key: 'feeCategory');
       if (waiver != BigInt.zero) {
         if (c.value('waiverBasis') != 'imported_unknown' ||
-            financeType(debt) != 'debtImport') {
+            financeType(debt) != 'debtImport' ||
+            waiver > debtOpeningWaiverCapacity(s, debt, excluding: c.old?.id)) {
           reject(
             'This waiver needs its original recognized charge evidence; do not guess an expense offset.',
           );
@@ -293,6 +383,258 @@ void planDebt(FinanceRuleContext c) {
       );
     default:
       reject('Unsupported debt command.');
+  }
+  if (['debtPayment', 'debtClassification', 'debtPayoff'].contains(op)) {
+    validateDebtReductionSources(c, debt);
+  }
+}
+
+/// An exact range rather than an invented winner when historic reductions lack
+/// principal allocation. Import original principal is not outstanding principal.
+(BigInt, BigInt)? debtPrincipalRange(
+  LocalSnapshot s,
+  LocalRevision debt,
+  String through, {
+  String? excluding,
+}) {
+  final initial = financeType(debt) == 'borrowing'
+      ? debt.amount
+      : debt.values['debtComponentContract'] == '1' &&
+            debt.values['outstandingPrincipal']?.isNotEmpty == true
+      ? parsePhp(debt.values['outstandingPrincipal']!)
+      : null;
+  if (initial == null) return null;
+  if (debt.date.compareTo(through) > 0) return (BigInt.zero, BigInt.zero);
+  var known = BigInt.zero, unknown = BigInt.zero;
+  for (final r in s.current.where(
+    (r) =>
+        r.id != excluding &&
+        r.values['debt'] == debt.actionId &&
+        r.date.compareTo(through) <= 0,
+  )) {
+    if (financeType(r) == 'debtPayoff') return (BigInt.zero, BigInt.zero);
+    if (['debtPayment', 'debtClassification'].contains(financeType(r))) {
+      final reduction = parsePhp(r.values['reduction'] ?? '0.00'),
+          principal = parsePhp(
+            r.values['debtComponentContract'] == '1' &&
+                    r.values['principalReduction']?.isNotEmpty == true
+                ? r.values['principalReduction']!
+                : '0.00',
+          ),
+          sources = sumMinor(
+            debtAllocations(
+              r.values['debtComponentContract'] == '1'
+                  ? r.values['reductionSources'] ?? ''
+                  : '',
+            ).values,
+          );
+      known += principal;
+      unknown += reduction - principal - sources;
+    }
+    if (financeType(r) == 'debtAdjustment' &&
+        [
+          'recognized_waiver',
+          'rounding_waiver',
+        ].contains(r.values['adjustmentKind']) &&
+        r.values['waiverBasis'] == 'imported_unknown') {
+      unknown += r.amount;
+    }
+  }
+  final upper = initial - known, lower = upper - unknown;
+  return (
+    lower > BigInt.zero ? lower : BigInt.zero,
+    upper > BigInt.zero ? upper : BigInt.zero,
+  );
+}
+
+bool recognizedDebtCharge(LocalRevision r) => financeType(r) == 'borrowing'
+    ? parsePhp(r.values['financedFee']!) > BigInt.zero
+    : financeType(r) == 'debtAdjustment' &&
+          [
+            'recognized_charge',
+            'rounding_charge',
+          ].contains(r.values['adjustmentKind']);
+
+BigInt debtOpeningWaiverCapacity(
+  LocalSnapshot s,
+  LocalRevision debt, {
+  String? excluding,
+}) {
+  var remaining = debt.amount;
+  for (final r in s.current.where(
+    (r) => r.id != excluding && r.values['debt'] == debt.actionId,
+  )) {
+    if ([
+      'debtPayment',
+      'debtClassification',
+      'debtPayoff',
+    ].contains(financeType(r))) {
+      remaining -=
+          parsePhp(r.values['reduction'] ?? '0.00') -
+          (r.values['debtComponentContract'] == '1'
+              ? sumMinor(
+                  debtAllocations(r.values['reductionSources'] ?? '').values,
+                )
+              : BigInt.zero);
+      if (financeType(r) == 'debtPayoff' &&
+          r.values['waiverBasis'] == 'imported_unknown') {
+        remaining -= parsePhp(r.values['waiver'] ?? '0.00');
+      }
+    }
+    if (financeType(r) == 'debtAdjustment' &&
+        [
+          'recognized_waiver',
+          'rounding_waiver',
+        ].contains(r.values['adjustmentKind']) &&
+        r.values['waiverBasis'] == 'imported_unknown') {
+      remaining -= r.amount;
+    }
+  }
+  return remaining > BigInt.zero ? remaining : BigInt.zero;
+}
+
+BigInt? debtChargeRemaining(
+  LocalSnapshot s,
+  LocalRevision charge, {
+  String? excluding,
+}) {
+  var remaining = financeType(charge) == 'borrowing'
+      ? parsePhp(charge.values['financedFee']!)
+      : charge.amount;
+  for (final r in s.current.where(
+    (r) => r.id != excluding && r.values['debt'] == charge.values['debt'],
+  )) {
+    if ([
+      'debtPayment',
+      'debtClassification',
+      'debtPayoff',
+    ].contains(financeType(r))) {
+      final reduction = parsePhp(r.values['reduction'] ?? '0.00'),
+          principal = parsePhp(
+            r.values['debtComponentContract'] == '1' &&
+                    r.values['principalReduction']?.isNotEmpty == true
+                ? r.values['principalReduction']!
+                : '0.00',
+          ),
+          sources = debtAllocations(
+            r.values['debtComponentContract'] == '1'
+                ? r.values['reductionSources'] ?? ''
+                : '',
+          );
+      if (r.date.compareTo(charge.date) >= 0 &&
+          reduction > principal + sumMinor(sources.values)) {
+        return null;
+      }
+      remaining -= sources[charge.id] ?? BigInt.zero;
+    }
+    if (financeType(r) == 'debtAdjustment' &&
+        [
+          'recognized_waiver',
+          'rounding_waiver',
+        ].contains(r.values['adjustmentKind']) &&
+        r.values['chargeSource'] == charge.id) {
+      remaining -= r.amount;
+    }
+  }
+  return remaining;
+}
+
+void validateDebtReductionSources(FinanceRuleContext c, LocalRevision debt) {
+  if (c.value('debtComponentContract') != '1') return;
+  if (c.value('principalReduction').isEmpty &&
+      c.value('reductionSources').isEmpty) {
+    return;
+  }
+  final principal = c.value('principalReduction').isEmpty
+          ? BigInt.zero
+          : c.money('principalReduction', zero: true),
+      sources = debtAllocations(c.value('reductionSources')),
+      reduction = c.money('reduction', zero: true);
+  if (principal + sumMinor(sources.values) != reduction) {
+    reject(
+      'Explicit principal and recognized-charge reductions must equal the liability reduction; leave both blank when unknown.',
+    );
+  }
+  final range = debtPrincipalRange(
+    c.s,
+    debt,
+    '9999-12-31',
+    excluding: c.old?.id,
+  );
+  if (principal > BigInt.zero && (range == null || principal > range.$1)) {
+    reject(
+      'Principal reduction exceeds independently supported outstanding principal. Resolve earlier unknown allocations first.',
+    );
+  }
+  for (final entry in sources.entries) {
+    final charge = financeSource(c.s, entry.key, {
+          'debtAdjustment',
+          'borrowing',
+        }),
+        available = debtChargeRemaining(c.s, charge, excluding: c.old?.id);
+    if (charge.values['debt'] != debt.actionId ||
+        charge.date.compareTo(c.date) > 0 ||
+        !recognizedDebtCharge(charge) ||
+        available == null ||
+        entry.value > available) {
+      reject(
+        'Recognized charge allocation exceeds supported unpaid source capacity.',
+      );
+    }
+  }
+}
+
+void validateDebtProjection(FinanceRuleContext c) {
+  final debt = c.v['debt'];
+  if (debt == null) return;
+  if (c.operation != 'debtAdjustment' &&
+      c.v['debtComponentContract'] != '1' &&
+      !c.s.current.any(
+        (r) =>
+            r.values['debt'] == debt &&
+            (r.values['debtComponentContract'] == '1' ||
+                financeType(r) == 'debtAdjustment'),
+      )) {
+    return;
+  }
+  final postings =
+      [
+            ...c.s.current
+                .where((r) => r.id != c.old?.id && r.values['debt'] == debt)
+                .expand((r) => r.postings),
+            ...c.posts,
+          ]
+          .where((p) => ['debt_liability', 'debt_clearing'].contains(p.ledger))
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+  var liability = BigInt.zero, clearing = BigInt.zero;
+  for (var i = 0; i < postings.length; i++) {
+    final p = postings[i];
+    if (p.ledger == 'debt_liability') {
+      liability += p.amount;
+    } else {
+      clearing += p.amount;
+    }
+    if (i + 1 == postings.length || postings[i + 1].date != p.date) {
+      if (liability > BigInt.zero || clearing < BigInt.zero) {
+        reject(
+          'Debt correction would over-reduce recognized liability or payment clearing at an economic date.',
+        );
+      }
+    }
+  }
+  final closed =
+      c.operation == 'debtPayoff' && c.command.kind != 'financeReversal' ||
+      c.s.current.any(
+        (r) =>
+            r.id != c.old?.id &&
+            financeType(r) == 'debtPayoff' &&
+            r.values['debt'] == debt,
+      );
+  if (closed && (liability != BigInt.zero || clearing != BigInt.zero)) {
+    reject(
+      'A retained provider payoff must remain exactly reconciled after every correction or reversal.',
+    );
   }
 }
 

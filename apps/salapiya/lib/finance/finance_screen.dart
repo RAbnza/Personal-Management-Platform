@@ -207,7 +207,7 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
       FinanceInput(
         'through',
         'Inclusive generation end · YYYY-MM-DD',
-        value: DateTime.parse(civilToday())
+        value: DateTime.parse('${civilToday()}T00:00:00Z')
             .add(const Duration(days: 89))
             .toIso8601String()
             .substring(0, 10),
@@ -262,6 +262,11 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
         'principal',
         'Original principal PHP (optional / unknown)',
       ),
+      if (op == 'debtImport')
+        const FinanceInput(
+          'outstandingPrincipal',
+          'Provider-confirmed outstanding principal PHP (optional; distinct from original principal)',
+        ),
       if (op == 'borrowing') ...[
         const FinanceInput(
           'fundingUse',
@@ -301,6 +306,15 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
         'reduction',
         'Confirmed recognized liability reduction PHP',
         value: '0.00',
+      ),
+      const FinanceInput(
+        'principalReduction',
+        'Provider-confirmed principal within liability reduction PHP (optional; unknown if blank)',
+      ),
+      const FinanceInput(
+        'reductionSources',
+        'Recognized charge reductions: exact charge revision ID,PHP amount (optional, one per line)',
+        lines: 4,
       ),
       const FinanceInput(
         'interest',
@@ -396,6 +410,48 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
         'schedule',
         'Provider rows: label,YYYY-MM-DD,PHP amount[,historically paid PHP]',
         lines: 6,
+      ),
+      verified,
+    ],
+    'debtAdjustment' => [
+      debt,
+      amount,
+      const FinanceInput(
+        'adjustmentKind',
+        'Provider adjustment',
+        value: 'recognized_charge',
+        options: {
+          'recognized_charge': 'New recognized charge',
+          'recognized_waiver': 'Waive existing recognized liability',
+          'rounding_charge': 'Provider-confirmed residual charge',
+          'rounding_waiver': 'Provider-confirmed residual waiver',
+          'avoided_future': 'Avoided future unposted charge (no money)',
+        },
+      ),
+      const FinanceInput(
+        'chargeType',
+        'Recognized charge classification',
+        value: 'interest',
+        options: {'interest': 'Interest', 'fee': 'Fee', 'penalty': 'Penalty'},
+      ),
+      category,
+      const FinanceInput(
+        'waiverBasis',
+        'Original waiver basis',
+        value: 'recognized_charge',
+        options: {
+          'recognized_charge': 'Original recognized charge source',
+          'imported_unknown': 'Imported opening with unknown cost basis',
+        },
+      ),
+      ref(
+        'chargeSource',
+        'Exact original recognized charge (required for charge waiver)',
+        {'debtAdjustment', 'borrowing'},
+      ),
+      const FinanceInput(
+        'reason',
+        'Provider adjustment / residual explanation',
       ),
       verified,
     ],
@@ -549,6 +605,12 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
   late final values = {
     for (final f in inputs) f.key: f.value,
     ...?widget.replacing?.values,
+    if (nativeDebtCommands.contains(
+      widget.replacing == null
+          ? widget.operation
+          : financeType(widget.replacing!),
+    ))
+      'debtComponentContract': '1',
     if (widget.replacing != null &&
         [
           'budget',
@@ -835,6 +897,7 @@ class NativeCardsScreen extends StatelessWidget {
                   'card_liability',
                   'card',
                   card.actionId,
+                  through: civilToday(),
                 );
                 final limit = card.values['limit']!.isEmpty
                     ? null
@@ -855,7 +918,9 @@ class NativeCardsScreen extends StatelessWidget {
               FinancialLine(
                 statement.title,
                 'Due ${statement.values['due']} · historical balance ${controller.decimal(statement.amount)} PHP · minimum ${statement.values['minimum']?.isNotEmpty == true ? '${controller.decimal(signedPhp(statement.values['minimum']!))} PHP' : 'unknown'}\n'
-                'Remaining due ${controller.decimal(statement.amount - sumMinor(s.current.where((r) => financeType(r) == 'cardAllocation' && r.values['statement'] == statement.id).map((r) => r.amount)))} PHP. Minimum satisfaction / allocation order not inferred.',
+                'Remaining due ${controller.decimal(statement.amount - sumMinor(s.current.where((r) => financeType(r) == 'cardAllocation' && r.date.compareTo(civilToday()) <= 0 && r.values['statement'] == statement.id).map((r) => r.amount)))} PHP. Minimum satisfaction / allocation order not inferred.\n'
+                'Recorded balance by provider posting date through ${statement.values['end']}: ${controller.decimal(statementRecordedBalance(s, statement))} PHP; provider difference ${controller.decimal(statement.amount - statementRecordedBalance(s, statement))} PHP. '
+                '${s.current.where((r) => financeType(r) == 'statementLink' && r.values['statement'] == statement.id).length} explicitly confirmed activity links; dates do not infer membership. Differences require reviewed source evidence.',
                 icon: Icons.description_outlined,
                 onTap: () =>
                     openFinanceDetail(context, controller, statement.id),

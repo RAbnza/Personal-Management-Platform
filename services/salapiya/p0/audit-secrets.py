@@ -21,6 +21,8 @@ files = {root / path for path in paths if path}
 app = root / "apps/salapiya"
 files.update((app / "build").glob("p0-*.log"))
 files.update((app / "build").glob("p2-*.log"))
+files.update((app / "build").glob("p3-*.log"))
+files.update((app / "build").glob("p4-*.log"))
 for configuration in ("Debug", "Release"):
     native = app / "build/windows/x64/runner" / configuration
     files.update(native.glob("*.exe"))
@@ -57,5 +59,5 @@ for file in sorted(files):
                     if contains_secret(stream):
                         hits.append(label + ":" + member.filename)
 print(json.dumps({"credentialScanFiles": scanned, "matchingPaths": hits,
-                  "scope": "working source, P0/P2 logs, Debug/Release Windows binaries and decompressed debug APK"}))
+                  "scope": "working source, P0-P4 logs, Debug/Release Windows binaries and decompressed debug APK"}))
 sys.exit(bool(hits))
