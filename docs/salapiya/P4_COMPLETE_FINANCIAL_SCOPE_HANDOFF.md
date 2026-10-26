@@ -1,16 +1,22 @@
 # P4 - Complete Financial Scope
 
-Work in progress, October 26, 2026 (Asia/Manila).
+Engineering handoff, October 26, 2026 (Asia/Manila).
 Branch: `feat/salapiya-p4-complete-finance`; verified P3 base:
 `26e59618691d6b29f0a2396d781791e910a96d24`.
 
 ## Readiness decision
 
-**P4 acceptance remains open.** This is the single primary P4 handoff. Implemented
-features and executed evidence are distinguished below. Missing native journeys
-are not covered by successful compilation or backend tests. P5 and P6 have not
-started. Cloud file bytes fail closed under the explicitly authorized free-tier
-exception; their production storage/scanning boundary remains a release blocker.
+**P4 is not fully accepted for release.** The financial implementation and the
+bounded native/hosted checks recorded below are delivered for development review.
+M14 cloud attachment byte operations remain blocked: a production private object
+storage, authorization, quarantine and maintained scanning boundary has not been
+verified in the existing free infrastructure. Device-local encrypted files are
+implemented and verified; cloud availability/scanning is never faked.
+
+This is the single primary P4 handoff. The traceability table preserves explicit
+coverage limits; unexecuted combinations are not represented as passing tests.
+P3 scenario 31's real card funding dependency is resolved and passes native
+Windows, Android and hosted acceptance. P5 and P6 have not started.
 
 ## Implementation and financial meaning
 
@@ -41,7 +47,7 @@ cash and liability once. Credit/available limits are not liquid assets.
 Statements and schedules never create another purchase. Provider posting-date
 statement comparisons show exact differences but neither invent membership nor
 adjust balances. Minimum satisfaction and allocation order remain unknown without
-evidence. Current card/debt totals and due coverage exclude future-dated actuals.
+evidence. Current card/debt totals and due coverage exclude future-dated actuals. Overview provides source links for recognized debt and separate per-card liability/credit totals; an overpaid card cannot hide another card liability.
 Civil date interval arithmetic uses UTC calendar dates, independent of DST.
 
 Debt original principal is historical evidence, distinct from known outstanding
@@ -95,7 +101,7 @@ carries existing owner-filtered accepted commands and projections; pending inten
 server acceptance and downloaded reconciliation are separate. Atomic import
 children reconcile as contiguous accepted history. No file blobs enter streams.
 
-Encrypted backup formats 1 (local) and 3 (connected) remain supported. P4 adds
+Encrypted backups continue to write formats 1 (local) and 3 (connected), and read supported formats 1-3. P4 adds
 validated optional financial coverage contract 1 / recipe contract 1, with
 attachment metadata counts and **zero byte objects**. Older archives without the
 additive coverage are accepted under existing validation. Fresh replay validates
@@ -119,7 +125,7 @@ ordinary intent and encrypted drafts under the existing P2 model:
 | refund, correction, reversal, adjustment, archive | Draft/review offline; connected acceptance requires fresh online authority |
 | cardRefund, statement, statementLink, cardAllocation, installment, installmentApplication, financeCorrection, financeReversal | Draft/review offline; dependency-sensitive online finalization |
 | debtClassification, debtSchedule, debtPayoff, debtAdjustment | Draft/review offline; dependency/capacity-sensitive online finalization |
-| recurrence, recurrenceGenerate, occurrenceOverride, recurringLink, recurringUnlink | Draft/review offline; connected finalization online |
+| recurrence, recurrenceGenerate, occurrenceOverride, recurrenceLink, recurrenceUnlink | Draft/review offline; connected finalization online |
 | budget, savingsGoal, reservation, savingsReallocation | Draft/review offline; connected finalization online, actual-date capacity rechecked |
 | cashImport, cashImportChunk, cashImportPreview, cashImportDecision, cashImportProcess, cashImportCancel | Durable draft/staging/review locally; connected command finalization online; uncertain originals resolved before retry |
 | Reports, forecasts, due projections, local file preview/export, archive capture | Read-only/local; coverage and pending status disclosed; no new money |
@@ -137,23 +143,44 @@ replacement product screens.
 
 | Row | Production scope and current evidence | Remaining acceptance |
 | --- | --- | --- |
-| M01-M03 | Existing profile/account/cash contracts retained; focused P1 widget/crash and P2/P3 SQL regressions passed | Final consolidated Flutter run and real Google regression pending |
+| M01-M03 | Existing profile/account/cash contracts retained; focused P1 widget/crash and P2/P3 SQL regressions passed | Final serial Flutter suite: 186 passed; real Google-session regression passed Windows/Android |
 | M04 | Debt import, original/outstanding principal, proceeds, withheld/financed fees and financed purchase; local/SQL/hosted parity; original native debt journeys passed on both platforms | Expanded component native journey passed both platforms; wider native borrowing options not executed |
 | M05 | Actual unknown/known payments, later clearing classification, allocation mappings, stable schedule revisions; original Windows/Android journey passed | Expanded component journey passed Windows/Android |
 | M06 | Exact payoff, source-specific recognized waiver, avoided unposted amount and residual; independent Dart/SQL/hosted fixture passed | Expanded native waiver/residual journey passed Windows/Android |
-| M07 | Card purchase/payment/credit and encrypted reopen passed native Windows/Android; real hosted sharing/refund passed Windows | Android hosted sharing/refund rerun pending |
-| M08 | Statement comparison, explicit membership/allocations and installment applications; local/SQL parity, real hosted allocation race | Wider native statement/installment/revision journey not executed |
+| M07 | Card purchase/payment/credit and encrypted reopen passed native Windows/Android; real hosted sharing/refund passed Windows | Android hosted sharing/refund also passed; P3 scenario 31 native/hosted gate satisfied |
+| M08 | Statement comparison, explicit membership/allocations and installment applications; local/SQL parity, real hosted allocation race | Native statement/membership/allocation/installment/refund/fee/interest journey passed both platforms; explicit installment-application correction and Overview source navigation additionally passed Windows (01:28) and Android (01:29) |
 | M09 | Rules/generation/overrides/partial actual links; local/SQL/hosted parity and native planning journey passed Windows/Android | Full native timezone/supersession matrix not executed |
 | M10 | Zero budget, bounds, overlap including archives and net/gross bases; local/hosted and native planning evidence | Wider native correction/refund matrix not executed |
 | M11 | Actual-cash reservations/reallocation/lifecycle and supported funding ranges; native underfunding passed both platforms | Wider connected capacity races not executed |
 | M12 | Read-only exact actual/expected bridge, explicit card bases, exclusions and uncertainty; local/domain and both native planning journeys passed | Full native source-option matrix not executed |
-| M13 | Complete filtered reports, history, comparisons, Overview dues and real CSV export | Final native filtered-export assertions in progress |
-| M14 | Local encrypted file/link/type/size/AAD/hash/availability; Windows real picker/preview and fresh-restore exact original recovery passed; Android original picker journey passed | Extended Android fresh restore pending; cloud storage/scanning blocked |
+| M13 | Complete filtered reports, history, comparisons, Overview dues and real CSV export | Native Windows/Android file export passed; full 501-income filtered export and exact CSV parsing passed; Overview source-link/current-liability checks also passed on both native targets |
+| M14 | Local encrypted file/link/type/size/AAD/hash/availability; Windows real picker/preview and fresh-restore exact original recovery passed; Android full picker/save/fresh-restore/reselection journey passed | Extended Android fresh restore also passed; cloud storage/scanning blocked |
 | M15 | Reviewed strict cash CSV, stable batches, atomic cutoff rebase, cancellation and retries; local/SQL/hosted and native pick/import passed both platforms | Larger native capacity/interruption matrix not executed |
 | M16 | Stable/versioned debt, statement and recurring sources, due revisions invalidate stale versions, Overview source navigation | Native notifications/broader Calendar belong to P5; no notification delivery claimed |
-| M17 | Full-domain independent encrypted replay, metadata-only byte coverage, wrong-secret/corruption refusal; Windows actual save/fresh restore/reselect passed | Extended Android native restore and final lifecycle regression pending |
+| M17 | Full-domain independent encrypted replay, metadata-only byte coverage, wrong-secret/corruption refusal; Windows actual save/fresh restore/reselect passed | Extended Android native save/fresh restore/reselection passed; real Google-session regression also passed both platforms |
 
 ## Executed evidence
+
+Blueprint acceptance mapping (the evidence levels below are intentional):
+
+| Scenario | Evidence and boundary |
+| --- | --- |
+| A10 | Native Windows/Android hosted purchase adoption, correction/private re-review and actual card refund pass; P3 scenario 31 gate satisfied |
+| A16 | Native debt import, unknown payment/classification, schedule revision, component allocation/waiver/residual and payoff pass both platforms; broader borrowing options have Dart/SQL/hosted parity |
+| A17 | Native statements, membership, overpayment, actual allocations, historical installments/applications pass both platforms; wider dependent revision/capacity rules have domain/backend evidence |
+| A18 | Native planning/actual-underfunding/link/forecast journeys pass both platforms; calendar edge cases, overlap and supported funding ranges have local/domain evidence |
+| A19 | Native picker/preview/post pass both platforms; retry/cancel/rebase pass local/SQL/hosted authority, including original IDs and rollback conservation |
+| A21 | Production Money/Reports/Overview disclose coverage and pending work; Debts initial-download withholding now matches them; regression test included in consolidated run |
+| A22 | Independent full-domain encrypted replay passes local tests; real Windows save/new key/restore/original file reselection passes; extended Android real native journey also passed |
+| A23 | Inherited P2/P3 receipt/revocation/server-authority regressions pass; new full-domain recovery preserves original commands and metadata, without adding current group authority. A complete old-connected-archive native cycle was not repeated for P4 |
+| A24 | Wrong secret, corruption, transactional rollback and killed-process recovery have local tests; real physical disk exhaustion and every upgrade interruption point were not exercised |
+| A27 | Honest absent bytes, AEAD/checksum failures and local selection/recovery have tests; unscanned images are bounded, PDFs export only; production cloud scanning/storage/transfer certification remains blocked |
+
+Affected A01-A15 behavior is covered by the retained P1/P2/P3 financial, widgets,
+crash, authorization and server regressions. The real Google-session rerun is
+listed separately below when executed; synthetic SDK credentials do not prove
+a new interactive Google login. Human screen-reader, physical-device and every
+inherited UI-option combination are not claimed.
 
 - `p4_cards_test.dart`: native Windows and Android local production pass. Purchase
   PHP1,200 leaves cash unchanged; payment PHP1,500 produces PHP300 noncash card
@@ -162,24 +189,26 @@ replacement product screens.
   Import PHP6,400, unknown cash payment PHP1,000, later reduction PHP900 and
   interest PHP100, retained schedule allocations after revision, then confirmed
   PHP5,500 payoff. Expanded component/waiver/residual journey also passed Windows (01:58) and Android (01:50): principal 800 -> 600, source charge allocation/waiver, avoided unposted interest, one-cent residual charge/waiver and exact closure; final cash PHP2,400 and spending PHP200.
+- Final `p4_cards_test.dart` reruns: **Windows (01:28) and Android (01:29) passed** with an explicit installment-application correction (300 -> 200 PHP, revision 2, no postings), Overview separate card credit and source navigation back to real card detail.
+- Expanded `p4_cards_test.dart`: **native Windows (01:22) and Android (01:19) pass** for provider statement/comparison, explicit activity membership, actual payment allocation, historical installment/schedule and actual installment application, refund PHP100, fee PHP25 and interest PHP15. No extra cash or duplicate expense from statement/plan/allocation; final cash PHP3,500, expense PHP1,140 and noncash card credit PHP360 survive encrypted reopen.
 - `p4_planning_test.dart`: native Windows/Android local production pass for
   goal/reservation, zero budget, recurrence/generation, actual underfunding,
   partial actual link/unlink and read-only forecast.
-- `p4_connected_cards_test.dart`: **native Windows real hosted pass** after the
+- `p3_google_sessions_test.dart`: **Windows (00:07) and Android (01:18) real Google-session regression passed**. Two retained owner-authorized Google identities refresh through the actual SDK, consent to a synthetic shared group, accept a bill and independently download the owner-filtered bill through actual native CDC. Windows used retained protected sessions. Android initially had zero retained sessions and failed honestly; the owner then selected both existing development accounts interactively. The normal production PKCE flow verified both Google code exchanges, retained sessions in protected OS storage, and completed actual two-identity CDC. No fixture password/JWT was substituted. The opt-in reauthorization test now supports zero or one retained identity without resetting existing profiles.
+- `p4_connected_cards_test.dart` verify-only mode: **Windows real hosted peer readback passed**, 00:07. After Android completed its own journey, the existing Windows profile downloaded its finished card liability/spending/receivable through real CDC, with no new money command.
+- `p4_connected_cards_test.dart`: **native Windows and Android real hosted pass** after the
   exact-share correction fix. Actual SDK, durable offline intent, pause/resume,
   accepted original receipts and downloaded CDC; actual purchase/adoption,
   corrected group source/private re-review, actual card refund and private refund
   adoption. Exact final card-related totals: liability -111000, expense 37000,
   receivable 74000 minor units; no cash replay and no card ID in group document.
-  Android has no retained completed passing result yet. P3 scenario 31 is not
-  marked fully passed until both targets succeed.
+  Android completed in 01:53, with retained log `build/p4-hosted-android-rerun.log`. P3 inherited scenario 31 now satisfies its real native Windows/Android and hosted card-funded workflow gate.
 - `p4_portability_test.dart`, opt-in native pickers: **Windows full pass**, log
   `build/p4-portability-windows-rerun.log`, 03:32, +1. Real PNG selection and
   verified preview, real cash CSV preview/post (cash PHP980 -> PHP1,055), report
   Save dialog, encrypted archive Save, new profile/key Restore Open, actual absent
   byte coverage, exact original PNG reselection/re-encryption and preview with no
-  added journal command. Android's original three-picker journey passed; extended
-  archive/fresh-restore journey remains pending. Recovery secrets stay in test
+  added journal command. Android full six-picker journey also passed (06:03), retained log `build/p4-portability-android-restore.log`. Native saved CSV independently parsed to cash 105500, expense 4500, income -10000 minor units. Windows used CUA for dialogs; Android used the emulator document provider through ADB UI controls. Recovery secrets stay in test
   memory and were not printed.
 - `p4_finance_test`, `p4_shared_card_test`, `p4_planning_test`, `p4_import_test`,
   `p4_files_test`, `p4_forecast_recovery_test`: prior consolidated **20 local/domain
@@ -187,7 +216,7 @@ replacement product screens.
   provenance/duplicates, 50-row cancellation, interrupted historical rebase and
   exact conservation. Files include AEAD/AAD/key/tamper/hash/absence and historical
   attachment source after legitimate correction.
-- Latest focused run: **6 tests passed** across `p4_debt_components_test`,
+- Earlier focused run: **6 tests passed** across `p4_debt_components_test`,
   `p4_provider_dates_test`, `p4_forecast_recovery_test`. Includes conservative
   unknown components, source cap/waiver/financed fee/residual/closure, provider
   posting-date comparison, future allocation cutoff, forecasts and fresh replay.
@@ -197,6 +226,7 @@ replacement product screens.
   pagination, preserves filters/exact amounts and escapes a formula description.
 - `p4_bounded_file_test`: **1 local test passed**, including a provider stream
   larger than its declared size; byte bounds do not rely on reported length.
+- Final `flutter test --concurrency=1 --reporter expanded`: **186 tests passed**, 05:02, retained log `build/p4-flutter-final.log`. Includes P0-P4 exact money, crashes, migrations/recovery, privacy/ownership, protected drafts, import capacity, initial download withholding, source projections and responsive/theme regressions.
 - Focused affected P1 widgets/floating actions/P2 crash tests: **21 passed serially**.
 - Latest focused PostgreSQL suite: **25 tests passed** (`p2-server`, `p3-server`,
   `p4-server`, `p4-import-server`, `p4-debt-server`), applying migrations 001-033.
@@ -212,15 +242,28 @@ replacement product screens.
   imported principal, recognized charge allocation/waiver, avoided amount,
   residual, closure and borrowing financed-fee waiver.
 - `dart analyze lib test integration_test`: **passed**, no issues, after the debt
-  component/provider date changes. Latest empty-reference fix still needs final
-  analysis in consolidated validation.
-- Latest checkpoint credential scan: 2,046 source/artifact files, zero matches. Scan includes P3/P4 native logs and must be repeated after final builds.
+  component/provider date changes. Latest empty-reference, initial-download withholding and bounded backup-reader changes also pass analysis. The final full analysis is clean; formatting checks cover 174 Dart files with zero changes.
+- Final native builds: **Windows release passed** (51.0s), and **Android debug
+  APK passed** (35.0s), using the normal production entry point and public service
+  configuration. The normal Android APK was installed with `adb install -r`;
+  the in-place update succeeded without uninstalling or wiping retained data.
+- Final credential audit: **2,062 files, zero matching paths**, scanning working
+  source, P0-P4 logs, Debug/Release Windows executables/libraries/Dart assets, and
+  the debug APK including decompressed members. Known provider credentials,
+  fixture passwords/refresh tokens and configured secrets are passed privately
+  to the scanner; matching values are never printed.
+- Final hosted migration dry run: **up to date**, no migrations/seeds/roles pending
+  on the verified existing development target.
 
 Deterministic opt-in golden fixtures live in `contracts/salapiya/p4_finance.json`,
 `p4_import.json`, and `p4_debt_components.json`. Ordinary runs compare exact plans;
 fixture regeneration uses `P4_WRITE_FIXTURES=true`.
 
 ## Failed/interrupted runs and operational observations
+
+The pre-existing untracked `apps/salapiya/android/build/` directory is preserved
+and excluded from commits. New build outputs, test exports and private provider
+configuration are also excluded. No unrelated web migration or tooling was reset.
 
 No failed or interrupted attempt is counted as passing:
 
@@ -229,12 +272,12 @@ No failed or interrupted attempt is counted as passing:
 - Broad default-concurrency Flutter run was interrupted after 171 passing tests:
   stale inherited theme assertion and native DLL collision with a process-kill
   worker. P1 teardown used a fake-clock wait and an obsolete placeholder assertion;
-  these were corrected and the affected 21-test serial rerun passed. Final broad
-  serial run remains pending.
+  these were corrected and the affected 21-test serial rerun passed. The final clean serial suite subsequently passed all 186 tests.
 - Early hosted native attempts exposed a test pause/reconnect race, a stale source
   label and the real exact-share correction UI bug. Windows full corrected rerun
   passed. Android compilation once failed during an incomplete concurrent library
   edit; another host tool session lost its output, so no Android pass is claimed.
+- Android real-Google regression initially failed because zero protected Google sessions remained. The owner then selected both existing approved accounts interactively; the complete two-identity native CDC rerun passed. No mocked OAuth success was substituted.
 - Expanded Windows debt journey caught empty optional schedule references being
   treated as valid IDs. The view and domain lookups now require nonempty IDs;
   corrected complete Windows and Android reruns passed.
@@ -288,7 +331,7 @@ for bundled IANA rules and [csv 8.0.0](https://pub.dev/packages/csv) with numeri
 inference disabled. The parser is surrounded by strict lexical/financial bounds.
 The bundled timezone database needs maintained updates when civil rules change.
 
-## P5 handoff boundary and remaining work
+## P5 handoff boundary and owner actions
 
 P4 financial reminder sources expose stable ID, source revision/version, date,
 amount and kind; revisions invalidate stale projections and never create money.
@@ -303,7 +346,22 @@ imports, local-only file bytes, backup coverage, archive/sign-out and notificati
 boundaries. Existing profile/recovery and private/group authority lifecycles are
 preserved. Account deletion/retention certification remains explicit release work.
 
-Owner action is not currently required. Independent implementation/verification
-continues within the authorized assignment. Before final publication: complete
-remaining native runs, consolidated serial Flutter checks/builds/credential audit,
-update this readiness decision with actual evidence, commit and push this branch.
+The native Debts route now withholds history/actions until initial download completion, consistent with Money. Backup selection enforces its size while streaming even if provider length is stale.
+
+The first consolidated serial run completed with 184 passing tests and one new test-fixture failure (missing required Salapiya theme). That fixture was corrected and its focused rerun passed. A second focused run passed all three current-date/provider-date and initial-download tests; a subsequent full serial rerun then passed all 186 tests.
+
+No further owner action is required to review or use the verified local financial
+workflows. Before enabling cloud attachment operations, verify the private object
+policies and maintained scanning/quarantine/authorization boundary, or explicitly
+approve a different product boundary such as a local-only release. No paid
+subscription or provider replacement is assumed or authorized by this handoff.
+
+Recommended P5 starting point, only after separate owner authorization: consume
+`FinancialReminderSource` identities, versions and source links in the native
+notification/Calendar adapters. Reuse financial due projections, invalidate stale
+versions, and preserve actual financial command authority. Notification delivery
+or marking a reminder complete must never create a payment.
+
+The branch retains the verified P3 base and uses Conventional Commit subjects.
+Git delivery is limited to this P4 branch; main merges and force pushes are outside this assignment. The
+pre-existing untracked Android build cache remains outside the commits.
