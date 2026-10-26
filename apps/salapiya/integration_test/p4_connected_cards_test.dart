@@ -113,6 +113,39 @@ void main() {
             ),
           ),
         );
+        if (const bool.fromEnvironment('P4_NATIVE_VERIFY_ONLY')) {
+          await settled();
+          final peer = role == 'windows' ? 'android' : 'windows';
+          final peerCards = c.snapshot.current.where(
+            (r) =>
+                financeType(r) == 'creditCard' &&
+                r.title.startsWith('P4 native $peer '),
+          );
+          final completed = peerCards.where((card) {
+            final totals = <String, BigInt>{};
+            for (final r in c.snapshot.current.where(
+              (r) => r.values['card'] == card.actionId,
+            )) {
+              for (final p in r.postings) {
+                totals[p.ledger] = (totals[p.ledger] ?? BigInt.zero) + p.amount;
+              }
+            }
+            return totals['card_liability'] == BigInt.from(-111000) &&
+                totals['expense'] == BigInt.from(37000) &&
+                totals['shared_receivable'] == BigInt.from(74000);
+          }).toList();
+          expect(
+            completed,
+            isNotEmpty,
+            reason: 'The other native device must first complete its hosted card journey.',
+          );
+          expect(runtime.connected.complete, isTrue);
+          await tester.runAsync(store.integrity);
+          debugPrint(
+            'P4_NATIVE_PEER: $role received completed $peer card evidence through actual hosted CDC.',
+          );
+          return;
+        }
         final suffix = newLocalId().substring(0, 8),
             cardName = 'P4 native $role $suffix',
             purchaseName = 'P4 card dinner $role $suffix';

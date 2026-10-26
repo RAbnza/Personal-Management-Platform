@@ -409,6 +409,38 @@ class LocalFinancialController extends FinancialController {
         .where((p) => p.ledger == 'expense')
         .map((p) => p.amount),
   );
+  @override
+  BigInt get debtTotal => -sumMinor(
+    snapshot.current
+        .expand((r) => r.postings)
+        .where(
+          (p) =>
+              p.ledger == 'debt_liability' &&
+              p.date.compareTo(civilToday()) <= 0,
+        )
+        .map((p) => p.amount),
+  );
+  (BigInt, BigInt) get cardLiabilityAndCredit {
+    var liability = BigInt.zero, credit = BigInt.zero;
+    for (final card in snapshot.current.where(
+      (r) => financeType(r) == 'creditCard',
+    )) {
+      final amount = -financeBalance(
+        snapshot,
+        'card_liability',
+        'card',
+        card.actionId,
+        through: civilToday(),
+      );
+      if (amount > BigInt.zero) {
+        liability += amount;
+      } else {
+        credit -= amount;
+      }
+    }
+    return (liability, credit);
+  }
+
   BigInt get recognizedIncome => -sumMinor(
     snapshot.current
         .expand((r) => r.postings)

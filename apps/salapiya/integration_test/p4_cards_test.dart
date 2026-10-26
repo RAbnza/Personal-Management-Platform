@@ -138,6 +138,153 @@ void main() {
       );
       expect(c.recognizedSpending, BigInt.from(120000));
       expect(find.textContaining('Card credit: 300.00 PHP'), findsOneWidget);
+      Future<void> select(String key, String label) async {
+        await localTap(tester, find.byKey(ValueKey('native-select-$key')));
+        await localTap(tester, find.textContaining(label).last);
+      }
+
+      Future<String> record(
+        String button,
+        String name,
+        Map<String, String> fields, {
+        Map<String, String> choices = const {},
+        bool verified = false,
+      }) async {
+        await localTap(tester, find.text(button).first);
+        await localWait(
+          tester,
+          () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+        );
+        await nativeEnter(tester, 'name', name);
+        await select('card', 'P4 card');
+        for (final field in fields.entries) {
+          await nativeEnter(tester, field.key, field.value);
+        }
+        for (final choice in choices.entries) {
+          await select(choice.key, choice.value);
+        }
+        if (verified) {
+          await nativeEnter(tester, 'reference', 'Synthetic provider evidence');
+          await select('verified', 'I confirm these provider facts');
+        }
+        await nativeSave(tester);
+        return c.snapshot.current.singleWhere((r) => r.title == name).id;
+      }
+
+      final today = civilToday();
+      final statement = await record(
+        'Record statement',
+        'Native provider statement',
+        {
+          'start': today,
+          'end': today,
+          'issued': today,
+          'due': '2026-11-20',
+          'amount': '1200.00',
+          'minimum': '100.00',
+        },
+        verified: true,
+      );
+      expect(c.recognizedSpending, BigInt.from(120000));
+      expect(
+        statementRecordedBalance(c.snapshot, c.snapshot.revision(statement)),
+        BigInt.from(-30000),
+      );
+      await record(
+        'Link statement activity',
+        'Native confirmed membership',
+        {},
+        choices: {
+          'statement': 'Native provider statement',
+          'activity': 'Native card dinner',
+        },
+        verified: true,
+      );
+      final allocation = await record(
+        'Allocate payment / credit',
+        'Native provider allocation',
+        {'amount': '1200.00'},
+        choices: {
+          'statement': 'Native provider statement',
+          'payment': 'Native repayment',
+        },
+        verified: true,
+      );
+      final plan = await record(
+        'Installment plan',
+        'Native provider plan',
+        {
+          'schedule': 'first,2026-11-20,400.00,100.00\nsecond,2026-12-20,400.00\nthird,2027-01-20,400.00',
+          'principal': '1200.00',
+          'interest': '0.00',
+          'fee': '0.00',
+        },
+        choices: {'purchase': 'Native card dinner'},
+        verified: true,
+      );
+      final application = await record(
+        'Apply installment payment',
+        'Native installment application',
+        {'row': 'first', 'amount': '300.00'},
+        choices: {
+          'plan': 'Native provider plan',
+          'payment': 'Native provider allocation',
+        },
+        verified: true,
+      );
+      await localTap(tester, find.text('Native installment application').first);
+      await localTap(tester, find.text('Correct with reason'));
+      await localWait(
+        tester,
+        () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+      );
+      await nativeEnter(tester, 'amount', '200.00');
+      await nativeEnter(
+        tester,
+        'reason',
+        'Provider revised this explicit installment application',
+      );
+      await nativeSave(tester);
+      await localTap(tester, find.byType(BackButton).first);
+      final revisedApplication = c.snapshot.current.singleWhere(
+        (r) => r.actionId == application,
+      );
+      expect(revisedApplication.number, 2);
+      expect(revisedApplication.amount, BigInt.from(20000));
+      expect(revisedApplication.postings, isEmpty);
+      expect(c.snapshot.revision(plan).amount, BigInt.from(120000));
+      expect(c.snapshot.revision(allocation).postings, isEmpty);
+      expect(c.snapshot.balance(account), BigInt.from(350000));
+      expect(c.recognizedSpending, BigInt.from(120000));
+      await record(
+        'Card refund',
+        'Native actual card refund',
+        {'amount': '100.00', 'reason': 'Actual provider credit'},
+        choices: {'purchase': 'Native card dinner'},
+      );
+      await record(
+        'Card fee',
+        'Native actual card fee',
+        {'amount': '25.00'},
+        choices: {'category': 'Fees'},
+      );
+      await record(
+        'Card interest',
+        'Native actual card interest',
+        {'amount': '15.00'},
+        choices: {'category': 'Fees'},
+      );
+      expect(c.snapshot.balance(account), BigInt.from(350000));
+      expect(c.recognizedSpending, BigInt.from(114000));
+      expect(
+        financeBalance(c.snapshot, 'card_liability', 'card', card),
+        BigInt.from(36000),
+      );
+      await localTap(tester, find.byKey(const ValueKey('nav-overview')));
+      expect(find.text('Cards: liability and noncash credit'), findsOneWidget);
+      expect(find.textContaining('credit ₱360.00'), findsOneWidget);
+      await localTap(tester, find.text('Cards: liability and noncash credit'));
+      expect(find.textContaining('Card credit: 360.00 PHP'), findsOneWidget);
       await tester.runAsync(c.store.integrity);
       expect(network.attempts, 0);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -151,7 +298,7 @@ void main() {
           'card',
           card,
         ),
-        BigInt.from(30000),
+        BigInt.from(36000),
       );
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());

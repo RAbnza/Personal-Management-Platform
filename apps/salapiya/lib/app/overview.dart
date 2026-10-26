@@ -92,6 +92,33 @@ class Overview extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (session.complete &&
+            session is LocalSession &&
+            (session as LocalSession).localFinance.snapshot.current.any(
+              (r) => [
+                'debtImport',
+                'borrowing',
+                'creditCard',
+              ].contains(financeType(r)),
+            )) ...[
+          SourceLink(
+            title: 'Recognized debt liability',
+            subtitle:
+                'Current economic dates; future schedules are separate. ${session.syncLabel}.',
+            trailing: session.amount(
+              (session as LocalSession).localFinance.debtTotal,
+            ),
+            icon: Icons.account_balance_outlined,
+            onTap: () => open(PreviewSource.debt),
+          ),
+          SourceLink(
+            title: 'Cards: liability and noncash credit',
+            subtitle:
+                'Liability ${session.amount((session as LocalSession).localFinance.cardLiabilityAndCredit.$1)}; credit ${session.amount((session as LocalSession).localFinance.cardLiabilityAndCredit.$2)}. Cards are shown separately; credit never offsets another card or becomes cash.',
+            icon: Icons.credit_card_outlined,
+            onTap: () => open(PreviewSource.cards),
+          ),
+        ],
         if (session is LocalSession)
           SharedAttention(
             session: session as LocalSession,

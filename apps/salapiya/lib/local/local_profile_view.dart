@@ -11,6 +11,7 @@ import '../design_system/craft.dart';
 import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
 import '../features/finance/presentation/financial_widgets.dart';
+import '../finance/bounded_file_read.dart';
 import '../gallery/settings.dart';
 import '../p0/portable_recovery.dart';
 import 'finance_domain.dart';
@@ -702,12 +703,11 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
               : () => run(() async {
                   final file = await FilePicker.pickFile();
                   if (file == null) return;
-                  final length = await file.length();
-                  if (length == null || length > LocalBackup.maxBytes + 128) {
-                    reject('Choose a compatible archive up to 32 MiB.');
-                  }
                   final bundle = await LocalBackup.unseal(
-                    await file.readAsBytes(),
+                    await readBoundedFinancialFile(
+                      file,
+                      LocalBackup.maxBytes + 128,
+                    ),
                     secret.text,
                   );
                   if (mounted) setState(() => reviewed = bundle);

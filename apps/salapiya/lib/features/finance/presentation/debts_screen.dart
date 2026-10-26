@@ -16,10 +16,16 @@ class DebtsScreen extends StatelessWidget {
   final PrototypeSession session;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: session.finance,
+    listenable: session,
     builder: (context, _) {
       final c = session.finance;
       if (c is LocalFinancialController) {
+        if (!session.complete) {
+          return const FinanceNotice(
+            'Debt history is unavailable while the initial snapshot is incomplete.',
+            warning: true,
+          );
+        }
         return NativeDebtsScreen(controller: c);
       }
       return Column(

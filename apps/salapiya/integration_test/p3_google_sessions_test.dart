@@ -36,10 +36,10 @@ void main() {
       final clients = <String, SupabaseClient>{};
       final role = Platform.isWindows ? 'windows' : 'android';
       LocalRuntime? authorizationRuntime;
-      SupabaseClient? managedClient;
       for (final scope in [
         'salapiya.production.google.v1',
         'salapiya.p0.google.$role',
+        'salapiya.p3.google.a',
         'salapiya.p3.google.b',
       ]) {
         final saved = await vault.read(key: '$scope.session');
@@ -73,56 +73,82 @@ void main() {
           await client.dispose();
         }
       }
-      if (clients.length == 1 &&
+      debugPrint('P3_GOOGLE_RETAINED_IDENTITIES: ${clients.length}');
+      if (clients.length < 2 &&
           const bool.fromEnvironment('P3_GOOGLE_REAUTHORIZE')) {
-        const scope = 'salapiya.p3.google.b';
-        final auth = await initializeProofAuth(
-          url,
-          key,
-          scope: scope,
-          detectSessionInUri: false,
-        );
-        final flow = GoogleAuthProof(auth, scope, vault);
-        await flow.listen();
-        final support = await getApplicationSupportDirectory();
-        final settings = GallerySettings();
-        authorizationRuntime = LocalRuntime(
-          LocalProfiles(
-            Directory('${support.path}/p3-google-authorization-b'),
-            const OsProfileVault(slot: 'salapiya.p3.google.authorization.b'),
-          ),
-          settings,
-        );
-        authorizationRuntime.connected.flow = flow;
-        await tester.pumpWidget(
-          SalapiyaApp(
-            production: true,
-            settings: settings,
-            localRuntime: authorizationRuntime,
-          ),
-        );
-        await localSettle(tester);
-        await localTap(tester, find.text('Continue with Google'));
-        await localTap(tester, find.text('Select Google account'));
-        debugPrint('P3_GOOGLE_SELECT_SECOND_DEVELOPMENT_ACCOUNT');
-        await tester.runAsync(() async {
-          final started = DateTime.now();
-          while (flow.pending &&
-              DateTime.now().difference(started) <
-                  const Duration(minutes: 10)) {
-            await Future<void>.delayed(const Duration(milliseconds: 250));
-          }
-        });
-        expect(flow.outcome, 'google_code_exchange_verified');
-        final user = (await flow.client.auth.getUser()).user!;
-        expect(user.identities?.any((i) => i.provider == 'google'), isTrue);
-        expect(
-          clients.containsKey(user.id),
-          isFalse,
-          reason: 'Select the other approved Google development identity.',
-        );
-        managedClient = flow.client;
-        clients[user.id] = flow.client;
+        for (final account in ['a', 'b']) {
+          if (clients.length >= 2) break;
+          final scope = 'salapiya.p3.google.$account';
+          final auth = await initializeProofAuth(
+            url,
+            key,
+            scope: scope,
+            detectSessionInUri: false,
+          );
+          final flow = GoogleAuthProof(auth, scope, vault);
+          await flow.listen();
+          final support = await getApplicationSupportDirectory();
+          final settings = GallerySettings();
+          authorizationRuntime = LocalRuntime(
+            LocalProfiles(
+              Directory('${support.path}/p3-google-authorization-$account'),
+              OsProfileVault(slot: 'salapiya.p3.google.authorization.$account'),
+            ),
+            settings,
+          );
+          authorizationRuntime.connected.flow = flow;
+          await tester.pumpWidget(
+            SalapiyaApp(
+              production: true,
+              settings: settings,
+              localRuntime: authorizationRuntime,
+            ),
+          );
+          await localSettle(tester);
+          await localTap(tester, find.text('Continue with Google'));
+          await localTap(tester, find.text('Select Google account'));
+          debugPrint(
+            'P3_GOOGLE_SELECT_DEVELOPMENT_ACCOUNT_${clients.length + 1}',
+          );
+          await tester.runAsync(() async {
+            final started = DateTime.now();
+            while (flow.pending &&
+                DateTime.now().difference(started) <
+                    const Duration(minutes: 10)) {
+              await Future<void>.delayed(const Duration(milliseconds: 250));
+            }
+          });
+          expect(flow.outcome, 'google_code_exchange_verified');
+          final user = (await flow.client.auth.getUser()).user!;
+          expect(user.identities?.any((i) => i.provider == 'google'), isTrue);
+          expect(
+            clients.containsKey(user.id),
+            isFalse,
+            reason: 'Select the other approved Google development identity.',
+          );
+          // Close the managed singleton before opening the next selector. Keep an
+          // independent SDK client and persist any refresh rotation in its slot.
+          final saved = jsonEncode(flow.client.auth.currentSession!.toJson());
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.runAsync(authorizationRuntime.close);
+          authorizationRuntime.dispose();
+          authorizationRuntime = null;
+          settings.dispose();
+          final client = SupabaseClient(
+            url,
+            key,
+            authOptions: const AuthClientOptions(
+              autoRefreshToken: true,
+              authFlowType: AuthFlowType.pkce,
+            ),
+          );
+          await client.auth.recoverSession(saved);
+          await vault.write(
+            key: '$scope.session',
+            value: jsonEncode(client.auth.currentSession!.toJson()),
+          );
+          clients[user.id] = client;
+        }
       }
       if (clients.length < 2) {
         for (final c in clients.values) {
@@ -234,7 +260,7 @@ void main() {
         }
       } finally {
         for (final client in clients.values) {
-          if (!identical(client, managedClient)) await client.dispose();
+          await client.dispose();
         }
         await tester.pumpWidget(const SizedBox.shrink());
         await authorizationRuntime?.close();
