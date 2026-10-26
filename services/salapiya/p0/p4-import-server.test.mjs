@@ -10,7 +10,10 @@ await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;
  CREATE TABLE auth.users(id uuid PRIMARY KEY,deleted_at timestamptz,banned_until timestamptz);
  CREATE TABLE auth.sessions(id uuid PRIMARY KEY,user_id uuid NOT NULL);GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;`);
 for(const file of (await readdir(new URL('supabase/migrations/',import.meta.url))).filter(f=>f.endsWith('.sql')).sort())await db.exec(await readFile(new URL('supabase/migrations/'+file,import.meta.url),'utf8'));
-const fixture=JSON.parse(await readFile(new URL('../../../contracts/salapiya/p4_import.json',import.meta.url),'utf8'));
+// Live preview submission requires today's review date. Keep the historical golden
+// fixture unchanged; shift its review metadata only in this synthetic RPC run.
+const reviewDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const fixture=JSON.parse((await readFile(new URL('../../../contracts/salapiya/p4_import.json',import.meta.url),'utf8')).replaceAll('2026-10-26',reviewDay));
 const actor=randomUUID(),profile=fixture.profile,enrollment=randomUUID();
 await db.query('INSERT INTO auth.users(id) VALUES($1)',[actor]);await db.query('INSERT INTO auth.sessions VALUES($1,$1)',[actor]);
 const rpc=(name,args=[])=>db.transaction(async tx=>{

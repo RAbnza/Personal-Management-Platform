@@ -65,7 +65,7 @@ Future<String> stageCashImport(
   }
   return f.post('cashImportPreview', {
     'name': 'Reviewed immutable CSV preview',
-    'date': '2026-10-26',
+    'date': civilToday(),
     'batch': head,
   });
 }
@@ -118,7 +118,10 @@ void main() {
         values,
         id: '50000000-0000-4000-8000-${n.toString().padLeft(12, '0')}',
       );
-      await f.store.commit(c);
+      await f.store.commit(
+        c,
+        recordedAt: kind == 'cashImportProcess' ? null : '2026-10-26T00:00:00Z',
+      );
       return c.id;
     }
 
