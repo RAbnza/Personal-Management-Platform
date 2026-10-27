@@ -23,6 +23,7 @@ import 'package:salapiya/p0/google_auth_proof.dart';
 import '../test/local_money_journey.dart';
 
 import 'p2_native_test.dart' show PrivateDownload;
+import 'p5_google_life.dart' show verifyP5GoogleLife;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +193,10 @@ void main() {
       }
 
       try {
+        if (const bool.fromEnvironment('P5_GOOGLE_LIFE')) {
+          await verifyP5GoogleLife(tester, [a, b], endpoint);
+          return;
+        }
         await post(a, 'create', {
           'name': 'P3 real Google synthetic group',
           'display': 'Google test A',

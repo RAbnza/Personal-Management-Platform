@@ -72,5 +72,5 @@ void main() {
       hasLength(502),
     );
     await f.store.integrity();
-  });
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

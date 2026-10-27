@@ -7,15 +7,22 @@ import 'package:salapiya/local/local_profiles.dart';
 import 'package:salapiya/gallery/settings.dart';
 
 Future<void> localSettle(WidgetTester tester) async {
+  bool loading() =>
+      tester
+          .widgetList<CircularProgressIndicator>(
+            find.byType(CircularProgressIndicator),
+          )
+          .any((w) => w.value == null) ||
+      tester
+          .widgetList<LinearProgressIndicator>(
+            find.byType(LinearProgressIndicator),
+          )
+          .any((w) => w.value == null);
   await tester.pump();
   await tester.runAsync(
     () => Future<void>.delayed(const Duration(milliseconds: 80)),
   );
-  for (
-    var i = 0;
-    i < 300 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
-    i++
-  ) {
+  for (var i = 0; i < 300 && loading(); i++) {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 40)),
