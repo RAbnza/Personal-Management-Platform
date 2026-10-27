@@ -224,9 +224,18 @@ class WorkspaceActionGroup extends StatelessWidget {
 }
 
 class WorkspaceGrid extends StatelessWidget {
-  const WorkspaceGrid({super.key, required this.children, this.minWidth = 260});
+  const WorkspaceGrid({
+    super.key,
+    required this.children,
+    this.minWidth = 260,
+    this.matchRowHeights = false,
+  });
   final List<Widget> children;
   final double minWidth;
+
+  /// Opt in for small metric groups. Rows grow to their tallest content, including
+  /// at larger text scales, without imposing a fixed height on any card.
+  final bool matchRowHeights;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, b) {
@@ -235,6 +244,31 @@ class WorkspaceGrid extends StatelessWidget {
         1,
         children.length.clamp(1, 4),
       );
+      if (matchRowHeights) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var start = 0; start < children.length; start += columns) ...[
+              if (start > 0) const SizedBox(height: 16),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var column = 0; column < columns; column++) ...[
+                      if (column > 0) const SizedBox(width: 16),
+                      Expanded(
+                        child: start + column < children.length
+                            ? children[start + column]
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      }
       return Wrap(
         spacing: 16,
         runSpacing: 16,

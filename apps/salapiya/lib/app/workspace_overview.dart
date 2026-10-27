@@ -10,6 +10,21 @@ import '../prototype/scenarios.dart';
 import 'activity_view.dart';
 import 'overview_agenda.dart';
 
+/// Compact presentation only; exact civil dates remain in the caption semantics.
+String overviewPeriodLabel(
+  MaterialLocalizations localizations,
+  String start,
+  String end,
+) {
+  final first = DateTime.parse(start), last = DateTime.parse(end);
+  final from = localizations.formatShortMonthDay(first);
+  if (first.year != last.year) {
+    return '$from, ${first.year}–${localizations.formatShortMonthDay(last)}, ${last.year}';
+  }
+  if (first.month == last.month) return '$from–${last.day}';
+  return '$from–${localizations.formatShortMonthDay(last)}';
+}
+
 /// Production dashboard: all metrics use the accepted journal and civil dates.
 /// Pending activity remains separately labelled by the existing controller.
 class WorkspaceOverview extends StatelessWidget {
@@ -24,6 +39,7 @@ class WorkspaceOverview extends StatelessWidget {
   final Widget attention;
   @override
   Widget build(BuildContext context) {
+    final android = Theme.of(context).platform == TargetPlatform.android;
     final c = session.localFinance, s = c.acceptedSnapshot;
     final today = civilToday(), start = '${civilToday().substring(0, 7)}-01';
     final postings = s.current
@@ -60,20 +76,27 @@ class WorkspaceOverview extends StatelessWidget {
         FinanceHeading(
           'OVERVIEW',
           'Your day, in balance.',
-          'Welcome back, ${session.profile.name}. Here is your money and what is ahead.',
+          android
+              ? "Your money and what's next."
+              : 'Welcome back, ${session.profile.name}. Here is your money and what is ahead.',
           actions: [
-            FilledButton.icon(
-              onPressed: session.complete
-                  ? () =>
-                        openFinancialEditor(context, c, FinancialAction.expense)
-                  : null,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add expense'),
-            ),
+            if (!android)
+              FilledButton.icon(
+                onPressed: session.complete
+                    ? () => openFinancialEditor(
+                        context,
+                        c,
+                        FinancialAction.expense,
+                      )
+                    : null,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add expense'),
+              ),
           ],
         ),
         WorkspaceGrid(
           minWidth: 150,
+          matchRowHeights: android,
           children: [
             ValueBlock(
               'LIQUID MONEY',
@@ -85,7 +108,12 @@ class WorkspaceOverview extends StatelessWidget {
             ValueBlock(
               'MONTH SPENDING',
               amount(spent),
-              '$start – $today · net recognized',
+              android
+                  ? '${overviewPeriodLabel(MaterialLocalizations.of(context), start, today)} · net spending'
+                  : '$start – $today · net recognized',
+              captionSemanticsLabel: android
+                  ? '$start – $today · net recognized spending'
+                  : null,
             ),
             ValueBlock(
               'MONTH INCOME',

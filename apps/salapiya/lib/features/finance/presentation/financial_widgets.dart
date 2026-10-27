@@ -294,8 +294,10 @@ class ValueBlock extends StatelessWidget {
     super.key,
     this.color,
     this.dark = false,
+    this.captionSemanticsLabel,
   });
   final String label, value, caption;
+  final String? captionSemanticsLabel;
   final Color? color;
   final bool dark;
   @override
@@ -323,7 +325,11 @@ class ValueBlock extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text(caption, style: const TextStyle(fontSize: 12)),
+          Text(
+            caption,
+            semanticsLabel: captionSemanticsLabel,
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
     ),
