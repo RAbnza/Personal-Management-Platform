@@ -72,8 +72,13 @@ class LocalRuntime extends ChangeNotifier {
     ].where((v) => '$v' == preferences['textScale']).firstOrNull;
     final life = DurableLifeController(store);
     await life.initialize();
+    final financialView = await store.financialView();
     session = LocalSession(
-      LocalFinancialController(store, await store.snapshot()),
+      LocalFinancialController(
+        store,
+        financialView.$1,
+        accepted: financialView.$2,
+      ),
       this,
       life,
     );

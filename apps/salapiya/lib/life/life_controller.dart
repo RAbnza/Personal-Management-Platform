@@ -484,7 +484,7 @@ class DurableLifeController extends LifeController {
     }
     if (financial && finance is LocalFinancialController) {
       for (final r in financialReminderSources(
-        finance.snapshot,
+        finance.acceptedSnapshot,
         from,
         through,
       )) {

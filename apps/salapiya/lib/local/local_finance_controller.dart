@@ -6,7 +6,9 @@ import 'local_store.dart';
 // Adapter into the approved preview/editor/query models. Cached display lists
 // are rebuilt only from committed facts; financial calculations stay in domain.
 class LocalFinancialController extends FinancialController {
-  LocalFinancialController(this.store, this.snapshot) : super(demo: false) {
+  LocalFinancialController(this.store, this.snapshot, {LocalSnapshot? accepted})
+    : acceptedSnapshot = accepted ?? snapshot,
+      super(demo: false) {
     super.reset(empty: true, notify: false);
     groups.clear();
     memberSets.clear();
@@ -15,6 +17,7 @@ class LocalFinancialController extends FinancialController {
   }
   final LocalStore store;
   LocalSnapshot snapshot;
+  LocalSnapshot acceptedSnapshot;
   BigInt acceptedLiquid = BigInt.zero;
   String? lastError;
   bool connected = false;
@@ -265,6 +268,7 @@ class LocalFinancialController extends FinancialController {
     final view = await store.financialView();
     snapshot = view.$1;
     final accepted = view.$2;
+    acceptedSnapshot = accepted;
     acceptedLiquid = sumMinor(
       accepted.accounts.map(
         (a) => accepted.balance(a.id, through: civilToday()),
