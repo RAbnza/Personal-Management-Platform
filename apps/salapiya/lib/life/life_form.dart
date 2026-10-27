@@ -94,6 +94,7 @@ class _LifeFormState extends State<LifeForm> {
   final controllers = <String, TextEditingController>{};
   bool loading = true, reviewing = false, saving = false, done = false;
   String? error;
+  bool dirty = false;
   Future<void> writes = Future.value();
   @override
   void initState() {
@@ -105,6 +106,7 @@ class _LifeFormState extends State<LifeForm> {
     try {
       final draft = await widget.controller.store.draft(widget.operation);
       if (!mounted) return;
+      dirty = draft != null;
       values.addAll({
         for (final f in widget.fields) f.id: f.value,
         '__command': newLocalId(),
@@ -130,6 +132,7 @@ class _LifeFormState extends State<LifeForm> {
   }
 
   void update(String key, String value) {
+    setState(() => dirty = true);
     values[key] = value;
     final frozen = Map<String, String>.of(values);
     writes = writes
@@ -206,116 +209,129 @@ class _LifeFormState extends State<LifeForm> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !saving,
+  Widget build(BuildContext context) => FormExitGuard(
+    dirty: dirty && !done,
+    busy: saving || loading,
+    keepDraft: () => writes,
     child: FinancePage(
       title: widget.title,
       child: loading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FinanceHeading(
-                  done
-                      ? 'LIFE / SAVED'
-                      : reviewing
-                      ? 'REVIEW / BEFORE YOU CONTINUE'
-                      : 'DETAILS / PROTECTED DRAFT',
-                  done ? 'Saved on this device.' : widget.title,
-                  widget.explanation,
-                ),
-                if (done) ...[
-                  Text(
-                    widget.controller.waiting > 0
-                        ? 'Saved locally · waiting for private synchronization.'
-                        : 'Saved in encrypted local storage.',
+          : WorkspaceForm(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WorkspaceSteps(
+                    active: done
+                        ? 2
+                        : reviewing
+                        ? 1
+                        : 0,
                   ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Done'),
+                  FinanceHeading(
+                    done
+                        ? 'LIFE / SAVED'
+                        : reviewing
+                        ? 'REVIEW / BEFORE YOU CONTINUE'
+                        : 'DETAILS / PROTECTED DRAFT',
+                    done ? 'Saved on this device.' : widget.title,
+                    widget.explanation,
                   ),
-                ] else ...[
-                  for (final f in widget.fields)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 18),
-                      child: reviewing
-                          ? FinancialLine(
-                              f.label,
-                              f.options?[values[f.id]] ?? values[f.id] ?? '',
-                            )
-                          : f.options != null
-                          ? DropdownButtonFormField<String>(
-                              key: ValueKey('life-field-${f.id}'),
-                              initialValue: f.options!.containsKey(values[f.id])
-                                  ? values[f.id]
-                                  : null,
-                              isExpanded: true,
-                              decoration: InputDecoration(labelText: f.label),
-                              items: [
-                                for (final item in f.options!.entries)
-                                  DropdownMenuItem(
-                                    value: item.key,
-                                    child: Text(item.value),
-                                  ),
-                              ],
-                              onChanged: saving
-                                  ? null
-                                  : (v) {
-                                      if (v != null) update(f.id, v);
-                                    },
-                            )
-                          : TextField(
-                              key: ValueKey('life-field-${f.id}'),
-                              controller: controllers[f.id],
-                              enabled: !saving,
-                              minLines: f.lines,
-                              maxLines: f.lines,
-                              decoration: InputDecoration(labelText: f.label),
-                              onChanged: (v) => update(f.id, v),
-                            ),
+                  if (done) ...[
+                    Text(
+                      widget.controller.waiting > 0
+                          ? 'Saved locally · waiting for private synchronization.'
+                          : 'Saved in encrypted local storage.',
                     ),
-                  if (error != null) FinanceNotice(error!, warning: true),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      if (reviewing)
-                        OutlinedButton(
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Done'),
+                    ),
+                  ] else ...[
+                    for (final f in widget.fields)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: reviewing
+                            ? FinancialLine(
+                                f.label,
+                                f.options?[values[f.id]] ?? values[f.id] ?? '',
+                              )
+                            : f.options != null
+                            ? DropdownButtonFormField<String>(
+                                key: ValueKey('life-field-${f.id}'),
+                                initialValue:
+                                    f.options!.containsKey(values[f.id])
+                                    ? values[f.id]
+                                    : null,
+                                isExpanded: true,
+                                decoration: InputDecoration(labelText: f.label),
+                                items: [
+                                  for (final item in f.options!.entries)
+                                    DropdownMenuItem(
+                                      value: item.key,
+                                      child: Text(item.value),
+                                    ),
+                                ],
+                                onChanged: saving
+                                    ? null
+                                    : (v) {
+                                        if (v != null) update(f.id, v);
+                                      },
+                              )
+                            : TextField(
+                                key: ValueKey('life-field-${f.id}'),
+                                controller: controllers[f.id],
+                                enabled: !saving,
+                                minLines: f.lines,
+                                maxLines: f.lines,
+                                decoration: InputDecoration(labelText: f.label),
+                                onChanged: (v) => update(f.id, v),
+                              ),
+                      ),
+                    if (error != null) FinanceNotice(error!, warning: true),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        if (reviewing)
+                          OutlinedButton(
+                            onPressed: saving
+                                ? null
+                                : () => setState(() => reviewing = false),
+                            child: const Text('Edit details'),
+                          ),
+                        FilledButton(
+                          onPressed: saving ? null : submit,
+                          child: Text(
+                            saving
+                                ? 'Saving…'
+                                : reviewing
+                                ? 'Confirm & save'
+                                : 'Review changes',
+                          ),
+                        ),
+                        TextButton(
                           onPressed: saving
                               ? null
-                              : () => setState(() => reviewing = false),
-                          child: const Text('Edit details'),
+                              : () async {
+                                  if (!await confirmDiscard(context)) return;
+                                  await writes;
+                                  await widget.controller.store.discardDraft(
+                                    widget.operation,
+                                  );
+                                  if (context.mounted) Navigator.pop(context);
+                                },
+                          child: const Text('Discard draft'),
                         ),
-                      FilledButton(
-                        onPressed: saving ? null : submit,
-                        child: Text(
-                          saving
-                              ? 'Saving…'
-                              : reviewing
-                              ? 'Confirm & save'
-                              : 'Review changes',
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: saving
-                            ? null
-                            : () async {
-                                await writes;
-                                await widget.controller.store.discardDraft(
-                                  widget.operation,
-                                );
-                                if (context.mounted) Navigator.pop(context);
-                              },
-                        child: const Text('Discard draft'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Back keeps this protected draft. Manual dates remain field values; recorded history uses the actual save timestamp.',
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Back keeps this protected draft. Manual dates remain field values; recorded history uses the actual save timestamp.',
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
     ),
   );

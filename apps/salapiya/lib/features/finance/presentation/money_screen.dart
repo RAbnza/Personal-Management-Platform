@@ -49,47 +49,40 @@ class _MoneyScreenState extends State<MoneyScreen> {
       children: [
         FinanceHeading(
           'MONEY / EVERYDAY FINANCES',
-          'Make room for living.',
+          'Money',
           'A clear view of what you have, where it goes, and the choices ahead.',
-          actions: [
-            FilledButton.icon(
-              onPressed: () => edit(FinancialAction.expense),
-              icon: const Icon(Icons.add),
-              label: const Text('Add expense'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => edit(FinancialAction.transfer),
-              icon: const Icon(Icons.swap_horiz),
-              label: const Text('Transfer'),
-            ),
-            TextButton(
-              onPressed: () => edit(FinancialAction.income),
-              child: const Text('Record income'),
-            ),
-          ],
+          actions: !['Accounts', 'Activity'].contains(tab)
+              ? []
+              : [
+                  FilledButton.icon(
+                    onPressed: () => edit(FinancialAction.expense),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add expense'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => edit(FinancialAction.transfer),
+                    icon: const Icon(Icons.swap_horiz),
+                    label: const Text('Transfer'),
+                  ),
+                  TextButton(
+                    onPressed: () => edit(FinancialAction.income),
+                    child: const Text('Record income'),
+                  ),
+                ],
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final t in [
-              'Accounts',
-              'Activity',
-              'Cards',
-              'Planning',
-              'Reports',
-              'Import',
-              'Files',
-            ])
-              ChoiceChip(
-                label: Text(t),
-                selected: t == tab,
-                showCheckmark: false,
-                onSelected: (_) => setState(() => tab = t),
-              ),
+        WorkspaceTabs(
+          items: const [
+            'Accounts',
+            'Activity',
+            'Cards',
+            'Planning',
+            'Reports',
+            'Import',
+            'Files',
           ],
+          selected: tab,
+          onSelected: (value) => setState(() => tab = value),
         ),
-        const SizedBox(height: 24),
         if (!widget.session.complete)
           const FinanceNotice(
             'Initial download incomplete. Balances and financial actions become available after the accepted history is verified.',
@@ -129,18 +122,22 @@ class _MoneyScreenState extends State<MoneyScreen> {
             main: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 16,
+                  runSpacing: 12,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Your accounts',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
+                    Text(
+                      'Your accounts',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    IconButton(
-                      tooltip: 'Create account',
-                      onPressed: () => edit(FinancialAction.account),
-                      icon: const Icon(Icons.add_circle_outline),
+                    Tooltip(
+                      message: 'Create account',
+                      child: FilledButton.icon(
+                        onPressed: () => edit(FinancialAction.account),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add account'),
+                      ),
                     ),
                   ],
                 ),
@@ -177,7 +174,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                 ValueBlock(
                   'LIQUID MONEY',
                   money(c.liquid),
-                  '${c.accounts.length} accounts · current demo balances\nCard liabilities excluded.',
+                  '${c.accounts.length} accounts · current ${c.production ? 'local' : 'demo'} balances\nCard liabilities excluded.',
                   dark: true,
                 ),
                 if (c.pendingOutflow != BigInt.zero)
@@ -323,20 +320,21 @@ class _MoneyScreenState extends State<MoneyScreen> {
     button: true,
     label: '${a.name}, ${money(a.balance)}',
     child: InkWell(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(14),
       onTap: () => openDemoPage<void>(
         context,
         AccountDetail(session: widget.session, id: a.id),
         'money/account/${a.id}',
       ),
       child: Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: [Palette.mint, Palette.lilac, Palette.peach][index % 3],
-          borderRadius: BorderRadius.circular(24),
+          color: CraftTheme.of(context).surface,
+          border: Border.all(color: CraftTheme.of(context).divider),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: DefaultTextStyle.merge(
-          style: const TextStyle(color: Palette.ink),
+          style: TextStyle(color: CraftTheme.of(context).text),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -348,7 +346,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                       Icons.account_balance_outlined,
                       Icons.phone_android,
                     ][index % 3],
-                    color: Palette.ink,
+                    color: CraftTheme.of(context).primary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -360,7 +358,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 16),
               Text(
                 a.name,
                 style: const TextStyle(
@@ -371,9 +369,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
               const SizedBox(height: 8),
               Text(
                 money(a.balance),
-                style: const TextStyle(fontSize: 28, letterSpacing: -.8),
+                style: const TextStyle(fontSize: 24, letterSpacing: -.5),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 16),
               const Row(
                 children: [
                   Expanded(

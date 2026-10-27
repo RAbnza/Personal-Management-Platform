@@ -36,24 +36,35 @@ class _FinancialSourceListState extends State<FinancialSourceList> {
             icon: Icons.history,
             onTap: () => openFinanceDetail(context, c, r.id),
           ),
-        Text('${rows.length} retained sources · page ${current + 1} / $pages'),
-        Wrap(
-          spacing: 8,
-          children: [
-            TextButton(
-              onPressed: current == 0
-                  ? null
-                  : () => setState(() => page = current - 1),
-              child: const Text('Previous sources'),
-            ),
-            TextButton(
-              onPressed: current + 1 >= pages
-                  ? null
-                  : () => setState(() => page = current + 1),
-              child: const Text('Next sources'),
-            ),
-          ],
-        ),
+        if (rows.isEmpty)
+          const WorkspaceEmpty(
+            title: 'No history yet',
+            message:
+                'Saved activity and its earlier revisions will appear here.',
+            icon: Icons.history,
+          ),
+        if (rows.isNotEmpty)
+          Text(
+            '${rows.length} retained sources · page ${current + 1} / $pages',
+          ),
+        if (pages > 1)
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: current == 0
+                    ? null
+                    : () => setState(() => page = current - 1),
+                child: const Text('Previous sources'),
+              ),
+              TextButton(
+                onPressed: current + 1 >= pages
+                    ? null
+                    : () => setState(() => page = current + 1),
+                child: const Text('Next sources'),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -99,24 +110,32 @@ class _FinancialDueListState extends State<FinancialDueList> {
               onTap: () =>
                   openFinanceDetail(context, widget.controller, r.source),
             ),
-          Text('${rows.length} due sources · page ${current + 1} / $pages'),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton(
-                onPressed: current == 0
-                    ? null
-                    : () => setState(() => page = current - 1),
-                child: const Text('Previous dues'),
-              ),
-              TextButton(
-                onPressed: current + 1 >= pages
-                    ? null
-                    : () => setState(() => page = current + 1),
-                child: const Text('Next dues'),
-              ),
-            ],
-          ),
+          if (rows.isEmpty)
+            const WorkspaceEmpty(
+              title: 'No commitments in this window',
+              message: 'Recurring activity, verified card statements and debt schedules appear here when they have a due date.',
+              icon: Icons.event_available_outlined,
+            ),
+          if (rows.isNotEmpty)
+            Text('${rows.length} due sources · page ${current + 1} / $pages'),
+          if (pages > 1)
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: current == 0
+                      ? null
+                      : () => setState(() => page = current - 1),
+                  child: const Text('Previous dues'),
+                ),
+                TextButton(
+                  onPressed: current + 1 >= pages
+                      ? null
+                      : () => setState(() => page = current + 1),
+                  child: const Text('Next dues'),
+                ),
+              ],
+            ),
         ],
       );
     } on LocalRuleException catch (e) {

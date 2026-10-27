@@ -8,6 +8,7 @@ import '../prototype/scenarios.dart';
 import 'activity_view.dart';
 import 'overview_agenda.dart';
 import 'overview_wallet.dart';
+import 'workspace_overview.dart';
 import '../local/finance_domain.dart';
 import '../local/local_runtime.dart';
 import '../connected/connection_view.dart';
@@ -92,33 +93,6 @@ class Overview extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (session.complete &&
-            session is LocalSession &&
-            (session as LocalSession).localFinance.snapshot.current.any(
-              (r) => [
-                'debtImport',
-                'borrowing',
-                'creditCard',
-              ].contains(financeType(r)),
-            )) ...[
-          SourceLink(
-            title: 'Recognized debt liability',
-            subtitle:
-                'Current economic dates; future schedules are separate. ${session.syncLabel}.',
-            trailing: session.amount(
-              (session as LocalSession).localFinance.debtTotal,
-            ),
-            icon: Icons.account_balance_outlined,
-            onTap: () => open(PreviewSource.debt),
-          ),
-          SourceLink(
-            title: 'Cards: liability and noncash credit',
-            subtitle:
-                'Liability ${session.amount((session as LocalSession).localFinance.cardLiabilityAndCredit.$1)}; credit ${session.amount((session as LocalSession).localFinance.cardLiabilityAndCredit.$2)}. Cards are shown separately; credit never offsets another card or becomes cash.',
-            icon: Icons.credit_card_outlined,
-            onTap: () => open(PreviewSource.cards),
-          ),
-        ],
         if (session is LocalSession)
           SharedAttention(
             session: session as LocalSession,
@@ -231,7 +205,7 @@ class Overview extends StatelessWidget {
         SourceLink(
           title: session.production ? 'Shared Expenses' : 'Demo household',
           subtitle: session.production
-              ? 'Collaboration arrives in a later milestone'
+              ? 'Groups, shared bills and settlements'
               : session.empty
               ? 'Explore Shared Expenses'
               : 'Dinner with Tala and Nico',
@@ -295,6 +269,13 @@ class Overview extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
+      if (session is LocalSession) {
+        return WorkspaceOverview(
+          session: session as LocalSession,
+          open: open,
+          attention: attention(context),
+        );
+      }
       final wide =
           box.maxWidth >= 880 &&
           MediaQuery.textScalerOf(context).scale(14) <= 21;

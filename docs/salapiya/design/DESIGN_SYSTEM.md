@@ -1,3 +1,24 @@
+# Final native workspace design system
+
+> **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
+
+## Current implemented rules
+
+- Use the existing Geist family and semantic `CraftTheme`/`ThemeData`; no new font, asset generation or dependency was introduced.
+- Daylight uses canvas `#F3F4F6`, white panels, ink text and subtle `#E3E4E9` dividers. Midnight uses canvas `#14151A`, panels `#1E2027`, light text and restrained lavender selection. Purple remains the brand/action accent, not the background of every notice.
+- Spacing follows 4/8/12/16/24/32. Workspace panels use 20 padding, 14 radius and 16 bottom separation. Form and control corners are 10. Panels need a distinct purpose; do not wrap every line in another card.
+- Desktop headings are generally 28, section titles 18, body 14. Desktop buttons use a 38 minimum height and standard visual density; Android controls use 48. Text scaling is preserved and can grow controls beyond these minima.
+- `workspace.dart` supplies `WorkspacePanel`, `WorkspaceTabs`, `WorkspaceGrid`, `WorkspaceActionGroup`, `WorkspaceEmpty`, `WorkspaceHelp`, `WorkspaceForm`, `WorkspaceSteps`, `WorkspacePager`, `FormExitGuard` and `confirmDiscard`.
+- `WorkspaceForm` bounds reviewed forms to 760 logical pixels. Details / Review / Saved describes existing real stages; it is not a second submission implementation. Reviewed values, immutable correction and original command/result handling remain in their existing controllers.
+- Task groups expose a primary action and a labelled More menu for less common operations. Preserve every original command and permission condition. Do not replace unavailable provider or cloud operations with fake success.
+- Ordinary information uses neutral bordered notices or expandable help. Blocking errors, incomplete coverage, waiting work and material file limitations stay visible. `WorkspaceHelp` has a unique PageStorage key to avoid colliding with scroll state.
+- Desktop Overview uses accepted exact journal values, compact metrics, spending, accounts, activity and Life agenda. Pending/projected values remain separately labelled. A chart may use a bounded display ratio; stored money and totals remain integer minor units.
+- Amount privacy, focus, text scale, reduced motion and effects preferences remain functional. Do not add shimmer, onboarding delays, decorative animations or motion-dependent meaning.
+
+## Historical design record
+
+The material below is retained for provenance. Conflicting presentation guidance is superseded by the rules above and the final handoff.
+
 # Native design system — D2 corrected framing
 
 **Current implementation (23 October 2026):** [Daylight editorial redesign](D2_REIMAGINED.md) supersedes the visual selections below. Geist, warm porcelain/graphite, ink balance surfaces, lilac navigation, mint wallets and open ledgers are implemented. Older Gallery motifs remain historical comparisons.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design_system/editorial.dart';
-import '../design_system/theme.dart';
+import '../design_system/welcome_frame.dart';
 import '../features/finance/presentation/financial_widgets.dart';
 import '../local/finance_domain.dart';
 import '../local/local_profile_view.dart';
@@ -12,10 +12,15 @@ class ConnectionPage extends StatelessWidget {
   const ConnectionPage({super.key, required this.runtime});
   final LocalRuntime runtime;
   @override
-  Widget build(BuildContext context) => FinancePage(
-    title: 'Google connection',
-    child: ConnectionBody(runtime: runtime),
-  );
+  Widget build(BuildContext context) => runtime.session == null
+      ? WelcomeFrame(
+          step: 'Google connection',
+          child: ConnectionBody(runtime: runtime),
+        )
+      : FinancePage(
+          title: 'Google connection',
+          child: WorkspaceForm(child: ConnectionBody(runtime: runtime)),
+        );
 }
 
 class ConnectionBody extends StatefulWidget {
@@ -109,7 +114,6 @@ class _ConnectionBodyState extends State<ConnectionBody> {
             'CONNECTION',
             c.label,
             '${c.identity}\nFinancial: ${c.pendingCount} waiting · ${c.reviewCount} for review. Life: ${c.lifePendingCount} waiting · ${c.lifeReviewCount} for review (open Life).',
-            color: Palette.mint,
           ),
           if (c.binding?['last_sync'] != null)
             Padding(

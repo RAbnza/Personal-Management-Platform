@@ -303,22 +303,25 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeading('Private financial supporting files'),
-          const FinanceNotice(
-            'PDF, JPEG and PNG, at most 10 MiB each / 1,000 live objects / 1 GiB declared capacity. Files are encrypted locally. Extensions and signatures are format hints only; they do not prove harmless content.',
+          const SectionHeading('Private files'),
+          const Text(
+            'Keep receipts and supporting documents beside their financial source.',
           ),
+          const SizedBox(height: 12),
           const FinanceNotice(
-            'Cloud upload/download is unavailable: a production private object-storage and malware-scanning boundary has not been verified on the current free infrastructure. No available/scanned status is fabricated; binary files never enter PowerSync.',
+            'Device-local files only - unscanned. Cloud upload and download are unavailable. Backups include metadata, not original file bytes.',
+            warning: true,
+          ),
+          const WorkspaceHelp(
+            title: 'Supported files, capacity & privacy',
+            text: 'PDF, JPEG and PNG, at most 10 MiB each / 1,000 live objects / 1 GiB declared capacity. Files are encrypted locally. Extensions and signatures are format hints only; they do not prove harmless content. A production private object-storage and malware-scanning boundary has not been verified on the current free infrastructure. Binary files never enter PowerSync.',
           ),
           if (error != null) FinanceNotice(error!),
           if (message != null) FinanceNotice(message!),
           DropdownButtonFormField<String>(
             initialValue: source,
             isExpanded: true,
-            decoration: const InputDecoration(
-              labelText:
-                  'Concrete financial source / exact historical revision',
-            ),
+            decoration: const InputDecoration(labelText: 'Financial record'),
             items: [
               for (final r in c.snapshot.revisions.where(
                 (r) =>
@@ -335,10 +338,14 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
             ],
             onChanged: busy ? null : (v) => setState(() => source = v),
           ),
-          FilledButton.icon(
-            onPressed: busy ? null : () => run(choose),
-            icon: const Icon(Icons.attach_file),
-            label: const Text('Choose private supporting file'),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: busy || source == null ? null : () => run(choose),
+              icon: const Icon(Icons.attach_file),
+              label: const Text('Choose file'),
+            ),
           ),
           if (retained != null) ...[
             OutlinedButton(
@@ -368,9 +375,17 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
               child: const Text('Release selection draft; retain staged bytes'),
             ),
           ],
-          FinanceNotice(
-            'Backup coverage: ${records.length} attachment metadata records; 0 attachment byte objects included in the standard financial archive. Keep originals separately. Restored metadata never claims that bytes were recovered.',
+          WorkspaceHelp(
+            title: 'Backup coverage - keep your originals',
+            text:
+                'Backup coverage: ${records.length} attachment metadata records; 0 attachment byte objects included in the standard financial archive. Keep originals separately. Restored metadata never claims that bytes were recovered.',
           ),
+          if (records.isEmpty)
+            const WorkspaceEmpty(
+              title: 'Your documents, close to their context',
+              message: 'Select a financial record above, then attach a receipt or supporting file. Keep a separate copy of every original.',
+              icon: Icons.folder_open_outlined,
+            ),
           for (final r in records.skip(page * 25).take(25))
             EditorialSurface(
               child: Column(
@@ -438,31 +453,36 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
                 ],
               ),
             ),
-          Text(
-            '${records.length} private metadata records; page ${page + 1}. Binary availability is separate.',
-          ),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton(
-                onPressed: page == 0 ? null : () => setState(() => page--),
-                child: const Text('Previous files'),
-              ),
-              TextButton(
-                onPressed: (page + 1) * 25 >= records.length
-                    ? null
-                    : () => setState(() => page++),
-                child: const Text('Next files'),
-              ),
-            ],
-          ),
+          if (records.isNotEmpty)
+            Text(
+              '${records.length} private metadata records; page ${page + 1}. Binary availability is separate.',
+            ),
+          if (records.length > 25)
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: page == 0 ? null : () => setState(() => page--),
+                  child: const Text('Previous files'),
+                ),
+                TextButton(
+                  onPressed: (page + 1) * 25 >= records.length
+                      ? null
+                      : () => setState(() => page++),
+                  child: const Text('Next files'),
+                ),
+              ],
+            ),
           FutureBuilder<List<String>>(
             future: files.orphans(),
-            builder: (context, result) => Text(
-              result.hasError
-                  ? 'Retained-object inventory unavailable. No automatic cleanup was performed.'
-                  : '${result.data?.length ?? 0} encrypted staged/orphan objects retained. Resume a retained selection or inspect synchronization review; unknown originals are not automatically deleted.',
-            ),
+            builder: (context, result) =>
+                !result.hasError && (result.data?.isEmpty ?? true)
+                ? const SizedBox.shrink()
+                : FinanceNotice(
+                    result.hasError
+                        ? 'Saved file inventory is unavailable. No files were automatically removed.'
+                        : '${result.data?.length ?? 0} unfinished file selections are retained securely. Resume your selection or open synchronization review. Originals are not automatically removed.',
+                  ),
           ),
         ],
       );

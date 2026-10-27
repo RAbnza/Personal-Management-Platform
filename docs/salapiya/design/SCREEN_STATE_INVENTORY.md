@@ -1,5 +1,7 @@
 # Screen, state and synthetic scenario inventory
 
+> **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
+
 **Status — October 24, 2026:** D0–D4 completed and owner-approved; D5 finalized
 under the owner's lightweight inspection/handoff scope. Current Windows/Android
 UI/UX is the accepted production visual baseline; all data/operations remain

@@ -273,13 +273,7 @@ class _LifeScreenState extends State<LifeScreen> {
           ],
           FinanceHeading(
             'LIFE / A LITTLE ROOM FOR YOU',
-            switch (tab) {
-              'Tasks' => 'One thing at a time.',
-              'Learning' => 'Stay curious.',
-              'Books' => 'A shelf of possibilities.',
-              'Career' => 'Your next chapter starts here.',
-              _ => 'Make room for your day.',
-            },
+            tab,
             'Your plans, progress and everyday commitments, together.',
             actions: [
               FilledButton.icon(
@@ -326,10 +320,8 @@ class _LifeScreenState extends State<LifeScreen> {
               ),
             ],
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
+          WorkspaceTabs(
+            items: [
               for (final t in [
                 'Calendar',
                 'Tasks',
@@ -340,19 +332,16 @@ class _LifeScreenState extends State<LifeScreen> {
                 if (c is! DurableLifeController ||
                     t == 'Calendar' ||
                     (c as DurableLifeController).tabVisible(t))
-                  ChoiceChip(
-                    label: Text(t),
-                    selected: tab == t,
-                    onSelected: (_) => setState(() {
-                      tab = t;
-                      page = 0;
-                      query = '';
-                      filter = 'Active';
-                    }),
-                  ),
+                  t,
             ],
+            selected: tab,
+            onSelected: (t) => setState(() {
+              tab = t;
+              page = 0;
+              query = '';
+              filter = 'Active';
+            }),
           ),
-          const SizedBox(height: 24),
           if (tab == 'Calendar')
             calendar()
           else ...[
@@ -394,24 +383,25 @@ class _LifeScreenState extends State<LifeScreen> {
                     ? LifeKind.book
                     : LifeKind.learning,
               ),
-            Wrap(
-              spacing: 8,
-              children: [
-                TextButton(
-                  onPressed: page == 0 ? null : () => setState(() => page--),
-                  child: const Text('Previous page'),
-                ),
-                Text(
-                  'Page ${page + 1} / ${((filteredCount + 24) ~/ 25).clamp(1, 100000)}',
-                ),
-                TextButton(
-                  onPressed: (page + 1) * 25 >= filteredCount
-                      ? null
-                      : () => setState(() => page++),
-                  child: const Text('Next page'),
-                ),
-              ],
-            ),
+            if (filteredCount > 25)
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: page == 0 ? null : () => setState(() => page--),
+                    child: const Text('Previous page'),
+                  ),
+                  Text(
+                    'Page ${page + 1} / ${((filteredCount + 24) ~/ 25).clamp(1, 100000)}',
+                  ),
+                  TextButton(
+                    onPressed: (page + 1) * 25 >= filteredCount
+                        ? null
+                        : () => setState(() => page++),
+                    child: const Text('Next page'),
+                  ),
+                ],
+              ),
           ],
         ],
       ),
@@ -863,8 +853,10 @@ class _LifeScreenState extends State<LifeScreen> {
     );
     final visible = matches.skip(boundedPage * 25).take(25).toList();
     if (visible.isEmpty) {
-      return const FinanceNotice(
-        'Nothing here yet. Try another filter or add something you want to make time for.',
+      return const WorkspaceEmpty(
+        icon: Icons.auto_awesome_outlined,
+        title: 'A little room for what matters',
+        message: 'Nothing here yet. Try another filter or add something you want to make time for.',
       );
     }
     if (kind == LifeKind.task) {
@@ -1327,36 +1319,47 @@ class _LifeScreenState extends State<LifeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final t
-                in s.production
-                    ? ['All', ...careerStages]
-                    : [
-                        'All',
-                        'Saved',
-                        'Applied',
-                        'Screening',
-                        'Assessment',
-                        'Interview',
-                        'Offer',
-                        'Accepted',
-                        'Rejected',
-                        'Withdrawn',
-                      ])
-              ChoiceChip(
-                label: Text(t),
-                selected: stage == t,
-                onSelected: (_) => setState(() {
-                  stage = t;
-                  page = 0;
-                }),
-              ),
-          ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: DropdownButtonFormField<String>(
+              initialValue: stage,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Application stage'),
+              items: [
+                for (final t
+                    in s.production
+                        ? ['All', ...careerStages]
+                        : [
+                            'All',
+                            'Saved',
+                            'Applied',
+                            'Screening',
+                            'Assessment',
+                            'Interview',
+                            'Offer',
+                            'Accepted',
+                            'Rejected',
+                            'Withdrawn',
+                          ])
+                  DropdownMenuItem(
+                    value: t,
+                    child: Text(t == 'All' ? 'All stages' : t),
+                  ),
+              ],
+              onChanged: (t) {
+                if (t != null) {
+                  setState(() {
+                    stage = t;
+                    page = 0;
+                  });
+                }
+              },
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         FinanceColumns(
           main: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1410,8 +1413,10 @@ class _LifeScreenState extends State<LifeScreen> {
                   ),
                 ),
               if (!all.any((a) => stage == 'All' || a.stage == stage))
-                const FinanceNotice(
-                  'No applications match. Keep a role here when you find a good possibility.',
+                const WorkspaceEmpty(
+                  icon: Icons.work_outline,
+                  title: 'Room for your next opportunity',
+                  message: 'No applications match. Add an application when you find a role you want to follow.',
                 ),
             ],
           ),
@@ -1422,7 +1427,6 @@ class _LifeScreenState extends State<LifeScreen> {
                 'IN MOTION',
                 '${all.length}',
                 'Applications in this view. Stages are your records, never inferred employer decisions.',
-                color: Palette.peach,
               ),
               const SizedBox(height: 20),
               const SectionHeading('Next conversations'),

@@ -19,45 +19,78 @@ String _principalEvidence(
       : 'Outstanding principal supported range: ${c.decimal(range.$1)}–${c.decimal(range.$2)} PHP.';
 }
 
-class NativeDebtsScreen extends StatelessWidget {
+class NativeDebtsScreen extends StatefulWidget {
   const NativeDebtsScreen({super.key, required this.controller});
   final LocalFinancialController controller;
+  @override
+  State<NativeDebtsScreen> createState() => _NativeDebtsScreenState();
+}
+
+class _NativeDebtsScreenState extends State<NativeDebtsScreen> {
+  LocalFinancialController get controller => widget.controller;
+  int page = 0;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
     builder: (context, _) {
       final s = controller.snapshot;
+      final records = s.current
+          .where((r) => ['debtImport', 'borrowing'].contains(financeType(r)))
+          .toList();
+      final currentPage = page.clamp(
+        0,
+        ((records.length + 11) ~/ 12 - 1).clamp(0, 100000),
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FinanceHeading(
             'DEBTS / A CLEARER WAY FORWARD',
-            'One step closer.',
+            'Debts',
             'Recognized liability, contractual dues and actual payments stay separate.',
-            actions: [
-              for (final action in const {
-                'debtImport': 'Add existing debt',
-                'borrowing': 'Record borrowing',
-                'debtPayment': 'Record debt payment',
-                'debtClassification': 'Classify payment',
-                'debtSchedule': 'Provider schedule',
-                'debtPayoff': 'Early settlement',
-                'debtAdjustment': 'Provider charge / waiver / residual',
-              }.entries)
-                OutlinedButton(
-                  onPressed: () => openNativeFinance(
-                    context,
-                    controller,
-                    action.key,
-                    action.value,
-                  ),
-                  child: Text(action.value),
-                ),
+          ),
+          NativeWorkflowGroups(
+            controller: controller,
+            groups: const [
+              (
+                'Your debts',
+                'Bring existing obligations into one clear view.',
+                Icons.account_balance_outlined,
+                {
+                  'debtImport': 'Add existing debt',
+                  'borrowing': 'Record borrowing',
+                },
+              ),
+              (
+                'Payments',
+                'Record actual payments and resolve their allocation.',
+                Icons.payments_outlined,
+                {
+                  'debtPayment': 'Record debt payment',
+                  'debtClassification': 'Classify payment',
+                },
+              ),
+              (
+                'Provider evidence',
+                'Keep schedules, charges and settlement evidence.',
+                Icons.description_outlined,
+                {
+                  'debtSchedule': 'Provider schedule',
+                  'debtPayoff': 'Early settlement',
+                  'debtAdjustment': 'Provider charge / waiver / residual',
+                },
+              ),
             ],
           ),
-          for (final debt in s.current.where(
+          if (!s.current.any(
             (r) => ['debtImport', 'borrowing'].contains(financeType(r)),
-          )) ...[
+          ))
+            const WorkspaceEmpty(
+              title: 'A clear view of what you owe',
+              message: 'Add an existing debt or record new borrowing to see balances and payment history here.',
+              icon: Icons.account_balance_outlined,
+            ),
+          for (final debt in records.skip(currentPage * 12).take(12)) ...[
             SectionHeading(debt.title),
             FinanceNotice(
               'Recognized liability: ${controller.decimal(-financeBalance(s, 'debt_liability', 'debt', debt.actionId, through: civilToday()))} PHP\n'
@@ -128,6 +161,11 @@ class NativeDebtsScreen extends StatelessWidget {
                 ),
             ],
           ],
+          WorkspacePager(
+            count: records.length,
+            page: currentPage,
+            onPage: (p) => setState(() => page = p),
+          ),
           const SectionHeading('Debt source detail & payment history'),
           FinancialSourceList(
             controller: controller,

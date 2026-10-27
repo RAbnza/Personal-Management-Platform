@@ -632,7 +632,11 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
   LocalCommand? reviewed;
   LocalPlan? plan;
   String? error, result;
-  bool loading = true, busy = false, draftFailed = false, unknown = false;
+  bool loading = true,
+      busy = false,
+      draftFailed = false,
+      unknown = false,
+      dirty = false;
   LocalFinancialController get c => widget.controller;
   @override
   void initState() {
@@ -646,6 +650,7 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
       if (draft != null) {
         values.addAll(Map<String, String>.from(draft['values'] as Map));
         id = draft['command'] as String;
+        dirty = true;
       }
     } catch (_) {
       error = 'Saved input could not be read. Reopen this profile.';
@@ -655,6 +660,7 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
   }
 
   void retain() {
+    setState(() => dirty = true);
     final frozen = Map<String, String>.from(values), command = id;
     writes = writes
         .then((_) => c.store.saveDraft(draftKey, command, frozen))
@@ -731,164 +737,219 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
   }
 
   @override
-  Widget build(BuildContext context) => FinancePage(
-    title: widget.title,
-    child: EditorialSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (loading)
-            const LinearProgressIndicator()
-          else if (result != null) ...[
-            FinanceNotice(result!),
-            Text('Original command: $id'),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
-            ),
-          ] else ...[
-            if (error != null) FinanceNotice(error!),
-            if (reviewed == null) ...[
-              for (final input in [
-                if (widget.operation != 'financeReversal') ...inputs,
-                if (widget.replacing != null)
-                  const FinanceInput('reason', 'Correction / reversal reason'),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 18),
-                  child: input.options == null
-                      ? TextField(
-                          key: ValueKey('native-${input.key}'),
-                          controller: fields.putIfAbsent(
-                            input.key,
-                            () => TextEditingController(
-                              text: values[input.key] ?? '',
-                            ),
-                          ),
-                          minLines: input.lines,
-                          maxLines: input.lines,
-                          decoration: InputDecoration(labelText: input.label),
-                          onChanged: (x) {
-                            values[input.key] = x;
-                            retain();
-                          },
-                        )
-                      : DropdownButtonFormField<String>(
-                          key: ValueKey('native-select-${input.key}'),
-                          initialValue:
-                              input.options!.containsKey(values[input.key])
-                              ? values[input.key]
-                              : null,
-                          isExpanded: true,
-                          decoration: InputDecoration(labelText: input.label),
-                          items: [
-                            for (final item in input.options!.entries)
-                              DropdownMenuItem(
-                                value: item.key,
-                                child: Text(
-                                  item.value,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                          ],
-                          onChanged: (x) {
-                            values[input.key] = x ?? '';
-                            retain();
-                          },
-                        ),
-                ),
-            ] else ...[
-              const SectionHeading('Review financial effects'),
-              for (final effect in plan!.effects)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    c.amountsHidden
-                        ? 'Financial review amounts hidden.'
-                        : effect,
-                  ),
-                ),
-              if (c.connected)
-                const FinanceNotice(
-                  'Connected changes remain pending until server acceptance and complete downloaded reconciliation.',
-                ),
-              TextButton(
-                onPressed: busy || unknown
-                    ? null
-                    : () => setState(() {
-                        reviewed = null;
-                        plan = null;
-                      }),
-                child: const Text('Edit'),
+  Widget build(BuildContext context) => FormExitGuard(
+    dirty: dirty && result == null,
+    busy: busy || loading || unknown,
+    keepDraft: () async {
+      await writes;
+      if (draftFailed) throw StateError('Draft not saved');
+    },
+    child: FinancePage(
+      title: widget.title,
+      child: WorkspaceForm(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!loading && result == null) ...[
+              WorkspaceSteps(active: reviewed == null ? 0 : 1),
+              FinanceHeading(
+                'FINANCIAL WORKFLOW',
+                widget.title,
+                'Review the exact effects before saving.',
               ),
+              const Text(
+                'Back keeps your encrypted draft. Nothing posts until you save reviewed values.',
+              ),
+              const SizedBox(height: 20),
             ],
-            FilledButton(
-              onPressed: busy || draftFailed || unknown ? null : save,
-              child: Text(
-                busy
-                    ? 'Saving…'
-                    : reviewed == null
-                    ? 'Review'
-                    : 'Save reviewed values',
+            if (loading)
+              const LinearProgressIndicator()
+            else if (result != null) ...[
+              FinanceNotice(result!),
+              Text('Original command: $id'),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
               ),
-            ),
-            if (unknown)
-              const FinanceNotice(
-                'Result unknown. Reopen this profile to inspect the original command before submitting any changed values.',
+            ] else ...[
+              if (error != null) FinanceNotice(error!),
+              if (reviewed == null) ...[
+                for (final input in [
+                  if (widget.operation != 'financeReversal') ...inputs,
+                  if (widget.replacing != null)
+                    const FinanceInput(
+                      'reason',
+                      'Correction / reversal reason',
+                    ),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: input.options == null
+                        ? TextField(
+                            key: ValueKey('native-${input.key}'),
+                            controller: fields.putIfAbsent(
+                              input.key,
+                              () => TextEditingController(
+                                text: values[input.key] ?? '',
+                              ),
+                            ),
+                            minLines: input.lines,
+                            maxLines: input.lines,
+                            decoration: InputDecoration(labelText: input.label),
+                            onChanged: (x) {
+                              values[input.key] = x;
+                              retain();
+                            },
+                          )
+                        : DropdownButtonFormField<String>(
+                            key: ValueKey('native-select-${input.key}'),
+                            initialValue:
+                                input.options!.containsKey(values[input.key])
+                                ? values[input.key]
+                                : null,
+                            isExpanded: true,
+                            decoration: InputDecoration(labelText: input.label),
+                            items: [
+                              for (final item in input.options!.entries)
+                                DropdownMenuItem(
+                                  value: item.key,
+                                  child: Text(
+                                    item.value,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (x) {
+                              values[input.key] = x ?? '';
+                              retain();
+                            },
+                          ),
+                  ),
+              ] else ...[
+                const SectionHeading('Review financial effects'),
+                for (final effect in plan!.effects)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      c.amountsHidden
+                          ? 'Financial review amounts hidden.'
+                          : effect,
+                    ),
+                  ),
+                if (c.connected)
+                  const FinanceNotice(
+                    'Connected changes remain pending until server acceptance and complete downloaded reconciliation.',
+                  ),
+                TextButton(
+                  onPressed: busy || unknown
+                      ? null
+                      : () => setState(() {
+                          reviewed = null;
+                          plan = null;
+                        }),
+                  child: const Text('Edit'),
+                ),
+              ],
+              FilledButton(
+                onPressed: busy || draftFailed || unknown ? null : save,
+                child: Text(
+                  busy
+                      ? 'Saving…'
+                      : reviewed == null
+                      ? 'Review'
+                      : 'Save reviewed values',
+                ),
               ),
+              if (unknown)
+                const FinanceNotice(
+                  'Result unknown. Reopen this profile to inspect the original command before submitting any changed values.',
+                ),
+            ],
           ],
-        ],
+        ),
       ),
     ),
   );
 }
 
-class NativeCardsScreen extends StatelessWidget {
+class NativeCardsScreen extends StatefulWidget {
   const NativeCardsScreen({super.key, required this.controller});
   final LocalFinancialController controller;
+  @override
+  State<NativeCardsScreen> createState() => _NativeCardsScreenState();
+}
+
+class _NativeCardsScreenState extends State<NativeCardsScreen> {
+  LocalFinancialController get controller => widget.controller;
+  int page = 0;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
     builder: (context, _) {
       final s = controller.snapshot;
+      final records = s.current
+          .where((r) => financeType(r) == 'creditCard')
+          .toList();
+      final currentPage = page.clamp(
+        0,
+        ((records.length + 11) ~/ 12 - 1).clamp(0, 100000),
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const FinanceNotice(
-            'Posted liability, provider statements and cash payments have separate meanings. Card credit and available credit are not liquid money.',
+          const SectionHeading('Credit cards'),
+          const Text(
+            'Keep purchases, payments and provider statements together.',
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final action in const {
-                'creditCard': 'Add credit card',
-                'cardAuthorization': 'Pending authorization',
-                'cardPayment': 'Pay credit card',
-                'cardRefund': 'Card refund',
-                'cardFee': 'Card fee',
-                'cardInterest': 'Card interest',
-                'statement': 'Record statement',
-                'statementLink': 'Link statement activity',
-                'cardAllocation': 'Allocate payment / credit',
-                'installment': 'Installment plan',
-                'installmentApplication': 'Apply installment payment',
-              }.entries)
-                OutlinedButton(
-                  onPressed: () => openNativeFinance(
-                    context,
-                    controller,
-                    action.key,
-                    action.value,
-                  ),
-                  child: Text(action.value),
-                ),
+          const SizedBox(height: 20),
+          NativeWorkflowGroups(
+            controller: controller,
+            groups: const [
+              (
+                'Cards & payments',
+                'Manage a card and record money paid to its provider.',
+                Icons.credit_card_outlined,
+                {
+                  'creditCard': 'Add credit card',
+                  'cardPayment': 'Pay credit card',
+                  'cardAuthorization': 'Pending authorization',
+                  'cardRefund': 'Card refund',
+                  'cardFee': 'Card fee',
+                  'cardInterest': 'Card interest',
+                },
+              ),
+              (
+                'Statements',
+                'Compare provider evidence with recorded activity.',
+                Icons.description_outlined,
+                {
+                  'statement': 'Record statement',
+                  'statementLink': 'Link statement activity',
+                  'cardAllocation': 'Allocate payment / credit',
+                },
+              ),
+              (
+                'Installments',
+                'Keep scheduled amounts separate from actual payments.',
+                Icons.calendar_month_outlined,
+                {
+                  'installment': 'Installment plan',
+                  'installmentApplication': 'Apply installment payment',
+                },
+              ),
             ],
           ),
-          const SizedBox(height: 24),
-          for (final card in s.current.where(
-            (r) => financeType(r) == 'creditCard',
-          )) ...[
+          const WorkspaceHelp(
+            title: 'How card balances work',
+            text: 'Posted liability, provider statements and cash payments have separate meanings. Card credit and available credit are not liquid money.',
+          ),
+          if (!s.current.any((r) => financeType(r) == 'creditCard'))
+            const WorkspaceEmpty(
+              title: 'Your cards, clearly accounted for',
+              message: 'Add a credit card above to track its outstanding balance, statements and payments.',
+              icon: Icons.credit_card_outlined,
+            ),
+          for (final card in records.skip(currentPage * 12).take(12)) ...[
             SectionHeading(card.title),
             Builder(
               builder: (context) {
@@ -903,10 +964,37 @@ class NativeCardsScreen extends StatelessWidget {
                     ? null
                     : signedPhp(card.values['limit']!);
                 final used = liability > BigInt.zero ? liability : BigInt.zero;
-                return FinanceNotice(
-                  '${liability < BigInt.zero ? 'Card credit' : 'Posted outstanding'}: ${controller.decimal(liability.abs())} PHP\n'
-                  'Issuer: ${card.values['issuer']}\n'
-                  '${limit == null ? 'No credit limit recorded.' : 'Available credit estimate: ${controller.decimal(limit - liability)} PHP. Utilization: ${limit == BigInt.zero ? 'undefined for zero limit' : '${controller.amountsHidden ? 'hidden' : used * BigInt.from(10000) ~/ limit} basis points'}.'}',
+                return WorkspacePanel(
+                  title: card.values['issuer'],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      WorkspaceGrid(
+                        children: [
+                          ValueBlock(
+                            liability < BigInt.zero
+                                ? 'CARD CREDIT'
+                                : 'POSTED OUTSTANDING',
+                            '${controller.decimal(liability.abs())} PHP',
+                            'Through today - separate from liquid money',
+                          ),
+                          ValueBlock(
+                            'AVAILABLE CREDIT',
+                            limit == null
+                                ? 'Not recorded'
+                                : '${controller.decimal(limit - liability)} PHP',
+                            'Estimate based on recorded limit and liability',
+                          ),
+                        ],
+                      ),
+                      WorkspaceHelp(
+                        title: 'Credit utilization',
+                        text: limit == null
+                            ? 'No credit limit recorded.'
+                            : 'Utilization: ${limit == BigInt.zero ? 'undefined for zero limit' : '${controller.amountsHidden ? 'hidden' : used * BigInt.from(10000) ~/ limit} basis points'}. Available credit is not cash.',
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -926,6 +1014,11 @@ class NativeCardsScreen extends StatelessWidget {
                     openFinanceDetail(context, controller, statement.id),
               ),
           ],
+          WorkspacePager(
+            count: records.length,
+            page: currentPage,
+            onPage: (p) => setState(() => page = p),
+          ),
           const SectionHeading('Source detail & immutable history'),
           FinancialSourceList(
             controller: controller,
@@ -965,16 +1058,38 @@ Future<void> openFinanceDetail(
               '${financeType(r)} · ${r.date} · revision ${r.number}\nOriginal action ${r.actionId}\n'
               '${c.connected ? c.synchronizationStates[r.id] ?? 'Downloaded accepted evidence' : 'Saved locally'}',
             ),
-            for (final item in r.values.entries)
-              if (!['financeContract', 'financeType'].contains(item.key))
-                Text(
-                  c.amountsHidden
-                      ? '${item.key}: hidden'
-                      : '${item.key}: ${item.value}',
+            WorkspacePanel(
+              title: 'Recorded details',
+              child: Column(
+                children: [
+                  for (final item in r.values.entries)
+                    if (!['financeContract', 'financeType'].contains(item.key))
+                      FinancialLine(
+                        item.key
+                            .replaceAllMapped(
+                              RegExp(r'([a-z])([A-Z])'),
+                              (m) => '${m[1]} ${m[2]}',
+                            )
+                            .replaceAll('_', ' '),
+                        c.amountsHidden ? 'Hidden' : item.value,
+                        icon: Icons.notes_outlined,
+                      ),
+                ],
+              ),
+            ),
+            if (r.postings.isNotEmpty)
+              WorkspacePanel(
+                title: 'Ledger effects',
+                child: Column(
+                  children: [
+                    for (final p in r.postings)
+                      FinancialLine(
+                        p.ledger.replaceAll('_', ' '),
+                        p.date,
+                        value: '${c.decimal(p.amount)} PHP',
+                      ),
+                  ],
                 ),
-            for (final p in r.postings)
-              Text(
-                '${p.ledger.replaceAll('_', ' ')} · ${p.date} · ${c.decimal(p.amount)} PHP',
               ),
             if (c.snapshot.current.contains(r) &&
                 !r.values.containsKey('financeType') &&
@@ -1063,3 +1178,27 @@ Future<void> openFinanceDetail(
   ),
   'finance/source/$id',
 );
+
+class NativeWorkflowGroups extends StatelessWidget {
+  const NativeWorkflowGroups({
+    super.key,
+    required this.controller,
+    required this.groups,
+  });
+  final LocalFinancialController controller;
+  final List<(String, String, IconData, Map<String, String>)> groups;
+  @override
+  Widget build(BuildContext context) => WorkspaceGrid(
+    children: [
+      for (final group in groups)
+        WorkspaceActionGroup(
+          title: group.$1,
+          description: group.$2,
+          icon: group.$3,
+          actions: group.$4,
+          onSelected: (key) =>
+              openNativeFinance(context, controller, key, group.$4[key]!),
+        ),
+    ],
+  );
+}

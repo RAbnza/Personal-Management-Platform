@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/demo_routes.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
+export '../../../design_system/workspace.dart';
 
 class FinancialEnvironment extends InheritedWidget {
   const FinancialEnvironment({
@@ -60,7 +61,7 @@ class FinancePage extends StatelessWidget {
                               ? 'LOCAL ONLY · PRIVATE ON THIS DEVICE'
                               : 'DEMO · SYNTHETIC DATA · RESETS WHEN CLOSED',
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         child,
                         const SizedBox(height: 32),
                       ],
@@ -88,23 +89,41 @@ class FinanceHeading extends StatelessWidget {
   final List<Widget> actions;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 28),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Eyebrow(kicker),
-        const SizedBox(height: 12),
-        Text(title, style: Theme.of(context).textTheme.displaySmall),
-        const SizedBox(height: 10),
-        Text(
-          caption,
-          style: TextStyle(color: CraftTheme.of(context).secondary),
-        ),
-        if (actions.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Wrap(spacing: 8, runSpacing: 8, children: actions),
-        ],
-      ],
+    padding: const EdgeInsets.only(bottom: 24),
+    child: LayoutBuilder(
+      builder: (context, b) {
+        final heading = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.displaySmall),
+            const SizedBox(height: 6),
+            Text(
+              caption,
+              style: TextStyle(color: CraftTheme.of(context).secondary),
+            ),
+          ],
+        );
+        final commands = Wrap(spacing: 8, runSpacing: 8, children: actions);
+        if (b.maxWidth > 1000 &&
+            actions.length <= 3 &&
+            MediaQuery.textScalerOf(context).scale(14) < 20) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: 24),
+              commands,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            heading,
+            if (actions.isNotEmpty) ...[const SizedBox(height: 16), commands],
+          ],
+        );
+      },
     ),
   );
 }
@@ -146,25 +165,34 @@ class FinanceNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.symmetric(vertical: 8),
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     decoration: BoxDecoration(
       color: warning
           ? CraftTheme.of(context).warmSurface
-          : CraftTheme.of(context).selection,
-      borderRadius: BorderRadius.circular(16),
+          : CraftTheme.of(context).surface,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: CraftTheme.of(context).divider),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          warning ? Icons.info_outline : Icons.verified_user_outlined,
+          warning ? Icons.info_outline : Icons.info_outline,
           size: 20,
           color: warning
               ? CraftTheme.of(context).warm
               : CraftTheme.of(context).primary,
         ),
         const SizedBox(width: 12),
-        Expanded(child: Text(text)),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: CraftTheme.of(context).secondary,
+            ),
+          ),
+        ),
       ],
     ),
   );
@@ -192,7 +220,7 @@ class FinancialLine extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           child: LayoutBuilder(
             builder: (context, b) {
               final narrow =
@@ -285,11 +313,11 @@ class ValueBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 12, letterSpacing: 1)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 32,
+              fontSize: 26,
               letterSpacing: -1,
               fontWeight: FontWeight.w500,
             ),
