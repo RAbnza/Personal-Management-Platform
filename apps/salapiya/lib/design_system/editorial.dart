@@ -8,7 +8,7 @@ class EditorialSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.color,
-    this.padding = 24,
+    this.padding = 20,
   });
   final Widget child;
   final Color? color;
@@ -16,7 +16,7 @@ class EditorialSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: color ?? CraftTheme.of(context).surface,
-    borderRadius: BorderRadius.circular(24),
+    borderRadius: BorderRadius.circular(10),
     child: Padding(padding: EdgeInsets.all(padding), child: child),
   );
 }
@@ -31,7 +31,7 @@ class Eyebrow extends StatelessWidget {
     style: TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w600,
-      letterSpacing: 1.6,
+      letterSpacing: 1.1,
       color: color ?? CraftTheme.of(context).secondary,
     ),
   );
@@ -74,7 +74,7 @@ class IconTile extends StatelessWidget {
     this.icon, {
     super.key,
     this.color = Palette.lilac,
-    this.size = 42,
+    this.size = 36,
   });
   final IconData icon;
   final Color color;
@@ -85,7 +85,7 @@ class IconTile extends StatelessWidget {
     height: size,
     decoration: BoxDecoration(
       color: color,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
     ),
     child: Icon(icon, color: Palette.ink, size: 20),
   );

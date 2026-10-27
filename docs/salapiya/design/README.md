@@ -1,5 +1,7 @@
 # Salapiya native design — approved prototype
 
+> **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
+
 **Current status — October 24, 2026 (Asia/Manila):** D0–D4 are complete and
 owner-approved, including the full Windows/Android UI/UX reviewed for D5.
 D5 is finalized under the owner's streamlined finalization/handoff assignment,

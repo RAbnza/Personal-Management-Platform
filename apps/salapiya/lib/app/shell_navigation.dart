@@ -24,34 +24,38 @@ class ShellSidebar extends StatelessWidget {
     required this.toggle,
     required this.utilities,
     this.profileName = 'Amihan',
+    this.production = false,
   });
   final AppDestination selected;
   final String profileName;
-  final bool expanded;
+  final bool expanded, production;
   final ValueChanged<AppDestination> select;
   final VoidCallback toggle, utilities;
   @override
-  Widget build(BuildContext context) => Theme(
-    data: SalapiyaTheme.build(Brightness.dark),
-    child: Container(
-      width: expanded ? 220 : 84,
-      color: Palette.ink,
-      padding: const EdgeInsets.fromLTRB(12, 24, 12, 12),
+  Widget build(BuildContext context) {
+    final c = CraftTheme.of(context);
+    return Container(
+      width: expanded ? 204 : 76,
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(right: BorderSide(color: c.divider)),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
       child: Column(
         children: [
           if (expanded)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 26),
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 30),
               child: Image.asset(
-                'assets/branding/display/salapiya_horizontal_on_dark.png',
-                width: 170,
+                'assets/branding/display/salapiya_horizontal_on_${c.dark ? 'dark' : 'light'}.png',
+                width: 146,
                 semanticLabel: 'Salapiya',
               ),
             )
           else
             const Padding(
               padding: EdgeInsets.only(bottom: 24),
-              child: BrandMark(size: 40),
+              child: BrandMark(size: 36),
             ),
           Expanded(
             child: SingleChildScrollView(
@@ -60,82 +64,58 @@ class ShellSidebar extends StatelessWidget {
                 children: [
                   if (expanded)
                     const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 4, 0, 16),
-                      child: Eyebrow('YOUR SPACE', color: Color(0xFFBDB9C5)),
+                      padding: EdgeInsets.fromLTRB(12, 0, 0, 12),
+                      child: Eyebrow('WORKSPACE'),
                     ),
-                  for (final destination in AppDestination.values)
+                  for (final d in AppDestination.values)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 4),
                       child: _NavItem(
-                        key: ValueKey('nav-${destination.name}'),
-                        destination: destination,
-                        selected: selected == destination,
+                        key: ValueKey('nav-${d.name}'),
+                        destination: d,
+                        selected: selected == d,
                         compact: !expanded,
-                        onPressed: () => select(destination),
+                        onPressed: () => select(d),
                       ),
                     ),
                 ],
               ),
             ),
           ),
-          if (expanded &&
-              MediaQuery.sizeOf(context).height >= 800 &&
-              MediaQuery.textScalerOf(context).scale(14) <= 17)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.wb_sunny_outlined, color: Palette.mint, size: 24),
-                  SizedBox(height: 12),
-                  Text(
-                    'A little clarity.\nA lot more freedom.',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      color: Palette.lilac,
-                      fontSize: 19,
-                      height: 1.35,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Your money, on your terms.',
-                    style: TextStyle(color: Color(0xFFBDB9C5), fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          const Divider(color: Color(0xFF46414E)),
+          const Divider(),
           if (expanded)
             TextButton(
               onPressed: utilities,
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Palette.mint,
+                    radius: 15,
+                    backgroundColor: c.selection,
+                    foregroundColor: c.primary,
                     child: Text(
                       profileName.isEmpty ? '?' : profileName.substring(0, 1),
-                      style: TextStyle(color: Palette.ink, fontSize: 12),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           profileName,
-                          style: const TextStyle(color: Colors.white),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: c.text),
                         ),
                         Text(
-                          'Demo profile',
-                          style: TextStyle(color: Palette.lilac, fontSize: 11),
+                          production ? 'Profile & settings' : 'Demo profile',
+                          style: TextStyle(color: c.secondary, fontSize: 11),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.tune, size: 17),
+                  const Icon(Icons.tune, size: 16),
                 ],
               ),
             )
@@ -145,20 +125,23 @@ class ShellSidebar extends StatelessWidget {
               onPressed: utilities,
               icon: const Icon(Icons.tune),
             ),
-          IconButton(
-            tooltip: expanded ? 'Collapse sidebar' : 'Expand sidebar',
-            onPressed: toggle,
-            icon: Icon(
-              expanded
-                  ? Icons.keyboard_double_arrow_left
-                  : Icons.keyboard_double_arrow_right,
-              size: 18,
+          Align(
+            alignment: expanded ? Alignment.centerRight : Alignment.center,
+            child: IconButton(
+              tooltip: expanded ? 'Collapse sidebar' : 'Expand sidebar',
+              onPressed: toggle,
+              icon: Icon(
+                expanded
+                    ? Icons.keyboard_double_arrow_left
+                    : Icons.keyboard_double_arrow_right,
+                size: 18,
+              ),
             ),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _NavItem extends StatelessWidget {
@@ -180,23 +163,41 @@ class _NavItem extends StatelessWidget {
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          minimumSize: const Size(48, 52),
+          minimumSize: const Size(48, 48),
           alignment: compact ? Alignment.center : Alignment.centerLeft,
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 0 : 16,
-            vertical: 14,
+            vertical: 10,
           ),
-          backgroundColor: selected ? Palette.lilac : Colors.transparent,
-          foregroundColor: selected ? Palette.ink : const Color(0xFFCAC7D0),
+          backgroundColor: selected
+              ? CraftTheme.of(context).selection
+              : Colors.transparent,
+          foregroundColor: selected
+              ? CraftTheme.of(context).primary
+              : CraftTheme.of(context).secondary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: compact
-            ? Icon(
-                destinationIcon(destination),
-                semanticLabel: destination.label,
-                size: 21,
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    destinationIcon(destination),
+                    semanticLabel: destination.label,
+                    size: 21,
+                  ),
+                  if (Theme.of(context).platform == TargetPlatform.android) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      destination == AppDestination.shared
+                          ? 'Shared'
+                          : destination.label,
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ],
               )
             : Row(
                 children: [
@@ -208,7 +209,6 @@ class _NavItem extends StatelessWidget {
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
-                  if (selected) const Icon(Icons.north_east, size: 14),
                 ],
               ),
       ),
@@ -274,118 +274,73 @@ class ShellBottomBar extends StatelessWidget {
           box.maxWidth < 360 ||
           MediaQuery.textScalerOf(context).scale(14) >= 21;
       final colors = CraftTheme.of(context);
-      if (!mobile) {
-        final labels = box.maxWidth >= 700 && !compact;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Center(
-            child: Material(
-              key: const ValueKey('floating-dock-surface'),
-              color: colors.raised,
-              elevation: CraftPreferences.effectsOf(context) ? 8 : 0,
-              shadowColor: Colors.black.withValues(alpha: .22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(36),
-                side: BorderSide(color: colors.divider),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final action in actions.take(
-                      box.maxWidth >= 280 ? 2 : 0,
-                    ))
-                      if (labels)
-                        TextButton.icon(
-                          onPressed: action.onSelected,
-                          icon: Icon(action.icon, size: 18),
-                          label: Text(action.label),
-                        )
-                      else
-                        IconButton(
-                          tooltip: action.label,
-                          onPressed: action.onSelected,
-                          icon: Icon(action.icon, size: 20),
-                        ),
-                    if (box.maxWidth >= 280)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: SizedBox(
-                          height: 24,
-                          child: VerticalDivider(
-                            width: 1,
-                            color: colors.divider,
-                          ),
-                        ),
-                      ),
-                    FloatingActionMenu(actions: actions),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: Container(
-              key: const ValueKey('floating-dock-surface'),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Palette.ink,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: CraftPreferences.effectsOf(context)
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: .18),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Theme(
-                data: SalapiyaTheme.build(Brightness.dark),
-                child: compact
-                    ? Row(
-                        children: [
-                          Expanded(
-                            child: TextButton.icon(
-                              key: const ValueKey('navigation-fallback'),
-                              onPressed: () async {
-                                final next = await chooseDestination(
-                                  context,
-                                  selected,
-                                );
-                                if (next != null) select(next);
-                              },
-                              icon: const Icon(Icons.menu),
-                              label: const Text('Navigation'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8, right: 4),
+                  child: FloatingActionMenu(actions: actions),
+                ),
+                Container(
+                  key: const ValueKey('floating-dock-surface'),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: CraftPreferences.effectsOf(context)
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: .18),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
                             ),
-                          ),
-                          FloatingActionMenu(actions: actions),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          for (final destination in AppDestination.values)
-                            Expanded(
-                              child: _NavItem(
-                                key: ValueKey('nav-${destination.name}'),
-                                destination: destination,
-                                selected: selected == destination,
-                                compact: true,
-                                onPressed: () => select(destination),
+                          ]
+                        : null,
+                  ),
+                  child: Theme(
+                    data: Theme.of(context),
+                    child: compact
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: TextButton.icon(
+                                  key: const ValueKey('navigation-fallback'),
+                                  onPressed: () async {
+                                    final next = await chooseDestination(
+                                      context,
+                                      selected,
+                                    );
+                                    if (next != null) select(next);
+                                  },
+                                  icon: const Icon(Icons.menu),
+                                  label: const Text('Navigation'),
+                                ),
                               ),
-                            ),
-                          FloatingActionMenu(actions: actions),
-                        ],
-                      ),
-              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              for (final destination in AppDestination.values)
+                                Expanded(
+                                  child: _NavItem(
+                                    key: ValueKey('nav-${destination.name}'),
+                                    destination: destination,
+                                    selected: selected == destination,
+                                    compact: true,
+                                    onPressed: () => select(destination),
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -289,10 +289,9 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
             bounds.maxWidth >= 600 &&
             bounds.maxHeight >= 400 &&
             scale <= 1.5;
-        final canExpand = bounds.maxWidth >= 1200;
+        final canExpand = bounds.maxWidth >= 1000;
         final isExpanded = canExpand && (expanded ?? !widget.settings.compact);
-        final showDock =
-            !mobile || MediaQuery.viewInsetsOf(context).bottom == 0;
+        final showDock = mobile && MediaQuery.viewInsetsOf(context).bottom == 0;
         return Scaffold(
           body: SafeArea(
             child: Row(
@@ -302,6 +301,7 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                 if (rail)
                   ShellSidebar(
                     profileName: session.profile.name,
+                    production: session.production,
                     selected: selected,
                     expanded: isExpanded,
                     select: select,
@@ -352,6 +352,36 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                       ),
                               ),
                             ),
+                            if (!mobile)
+                              PopupMenuButton<int>(
+                                tooltip: 'Quick actions',
+                                onSelected: (i) => actions[i].onSelected(),
+                                itemBuilder: (_) => [
+                                  for (var i = 0; i < actions.length; i++)
+                                    PopupMenuItem(
+                                      value: i,
+                                      child: ListTile(
+                                        leading: Icon(actions[i].icon),
+                                        title: Text(actions[i].label),
+                                      ),
+                                    ),
+                                ],
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add, size: 18),
+                                      SizedBox(width: 6),
+                                      Text('Create'),
+                                      Icon(Icons.expand_more, size: 18),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             IconButton(
                               tooltip: session.hideAmounts
                                   ? 'Show amounts'
@@ -405,9 +435,9 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                       ),
                                       controller: scrolls[destination.index],
                                       padding: EdgeInsets.fromLTRB(
-                                        bounds.maxWidth >= 1200 ? 32 : 16,
-                                        bounds.maxWidth >= 1200 ? 32 : 16,
-                                        bounds.maxWidth >= 1200 ? 32 : 16,
+                                        bounds.maxWidth >= 1200 ? 24 : 16,
+                                        bounds.maxWidth >= 1200 ? 24 : 16,
+                                        bounds.maxWidth >= 1200 ? 24 : 16,
                                         (showDock ? dockHeight : 0) + 24,
                                       ),
                                       child:

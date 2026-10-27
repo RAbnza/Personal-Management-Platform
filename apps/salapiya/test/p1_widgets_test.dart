@@ -79,11 +79,11 @@ void main() {
           expect(find.text('Real receipt'), findsOneWidget);
           await tester.tap(find.byKey(const ValueKey('nav-money')));
           await localSettle(tester);
-          expect(find.text('Make room for living.'), findsOneWidget);
+          expect(find.text('Money'), findsWidgets);
           expect(find.text('Real wallet'), findsWidgets);
           await tester.tap(find.byKey(const ValueKey('nav-debts')));
           await localSettle(tester);
-          expect(find.text('One step closer.'), findsOneWidget);
+          expect(find.text('Debts'), findsWidgets);
           expect(find.text('Home essentials loan'), findsNothing);
           // Both navigation systems stay usable with enlarged text and Midnight.
           await tester.runAsync(() async {
@@ -103,7 +103,7 @@ void main() {
           await localSettle(tester);
           await tester.tap(find.text('Money'));
           await localSettle(tester);
-          expect(find.text('Make room for living.'), findsOneWidget);
+          expect(find.text('Money'), findsWidgets);
           expect(tester.takeException(), isNull);
         } finally {
           debugDefaultTargetPlatformOverride = null;

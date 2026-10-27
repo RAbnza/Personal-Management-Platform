@@ -1,3 +1,23 @@
+# Final adaptive navigation and interaction
+
+> **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
+
+## Current implemented behavior
+
+Windows uses a theme-aware 204-wide sidebar at sufficient width (1000 logical pixels), a 76-wide collapsed rail, page-level actions and a top Create menu. There is no Windows floating bottom quick-action tray, including constrained Windows windows. The sidebar keeps all five destinations and profile/settings access.
+
+Android keeps five destinations in a rounded floating surface, with icons, short visible labels and full accessible destination labels. The separate plus control sits above the right edge so it does not crowd a sixth target into the bar. Below 360 logical pixels or at large text scale, a labelled Navigation control opens the complete destination chooser. The existing modal quick-action menu retains safe bounds, Back/Escape dismissal and focus behavior. The shell measures the dock and reserves content space; the dock is hidden for the keyboard.
+
+Content adapts by available width and text scale, not merely OS. Workspace grids use equal-width columns with a maximum of four and collapse as space or scale demands. Finance columns stack below their usable threshold. Tabs wrap rather than shrinking text. Long forms scroll and preserve keyboard insets. A floating surface may overlap the visual viewport but must not make final content unreachable.
+
+First-use routes share `WelcomeFrame`: a brand/privacy column and a bounded content column on wide windows, one scrollable column on phones. The welcome offers Google, local offline profile and restore. Local name/theme setup is a separate meaningful step with dirty cancellation. Existing returning profiles reopen directly. OAuth, deep links, recovery and synchronization remain existing runtime behavior, not mocked transitions.
+
+All reviewed forms use the same panel, progression and action hierarchy. Back/close on a dirty durable form offers Keep editing or Keep draft & close, waits for draft persistence and remains open on failure. Forms without durable drafts ask before discarding. A busy or uncertain result remains protected by its existing recovery contract. Explicit discard requires confirmation.
+
+## Historical design record
+
+The earlier proposal below is retained as history. Its Windows dock, dark-only sidebar, oversized geometry and integrated sixth Android action are superseded.
+
 # Adaptive navigation and interaction proposal
 
 **Current implementation:** [D2 reimagined](D2_REIMAGINED.md) replaces the earlier framing below. Windows uses an ink sidebar and a compact floating quick-action tray. Android uses a floating dock with integrated quick actions and a wallet-first Overview with expandable spending detail. All five destinations remain reachable.

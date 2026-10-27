@@ -887,7 +887,7 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
         children: [
           FinanceHeading(
             'SHARED EXPENSES / TOGETHER, CLEARLY',
-            'Good company.\nClear money.',
+            'Shared Expenses',
             'Group facts out in the open. Your private finances stay yours.',
             actions: [
               FilledButton.icon(
@@ -919,8 +919,10 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
             ),
           if (repo.error != null) FinanceNotice(repo.error!),
           if (repo.groups.isEmpty)
-            const FinanceNotice(
-              'No downloaded groups. Connect and synchronize to retrieve accepted group history.',
+            const WorkspaceEmpty(
+              title: 'Good company. Clear money.',
+              message: 'Create a group or join with an invitation. Connect and synchronize to retrieve existing group history.',
+              icon: Icons.people_outline,
             ),
           if (g != null) ...[
             DropdownButtonFormField<String>(
@@ -1021,30 +1023,22 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final t in [
-                  'Bills',
-                  'Payments',
-                  'Balances',
-                  'People',
-                  'Private review',
-                  'History',
-                  'Lifecycle',
-                ])
-                  ChoiceChip(
-                    label: Text(t),
-                    selected: tab == t,
-                    onSelected: (_) => setState(() {
-                      tab = t;
-                      page = 0;
-                    }),
-                  ),
+            WorkspaceTabs(
+              items: const [
+                'Bills',
+                'Payments',
+                'Balances',
+                'People',
+                'Private review',
+                'History',
+                'Lifecycle',
               ],
+              selected: tab,
+              onSelected: (t) => setState(() {
+                tab = t;
+                page = 0;
+              }),
             ),
-            const SizedBox(height: 24),
             if (tab == 'Bills') ...[
               for (final b in g.bills.keys.skip(page * 50).take(50))
                 Column(
@@ -1772,10 +1766,11 @@ class _SharedFormState extends State<_SharedForm> {
       ),
   };
   String? error;
-  bool busy = false, review = false;
+  bool busy = false, review = false, dirty = false;
   List<String> effects = [];
   Future<void> draftWrites = Future.value();
   void retain() {
+    setState(() => dirty = true);
     if (widget.onDraft == null) return;
     final frozen = values;
     draftWrites = draftWrites.then((_) => widget.onDraft!(frozen)).catchError((
@@ -1801,161 +1796,177 @@ class _SharedFormState extends State<_SharedForm> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !busy,
+  Widget build(BuildContext context) => FormExitGuard(
+    dirty: dirty,
+    busy: busy,
+    keepDraft: widget.onDraft == null
+        ? null
+        : () async {
+            await draftWrites;
+            if (error != null) throw StateError('Draft not saved');
+          },
     child: FinancePage(
       title: widget.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FinanceHeading(
-            'FINANCIAL WORKFLOW / ${review ? '02 REVIEW' : '01 DETAILS'}',
-            widget.title,
-            'Review exact group facts and your own private effects separately.',
-          ),
-          FinanceColumns(
-            main: EditorialSurface(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (error != null) FinanceNotice(error!),
-                  if (review) ...[
-                    for (final effect in effects)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(effect),
-                      ),
-                    const FinanceNotice(
-                      'Review the values below. Group reporting moves no private money. Receipt confirmation is independent from synchronization.',
-                    ),
-                    for (final f in widget.fields)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          '${f.label}: ${f.options?[values[f.key]] ?? values[f.key]}',
-                        ),
-                      ),
-                  ] else
-                    for (final f in widget.fields)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: f.options == null
-                            ? TextField(
-                                key: ValueKey('shared-field-${f.key}'),
-                                controller: controls[f.key],
-                                decoration: InputDecoration(labelText: f.label),
-                                onChanged: (_) {
-                                  retain();
-                                },
-                                maxLength: 2000,
-                              )
-                            : DropdownButtonFormField<String>(
-                                key: ValueKey('shared-field-${f.key}'),
-                                initialValue: controls[f.key]!.text,
-                                isExpanded: true,
-                                decoration: InputDecoration(labelText: f.label),
-                                items: [
-                                  for (final o in f.options!.entries)
-                                    DropdownMenuItem(
-                                      value: o.key,
-                                      child: Text(
-                                        o.value,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
-                                onChanged: (v) {
-                                  controls[f.key]!.text = v!;
-                                  retain();
-                                },
-                              ),
-                      ),
-                ],
-              ),
+      child: WorkspaceForm(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WorkspaceSteps(active: review ? 1 : 0),
+            FinanceHeading(
+              'FINANCIAL WORKFLOW / ${review ? '02 REVIEW' : '01 DETAILS'}',
+              widget.title,
+              'Review exact group facts and your own private effects separately.',
             ),
-            aside: EditorialSurface(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const FinanceNotice(
-                    'Your draft stays on this device. Online authority is rechecked when the service accepts the action. Group acceptance never confirms receipt or moves another member’s private money.',
-                  ),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      TextButton(
-                        onPressed: busy ? null : () => Navigator.pop(context),
-                        child: const Text('Close'),
+            FinanceColumns(
+              main: EditorialSurface(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (error != null) FinanceNotice(error!),
+                    if (review) ...[
+                      for (final effect in effects)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(effect),
+                        ),
+                      const FinanceNotice(
+                        'Review the values below. Group reporting moves no private money. Receipt confirmation is independent from synchronization.',
                       ),
-                      if (review)
+                      for (final f in widget.fields)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '${f.label}: ${f.options?[values[f.key]] ?? values[f.key]}',
+                          ),
+                        ),
+                    ] else
+                      for (final f in widget.fields)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: f.options == null
+                              ? TextField(
+                                  key: ValueKey('shared-field-${f.key}'),
+                                  controller: controls[f.key],
+                                  decoration: InputDecoration(
+                                    labelText: f.label,
+                                  ),
+                                  onChanged: (_) {
+                                    retain();
+                                  },
+                                  maxLength: 2000,
+                                )
+                              : DropdownButtonFormField<String>(
+                                  key: ValueKey('shared-field-${f.key}'),
+                                  initialValue: controls[f.key]!.text,
+                                  isExpanded: true,
+                                  decoration: InputDecoration(
+                                    labelText: f.label,
+                                  ),
+                                  items: [
+                                    for (final o in f.options!.entries)
+                                      DropdownMenuItem(
+                                        value: o.key,
+                                        child: Text(
+                                          o.value,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  ],
+                                  onChanged: (v) {
+                                    controls[f.key]!.text = v!;
+                                    retain();
+                                  },
+                                ),
+                        ),
+                  ],
+                ),
+              ),
+              aside: EditorialSurface(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const FinanceNotice(
+                      'Your draft stays on this device. Online authority is rechecked when the service accepts the action. Group acceptance never confirms receipt or moves another member’s private money.',
+                    ),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
                         TextButton(
                           onPressed: busy
                               ? null
-                              : () => setState(() => review = false),
-                          child: const Text('Edit'),
+                              : () => Navigator.maybePop(context),
+                          child: const Text('Close'),
                         ),
-                      FilledButton(
-                        onPressed: busy
-                            ? null
-                            : () async {
-                                if (!review) {
+                        if (review)
+                          TextButton(
+                            onPressed: busy
+                                ? null
+                                : () => setState(() => review = false),
+                            child: const Text('Edit'),
+                          ),
+                        FilledButton(
+                          onPressed: busy
+                              ? null
+                              : () async {
+                                  if (!review) {
+                                    try {
+                                      final calculated =
+                                          widget.preview?.call(values) ??
+                                          <String>[];
+                                      setState(() {
+                                        effects = calculated;
+                                        review = true;
+                                        error = null;
+                                      });
+                                    } catch (e) {
+                                      setState(
+                                        () => error = e is LocalRuleException
+                                            ? e.message
+                                            : e is FormatException
+                                            ? e.message
+                                            : 'Review exact amounts and participants.',
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  setState(() {
+                                    busy = true;
+                                    error = null;
+                                  });
                                   try {
-                                    final calculated =
-                                        widget.preview?.call(values) ??
-                                        <String>[];
-                                    setState(() {
-                                      effects = calculated;
-                                      review = true;
-                                      error = null;
-                                    });
+                                    await draftWrites;
+                                    if (error != null) reject(error!);
+                                    await widget.onSave(values);
+                                    if (context.mounted) Navigator.pop(context);
                                   } catch (e) {
-                                    setState(
-                                      () => error = e is LocalRuleException
-                                          ? e.message
-                                          : e is FormatException
-                                          ? e.message
-                                          : 'Review exact amounts and participants.',
-                                    );
+                                    if (mounted) {
+                                      setState(() {
+                                        busy = false;
+                                        error = e is LocalRuleException
+                                            ? e.message
+                                            : 'The request could not complete. Your original intent and draft are retained; reconnect and retry.';
+                                      });
+                                    }
                                   }
-                                  return;
-                                }
-                                setState(() {
-                                  busy = true;
-                                  error = null;
-                                });
-                                try {
-                                  await draftWrites;
-                                  if (error != null) reject(error!);
-                                  await widget.onSave(values);
-                                  if (context.mounted) Navigator.pop(context);
-                                } catch (e) {
-                                  if (mounted) {
-                                    setState(() {
-                                      busy = false;
-                                      error = e is LocalRuleException
-                                          ? e.message
-                                          : 'The request could not complete. Your original intent and draft are retained; reconnect and retry.';
-                                    });
-                                  }
-                                }
-                              },
-                        child: Text(
-                          busy
-                              ? 'Saving…'
-                              : review
-                              ? 'Save reviewed values'
-                              : 'Review',
+                                },
+                          child: Text(
+                            busy
+                                ? 'Saving…'
+                                : review
+                                ? 'Save reviewed values'
+                                : 'Review',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

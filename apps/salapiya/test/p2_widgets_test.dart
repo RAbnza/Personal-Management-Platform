@@ -67,7 +67,7 @@ void main() {
           expect(runtime.session!.accepted, BigInt.from(10000));
           expect(runtime.session!.projected, BigInt.from(9001));
           expect(
-            find.textContaining('Waiting local work is included once'),
+            find.textContaining('includes waiting work once'),
             findsOneWidget,
           );
           expect(find.textContaining('Pending outflow'), findsNothing);

@@ -576,9 +576,14 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeading('Reviewed cash-history CSV import'),
-          const FinanceNotice(
-            'Only pmp-cash-activity version 1: PHP income/expense cash history, six explicitly mapped columns, 1 MiB / 500 rows / 16 KiB per record. Cards, debts, transfers, arbitrary bank-provider files and future history are unsupported.',
+          const SectionHeading('Import cash activity'),
+          const Text(
+            'Choose a supported CSV, review its mapping and duplicates, then confirm the rows to import. Cards, debts, transfers and arbitrary bank files are not supported.',
+          ),
+          const SizedBox(height: 12),
+          const WorkspaceHelp(
+            title: 'Supported CSV format & limits',
+            text: 'Only pmp-cash-activity version 1: PHP income/expense cash history, six explicitly mapped columns, 1 MiB / 500 rows / 16 KiB per record. Cards, debts, transfers, arbitrary bank-provider files and future history are unsupported.',
           ),
           if (c.connected)
             const FinanceNotice(
@@ -592,9 +597,7 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
             OutlinedButton.icon(
               onPressed: busy ? null : () => run(choose),
               icon: const Icon(Icons.folder_open_outlined),
-              label: const Text(
-                'Choose supported cash CSV / start a new review',
-              ),
+              label: const Text('Choose CSV & review'),
             ),
             if (draft.isNotEmpty) ...[
               FinanceNotice(
@@ -809,7 +812,8 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
               ],
             ],
           ],
-          const SectionHeading('Retained import batches'),
+          const SizedBox(height: 24),
+          const SectionHeading('Import history'),
           for (final batch in c.snapshot.current.where(
             (r) => financeType(r) == 'cashImport',
           ))

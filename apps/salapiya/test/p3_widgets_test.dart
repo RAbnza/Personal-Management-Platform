@@ -118,7 +118,7 @@ void main() {
               ),
             );
             await localSettle(tester);
-            await localTap(tester, find.text('Shared Expenses').first);
+            await localTap(tester, find.text('Open your groups').first);
             await localWait(
               tester,
               () => find.text(name).evaluate().isNotEmpty,
@@ -157,6 +157,7 @@ void main() {
             await reading;
             expect(persisted, isTrue);
             await localTap(tester, find.text('Close').last);
+            await localTap(tester, find.text('Keep draft & close'));
             var intentsRead = false;
             final intents = f.store.db
                 .getAll('SELECT id FROM shared_intent')
@@ -253,7 +254,7 @@ void main() {
             expect(tester.takeException(), isNull);
             await localTap(
               tester,
-              find.widgetWithText(ChoiceChip, 'Lifecycle'),
+              find.widgetWithText(TextButton, 'Lifecycle'),
             );
             await localTap(tester, find.text('Revoke invitation'));
             final issued = find.byKey(
@@ -273,7 +274,7 @@ void main() {
             );
             await localTap(tester, find.text('Close').last);
             expect(tester.takeException(), isNull);
-            await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+            await localTap(tester, find.widgetWithText(TextButton, 'Bills'));
             await localTap(
               tester,
               find.byKey(ValueKey('private-bill-$source')),

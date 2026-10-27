@@ -1107,187 +1107,172 @@ class _FinancialEditorState extends State<FinancialEditor> {
     },
     child: FinancePage(
       title: actionLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FinanceHeading(
-            'FINANCIAL WORKFLOW / ${result != null
-                ? 'RESULT'
-                : reviewing
-                ? '02 REVIEW'
-                : '01 DETAILS'}',
-            actionLabel,
-            action.caption,
-          ),
-          FinanceColumns(
-            main: EditorialSurface(
-              child: AnimatedSize(
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                alignment: Alignment.topCenter,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (restoring)
-                      const Center(child: CircularProgressIndicator()),
-                    if (restored && result == null)
-                      const FinanceNotice(
-                        'Restored encrypted draft. Review current financial effects before saving.',
-                      ),
-                    if (draftError != null)
-                      FinanceNotice(draftError!, warning: true),
-                    if (c.production &&
-                        dirty &&
-                        result == null &&
-                        draftError == null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            savedDraftRevision == draftRevision
-                                ? 'Draft saved on this device · not posted'
-                                : 'Saving draft…',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+      child: WorkspaceForm(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WorkspaceSteps(
+              active: result != null
+                  ? 2
+                  : reviewing
+                  ? 1
+                  : 0,
+            ),
+            FinanceHeading(
+              'FINANCIAL WORKFLOW / ${result != null
+                  ? 'RESULT'
+                  : reviewing
+                  ? '02 REVIEW'
+                  : '01 DETAILS'}',
+              actionLabel,
+              action.caption,
+            ),
+            FinanceColumns(
+              main: EditorialSurface(
+                child: AnimatedSize(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
+                  alignment: Alignment.topCenter,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (restoring)
+                        const Center(child: CircularProgressIndicator()),
+                      if (restored && result == null)
+                        const FinanceNotice(
+                          'Restored encrypted draft. Review current financial effects before saving.',
                         ),
-                      ),
-                    if (draftUnavailable)
-                      TextButton(
-                        onPressed: loadDraft,
-                        child: const Text('Retry reading saved draft'),
-                      ),
-                    if (result == null &&
-                        !reviewing &&
-                        !restoring &&
-                        !draftUnavailable) ...[
-                      ...entryFields,
-                      toggle('acknowledge', switch (action) {
-                        FinancialAction.payoff =>
-                          'I confirm the provider quote and liability closure',
-                        FinancialAction.invitation => 'I consent to the history policy and manual-evidence limits',
-                        FinancialAction.confirmation =>
-                          'I acknowledge manual receipt is unverified',
-                        FinancialAction.settlement =>
-                          'I acknowledge any unallocated advance',
-                        FinancialAction.reconcile =>
-                          'I acknowledge this explicit balance adjustment',
-                        FinancialAction.privateReview =>
-                          'I authorize correction of my actual funding',
-                        _ => 'I acknowledge a negative account balance if this action creates one',
-                      }),
-                      if (preview != null && preview!.errors.isNotEmpty)
-                        Semantics(
-                          liveRegion: true,
-                          child: FinanceNotice(
-                            preview!.errors.join('\n\n'),
-                            warning: true,
-                          ),
-                        ),
-                      FilledButton.icon(
-                        key: const ValueKey('review-action'),
-                        onPressed: review,
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Review effects'),
-                      ),
-                    ],
-                    if (result == null && reviewing) ...[
-                      const SectionHeading('Your review'),
-                      Text(
-                        '${values['date']} · $actionLabel',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      for (final effect in preview!.effects)
-                        FinancialLine(
-                          effect,
-                          c.production
-                              ? 'Reviewed local effect'
-                              : 'Synthetic preview',
-                          icon: Icons.check,
-                          color: Palette.mint,
-                        ),
-                      const SizedBox(height: 20),
-                      if (!c.production) selectOutcome(),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          OutlinedButton(
-                            onPressed: busy
-                                ? null
-                                : () => setState(() => reviewing = false),
-                            child: const Text('Edit details'),
-                          ),
-                          FilledButton.icon(
-                            key: const ValueKey('simulate-action'),
-                            onPressed: busy ? null : simulate,
-                            icon: busy
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.check),
-                            label: Text(
-                              c.production
-                                  ? (busy ? 'Saving…' : 'Confirm & save')
-                                  : (busy ? 'Simulating…' : 'Simulate action'),
+                      if (draftError != null)
+                        FinanceNotice(draftError!, warning: true),
+                      if (c.production &&
+                          dirty &&
+                          result == null &&
+                          draftError == null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              savedDraftRevision == draftRevision
+                                  ? 'Draft saved on this device · not posted'
+                                  : 'Saving draft…',
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      if (draftUnavailable)
+                        TextButton(
+                          onPressed: loadDraft,
+                          child: const Text('Retry reading saved draft'),
+                        ),
+                      if (result == null &&
+                          !reviewing &&
+                          !restoring &&
+                          !draftUnavailable) ...[
+                        ...entryFields,
+                        toggle('acknowledge', switch (action) {
+                          FinancialAction.payoff => 'I confirm the provider quote and liability closure',
+                          FinancialAction.invitation => 'I consent to the history policy and manual-evidence limits',
+                          FinancialAction.confirmation =>
+                            'I acknowledge manual receipt is unverified',
+                          FinancialAction.settlement =>
+                            'I acknowledge any unallocated advance',
+                          FinancialAction.reconcile =>
+                            'I acknowledge this explicit balance adjustment',
+                          FinancialAction.privateReview =>
+                            'I authorize correction of my actual funding',
+                          _ => 'I acknowledge a negative account balance if this action creates one',
+                        }),
+                        if (preview != null && preview!.errors.isNotEmpty)
+                          Semantics(
+                            liveRegion: true,
+                            child: FinanceNotice(
+                              preview!.errors.join('\n\n'),
+                              warning: true,
+                            ),
+                          ),
+                        FilledButton.icon(
+                          key: const ValueKey('review-action'),
+                          onPressed: review,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('Review effects'),
+                        ),
+                      ],
+                      if (result == null && reviewing) ...[
+                        const SectionHeading('Your review'),
+                        Text(
+                          '${values['date']} · $actionLabel',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        for (final effect in preview!.effects)
+                          FinancialLine(
+                            effect,
+                            c.production
+                                ? 'Reviewed local effect'
+                                : 'Synthetic preview',
+                            icon: Icons.check,
+                            color: Palette.mint,
+                          ),
+                        const SizedBox(height: 20),
+                        if (!c.production) selectOutcome(),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            OutlinedButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => setState(() => reviewing = false),
+                              child: const Text('Edit details'),
+                            ),
+                            FilledButton.icon(
+                              key: const ValueKey('simulate-action'),
+                              onPressed: busy ? null : simulate,
+                              icon: busy
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.check),
+                              label: Text(
+                                c.production
+                                    ? (busy ? 'Saving…' : 'Confirm & save')
+                                    : (busy
+                                          ? 'Simulating…'
+                                          : 'Simulate action'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (result != null) ...resultWidgets(),
                     ],
-                    if (result != null) ...resultWidgets(),
-                  ],
+                  ),
                 ),
               ),
+              aside: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SectionHeading('Before you continue'),
+                  FinanceNotice(
+                    c.production
+                        ? (c is LocalFinancialController &&
+                                  (c as LocalFinancialController).connected
+                              ? 'A successful save is encrypted on this device. Waiting work is included once in your view and becomes synced after server acceptance and download. Drafts stay on this device.'
+                              : 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.')
+                        : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
+                  ),
+                ],
+              ),
             ),
-            aside: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ValueBlock(
-                  'IN THIS WORKFLOW',
-                  reviewing || result != null
-                      ? 'Review before action.'
-                      : 'Every detail has a place.',
-                  'Your draft stays intact between entry and review.',
-                  color:
-                      action.name.startsWith('shared') ||
-                          action == FinancialAction.settlement
-                      ? Palette.peach
-                      : Palette.lilac,
-                ),
-                const SizedBox(height: 20),
-                const SectionHeading('What stays clear'),
-                const FinancialLine(
-                  'Your private money',
-                  'Account balances and private records belong only to you.',
-                  icon: Icons.lock_outline,
-                ),
-                FinancialLine(
-                  'The full story',
-                  c.production
-                      ? 'Originals, revisions and durable command receipts remain inspectable.'
-                      : 'Originals, revisions and simulated command receipts remain inspectable.',
-                  icon: Icons.history,
-                ),
-                FinanceNotice(
-                  c.production
-                      ? (c is LocalFinancialController &&
-                                (c as LocalFinancialController).connected
-                            ? 'A successful save is encrypted on this device. Waiting work is included once in your view and becomes synced after server acceptance and download. Drafts stay on this device.'
-                            : 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.')
-                      : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

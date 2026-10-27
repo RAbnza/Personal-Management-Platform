@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 abstract final class Space {
   static const double xs = 4, sm = 8, md = 12, lg = 16, xl = 24, xxl = 32;
-  static const double target = 48, cardRadius = 20, controlRadius = 12;
+  static const double target = 48, cardRadius = 14, controlRadius = 10;
   static const double floatingRadius = 28, paneInset = 8;
   static const menuDuration = Duration(milliseconds: 160);
 }
 
 abstract final class Palette {
-  static const porcelain = Color(0xFFF4F3EF), midnight = Color(0xFF141517);
+  static const porcelain = Color(0xFFF3F4F6), midnight = Color(0xFF14151A);
   static const violet = Color(0xFF6546A3), lavender = Color(0xFFCABDFA);
   static const white = Color(0xFFFFFFFF);
   static const ink = Color(0xFF222126), lilac = Color(0xFFD9CEF8);
@@ -21,14 +22,14 @@ enum NoticeTone { neutral, information, success, warning, error }
 class CraftTheme extends ThemeExtension<CraftTheme> {
   const CraftTheme({required this.dark});
   final bool dark;
-  Color get surface => dark ? const Color(0xFF202124) : Palette.white;
+  Color get surface => dark ? const Color(0xFF1E2027) : Palette.white;
   Color get raised => dark ? const Color(0xFF2A2B30) : Palette.white;
-  Color get subtle => dark ? const Color(0xFF2B2C30) : const Color(0xFFEAE9E4);
+  Color get subtle => dark ? const Color(0xFF2B2C30) : const Color(0xFFEEEFF2);
   Color get text => dark ? const Color(0xFFF3F2F0) : Palette.ink;
   Color get secondary =>
       dark ? const Color(0xFFBDBCC3) : const Color(0xFF65646B);
   Color get border => dark ? const Color(0xFF929CBA) : const Color(0xFF7A8197);
-  Color get divider => dark ? const Color(0xFF3B3C41) : const Color(0xFFDDDDD7);
+  Color get divider => dark ? const Color(0xFF3B3C41) : const Color(0xFFE3E4E9);
   Color get primary => dark ? Palette.lavender : Palette.violet;
   Color get onPrimary => dark ? const Color(0xFF1B1B22) : Palette.white;
   Color get hover => dark ? const Color(0xFFBCA5EE) : const Color(0xFF5D3D88);
@@ -102,6 +103,10 @@ class CraftPreferences extends InheritedWidget {
 
 abstract final class SalapiyaTheme {
   static ThemeData build(Brightness brightness) {
+    final desktop = ![
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    ].contains(defaultTargetPlatform);
     final c = CraftTheme(dark: brightness == Brightness.dark);
     TextStyle type(double size, FontWeight weight, double height) => TextStyle(
       fontFamily: 'Geist',
@@ -130,14 +135,14 @@ abstract final class SalapiyaTheme {
           error: c.tone(NoticeTone.error).$1,
         );
     ButtonStyle button({bool filled = false}) => ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      minimumSize: WidgetStatePropertyAll(Size(48, desktop ? 38 : 48)),
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 16, vertical: desktop ? 10 : 12),
       ),
       shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      textStyle: WidgetStatePropertyAll(type(14, FontWeight.w700, 1.4)),
+      textStyle: WidgetStatePropertyAll(type(13, FontWeight.w600, 1.4)),
       foregroundColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.disabled)
             ? c.secondary
@@ -164,19 +169,20 @@ abstract final class SalapiyaTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      visualDensity: VisualDensity.standard,
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: c.dark ? Palette.midnight : Palette.porcelain,
       fontFamily: 'Geist',
       extensions: [c],
       textTheme: TextTheme(
-        displaySmall: type(40, FontWeight.w500, 1.12),
-        headlineMedium: type(30, FontWeight.w500, 1.2),
-        titleLarge: type(20, FontWeight.w600, 1.3),
+        displaySmall: type(desktop ? 28 : 30, FontWeight.w600, 1.2),
+        headlineMedium: type(24, FontWeight.w600, 1.25),
+        titleLarge: type(18, FontWeight.w600, 1.3),
         titleMedium: type(16, FontWeight.w600, 1.4),
         bodyLarge: type(16, FontWeight.w400, 1.5),
         bodyMedium: type(14, FontWeight.w400, 1.45),
-        bodySmall: type(14, FontWeight.w400, 1.45),
+        bodySmall: type(12, FontWeight.w400, 1.45),
         labelLarge: type(14, FontWeight.w600, 1.4),
       ),
       filledButtonTheme: FilledButtonThemeData(style: button(filled: true)),
@@ -212,10 +218,23 @@ abstract final class SalapiyaTheme {
           borderSide: BorderSide(color: scheme.error, width: 2),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: desktop ? 14 : 18,
+        ),
+        isDense: desktop,
         helperMaxLines: 4,
         errorMaxLines: 4,
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: c.surface,
+        selectedColor: c.selection,
+        side: BorderSide(color: c.divider),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        labelStyle: type(13, FontWeight.w500, 1.4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      ),
+      listTileTheme: ListTileThemeData(dense: desktop, iconColor: c.secondary),
       dividerTheme: DividerThemeData(color: c.divider, space: 24),
       appBarTheme: AppBarTheme(
         backgroundColor: c.surface,
@@ -225,7 +244,7 @@ abstract final class SalapiyaTheme {
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: c.raised,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.raised,

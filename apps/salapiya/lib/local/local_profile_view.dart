@@ -10,6 +10,7 @@ import '../app/shell.dart';
 import '../design_system/craft.dart';
 import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
+import '../design_system/welcome_frame.dart';
 import '../features/finance/presentation/financial_widgets.dart';
 import '../finance/bounded_file_read.dart';
 import '../gallery/settings.dart';
@@ -152,153 +153,209 @@ class LocalWelcome extends StatefulWidget {
 }
 
 class _LocalWelcomeState extends State<LocalWelcome> {
-  Future<void> create() async {
-    final name = TextEditingController();
-    ThemeMode mode = ThemeMode.system;
-    bool busy = false;
-    String? error;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, update) => PopScope(
-          canPop: !busy,
-          child: AlertDialog(
-            scrollable: true,
-            title: const Text('Create local offline profile'),
-            content: SizedBox(
-              width: 440,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'PHP · Asia/Manila. Your profile is encrypted on this device. No account or internet is required.',
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: name,
-                    autofocus: true,
-                    maxLength: 200,
-                    decoration: const InputDecoration(
-                      labelText: 'Display name',
-                    ),
-                  ),
-                  DropdownButtonFormField<ThemeMode>(
-                    initialValue: mode,
-                    decoration: const InputDecoration(labelText: 'Appearance'),
-                    items: [
-                      for (final m in ThemeMode.values)
-                        DropdownMenuItem(value: m, child: Text(m.name)),
-                    ],
-                    onChanged: busy ? null : (v) => update(() => mode = v!),
-                  ),
-                  if (error != null) FinanceNotice(error!, warning: true),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: busy ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: busy
-                    ? null
-                    : () async {
-                        update(() {
-                          busy = true;
-                          error = null;
-                        });
-                        try {
-                          await widget.runtime.create(name.text, mode);
-                          if (context.mounted) Navigator.pop(context);
-                        } catch (e) {
-                          if (context.mounted) {
-                            update(() {
-                              busy = false;
-                              error = e is LocalRuleException ? e.message : 'Profile creation could not finish. Close this dialog and retry opening the app; initialized files are retained.';
-                            });
-                          }
-                        }
-                      },
-                child: Text(busy ? 'Creating…' : 'Create local profile'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    // A dialog route can still be animating out; dispose after its transition.
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    name.dispose();
-  }
-
   @override
-  Widget build(BuildContext context) => FinancePage(
-    title: 'Welcome to Salapiya',
+  Widget build(BuildContext context) => WelcomeFrame(
+    back: false,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const FinanceHeading(
-          'SALAPIYA / YOUR PRIVATE SPACE',
+        Text(
           'Your money, on your terms.',
-          'One active local profile. Optional Google identity. Your financial accounts live inside your private profile.',
+          style: Theme.of(context).textTheme.displaySmall,
         ),
-        FinanceColumns(
-          main: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: BrandMark(size: 80),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'A calmer relationship\nwith your everyday.',
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Start where you are. There is no account requirement to manage your own money and plans.',
-              ),
-              const SizedBox(height: 28),
-              FinancialLine(
-                'Create a local offline profile',
-                'No internet, Google account or email required.',
-                icon: Icons.devices_outlined,
-                onTap: create,
-              ),
-              FinancialLine(
-                'Continue with Google',
-                'Connect privately or retrieve your existing profile.',
-                icon: Icons.cloud_outlined,
-                onTap: () => openDemoPage<void>(
-                  context,
-                  ConnectionPage(runtime: widget.runtime),
-                  'profile/connection',
-                ),
-              ),
-              FinancialLine(
-                'Restore from backup',
-                'Review a local encrypted archive before activation.',
-                icon: Icons.restore_outlined,
-                onTap: () => openDemoPage<void>(
-                  context,
-                  LocalRecoveryView(runtime: widget.runtime),
-                  'profile/recovery',
-                ),
-              ),
-            ],
+        const SizedBox(height: 12),
+        Text(
+          'Welcome to a little more clarity. Start privately on this device, or bring your existing space with you.',
+          style: TextStyle(
+            color: CraftTheme.of(context).secondary,
+            height: 1.6,
           ),
-          aside: const ValueBlock(
-            'PRIVATE BY DEFAULT',
-            'Begin locally.',
-            'Your data stays encrypted on this device. Keep a portable backup and its recovery secret separately for independent recovery.',
-            color: Palette.mint,
+        ),
+        const SizedBox(height: 28),
+        WorkspacePanel(
+          title: 'Start with your own space',
+          caption: 'No internet, email or Google account needed.',
+          child: FilledButton.icon(
+            onPressed: () => openDemoPage<void>(
+              context,
+              LocalProfileSetup(runtime: widget.runtime),
+              'profile/create',
+            ),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Create a local offline profile'),
           ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => openDemoPage<void>(
+            context,
+            ConnectionPage(runtime: widget.runtime),
+            'profile/connection',
+          ),
+          icon: const Icon(Icons.login, size: 18),
+          label: const Text('Continue with Google'),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Connect privately or retrieve your existing profile.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 20),
+        TextButton.icon(
+          onPressed: () => openDemoPage<void>(
+            context,
+            LocalRecoveryView(runtime: widget.runtime),
+            'profile/recovery',
+          ),
+          icon: const Icon(Icons.restore, size: 18),
+          label: const Text('Restore from backup'),
+        ),
+        const SizedBox(height: 28),
+        const WorkspaceHelp(
+          title: 'Your profile and your privacy',
+          text: 'One active profile per installation. Your financial accounts live inside this private profile. Google connection is optional and requires your confirmation before private records are uploaded. Keep a portable backup and its recovery secret separately.',
         ),
       ],
+    ),
+  );
+}
+
+class LocalProfileSetup extends StatefulWidget {
+  const LocalProfileSetup({super.key, required this.runtime});
+  final LocalRuntime runtime;
+  @override
+  State<LocalProfileSetup> createState() => _LocalProfileSetupState();
+}
+
+class _LocalProfileSetupState extends State<LocalProfileSetup> {
+  final name = TextEditingController();
+  ThemeMode mode = ThemeMode.system;
+  bool busy = false, allowPop = false;
+  String? error;
+  @override
+  void dispose() {
+    name.dispose();
+    super.dispose();
+  }
+
+  Future<void> leave() async {
+    if (busy) return;
+    if (name.text.isNotEmpty || mode != ThemeMode.system) {
+      if (!await confirmDiscard(context)) return;
+    }
+    if (!mounted) return;
+    setState(() => allowPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.pop(context);
+    });
+  }
+
+  Future<void> create() async {
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      await widget.runtime.create(name.text, mode);
+      if (mounted) {
+        setState(() {
+          allowPop = true;
+          busy = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          error = e is LocalRuleException ? e.message : 'Profile creation could not finish. Your initialized files are retained. Try opening the app again.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: allowPop,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) leave();
+    },
+    child: WelcomeFrame(
+      step: 'Your profile',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Make yourself at home.',
+            style: Theme.of(context).textTheme.displaySmall,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Just a name and a preference. Everything else can come later.',
+          ),
+          const SizedBox(height: 28),
+          TextField(
+            controller: name,
+            autofocus: true,
+            enabled: !busy,
+            maxLength: 200,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Display name',
+              hintText: 'What should we call you?',
+              errorText: error,
+            ),
+            onSubmitted: (_) {
+              if (!busy) create();
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<ThemeMode>(
+            initialValue: mode,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Appearance'),
+            items: const [
+              DropdownMenuItem(
+                value: ThemeMode.system,
+                child: Text('Follow device settings'),
+              ),
+              DropdownMenuItem(
+                value: ThemeMode.light,
+                child: Text('Porcelain - light'),
+              ),
+              DropdownMenuItem(
+                value: ThemeMode.dark,
+                child: Text('Midnight - dark'),
+              ),
+            ],
+            onChanged: busy ? null : (v) => setState(() => mode = v!),
+          ),
+          const SizedBox(height: 24),
+          const FinanceNotice(
+            'PHP - Asia/Manila. Your profile is encrypted on this device and works offline. No financial account is created yet.',
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: busy ? null : create,
+            icon: busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.arrow_forward, size: 18),
+            label: Text(
+              busy ? 'Creating your space...' : 'Create local profile',
+            ),
+          ),
+          TextButton(
+            onPressed: busy ? null : leave,
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -595,10 +652,15 @@ class LocalRecoveryView extends StatelessWidget {
   const LocalRecoveryView({super.key, required this.runtime});
   final LocalRuntime runtime;
   @override
-  Widget build(BuildContext context) => FinancePage(
-    title: 'Backup & recovery',
-    child: LocalRecoveryBody(runtime: runtime),
-  );
+  Widget build(BuildContext context) => runtime.session == null
+      ? WelcomeFrame(
+          step: 'Restore',
+          child: LocalRecoveryBody(runtime: runtime),
+        )
+      : FinancePage(
+          title: 'Backup & recovery',
+          child: WorkspaceForm(child: LocalRecoveryBody(runtime: runtime)),
+        );
 }
 
 class LocalRecoveryBody extends StatefulWidget {
@@ -647,7 +709,11 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
         const FinanceHeading(
           'YOUR SAFETY NET',
           'Keep a way back.',
-          'Portable recovery uses a separate generated secret. Archives include financial evidence, Life records and history, original pending intents, document metadata, visibility preferences and protected drafts. File bytes, notification consent and OS schedule IDs are excluded. Keep original files separately; destination reminders start off.',
+          'Use your encrypted archive and its separate recovery secret. Review the contents before activating a restored profile.',
+        ),
+        const WorkspaceHelp(
+          title: 'What your backup includes',
+          text: 'Archives include financial evidence, Life records and history, original pending intents, document metadata, visibility preferences and protected drafts. File bytes, notification consent and OS schedule IDs are excluded. Keep original files separately; destination reminders start off.',
         ),
         if (initialized) ...[
           OutlinedButton(
