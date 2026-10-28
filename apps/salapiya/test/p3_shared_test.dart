@@ -685,12 +685,22 @@ void main() {
     final f = await LocalFixture.open();
     try {
       final account = await f.account('P3 wallet', '2000.00');
+      final unusedCard = await f.post('creditCard', {
+        'name': 'Unrelated card selector default',
+        'issuer': 'Synthetic provider',
+        'amount': '0.00',
+        'limit': '5000.00',
+      });
       final purchase = await f.post('expense', {
         'name': 'Dinner',
         'amount': '1200.00',
         'account': account,
         'category': 'category-food',
+        'funding': 'cash',
+        // Same retained selector value as the real production expense form.
+        'card': unusedCard,
       });
+      final source = (await f.store.snapshot()).revision(purchase);
       final values = {
         'name': 'Shared dinner',
         'sharedMode': 'bill',
@@ -701,7 +711,7 @@ void main() {
         'shareAmount': '400.00',
         'account': account,
         'category': 'category-food',
-        'funding': 'cash',
+        'funding': sharedSourceUsesCard(source) ? 'card' : 'cash',
         'source': purchase,
         'sourceVersion': '1',
         'reason': 'Adopt same purchase',
@@ -709,6 +719,10 @@ void main() {
       final id = await f.post('shared', values);
       var snapshot = await f.store.snapshot();
       expect(snapshot.balance(account), BigInt.from(80000));
+      expect(
+        financeBalance(snapshot, 'card_liability', 'card', unusedCard),
+        BigInt.zero,
+      );
       var r = snapshot.revision(id);
       expect(r.previous, purchase);
       expect(r.actionId, purchase);

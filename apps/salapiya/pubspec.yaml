@@ -1,7 +1,7 @@
 name: salapiya
 description: Salapiya private offline-first money and life management.
 publish_to: none
-version: 0.6.0+6
+version: 0.6.0+7
 
 environment:
   sdk: '>=3.13.5 <4.0.0'

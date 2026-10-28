@@ -34,6 +34,7 @@ for configuration in ("Debug", "Release"):
     files.update(native.rglob("kernel_blob.bin"))
     files.update(native.rglob("app.so"))
 files.update((app / "build/app/outputs/flutter-apk").glob("*.apk"))
+files.update((app / "build/private-release").glob("*.apk"))
 
 def contains_secret(stream):
     prior = b""

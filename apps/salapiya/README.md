@@ -6,7 +6,7 @@ Supabase/PowerSync synchronization. Money, Debts, Shared Expenses and Life use r
 commands and immutable evidence. `SALAPIYA_DEMO=true` selects the separate synthetic
 demo; its scenarios are not production acceptance evidence.
 
-Version: `0.6.0+6`. **Private release is BLOCKED** pending the gates in the
+Version: `0.6.0+7`. **Private release is BLOCKED** pending the gates in the
 [P6 handoff](../../docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md). Read the
 [operations/signing/recovery guide](../../docs/salapiya/PRIVATE_RELEASE_OPERATIONS.md)
 before packaging or updating. Do not distribute staging builds or merge to main.

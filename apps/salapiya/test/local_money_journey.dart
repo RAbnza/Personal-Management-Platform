@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salapiya/app.dart';
@@ -75,6 +77,19 @@ Future<void> localWait(WidgetTester tester, bool Function() ready) async {
 
 Future<void> localTap(WidgetTester tester, Finder finder) async {
   expect(finder, findsWidgets);
+  if (tester
+      .widgetList<EditableText>(find.byType(EditableText))
+      .any((field) => field.focusNode.hasFocus)) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    // The real Android IME closes asynchronously outside Flutter's frame clock.
+    // Scroll/tap only after its viewport transition, rather than tapping behind it.
+    if (Platform.isAndroid) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+    }
+    await localSettle(tester);
+  }
   await tester.ensureVisible(finder.first);
   await tester.pumpAndSettle();
   await tester.runAsync(() => tester.tap(finder.first));

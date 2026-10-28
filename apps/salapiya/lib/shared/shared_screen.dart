@@ -1668,6 +1668,9 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
                           v['existingCardRefund']),
                 )
                 .firstOrNull;
+        // Cash forms retain unused card selector values. Only the validated
+        // immutable transaction type establishes actual card funding.
+        final cardFunded = sharedSourceUsesCard(old);
         final values = <String, String>{
           'name': 'Shared $mode · ${mode == 'bill' ? source['name'] : g.name}',
           'date': v['date']!,
@@ -1681,8 +1684,8 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
           'account': v['account']!,
           'category': v['category']!,
           'reason': v['reason']!,
-          'funding': old?.values['card'] == null ? 'cash' : 'card',
-          if (old?.values['card'] != null) 'card': old!.values['card']!,
+          'funding': cardFunded ? 'card' : 'cash',
+          if (cardFunded) 'card': old!.values['card']!,
           'acknowledge': v['acknowledge']!,
           'acknowledgeFunding': v['acknowledgeFunding'] ?? 'false',
           if (old != null) ...{

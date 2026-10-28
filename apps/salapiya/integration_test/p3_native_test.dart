@@ -10,6 +10,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:salapiya/connected/command_connector.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:salapiya/app.dart';
+import 'package:salapiya/features/finance/presentation/financial_widgets.dart';
 import 'package:salapiya/gallery/settings.dart';
 import 'package:salapiya/local/local_profiles.dart';
 import 'package:salapiya/local/local_runtime.dart';
@@ -97,10 +98,17 @@ Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
   );
   await localTap(tester, find.text('Save reviewed values'));
   if (private) {
-    await localWait(
-      tester,
-      () => find.text('Save my private action').evaluate().isNotEmpty,
-    );
+    try {
+      await localWait(
+        tester,
+        () => find.text('Save my private action').evaluate().isNotEmpty,
+      );
+    } catch (_) {
+      debugPrint(
+        'P3_PRIVATE_REVIEW: ${tester.widgetList<FinanceNotice>(find.byType(FinanceNotice)).map((n) => n.text).join('; ')}',
+      );
+      rethrow;
+    }
     await localTap(tester, find.text('Save my private action'));
   }
 }
@@ -175,6 +183,7 @@ void main() {
             [config['nativeGroup']],
           )).isNotEmpty;
         });
+        debugPrint('P3_NATIVE_STAGE: entitled shared download on $role.');
         if (const String.fromEnvironment('P3_NATIVE_STAGE') == 'verify') {
           final local = (await store.financialView()).$2;
           expect(local.version, config['expectedProfileVersion']);
@@ -338,6 +347,9 @@ void main() {
         });
         expect(requests, 2);
         expect(responseLost, isTrue);
+        debugPrint(
+          'P3_NATIVE_STAGE: actual 503 and committed response loss on $role.',
+        );
         http.close(force: true);
         await serving.cancel();
         await failureServer.close(force: true);
@@ -361,6 +373,9 @@ void main() {
             "SELECT id FROM shared_intent WHERE state IN ('pending','accepted')",
           )).isEmpty;
         });
+        debugPrint(
+          'P3_NATIVE_STAGE: durable queue reopened and accepted once on $role.',
+        );
         final accepted = SharedGroup(
           object(
             jsonDecode(
@@ -421,7 +436,7 @@ void main() {
               .text(config['nativeName'] as String? ?? 'P3 native shared group')
               .last,
         );
-        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+        await localTap(tester, find.text('Bills'));
         await localTap(
           tester,
           find.byKey(ValueKey('private-bill-$nativeBill')),
@@ -482,7 +497,7 @@ void main() {
           (await current()).positions(),
           isNot((await current()).positions(projected: true)),
         );
-        await localTap(tester, find.widgetWithText(ChoiceChip, 'Payments'));
+        await localTap(tester, find.text('Payments'));
         await localTap(
           tester,
           find.byKey(ValueKey('private-payment-$payment')),
@@ -505,6 +520,13 @@ void main() {
               (await current()).settlements[payment]['state'] == 'confirmed',
         );
         expect((await reopened.snapshot()).balance(account), cash);
+        await localWait(
+          tester,
+          () => find
+              .byKey(ValueKey('private-clear-$payment'))
+              .evaluate()
+              .isNotEmpty,
+        );
         await localTap(tester, find.byKey(ValueKey('private-clear-$payment')));
         await p3Save(tester, private: true);
         await p3Wait(
@@ -530,6 +552,13 @@ void main() {
           () async =>
               (await current()).settlements[payment]['state'] == 'reversed',
         );
+        await localWait(
+          tester,
+          () => find
+              .byKey(ValueKey('private-unclear-$payment'))
+              .evaluate()
+              .isNotEmpty,
+        );
         await localTap(
           tester,
           find.byKey(ValueKey('private-unclear-$payment')),
@@ -550,7 +579,7 @@ void main() {
         expect(tester.takeException(), isNull);
         // Correct and refund the accepted group source through the real editor.
         // The private adoption is deliberately retained at its prior revision.
-        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+        await localTap(tester, find.text('Bills'));
         await localTap(
           tester,
           find.byKey(ValueKey('correct-bill-$nativeBill')),
@@ -644,7 +673,11 @@ void main() {
           () => find.text('Share your saved purchase').evaluate().isNotEmpty,
         );
         await p3Save(tester);
-        await localTap(tester, find.text('Done'));
+        // The approved sharing flow can return directly to the workspace or
+        // retain the saved-purchase detail. Close that detail through Back.
+        if (find.byKey(const ValueKey('nav-shared')).evaluate().isEmpty) {
+          await localTap(tester, find.byType(BackButton).first);
+        }
         await localTap(tester, find.byKey(const ValueKey('nav-shared')));
         await p3Wait(
           tester,
@@ -659,7 +692,7 @@ void main() {
                   integratedTitle,
             )
             .key;
-        await localTap(tester, find.widgetWithText(ChoiceChip, 'Bills'));
+        await localTap(tester, find.text('Bills'));
         await localTap(
           tester,
           find.byKey(ValueKey('private-bill-$integratedBill')),
@@ -783,5 +816,6 @@ void main() {
         await runtime.close();
       }
     },
+    timeout: const Timeout(Duration(minutes: 15)),
   );
 }

@@ -3,7 +3,7 @@
 Status: P6 staging procedures, 28 October 2026 (Asia/Manila). The central decision
 and executed evidence are in [P6 handoff](P6_PRIVATE_RELEASE_HANDOFF.md).
 These procedures do not authorize distribution. No public store release or paid
-service is selected. Source version is `0.6.0+6`; retain
+service is selected. Source version is `0.6.0+7`; retain
 `dev.salapiya.salapiya`, callback `dev.salapiya.p0://auth/callback`, existing
 Windows company/internal names and notification AUMID/CLSID.
 

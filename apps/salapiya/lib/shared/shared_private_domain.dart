@@ -2,6 +2,10 @@ part of '../local/finance_domain.dart';
 
 // P3 extends the established private command, immutable revision and journal
 // contract. It never accepts a client-supplied posting plan or another owner.
+bool sharedSourceUsesCard(LocalRevision? source) =>
+    source != null &&
+    ['cardPurchase', 'cardRefund'].contains(financeType(source));
+
 LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
   final v = Map<String, String>.from(cmd.values);
   String value(String k) => v[k] ?? '';
@@ -123,8 +127,7 @@ LocalPlan planSharedPrivate(LocalSnapshot s, LocalCommand cmd) {
 
   var kind = 'expense', total = paid;
   if (cardFunded) {
-    if (old == null ||
-        !['cardPurchase', 'cardRefund'].contains(financeType(old))) {
+    if (old == null || !sharedSourceUsesCard(old)) {
       reject(
         'First record the actual card purchase or refund in Money, then adopt its immutable evidence.',
       );

@@ -8,7 +8,7 @@ count is not certification of installation, financial safety, recovery or author
 - Branch: `feat/salapiya-p6-private-release`. Fetch/remote inspection confirmed
   the supplied base `a2f68978a334b8076812f0c643c5377303343808` on
   `feat/salapiya-android-overview-polish`; no advanced baseline was discarded.
-- App version: `0.6.0+6`. Engineering checkpoint: `d189eb7848963f0afaf33a29b67548b9a09e78be`. The final
+- Final candidate app version: `0.6.0+7` (build 6 retained as the signed upgrade baseline). Engineering checkpoint: `d189eb7848963f0afaf33a29b67548b9a09e78be`. The final
   report commit is identified by `git log -1 --format=%H --
   docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md`; the final response supplies the
   final pushed SHA, avoiding a self-referential hash inside its own commit.
@@ -260,6 +260,67 @@ in argv. The keystore was created successfully outside Git. Gradle automatic hea
 dumps/configuration caching are disabled, and signing uses a nonpersistent daemon. A named mutex now rejects concurrent signing sessions
 before password/key access; a bounded two-process check verified that rejection.
 
+### Windows production native journeys
+
+All seven local journeys have passing fresh Windows evidence. The consolidated
+rerun passed onboarding/reopen, everyday Money, debt import/classification/provider
+schedule/payoff, planning/actual links/reservation underfunding, durable Life and
+Overview polish. Its card journey reached the final Overview assertion and found
+a second obsolete label. After updating that exact label and retaining the amount
+assertions, the entire card journey passed in the following native invocation.
+Logs: `build/p6-native-windows-final.log` (six pass, obsolete card label failure)
+and `build/p6-hosted-windows-missing-defines.log` (complete card pass).
+
+The card proof preserves 3,500.00 PHP cash, 1,140.00 PHP recognized spending and
+360.00 PHP noncash card credit across actual purchases, payment, provider statement,
+explicit allocation/installment correction, refund, fee, interest and encrypted
+reopen. The planning proof retains 500.00 PHP actual cash and supported savings
+after spending, then reverses only the mistaken plan link; tomorrow's forecast
+remains 400.00 PHP. Debt tests retain unknown clearing and immutable classification,
+provider adjustments, source caps and reconciled payoff. These are isolated
+synthetic profiles in a debug native engine, not signed installation acceptance.
+
+An initial hosted invocation omitted public build defines. Its connection failure
+and interrupted follow-on test are not counted as product/hosted passes; cached
+profiles and history were preserved, configuration corrected and sessions prepared
+again. Actual configured SDK results are reported separately.
+
+Windows configured hosted results: the full scenario 31 card sharing/source
+revision/refund journey and private Life offline acceptance/reopen passed through
+actual PowerSync CDC. The isolated native 10,046-command fixture opened, migrated,
+checked integrity and loaded a snapshot in 1,539 ms; activation/Overview took
+675 ms. Twenty native saves at capacity measured p50 158.867 ms, p95 193.446 ms,
+p99/max 829.611 ms. Four module navigations including test settling measured p50
+961.895 ms and p95/max 1,842.072 ms. RSS was 507,428,864 bytes; maximum process RSS
+687,468,544 bytes. These use a debug integration engine and warm caches.
+
+The Windows reminder test scheduled, revised and cancelled a real OS request,
+observed genuine presented notification delivery and removed the displayed owned
+reminder on opt-out. It did not claim a notification tap/cold activation or human
+screen-reader pass. Logs: `build/p6-hosted-windows.log` (four pass; obsolete P3
+navigation failed separately). No image capture was used.
+
+The configured full Shared journey reproduced a production regression in existing
+cash-purchase adoption: the Money form retains an unused card selector, and the
+Shared UI classified funding merely by that field's presence. The immutable
+planner rejected the false card claim before posting. The fix derives funding
+from the validated transaction type (`cardPurchase` / `cardRefund`) through one
+domain helper shared by the UI and planner guard. The regression fixture includes
+an unrelated valid card selector on a cash purchase, checks exact same-source
+adoption and unchanged cash, and asserts no liability on that unrelated card.
+No calculation, immutable-history rule or server contract is weakened. Build 7
+identifies the corrected candidate and permits a same-key signed upgrade drill
+from the installed build 6 baseline.
+
+The Android initial local suite passed four journeys; three profile-creation
+steps were intercepted during the real IME transition. The harness now unfocuses
+editable text, waits for native IME dismissal before scrolling/tapping and treats
+missed taps as fatal. With this stricter harness the complete card, debt and
+planning journeys passed on API 37. Together with the initial onboarding/Money,
+Life and Overview passes, all seven local native journeys have passing evidence
+on Android. This is debug-engine evidence, distinct from the signed build 6 smoke
+and the final build 7 connected/update checks below.
+
 ## Icons, identity and actual packaged resources
 
 Source: unchanged approved `assets/branding/mark/salapiya_mark.svg`, SHA-256
@@ -302,9 +363,52 @@ The release executable SHA-256 is
 `e1b23c0fa8931cfe5a6149eec8312c2b276417a036c0453811ac62267b0230b6`.
 The ZIP is an unsigned full application bundle, not an installer or a trusted
 signed release. It was not distributed or launched against an existing profile.
-Inno compilation/install/update remains blocked as described in P6-01.
+All 50 ZIP file payloads were independently decompressed and matched byte for
+byte to the built bundle; CRC/path checks passed. Inno compilation/install/update
+remains blocked as described in P6-01.
 
-Android signing/package and final native results are recorded below.
+The owner-signed Android build 6 baseline APK is
+`build/private-release/Salapiya-0.6.0-6-android-owner-signed.apk`
+(79,909,883 bytes), SHA-256
+`07ca7e75cbfde6ca0368aebe315c9fdc8730dea9db9de6b969c0f2c6d93e3c87`.
+Its single RSA 3072-bit signing certificate SHA-256 is
+`d45ef96f19ce9e9df9c23711bc9f843b2bb34350352f06aba347187980dc787e`.
+Official `apksigner` verifies APK Signature Scheme v2 and the owner certificate;
+v1/v3/v4 are not claimed. This identity supports same-certificate updates for the
+packaged minimum API 24. Package ID is `dev.salapiya.salapiya`, version `0.6.0`,
+version code 6, compile/target API 36; ARMv7, ARM64 and x86_64 libraries are present.
+Those declared minima/ABIs are not physical-device certification.
+
+All 15 density PNGs match the source's visible RGBA pixels and exact alpha values.
+aapt canonicalizes only invisible RGB under fully transparent monochrome pixels.
+The verifier resolves optimized resource paths through the official aapt2 table;
+API 26/33 adaptive foreground/background/monochrome references, callback, release
+non-debuggable manifest and both sets of five backup exclusions passed. No UI was
+rendered to an image. `run-as` independently rejected the installed release as
+not debuggable.
+
+A fresh isolated `Salapiya_P6_Release_Test` API 37 x86_64 emulator installed the
+signed APK successfully. Its first clean Activity launch reported 2,851 ms;
+this is a package-manager measurement of empty-profile startup on this emulator,
+not the 10k cold-start benchmark. Actual production UI and OS storage created a
+synthetic encrypted profile, reviewed a 1,000.00 PHP opening balance and 1.25 PHP
+expense, then showed 998.75 PHP cash and 1.25 PHP spending after a real process kill
+and a same-APK `install -r` without uninstalling. The application UID was preserved.
+Only accessibility XML, text and aggregate measurements were captured. Internal
+immutable IDs were not independently extracted from this non-debuggable package.
+A higher version-code update/interrupted upgrade remains NE and A25 stays open.
+
+The first root-checkout Android attempt found a development-only plugin registrant
+left by overlapping desktop generation; another attempt encountered a damaged
+shared generated kernel. Automatic approval review rejected cache deletion
+("blocked by policy"). That cache was preserved. A fresh detached checkout at
+`out/p6-android-release`, with the identical production source at the engineering
+checkpoint, completed unsigned diagnostic compilation and then owner signing.
+The signed build's locked dependency hash stayed unchanged. The final signing
+script permits that isolated directory, serializes signing, saves only ordinary
+build output, and allows Flutter's release-mode pub/tooling regeneration rather
+than reusing stale `--no-pub` registrants. No private key/password was copied into
+the checkout, defines or logs.
 
 Evidence envelope: Windows 11 Home Single Language25H2 build26200.9711, x64,
 Acer Predator PHN16-72, Intel Core i5-14500HX/20 logical CPUs,16GiB RAM;
@@ -392,7 +496,8 @@ The scan excludes full transitive Gradle/Flutter engine/SQLite/OS/JDK/NDK covera
 [Undici advisory](https://github.com/nodejs/undici/security/advisories/GHSA-2m5v-pch6-74hx),
 [ip-address advisory](https://github.com/beaugunderson/ip-address/security/advisories/GHSA-rxp7-6hxx-x8q5).
 
-Known-secret scan: PENDING_SECRET_SCAN. Bounded matching against known credentials
+Checkpoint known-secret scan: 2,273 files, zero matching paths. Final artifact
+scan is recorded with the completed native runs. Bounded matching against known credentials
 does not prove absence of every possible secret. Signing passwords/private keys
 never enter Git, chat, build defines or logs; certificate fingerprints are public.
 
@@ -445,7 +550,10 @@ new SQLite FULL test), and all **43 backend tests**. Its icon step exposed
 platform-dependent PNG compression in the Windows ICO. The verifier now checks
 every committed SHA-256 and exact regenerated RGBA pixels at every size; it does
 not require different platform zlib builds to emit identical compressed bytes.
-No icon pixels or geometry changed. Final remote workflow status follows below.
+No icon pixels or geometry changed. Remote follow-up run [40648733889](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/40648733889)
+passed both jobs at `f26d014ad2630ac2a12747606422ad8820072129`: all 219 Flutter tests,
+43 backend tests, locked resolution, format/analysis and source/icon verification.
+Later native-only harness/tool changes receive their own checks below.
 
 Runbook commands cover locked resolution, format/analysis/regression, native
 production builds, Inno staging, secure interactive Android signing, resource
