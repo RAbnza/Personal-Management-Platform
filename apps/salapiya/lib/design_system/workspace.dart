@@ -311,7 +311,7 @@ class WorkspaceSteps extends StatelessWidget {
         for (final (index, label) in const [
           'Details',
           'Review',
-          'Saved',
+          'Result',
         ].indexed)
           Semantics(
             selected: active == index,

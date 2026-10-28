@@ -8,6 +8,7 @@ import '../features/finance/presentation/financial_widgets.dart';
 import '../local/finance_domain.dart' show newLocalId;
 import '../prototype/scenarios.dart';
 import 'life_controller.dart';
+import '../design_system/theme.dart';
 
 Future<void> lifeReviewForm(
   BuildContext context,
@@ -234,14 +235,36 @@ class _LifeFormState extends State<LifeForm> {
                         : reviewing
                         ? 'REVIEW / BEFORE YOU CONTINUE'
                         : 'DETAILS / PROTECTED DRAFT',
-                    done ? 'Saved on this device.' : widget.title,
+                    widget.title,
                     widget.explanation,
                   ),
                   if (done) ...[
-                    Text(
-                      widget.controller.waiting > 0
-                          ? 'Saved locally · waiting for private synchronization.'
-                          : 'Saved in encrypted local storage.',
+                    const FormStatus(
+                      title: 'Saved on this device',
+                      message: 'Your private record is saved in encrypted local storage.',
+                      tone: NoticeTone.success,
+                    ),
+                    if (widget.controller.intents.any(
+                      (i) => i['id'] == values['__command'],
+                    ))
+                      FormSyncStatus(
+                        state:
+                            widget.controller.intents.firstWhere(
+                                  (i) => i['id'] == values['__command'],
+                                )['state']
+                                as String?,
+                      ),
+                    for (final f in widget.fields)
+                      ReviewRow(
+                        f.label,
+                        f.options?[values[f.id]] ?? values[f.id] ?? '',
+                      ),
+                    FormEvidence(
+                      children: [
+                        SelectableText(
+                          'Original command: ${values['__command']}\nRecord: ${values['__record']}\nSource version: ${values['__version']}',
+                        ),
+                      ],
                     ),
                     FilledButton(
                       onPressed: () => Navigator.pop(context),
@@ -252,7 +275,7 @@ class _LifeFormState extends State<LifeForm> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 18),
                         child: reviewing
-                            ? FinancialLine(
+                            ? ReviewRow(
                                 f.label,
                                 f.options?[values[f.id]] ?? values[f.id] ?? '',
                               )
@@ -288,7 +311,26 @@ class _LifeFormState extends State<LifeForm> {
                                 onChanged: (v) => update(f.id, v),
                               ),
                       ),
-                    if (error != null) FinanceNotice(error!, warning: true),
+                    if (error != null)
+                      FormStatus(
+                        title: 'Needs attention',
+                        message: error!,
+                        tone: NoticeTone.warning,
+                      ),
+                    if (error != null)
+                      FormEvidence(
+                        children: [
+                          SelectableText(
+                            'Original command: ${values['__command']}\nRecord: ${values['__record']}',
+                          ),
+                        ],
+                      ),
+                    if (saving)
+                      const FormStatus(
+                        title: 'Saving\u2026',
+                        message: 'Your private record is being saved.',
+                        busy: true,
+                      ),
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,

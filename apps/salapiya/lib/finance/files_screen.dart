@@ -1,3 +1,5 @@
+import '../design_system/theme.dart';
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -145,10 +147,33 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Review private supporting file'),
-        content: SingleChildScrollView(
-          child: Text(
-            '${values['name']}\n${values['mime']} · ${values['size']} bytes\nSHA256 ${values['checksum']}\nSource revision ${values['sourceRevision']}\n\n'
-            'Encrypted local bytes were written and verified. This file is unscanned. Format hints do not prove safety. No cloud bytes will be uploaded.\n\n${plan.effects.join('\n')}',
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ReviewRow('File', values['name']!),
+                ReviewRow(
+                  'Format / size',
+                  '${values['mime']} / ${values['size']} bytes',
+                ),
+                const FormStatus(
+                  title: 'Device-local file only',
+                  tone: NoticeTone.warning,
+                  message: 'Encrypted bytes were written and verified. This file is unscanned. Format hints do not prove safety. No cloud bytes will be uploaded; backups exclude original bytes.',
+                ),
+                ReviewNotes(plan.effects),
+                FormEvidence(
+                  children: [
+                    SelectableText(
+                      'SHA256 ${values['checksum']}\nSource revision ${values['sourceRevision']}',
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -316,8 +341,14 @@ class _NativeFilesScreenState extends State<NativeFilesScreen> {
             title: 'Supported files, capacity & privacy',
             text: 'PDF, JPEG and PNG, at most 10 MiB each / 1,000 live objects / 1 GiB declared capacity. Files are encrypted locally. Extensions and signatures are format hints only; they do not prove harmless content. A production private object-storage and malware-scanning boundary has not been verified on the current free infrastructure. Binary files never enter PowerSync.',
           ),
-          if (error != null) FinanceNotice(error!),
-          if (message != null) FinanceNotice(message!),
+          if (error != null)
+            FormStatus(
+              title: 'Needs attention',
+              message: error!,
+              tone: NoticeTone.warning,
+            ),
+          if (message != null)
+            FormStatus(title: 'File status', message: message!),
           DropdownButtonFormField<String>(
             initialValue: source,
             isExpanded: true,

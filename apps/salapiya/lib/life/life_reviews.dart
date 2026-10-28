@@ -1,3 +1,5 @@
+import '../design_system/theme.dart';
+
 import 'package:flutter/material.dart';
 
 import '../features/common/prototype_form.dart';
@@ -36,17 +38,26 @@ class LifeReviews extends StatelessWidget {
                 title: Text('Review retained ${original.type.name} edit'),
                 subtitle: Text(row['reason'] as String? ?? 'Sources changed'),
                 children: [
-                  const FinanceNotice(
-                    'The original command and rejected receipt remain unchanged. Review both versions before creating a separate command. Unrelated records can continue synchronizing.',
+                  const FormStatus(
+                    title: 'Edit needs review',
+                    tone: NoticeTone.warning,
+                    message: 'The original command and rejected receipt remain unchanged. Review both versions before creating a separate command. Unrelated records can continue synchronizing.',
                   ),
                   for (final value in original.fields.entries)
-                    FinancialLine(
+                    ReviewRow(
                       value.key,
                       session.hideAmounts &&
                               ['salaryMin', 'salaryMax'].contains(value.key)
                           ? 'Current: Hidden\nRetained edit: Hidden'
                           : 'Current: ${current?.fields[value.key] ?? 'unavailable'}\nRetained edit: ${value.value}',
                     ),
+                  FormEvidence(
+                    children: [
+                      SelectableText(
+                        'Original command: ${original.id}\nSource version: ${original.expectedVersion}',
+                      ),
+                    ],
+                  ),
                   if (current != null || original.expectedVersion == 0)
                     TextButton(
                       onPressed: () => lifeReviewForm(

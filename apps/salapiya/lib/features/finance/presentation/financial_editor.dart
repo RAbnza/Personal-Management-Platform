@@ -8,6 +8,7 @@ import '../../../design_system/theme.dart';
 import '../application/financial_controller.dart';
 import '../contracts/financial_models.dart';
 import 'financial_widgets.dart';
+import 'financial_review.dart';
 import '../../../local/local_finance_controller.dart';
 import '../../../local/finance_domain.dart';
 import '../../../shared/shared_screen.dart';
@@ -53,6 +54,8 @@ class _FinancialEditorState extends State<FinancialEditor> {
   late String command = widget.controller.nextCommand();
   final Map<String, TextEditingController> fields = {};
   FinancialPreview? preview;
+  LocalPlan? reviewPlan;
+  LocalSnapshot? reviewSnapshot;
   DemoOutcome outcome = DemoOutcome.accepted;
   DemoOutcome? result;
   bool reviewing = false, busy = false, dirty = false, allowPop = false;
@@ -1073,6 +1076,14 @@ class _FinancialEditorState extends State<FinancialEditor> {
     setState(() {
       preview = c.preview(action, values, command);
       reviewing = preview!.valid;
+      if (reviewing && c is LocalFinancialController) {
+        final local = c as LocalFinancialController;
+        reviewSnapshot = local.snapshot;
+        reviewPlan = planLocal(
+          reviewSnapshot!,
+          local.command(action, preview!.values, command, preview!.version),
+        );
+      }
       dirty = true;
     });
     retain();
@@ -1129,6 +1140,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
             ),
             FinanceColumns(
               main: EditorialSurface(
+                padding: 0,
                 child: AnimatedSize(
                   duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero
@@ -1200,22 +1212,23 @@ class _FinancialEditorState extends State<FinancialEditor> {
                         ),
                       ],
                       if (result == null && reviewing) ...[
-                        const SectionHeading('Your review'),
-                        Text(
-                          '${values['date']} · $actionLabel',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        for (final effect in preview!.effects)
-                          FinancialLine(
-                            effect,
-                            c.production
-                                ? 'Reviewed local effect'
-                                : 'Synthetic preview',
-                            icon: Icons.check,
-                            color: Palette.mint,
+                        if (reviewPlan != null)
+                          FinancialReview(
+                            plan: reviewPlan!,
+                            snapshot: reviewSnapshot!,
+                            amount: c.amount,
+                            hidden:
+                                (c as LocalFinancialController).amountsHidden,
+                            commandId: command,
+                          )
+                        else
+                          ReviewNotes(preview!.effects),
+                        if (busy)
+                          const FormStatus(
+                            title: 'Saving\u2026',
+                            message: 'Your reviewed values are being saved.',
+                            busy: true,
                           ),
-                        const SizedBox(height: 20),
                         if (!c.production) selectOutcome(),
                         const SizedBox(height: 12),
                         Wrap(
@@ -1256,20 +1269,23 @@ class _FinancialEditorState extends State<FinancialEditor> {
                   ),
                 ),
               ),
-              aside: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SectionHeading('Before you continue'),
-                  FinanceNotice(
-                    c.production
-                        ? (c is LocalFinancialController &&
-                                  (c as LocalFinancialController).connected
-                              ? 'A successful save is encrypted on this device. Waiting work is included once in your view and becomes synced after server acceptance and download. Drafts stay on this device.'
-                              : 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.')
-                        : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
-                  ),
-                ],
-              ),
+              aside: result != null
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SectionHeading('Before you continue'),
+                        FinanceNotice(
+                          c.production
+                              ? (c is LocalFinancialController &&
+                                        (c as LocalFinancialController)
+                                            .connected
+                                    ? 'A successful save is encrypted on this device. Waiting work is included once in your view and becomes synced after server acceptance and download. Drafts stay on this device.'
+                                    : 'Local only. A successful save is committed to encrypted storage on this device. Drafts are protected and are not posted money.')
+                              : 'Demo only. Changes live in this session and reset when the application closes. No real records are saved or synchronized.',
+                        ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -1298,44 +1314,62 @@ class _FinancialEditorState extends State<FinancialEditor> {
   );
 
   List<Widget> resultWidgets() => [
-    Icon(
-      result == DemoOutcome.accepted
-          ? Icons.check_circle_outline
-          : Icons.info_outline,
-      size: 52,
-      color: CraftTheme.of(context).primary,
+    FormStatus(
+      title: switch (result!) {
+        DemoOutcome.accepted =>
+          c.production ? 'Saved on this device' : 'Demo action complete',
+        DemoOutcome.pending =>
+          c.production
+              ? 'Confirmation pending'
+              : 'Awaiting simulated acceptance',
+        DemoOutcome.stale => 'Review the current source',
+        DemoOutcome.unavailable => 'Could not save',
+        DemoOutcome.unknown => 'The result is uncertain',
+      },
+      message: switch (result!) {
+        DemoOutcome.accepted =>
+          c.production
+              ? 'Saved securely on this device. Your original evidence is retained.'
+              : 'Updated in this demo session only.',
+        DemoOutcome.pending => 'Accepted balances have not changed. Check this same command to resolve its status.',
+        DemoOutcome.stale => 'No new action was applied by this attempt. Your input is retained; review the current source.',
+        DemoOutcome.unavailable =>
+          'Nothing was applied. Your draft is ready to retry.',
+        DemoOutcome.unknown => 'Do not submit another payment. Check the original command; it may already have been accepted.',
+      },
+      tone: result == DemoOutcome.accepted
+          ? NoticeTone.success
+          : result == DemoOutcome.unavailable
+          ? NoticeTone.error
+          : NoticeTone.warning,
     ),
-    const SizedBox(height: 20),
-    Text(switch (result!) {
-      DemoOutcome.accepted =>
-        c.production ? 'Saved on this device' : 'Demo action complete',
-      DemoOutcome.pending => 'Awaiting simulated acceptance',
-      DemoOutcome.stale => 'Review the current source',
-      DemoOutcome.unavailable => 'Temporarily unavailable',
-      DemoOutcome.unknown => 'The result is uncertain',
-    }, style: Theme.of(context).textTheme.headlineMedium),
-    const SizedBox(height: 12),
-    Text(switch (result!) {
-      DemoOutcome.accepted =>
-        c.production
-            ? 'Committed to encrypted storage. Your original evidence is retained.'
-            : 'Updated in this session only. Your original evidence is retained.',
-      DemoOutcome.pending => 'Accepted balances have not changed. Check this same command to resolve its status.',
-      DemoOutcome.stale => 'No new action was applied by this attempt. Your input is retained; compare the current preview before trying again.',
-      DemoOutcome.unavailable =>
-        'Nothing was applied. Your draft is ready to retry.',
-      DemoOutcome.unknown => 'Do not submit another payment. Check the original command; it may already have been accepted.',
-    }),
-    const SizedBox(height: 16),
+    if (result == DemoOutcome.accepted &&
+        c is LocalFinancialController &&
+        (c as LocalFinancialController).connected)
+      FormSyncStatus(
+        state: (c as LocalFinancialController).synchronizationStates[command],
+      ),
     if (c is LocalFinancialController &&
         (c as LocalFinancialController).lastError != null)
-      FinanceNotice((c as LocalFinancialController).lastError!, warning: true),
-    SelectableText(
-      '${c.production ? 'Local command' : 'Demo receipt'}: $command',
-    ),
-    const SizedBox(height: 12),
-    for (final e in preview!.effects)
-      Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(e)),
+      ReviewNotes([(c as LocalFinancialController).lastError!]),
+    if (reviewPlan != null)
+      FinancialReview(
+        plan: reviewPlan!,
+        snapshot: reviewSnapshot!,
+        amount: c.amount,
+        hidden: (c as LocalFinancialController).amountsHidden,
+        commandId: command,
+      )
+    else ...[
+      ReviewNotes(preview!.effects),
+      FormEvidence(
+        children: [
+          SelectableText(
+            '${c.production ? 'Local command' : 'Demo receipt'}: $command',
+          ),
+        ],
+      ),
+    ],
     const SizedBox(height: 20),
     Wrap(
       spacing: 12,
@@ -1344,7 +1378,7 @@ class _FinancialEditorState extends State<FinancialEditor> {
         if (c is LocalFinancialController &&
             action == FinancialAction.expense &&
             result == DemoOutcome.accepted)
-          FilledButton(
+          OutlinedButton(
             onPressed: () async {
               try {
                 await sharePrivatePurchase(
@@ -1388,13 +1422,22 @@ class _FinancialEditorState extends State<FinancialEditor> {
             }),
             child: const Text('Return to retained draft'),
           ),
-        OutlinedButton(
-          onPressed: () {
-            setState(() => allowPop = true);
-            Navigator.pop(context);
-          },
-          child: Text(result == DemoOutcome.accepted ? 'Done' : 'Close result'),
-        ),
+        if (result == DemoOutcome.accepted)
+          FilledButton(
+            onPressed: () {
+              setState(() => allowPop = true);
+              Navigator.pop(context);
+            },
+            child: const Text('Done'),
+          )
+        else
+          OutlinedButton(
+            onPressed: () {
+              setState(() => allowPop = true);
+              Navigator.pop(context);
+            },
+            child: const Text('Close result'),
+          ),
       ],
     ),
   ];

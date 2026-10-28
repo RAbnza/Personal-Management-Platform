@@ -1,3 +1,5 @@
+import '../design_system/theme.dart';
+
 import 'package:flutter/material.dart';
 
 import '../design_system/editorial.dart';
@@ -266,15 +268,23 @@ class _ConnectionBodyState extends State<ConnectionBody> {
                               ).values['name'] ??
                               'Financial change',
                         ),
-                        Text('Original command: ${row['id']}'),
-                        Text(switch (row['reason']) {
-                          'restored_missing' => 'This work has no current server receipt. After the download is complete, explicitly resume it under its original identity.',
-                          'restored_rejected' => 'The service previously rejected this change. Its original values are retained.',
-                          'restored_mismatch' => 'This identity has different server evidence. Preserve the archive and review before taking further action.',
-                          _ =>
-                            row['reason'] as String? ??
-                                'Current financial sources require review.',
-                        }),
+                        FormEvidence(
+                          children: [
+                            SelectableText('Original command: ${row['id']}'),
+                          ],
+                        ),
+                        FormStatus(
+                          title: 'Needs review',
+                          tone: NoticeTone.warning,
+                          message: switch (row['reason']) {
+                            'restored_missing' => 'This work has no current server receipt. After the download is complete, explicitly resume it under its original identity.',
+                            'restored_rejected' => 'The service previously rejected this change. Its original values are retained.',
+                            'restored_mismatch' => 'This identity has different server evidence. Preserve the archive and review before taking further action.',
+                            _ =>
+                              row['reason'] as String? ??
+                                  'Current financial sources require review.',
+                          },
+                        ),
                         ExpansionTile(
                           title: const Text('Original saved values'),
                           children: [

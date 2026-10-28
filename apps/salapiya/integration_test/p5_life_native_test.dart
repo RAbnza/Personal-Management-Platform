@@ -47,7 +47,7 @@ Future<void> lifeSave(WidgetTester tester) async {
   await localTap(tester, find.text('Confirm & save'));
   await localWait(
     tester,
-    () => find.text('Saved on this device.').evaluate().isNotEmpty,
+    () => find.text('Saved on this device').evaluate().isNotEmpty,
   );
   await localTap(tester, find.text('Done'));
 }

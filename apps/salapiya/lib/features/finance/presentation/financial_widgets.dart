@@ -4,6 +4,7 @@ import '../../../app/demo_routes.dart';
 import '../../../design_system/editorial.dart';
 import '../../../design_system/theme.dart';
 export '../../../design_system/workspace.dart';
+export '../../../design_system/form_presentation.dart';
 
 class FinancialEnvironment extends InheritedWidget {
   const FinancialEnvironment({
@@ -295,9 +296,13 @@ class ValueBlock extends StatelessWidget {
     this.color,
     this.dark = false,
     this.captionSemanticsLabel,
+    this.amountFontSize,
+    this.scrollAmount = false,
   });
   final String label, value, caption;
   final String? captionSemanticsLabel;
+  final double? amountFontSize;
+  final bool scrollAmount;
   final Color? color;
   final bool dark;
   @override
@@ -316,14 +321,45 @@ class ValueBlock extends StatelessWidget {
         children: [
           Text(label, style: const TextStyle(fontSize: 12, letterSpacing: 1)),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 26,
-              letterSpacing: -1,
-              fontWeight: FontWeight.w500,
+          if (amountFontSize == null)
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 26,
+                letterSpacing: -1,
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          else if (scrollAmount) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                value,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: amountFontSize,
+                  letterSpacing: -1,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 4),
+            const Text(
+              'Scroll amount to see all digits',
+              style: TextStyle(fontSize: 12),
+            ),
+          ] else
+            Text(
+              value,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: amountFontSize,
+                letterSpacing: -1,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           const SizedBox(height: 12),
           Text(
             caption,

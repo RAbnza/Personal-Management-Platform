@@ -804,11 +804,32 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
         ),
         if (reviewed != null) ...[
           const SizedBox(height: 20),
-          ValueBlock(
-            'ARCHIVE REVIEW',
-            reviewed!['name'] as String,
-            '${reviewed!['owner']}\n${reviewed!['createdUtc']}\n${(reviewed!['commands'] as List).length} committed commands · ${(reviewed!['drafts'] as List).length} drafts · ${[2, 3].contains(reviewed!['format']) ? 'connected recovery requires current Google verification' : 'local only'}\n${((reviewed!['life'] as Map?)?['revisions'] as List? ?? const []).length} Life revisions ? ${((reviewed!['life'] as Map?)?['intents'] as List? ?? const []).length} original Life intents.\nAttachment byte objects included: 0. Metadata is not proof that original bytes were recovered.',
-            color: Palette.mint,
+          ReviewRow('Archive', reviewed!['name'] as String, emphasis: true),
+          ReviewRow('Created', reviewed!['createdUtc'] as String),
+          ReviewRow(
+            'Financial history',
+            '${(reviewed!['commands'] as List).length} committed commands',
+          ),
+          ReviewRow(
+            'Protected drafts',
+            '${(reviewed!['drafts'] as List).length}',
+          ),
+          ReviewRow(
+            'Life history',
+            '${((reviewed!['life'] as Map?)?['revisions'] as List? ?? const []).length} revisions / ${((reviewed!['life'] as Map?)?['intents'] as List? ?? const []).length} original intents',
+          ),
+          FormStatus(
+            title: 'Recovery coverage',
+            tone: NoticeTone.warning,
+            message:
+                '${[2, 3].contains(reviewed!['format']) ? 'Connected recovery requires current Google verification.' : 'Local-only archive.'} Attachment byte objects included: 0. Metadata is not proof that original bytes were recovered.',
+          ),
+          FormEvidence(
+            children: [
+              SelectableText(
+                'Original profile: ${reviewed!['owner']}\nArchive format: ${reviewed!['format']}',
+              ),
+            ],
           ),
           if (!initialized)
             Padding(
@@ -830,7 +851,10 @@ class _LocalRecoveryBodyState extends State<LocalRecoveryBody> {
         if (message != null)
           Padding(
             padding: const EdgeInsets.only(top: 20),
-            child: Semantics(liveRegion: true, child: FinanceNotice(message!)),
+            child: FormStatus(
+              title: 'Backup / recovery status',
+              message: message!,
+            ),
           ),
       ],
     );

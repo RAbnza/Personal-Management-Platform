@@ -1,3 +1,5 @@
+import '../design_system/theme.dart';
+
 import 'dart:convert';
 import 'dart:async';
 
@@ -589,8 +591,14 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
             const FinanceNotice(
               'File selection, mapping and retained input work offline. Connected staging, capacity review and atomic processing require current online finalization. Pending metadata is not posted cash.',
             ),
-          if (error != null) FinanceNotice(error!),
-          if (message != null) FinanceNotice(message!),
+          if (error != null)
+            FormStatus(
+              title: 'Needs attention',
+              message: error!,
+              tone: NoticeTone.warning,
+            ),
+          if (message != null)
+            FormStatus(title: 'Import status', message: message!),
           if (loading)
             const LinearProgressIndicator()
           else ...[
@@ -600,8 +608,17 @@ class _NativeImportScreenState extends State<NativeImportScreen> {
               label: const Text('Choose CSV & review'),
             ),
             if (draft.isNotEmpty) ...[
-              FinanceNotice(
-                '${draft['rowCount']} original rows · SHA256 ${draft['checksum']}\n${head == null ? 'Mapping is editable until staging.' : 'Staged assumptions are immutable. A new file review preserves earlier staged evidence.'}',
+              ReviewRow(
+                'Original rows',
+                draft['rowCount']!,
+                detail: head == null ? 'Mapping is editable until staging.' : 'Staged assumptions are immutable. A new file review preserves earlier staged evidence.',
+              ),
+              FormEvidence(
+                children: [
+                  SelectableText(
+                    'SHA256 ${draft['checksum']}\nOriginal batch: ${draft['batch']}',
+                  ),
+                ],
               ),
               select('account', 'Owned PHP cash account', {
                 for (final a in c.snapshot.accounts.where((a) => !a.archived))

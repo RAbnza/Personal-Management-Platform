@@ -1,4 +1,6 @@
 import 'source_list.dart';
+import '../design_system/theme.dart';
+import '../features/finance/presentation/financial_review.dart';
 
 import 'dart:async';
 
@@ -631,6 +633,7 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
   Future<void> writes = Future.value();
   LocalCommand? reviewed;
   LocalPlan? plan;
+  LocalSnapshot? reviewSnapshot;
   String? error, result;
   bool loading = true,
       busy = false,
@@ -638,6 +641,13 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
       unknown = false,
       dirty = false;
   LocalFinancialController get c => widget.controller;
+  Map<String, String> get reviewDetails => {
+    for (final input in inputs)
+      if (!['name', 'amount', 'date', 'acknowledge'].contains(input.key) &&
+          (values[input.key] ?? '').isNotEmpty)
+        input.label: input.options?[values[input.key]] ?? values[input.key]!,
+    if ((values['reason'] ?? '').isNotEmpty) 'Reason': values['reason']!,
+  };
   @override
   void initState() {
     super.initState();
@@ -694,7 +704,8 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
           kind: widget.operation,
           values: Map.unmodifiable(values),
         );
-        plan = planLocal(c.snapshot, reviewed!);
+        reviewSnapshot = c.snapshot;
+        plan = planLocal(reviewSnapshot!, reviewed!);
       } else {
         await c.store.commit(reviewed!);
         await c.reload();
@@ -765,14 +776,52 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
             if (loading)
               const LinearProgressIndicator()
             else if (result != null) ...[
-              FinanceNotice(result!),
-              Text('Original command: $id'),
-              TextButton(
+              const WorkspaceSteps(active: 2),
+              FormStatus(
+                title: '${widget.title} saved',
+                message: 'Saved securely on this device.',
+                tone: NoticeTone.success,
+              ),
+              if (c.connected)
+                FormSyncStatus(state: c.synchronizationStates[id]),
+              if (plan != null)
+                FinancialReview(
+                  plan: plan!,
+                  snapshot: reviewSnapshot!,
+                  amount: c.amount,
+                  hidden: c.amountsHidden,
+                  commandId: id,
+                  details: reviewDetails,
+                ),
+              if (plan == null)
+                FormEvidence(
+                  children: [SelectableText('Original command: $id')],
+                ),
+              FilledButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Done'),
               ),
             ] else ...[
-              if (error != null) FinanceNotice(error!),
+              if (error != null)
+                FormStatus(
+                  title: unknown
+                      ? 'The result is uncertain'
+                      : draftFailed
+                      ? 'Draft needs attention'
+                      : 'Could not save',
+                  message: unknown
+                      ? '$error Reopen this profile to inspect the original command before submitting changed values.'
+                      : error!,
+                  tone: unknown || draftFailed
+                      ? NoticeTone.warning
+                      : NoticeTone.error,
+                ),
+              if (busy)
+                const FormStatus(
+                  title: 'Saving\u2026',
+                  message: 'Keep this form open while the operation completes.',
+                  busy: true,
+                ),
               if (reviewed == null) ...[
                 for (final input in [
                   if (widget.operation != 'financeReversal') ...inputs,
@@ -826,16 +875,14 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                           ),
                   ),
               ] else ...[
-                const SectionHeading('Review financial effects'),
-                for (final effect in plan!.effects)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      c.amountsHidden
-                          ? 'Financial review amounts hidden.'
-                          : effect,
-                    ),
-                  ),
+                FinancialReview(
+                  plan: plan!,
+                  snapshot: reviewSnapshot!,
+                  amount: c.amount,
+                  hidden: c.amountsHidden,
+                  commandId: id,
+                  details: reviewDetails,
+                ),
                 if (c.connected)
                   const FinanceNotice(
                     'Connected changes remain pending until server acceptance and complete downloaded reconciliation.',
@@ -861,8 +908,8 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                 ),
               ),
               if (unknown)
-                const FinanceNotice(
-                  'Result unknown. Reopen this profile to inspect the original command before submitting any changed values.',
+                FormEvidence(
+                  children: [SelectableText('Original command: $id')],
                 ),
             ],
           ],

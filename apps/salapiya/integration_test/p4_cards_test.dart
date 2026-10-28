@@ -44,7 +44,7 @@ Future<void> nativeSave(WidgetTester tester) async {
   await localAction(tester, 'Save reviewed values');
   await localWait(
     tester,
-    () => find.text('Saved locally.').evaluate().isNotEmpty,
+    () => find.text('Saved securely on this device.').evaluate().isNotEmpty,
   );
   await localAction(tester, 'Done');
 }
@@ -284,7 +284,15 @@ void main() {
       await localTap(tester, find.byKey(const ValueKey('nav-overview')));
       expect(find.text('Credit cards'), findsOneWidget);
       expect(find.textContaining('₱360.00 credit'), findsOneWidget);
-      await localAction(tester, 'Credit cards');
+      // Center the link below the desktop shell's fixed header. The default
+      // ensureVisible alignment can place its center underneath that header.
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Credit cards')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Credit cards'));
+      await localSettle(tester);
       expect(find.text('CARD CREDIT'), findsOneWidget);
       expect(find.text('360.00 PHP'), findsOneWidget);
       await tester.runAsync(c.store.integrity);

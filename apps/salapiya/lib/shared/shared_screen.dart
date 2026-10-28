@@ -1,3 +1,5 @@
+import '../features/finance/presentation/financial_review.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -197,9 +199,15 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                intent['reason'] as String? ??
+              FormStatus(
+                title: 'Group action needs review',
+                tone: NoticeTone.warning,
+                message:
+                    intent['reason'] as String? ??
                     'This operation was not accepted.',
+              ),
+              FormEvidence(
+                children: [SelectableText('Original command: ${intent['id']}')],
               ),
               const SizedBox(height: 12),
               if (values['name'] != null) Text(values['name'] as String),
@@ -1715,7 +1723,18 @@ class _NativeSharedScreenState extends State<NativeSharedScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Review private money effects'),
-            content: Text(plan.effects.join('\n\n')),
+            content: SizedBox(
+              width: 600,
+              child: SingleChildScrollView(
+                child: FinancialReview(
+                  plan: plan,
+                  snapshot: snapshot,
+                  amount: widget.session.localFinance.amount,
+                  hidden: widget.session.hideAmounts,
+                  commandId: command.id,
+                ),
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -1822,26 +1841,32 @@ class _SharedFormState extends State<_SharedForm> {
             ),
             FinanceColumns(
               main: EditorialSurface(
+                padding: 0,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (error != null) FinanceNotice(error!),
+                    if (error != null)
+                      FormStatus(
+                        title: 'Needs attention',
+                        message: error!,
+                        tone: NoticeTone.warning,
+                      ),
+                    if (busy)
+                      const FormStatus(
+                        title: 'Saving reviewed values\u2026',
+                        message: 'Keep this form open while your original request is checked.',
+                        busy: true,
+                      ),
                     if (review) ...[
-                      for (final effect in effects)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(effect),
-                        ),
+                      ReviewNotes(effects),
                       const FinanceNotice(
                         'Review the values below. Group reporting moves no private money. Receipt confirmation is independent from synchronization.',
                       ),
                       for (final f in widget.fields)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            '${f.label}: ${f.options?[values[f.key]] ?? values[f.key]}',
-                          ),
+                        ReviewRow(
+                          f.label,
+                          f.options?[values[f.key]] ?? values[f.key] ?? '',
                         ),
                     ] else
                       for (final f in widget.fields)
@@ -1886,6 +1911,7 @@ class _SharedFormState extends State<_SharedForm> {
                 ),
               ),
               aside: EditorialSurface(
+                padding: 0,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
