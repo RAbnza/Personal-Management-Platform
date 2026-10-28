@@ -656,7 +656,7 @@ run [40684130716](https://github.com/RAbnza/Personal-Management-Platform/actions
 **219 Flutter tests, 43 backend tests**, locked resolution, format, analysis,
 source identity/security guards and native-icon verification. Local final format
 checked 214 Dart files with no changes; analysis reported no issues. Final native
-evidence above supplements these jobs. The subsequent handoff-only commit does
+evidence above supplements these jobs. Subsequent handoff-only commits do
 not change the source validated by this run.
 
 Runbook commands cover locked resolution, format/analysis/regression, native
@@ -707,12 +707,32 @@ Windows signing/tooling choices and actual lifecycle/operational decisions. No
 routine technical permission, paid commitment or distribution is inferred.
 Local-only approval has already been received and is not requested again.
 
-Git-only owner dependency: the three initial P6 checkpoint titles were already
-pushed before the requested `feat(salapiya): ...` convention was supplied. New
-checkpoints use that convention. Exact-tree replacement commits are prepared
-locally; publishing them requires the pending explicit exception to the original
-no-force-push instruction. No remote history rewrite was performed. This does not
-alter financial history or waive any application release gate.
+### Git provenance after approved title correction
+
+The owner explicitly authorized one protected `--force-with-lease` push to rename
+the three initial P6 titles to `feat(salapiya): ...`. Only those three existing
+messages changed; the two later checkpoint messages are unchanged. All five
+replacement commits preserve their original file trees, author/committer identity
+and dates. Their parent chain still begins at the unchanged predecessor
+`a2f68978a334b8076812f0c643c5377303343808`. The two descendant SHAs change because
+their parents changed. A separate documentation commit records this correction.
+
+Historical tested source/CI SHAs above remain the exact evidence references; use
+these equivalent conventional-history commits when navigating the branch:
+
+| Original tested/checkpoint SHA | Conventional-history SHA (identical tree) |
+|---|---|
+| `d189eb7848963f0afaf33a29b67548b9a09e78be` | `cced46e1edc9dd4edc32d3e8bca20adc4ff41001` |
+| `f26d014ad2630ac2a12747606422ad8820072129` | `9607b0652cdcb88b5f47e9ee5ec9febbbb3f70d7` |
+| `f4050eb60cf82368d98fbfe8064cd99811cc6cb8` | `a6f881175db987ffaf28f5801a135deeb6c06e4e` |
+| `2f9a39e65c450e8225f88e9e022a787ea84e1447` | `94211d2bc27990c56b064f0cf056241d6bed4de2` |
+| `e9ef336ab9218efc800bb814c1f94593d6b33309` | `af627f8113fc7551c16f387640c531915ea4c967` |
+
+The push lease requires the previously verified remote tip
+`e9ef336ab9218efc800bb814c1f94593d6b33309`; any unexpected remote advancement aborts
+the update. Application payloads, artifact hashes, financial history and release
+classification remain unchanged. No application test is reclassified merely
+because its source commit received a conventional message.
 
 ## Release decision
 
