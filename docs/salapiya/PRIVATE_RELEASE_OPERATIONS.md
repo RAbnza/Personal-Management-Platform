@@ -85,6 +85,12 @@ the password to **keytool** through a temporary process environment variable,
 sets only process environment variables, builds without a persistent Gradle daemon,
 clears them afterward and compares the APK certificate digest with the exported
 public certificate. It generates no password and never puts one in argv/config.
+For updates, pass `-ExpectedCertificateSha256
+d45ef96f19ce9e9df9c23711bc9f843b2bb34350352f06aba347187980dc787e`.
+The script rejects a mismatched key before compiling and retains public alias and
+certificate metadata beside the external keystore; subsequent runs also check
+that identity record. Back up this public record with the key. Never replace the
+keystore or edit the identity record to bypass a mismatch.
 No transcript should be enabled. The alias is `salapiya-private-release` and the
 owner-controlled location is `%LOCALAPPDATA%\Salapiya\signing\salapiya-private-release.p12`.
 Preserve this keystore and password separately in two encrypted backup locations;
@@ -112,7 +118,10 @@ and receipts; exercise callback/notifications/files; restart and repeat the
 comparison. On failure preserve database/WAL/SHM, activation descriptor and keys.
 Do not force a downgrade or reset a profile. Android's normal package manager
 rejects lower version codes; never use `adb install -d` as a release procedure.
-Both platforms still require actual signed upgrade/interruption drills.
+P6 verified an ordinary same-certificate Android build 6 to 7 update on an
+isolated API 37 emulator, with exact cash/spending preserved and ordinary downgrade
+rejected. Pending connected envelopes, compatible backups and interrupted updates
+remain unverified in that signed package. Windows installed updates remain open.
 
 ## Portable backup and recovery
 

@@ -8,7 +8,7 @@ count is not certification of installation, financial safety, recovery or author
 - Branch: `feat/salapiya-p6-private-release`. Fetch/remote inspection confirmed
   the supplied base `a2f68978a334b8076812f0c643c5377303343808` on
   `feat/salapiya-android-overview-polish`; no advanced baseline was discarded.
-- Final candidate app version: `0.6.0+7` (build 6 retained as the signed upgrade baseline). Engineering checkpoint: `d189eb7848963f0afaf33a29b67548b9a09e78be`. The final
+- Final candidate app version: `0.6.0+7` (build 6 retained as the signed upgrade baseline). Production source checkpoint: `f4050eb60cf82368d98fbfe8064cd99811cc6cb8`. The final
   report commit is identified by `git log -1 --format=%H --
   docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md`; the final response supplies the
   final pushed SHA, avoiding a self-referential hash inside its own commit.
@@ -300,6 +300,44 @@ reminder on opt-out. It did not claim a notification tap/cold activation or huma
 screen-reader pass. Logs: `build/p6-hosted-windows.log` (four pass; obsolete P3
 navigation failed separately). No image capture was used.
 
+The final build 7 Windows Shared journey passed in 2:22
+(`build/p6-shared-build7-windows-canonical.log`): exact split and zero-sum group,
+real loopback HTTP 503 and a discarded genuinely committed hosted response,
+reopened original queue accepted once, private bill/settlement funding, recipient
+confirmation/reversal and clearing, source correction/refund, same-source cash
+purchase adoption without duplicated money, independently keyed old-archive
+restore using original receipts/current hosted authority, and former-member CDC
+exclusion/private-group isolation. P4 scenario 31 also passed again against build
+7 in `build/p6-shared-build7-windows-accepted.log`; that earlier invocation's P3
+lookup failure is superseded only by the separate complete P3 pass.
+
+The same complete P3 journey passed on the API 37 Android emulator in 4:37
+(`build/p6-hosted-android-final.log`), including actual hosted reconciliation,
+independently keyed archive recovery and former-member/private-group exclusion.
+The mobile navigation uses the stable Shared destination key while preserving
+the approved shorter visible label. Windows and Android financial runs were
+serialized; independent hosted concurrency tests remain separate H evidence.
+
+The final filtered Android hosted run completed **all three journeys in 8:59**:
+P3 full Shared/recovery/privacy; P4 scenario 31 actual card sharing/source revision
+and merchant refund with one liability/no cash replay; P5 actual authenticated
+private CDC, durable offline intent, acceptance/download, completion and encrypted
+reopen with unchanged financial revision. This supersedes the initial mobile
+selector/form-timing and concurrent-fixture failures; no monetary assertion was
+removed. Native 10k and OS notification cases retain their separate passing logs.
+
+The final Windows read-only peer run passed all three cases in 20 seconds
+(`build/p6-windows-peer-final.log`). P3 compared freshly captured hosted account
+balances, financial revision, group version and exact positions to the downloaded
+native state. P4 verified a completed Android card graph with exact liability,
+expense and receivable totals; P5 verified accepted Android source IDs/history.
+The latter selectors match completed peer history rather than requiring only the
+latest run's IDs. Verification flags return before financial/Life creation.
+After testing, the normal root `lib/main.dart` Debug application was rebuilt as
+`0.6.0+7`, the original Windows toast command and exact shortcut bytes were restored
+only from our test targets, and both isolated hidden P6 emulators were stopped.
+No real profile was launched. Aggregate proof: `out/p6/windows-notification-restored.json`.
+
 The configured full Shared journey reproduced a production regression in existing
 cash-purchase adoption: the Money form retains an unused card selector, and the
 Shared UI classified funding merely by that field's presence. The immutable
@@ -321,6 +359,24 @@ Life and Overview passes, all seven local native journeys have passing evidence
 on Android. This is debug-engine evidence, distinct from the signed build 6 smoke
 and the final build 7 connected/update checks below.
 
+The Android copied 10,046-command fixture passed native encrypted open/migration,
+integrity and snapshot in 4,439 ms; activation/Overview took 4,027 ms. Twenty saves
+measured p50 1,036.966 ms, p95 1,440.246 ms, p99/max 1,584.532 ms. Four navigations
+including test settling measured p50 891.936 ms and p95/max 1,222.549 ms. RSS was
+672,329,728 bytes, maximum RSS 866,189,312 bytes. The save/startup targets are missed
+in this debug emulator envelope; these numbers cannot certify release/physical
+performance. Evidence: `build/p6-hosted-android.log`, capacity case passed separately
+from its failed early hosted navigation/fixture attempts.
+
+Android's actual notification retry passed in 2:16
+(`build/p6-android-notifications-final.log`): OS permission denial retained in-app
+source access; the next OS prompt was allowed; the revised scheduled reminder was
+genuinely delivered; tapping the actual OS notification opened its authoritative
+personal source; Back returned through Life to Overview; opt-out removed the owned
+active reminder. No task completion or financial effect was inferred from delivery.
+The harness allows eight minutes overall for consent interaction and scheduling;
+the actual delivery deadline assertion was preserved. No screenshots were used.
+
 ## Icons, identity and actual packaged resources
 
 Source: unchanged approved `assets/branding/mark/salapiya_mark.svg`, SHA-256
@@ -340,7 +396,7 @@ the 66 dp circular safe zone for circle/rounded-square/OEM masks. The native ico
 manifest records all output hashes. No screenshot-based review was used.
 
 Package/application ID, Google callback, Windows company/internal names, existing
-notification AUMID/CLSID and data location are preserved. About displays `0.6.0+6`.
+notification AUMID/CLSID and data location are preserved. About displays `0.6.0+7`.
 Android now explicitly excludes private files/preferences/databases/external app
 files from cloud backup and device transfer; `allowBackup=false` alone does not
 cover every OEM transfer path. Source checks do not certify actual D2D behavior.
@@ -354,18 +410,26 @@ acceptance/owner review; a valid source ICO is not that acceptance.
 ## Packages, installation, updates and supported targets
 
 The normal Windows x64 production entry point compiled in Release mode with
-public development-service configuration. The wrapper verified `0.6.0+6`,
+public development-service configuration. The wrapper verified `0.6.0+7`,
 Flutter data, native plugins and compiler-provided VC++ runtime DLLs, then produced
-`build/private-release/Salapiya-0.6.0-6-windows-x64-UNSIGNED-STAGING.zip`
-(44,723,350 bytes; SHA-256
-`bcb9211f2adf3cb5ea1093268ce8dfe3e2c1f4956ea14ff69e9eb04c2f63e5ff`).
+`build/private-release/Salapiya-0.6.0-7-windows-x64-UNSIGNED-STAGING.zip`
+(19,050,580 bytes; SHA-256
+`954a12ae7a2ec9c831f9d4bd5022f2dd8b49cf5fa28266f9794cf3a226b2a586`).
 The release executable SHA-256 is
-`e1b23c0fa8931cfe5a6149eec8312c2b276417a036c0453811ac62267b0230b6`.
+`00aa9455aaf512a525995b974a9a62e004e168ec702de03c1153ac0ec21fa150`.
 The ZIP is an unsigned full application bundle, not an installer or a trusted
 signed release. It was not distributed or launched against an existing profile.
-All 50 ZIP file payloads were independently decompressed and matched byte for
+All 49 ZIP file payloads were independently decompressed and matched byte for
 byte to the built bundle; CRC/path checks passed. Inno compilation/install/update
 remains blocked as described in P6-01.
+
+The earlier build 6 staging ZIP is retired. Although its release executable and
+AOT payload were valid, comparison exposed a leftover 90,588,640-byte development
+`kernel_blob.bin` in its asset directory. The fresh normal build 7 release removed
+that stale asset, accounting for the ZIP size reduction. The packaging wrapper now
+rejects that development kernel and the integration-test plugin if present; it
+never deletes a profile/cache to work around contamination. No staging ZIP was
+distributed. Use only the build 7 paths/hashes in the final artifact inventory.
 
 The owner-signed Android build 6 baseline APK is
 `build/private-release/Salapiya-0.6.0-6-android-owner-signed.apk`
@@ -396,13 +460,30 @@ expense, then showed 998.75 PHP cash and 1.25 PHP spending after a real process 
 and a same-APK `install -r` without uninstalling. The application UID was preserved.
 Only accessibility XML, text and aggregate measurements were captured. Internal
 immutable IDs were not independently extracted from this non-debuggable package.
-A higher version-code update/interrupted upgrade remains NE and A25 stays open.
+A normal higher-version update from build 6 to owner-signed build 7 then succeeded
+without uninstalling, retained the application UID, and showed the same 998.75 PHP
+cash and 1.25 PHP spending after force-stop/reopen. An ordinary attempt to reinstall
+build 6 was rejected with `INSTALL_FAILED_VERSION_DOWNGRADE`; no downgrade override
+was used. Both builds have the same public certificate fingerprint above. Evidence:
+`out/p6/android-build7-upgrade-proof.json`, signed metadata and package-manager logs.
+Pending connected envelopes, compatible backups, interrupted upgrade and physical
+device acceptance remain NE; this bounded smoke does not close A25.
+
+The final owner-signed candidate is
+`build/private-release/Salapiya-0.6.0-7-android-owner-signed.apk`
+(79,909,883 bytes), SHA-256
+`360b7fa4ee9add2166023b3f24991614030ead7aeb99df5a2c33b6612b73aa05`.
+It uses version code 7, the same package ID/ABIs/minimum/target APIs and owner
+certificate. Official signature verification and packaged-icon/manifest/backup
+exclusion verification were repeated for this exact APK. The production source
+is `f4050eb60cf82368d98fbfe8064cd99811cc6cb8`; subsequent harness, signing-tool and
+handoff changes do not change the packaged application code.
 
 The first root-checkout Android attempt found a development-only plugin registrant
 left by overlapping desktop generation; another attempt encountered a damaged
 shared generated kernel. Automatic approval review rejected cache deletion
 ("blocked by policy"). That cache was preserved. A fresh detached checkout at
-`out/p6-android-release`, with the identical production source at the engineering
+`out/p6-android-release`, with the identical production source at the respective
 checkpoint, completed unsigned diagnostic compilation and then owner signing.
 The signed build's locked dependency hash stayed unchanged. The final signing
 script permits that isolated directory, serializes signing, saves only ordinary
@@ -496,8 +577,10 @@ The scan excludes full transitive Gradle/Flutter engine/SQLite/OS/JDK/NDK covera
 [Undici advisory](https://github.com/nodejs/undici/security/advisories/GHSA-2m5v-pch6-74hx),
 [ip-address advisory](https://github.com/beaugunderson/ip-address/security/advisories/GHSA-rxp7-6hxx-x8q5).
 
-Checkpoint known-secret scan: 2,273 files, zero matching paths. Final artifact
-scan is recorded with the completed native runs. Bounded matching against known credentials
+Final known-secret scan: **2,315 files, zero matching paths**
+(`out/p6/secrets-final.log`), including source, P0-P6 logs, normal Windows
+Debug/Release binaries, APKs and decompressed staging ZIP/APK payloads. The signed
+build 7 log was copied into the audited local artifact directory. Bounded matching against known credentials
 does not prove absence of every possible secret. Signing passwords/private keys
 never enter Git, chat, build defines or logs; certificate fingerprints are public.
 
@@ -513,9 +596,13 @@ and provider database backup remain three distinct mechanisms.
 Existing healthy `salapiya-dev` Tokyo Supabase and PowerSync JP Development were
 reused for bounded synthetic checks. No 10k fixture was uploaded; no provider reset,
 paid service, replacement project or keep-alive traffic was introduced.
-Read-only snapshot 2026-10-28T04:34:57Z: database 17,798,835 B; Salapiya tables/indexes
-4,898,816 B; storage buckets 0/objects 0; source connected, initial replication done,
-stream errors 0, reserved active WAL 56 B. These are instant measurements, not monthly
+Final read-only snapshot 2026-10-28T12:02:54Z: database 18,642,611 B; Salapiya tables/indexes
+5,660,672 B; storage buckets 0/objects 0; source connected, initial replication done,
+stream errors 0, reserved active WAL 10,936 B. The earlier 04:34 snapshot was
+17,798,835 B / 4,898,816 B before additional bounded native fixture history.
+The final catalog still has 42 migrations and 27 explicit-search-path security
+definers, with no inspected anonymous definer execution/read or direct client
+writes. These are instant measurements during the release checks, not monthly
 usage. P3 bounded command p95 was 508 ms; four-audience API documents 33,661 B and
 CDC resources 28,625 B exclude protocol/compression/reconnect overhead.
 
@@ -555,19 +642,55 @@ passed both jobs at `f26d014ad2630ac2a12747606422ad8820072129`: all 219 Flutter 
 43 backend tests, locked resolution, format/analysis and source/icon verification.
 Later native-only harness/tool changes receive their own checks below.
 
+The production build 7 checkpoint also passed remote run
+[40654989704](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/40654989704)
+with both validation jobs successful. Final native harness fixes preserve financial
+assertions: saves wait for the actual asynchronous form to close, source lookup
+follows normal pagination, and payment allocation lookup reads its canonical nested
+amount/revision object. Hosted financial UI journeys run serially across platforms
+because their deliberately shared synthetic owner is mutable; concurrent fixture
+writes cannot be treated as a stable per-journey financial baseline.
+
+Final source/tool checkpoint `2f9a39e65c450e8225f88e9e022a787ea84e1447` passed remote
+run [40684130716](https://github.com/RAbnza/Personal-Management-Platform/actions/runs/40684130716):
+**219 Flutter tests, 43 backend tests**, locked resolution, format, analysis,
+source identity/security guards and native-icon verification. Local final format
+checked 214 Dart files with no changes; analysis reported no issues. Final native
+evidence above supplements these jobs. The subsequent handoff-only commit does
+not change the source validated by this run.
+
 Runbook commands cover locked resolution, format/analysis/regression, native
 production builds, Inno staging, secure interactive Android signing, resource
 verification, upgrade and recovery. Native tests use `--no-uninstall`; historical
 gallery/branding capture targets are excluded from the P6 allowlist.
 
-PENDING_ARTIFACTS
+Final artifact paths below are relative to `apps/salapiya/`; binaries and raw
+synthetic logs remain ignored local outputs, outside Git and distribution.
+Both packages use app version `0.6.0+7` and production source checkpoint
+`f4050eb60cf82368d98fbfe8064cd99811cc6cb8`. Source commits after it change test,
+packaging/audit tools and documentation, not the application payload.
+
+| Artifact | Size / SHA-256 | Acceptance boundary |
+|---|---|---|
+| `build/private-release/Salapiya-0.6.0-7-android-owner-signed.apk` | 79,909,883 B; `360b7fa4ee9add2166023b3f24991614030ead7aeb99df5a2c33b6612b73aa05` | Owner RSA certificate, v2 verified; real 6→7 emulator update and ordinary downgrade rejection; remaining A25 matrix open |
+| `build/private-release/Salapiya-0.6.0-7-windows-x64-UNSIGNED-STAGING.zip` | 19,050,580 B; `954a12ae7a2ec9c831f9d4bd5022f2dd8b49cf5fa28266f9794cf3a226b2a586` | All 49 decompressed payloads equal Release bundle, CRC/path checks; unsigned staging, no installer acceptance |
+| `build/windows/x64/runner/Release/salapiya.exe` | `00aa9455aaf512a525995b974a9a62e004e168ec702de03c1153ac0ec21fa150` | Normal production main; all nine PE icon frames verified |
+| `build/private-release/android-signing.json`, `android-signature.txt` | Public certificate/APK metadata | No password/private key; aliases and expected identity also retained externally |
+
+Aggregate evidence under repository `out/p6/`: `packaged-icons-build7.json`,
+`windows-build7-bundle-proof.json`, `android-build7-upgrade-proof.json`,
+`android-release-install-proof.json`, `hosted-audit.json` and known-secret scan
+logs. Native test logs and 10k/restore metrics are in `apps/salapiya/build/` as
+named above. Do not move private auth configuration or the signing keystore into
+this evidence folder. A rebuilt ZIP can have different archive metadata/hashes;
+always regenerate the inventory for the exact artifact to be reviewed.
 
 ## Known defects, missing tests and owner dependencies
 
 | ID | Severity | Status and exact closure requirement |
 |---|---|---|
 | P6-01 | High release gate | Trusted Windows signing, compiled/installed package, signed update/failure recovery/cold activation. Owner defers purchase; compiler installation rejected by automatic approval review, “blocked by policy.” No security bypass. |
-| P6-02 | High release gate | A25 signed updates on both platforms preserving encrypted identities, pending envelopes, data and compatible backups. An APK signature alone does not prove an update. |
+| P6-02 | High release gate | Android same-certificate build 6→7 update/UID/cash/spending and downgrade rejection passed. Full A25 pending envelopes/immutable IDs/backups/interrupted update and Windows installed update remain open. |
 | P6-03 | High lifecycle/data | Complete A12/A28 device/account deletion, stale restore/tombstone/revocation, sole-owner recovery and retained shared evidence procedures/drills. Dedicated identities and safe recovery targets needed. |
 | P6-04 | High recovery/operations | Independent hosted backup, retention agreement and isolated restore/resync/deletion-register drill. Operator encrypted storage and independent target needed. |
 | P6-05 | Mandatory G6 | Human Narrator/TalkBack and physical device/OS inventory/acceptance; emulator/component evidence cannot replace them. |
@@ -576,11 +699,20 @@ PENDING_ARTIFACTS
 | P6-08 | Resolved policy | Explicit owner approval of local-only attachments, independent original-file backup; cloud-byte adapter deferred. |
 | P6-09 | Fixed defect | Broad suite reproduced narrow Windows toolbar overflow; constrained Create control fixed. Verification below. |
 | P6-10 | Test infrastructure | Stale dock/theme assertions updated to approved UI; rerunnable hosted import requires explicit checksum-duplicate review; Windows isolated WAL cleanup suppresses only an already-removed directory, never financial assertions. |
+| P6-11 | Fixed functional defect | Cash purchase with a retained, unused card selector was safely rejected during private Shared adoption. Funding now follows validated transaction type; exact cash/source and unrelated-card liability regression checks pass. |
+| P6-12 | Fixed packaging defect | Retired Windows build 6 ZIP contained a stale development kernel asset. Fresh normal build 7 removed it; wrapper rejects development kernel/test plugin; final ZIP byte/CRC/resource checks pass. |
 
-Owner actions are secure local password entry/key backup, physical/human acceptance,
+Owner actions are signing-key/credential backup, physical/human acceptance,
 Windows signing/tooling choices and actual lifecycle/operational decisions. No
 routine technical permission, paid commitment or distribution is inferred.
 Local-only approval has already been received and is not requested again.
+
+Git-only owner dependency: the three initial P6 checkpoint titles were already
+pushed before the requested `feat(salapiya): ...` convention was supplied. New
+checkpoints use that convention. Exact-tree replacement commits are prepared
+locally; publishing them requires the pending explicit exception to the original
+no-force-push instruction. No remote history rewrite was performed. This does not
+alter financial history or waive any application release gate.
 
 ## Release decision
 
