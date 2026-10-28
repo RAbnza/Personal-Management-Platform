@@ -94,9 +94,8 @@ class WorkspaceOverview extends StatelessWidget {
               ),
           ],
         ),
-        WorkspaceGrid(
-          minWidth: 150,
-          matchRowHeights: android,
+        OverviewMetrics(
+          android: android,
           children: [
             ValueBlock(
               'LIQUID MONEY',
@@ -271,6 +270,81 @@ class WorkspaceOverview extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Measure before laying out intrinsic-height rows. Font size never falls below
+/// 18 logical pixels, and system text scaling is retained. Windows is unchanged.
+class OverviewMetrics extends StatelessWidget {
+  const OverviewMetrics({
+    super.key,
+    required this.android,
+    required this.children,
+  });
+  final bool android;
+  final List<ValueBlock> children;
+  @override
+  Widget build(BuildContext context) {
+    if (!android) return WorkspaceGrid(minWidth: 150, children: children);
+    return LayoutBuilder(
+      builder: (context, bounds) {
+        final scaler = MediaQuery.textScalerOf(context);
+        double width(String text, double size) {
+          final painter = TextPainter(
+            text: TextSpan(
+              text: text,
+              style: DefaultTextStyle.of(context).style.copyWith(
+                fontFamily: 'Geist',
+                fontSize: size,
+                letterSpacing: -1,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          final result = painter.width;
+          painter.dispose();
+          return result;
+        }
+
+        final twoColumnSpace = (bounds.maxWidth - 16) / 2 - 40;
+        final columns =
+            bounds.maxWidth >= 300 &&
+                scaler.scale(14) < 21 &&
+                children.every((c) => width(c.value, 18) <= twoColumnSpace)
+            ? 2
+            : 1;
+        final available = (bounds.maxWidth - (columns - 1) * 16) / columns - 40;
+        return WorkspaceGrid(
+          minWidth: (bounds.maxWidth / columns) / (scaler.scale(14) / 14),
+          matchRowHeights: true,
+          children: [
+            for (final c in children)
+              Builder(
+                builder: (context) {
+                  var size = 26.0;
+                  while (size > 18 && width(c.value, size) > available) {
+                    size -= .5;
+                  }
+                  return ValueBlock(
+                    c.label,
+                    c.value,
+                    c.caption,
+                    key: c.key,
+                    color: c.color,
+                    dark: c.dark,
+                    captionSemanticsLabel: c.captionSemanticsLabel,
+                    amountFontSize: size,
+                    scrollAmount: width(c.value, size) > available,
+                  );
+                },
+              ),
+          ],
+        );
+      },
     );
   }
 }
