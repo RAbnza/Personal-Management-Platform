@@ -4,6 +4,21 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Release credentials are supplied by the owner through the process environment.
+// An explicitly requested staging build is unsigned and cannot be distributed.
+val signingNames = listOf("SALAPIYA_KEYSTORE", "SALAPIYA_STORE_PASSWORD", "SALAPIYA_KEY_ALIAS", "SALAPIYA_KEY_PASSWORD")
+val releaseCredentials = signingNames.associateWith { System.getenv(it)?.takeIf(String::isNotBlank) }
+val hasReleaseCredentials = releaseCredentials.values.all { it != null }
+val unsignedStaging = System.getenv("SALAPIYA_UNSIGNED_STAGING") == "true"
+require(releaseCredentials.values.none { it != null } || hasReleaseCredentials) {
+    "Supply all four Salapiya release-signing environment variables, or none."
+}
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.project == project && it.name.contains("Release") } && !hasReleaseCredentials && !unsignedStaging) {
+        throw GradleException("Release signing is required. Provision owner-controlled signing credentials. For non-distributable UNSIGNED staging only, set SALAPIYA_UNSIGNED_STAGING=true.")
+    }
+}
+
 android {
     namespace = "dev.salapiya.salapiya"
     compileSdk = flutter.compileSdkVersion
@@ -16,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Preserve the installed identity and OAuth callback across upgrades.
         applicationId = "dev.salapiya.salapiya"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -30,11 +45,19 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseCredentials) {
+            create("privateRelease") {
+                storeFile = file(releaseCredentials.getValue("SALAPIYA_KEYSTORE")!!)
+                storePassword = releaseCredentials.getValue("SALAPIYA_STORE_PASSWORD")
+                keyAlias = releaseCredentials.getValue("SALAPIYA_KEY_ALIAS")
+                keyPassword = releaseCredentials.getValue("SALAPIYA_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseCredentials) signingConfigs.getByName("privateRelease") else null
         }
     }
 }

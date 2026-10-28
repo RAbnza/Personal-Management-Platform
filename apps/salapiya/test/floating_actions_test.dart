@@ -89,7 +89,7 @@ void main() {
         final surface = tester.widget<Padding>(
           find.descendant(of: frame, matching: find.byType(Padding)).first,
         );
-        expect(surface.padding, const EdgeInsets.all(24));
+        expect(surface.padding, const EdgeInsets.all(20));
         expect(find.text('Made with care.\nClear by design.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }

@@ -40,19 +40,19 @@ void main() {
           ),
         );
         await localSettle(tester);
-        await localTap(tester, find.text('Create a local offline profile'));
+        await localAction(tester, 'Create a local offline profile');
         await tester.enterText(find.byType(TextField), 'P4 planning owner');
-        await localTap(tester, find.text('Create local profile'));
+        await localAction(tester, 'Create local profile');
         await localWait(tester, () => runtime.session != null);
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
-        await localTap(tester, find.byTooltip('Create account'));
+        await localAction(tester, 'Add account');
         await localEnter(tester, 'name', 'Planning wallet');
         await localEnter(tester, 'amount', '1000.00');
         await localConfirm(tester);
         final c = runtime.session!.localFinance,
             account = c.snapshot.accounts.single.id;
-        await localTap(tester, find.text('Planning').first);
-        await localTap(tester, find.text('Savings goal').first);
+        await localAction(tester, 'Planning');
+        await localAction(tester, 'Create savings goal');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -63,7 +63,7 @@ void main() {
         final goal = c.snapshot.current
             .singleWhere((r) => financeType(r) == 'savingsGoal')
             .actionId;
-        await localTap(tester, find.text('Reserve / release cash').first);
+        await localAction(tester, 'Reserve / release cash');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -75,7 +75,7 @@ void main() {
         await nativeSave(tester);
         expect(c.snapshot.balance(account), BigInt.from(100000));
         expect(savingsReserved(c.snapshot), BigInt.from(100000));
-        await localTap(tester, find.text('Category budget').first);
+        await localAction(tester, 'Create budget');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -85,7 +85,7 @@ void main() {
         await nativeEnter(tester, 'start', '2026-10-01');
         await nativeEnter(tester, 'endExclusive', '2026-11-01');
         await nativeSave(tester);
-        await localTap(tester, find.text('Recurring definition').first);
+        await localAction(tester, 'Add recurring activity');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -99,7 +99,7 @@ void main() {
         final rule = c.snapshot.current
             .singleWhere((r) => financeType(r) == 'recurrence')
             .id;
-        await localTap(tester, find.text('Generate occurrences').first);
+        await localAction(tester, 'Generate occurrences');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -108,7 +108,7 @@ void main() {
         await debtSelect(tester, 'rule', 'Native recurring bill ·');
         await nativeSave(tester);
         expect(c.snapshot.balance(account), BigInt.from(100000));
-        await localTap(tester, find.text('Add expense').first);
+        await localAction(tester, 'Add expense');
         await localEnter(tester, 'name', 'Actual native purchase');
         await localEnter(tester, 'amount', '500.00');
         await localConfirm(tester);
@@ -117,7 +117,7 @@ void main() {
           BigInt.from(50000),
           BigInt.from(50000),
         ));
-        await localTap(tester, find.text('Link actual evidence').first);
+        await localAction(tester, 'Link actual evidence');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -142,7 +142,7 @@ void main() {
           ),
           BigInt.from(5000),
         );
-        await localTap(tester, find.text('Reverse actual link').first);
+        await localAction(tester, 'Reverse actual link');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,

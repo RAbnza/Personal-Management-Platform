@@ -366,20 +366,25 @@ class _SalapiyaShellState extends State<SalapiyaShell> {
                                       ),
                                     ),
                                 ],
-                                child: const Padding(
+                                child: Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 10,
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add, size: 18),
-                                      SizedBox(width: 6),
-                                      Text('Create'),
-                                      Icon(Icons.expand_more, size: 18),
-                                    ],
-                                  ),
+                                  child: bounds.maxWidth < 600 || scale > 1.5
+                                      ? const Icon(
+                                          Icons.add,
+                                          semanticLabel: 'Create',
+                                        )
+                                      : const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.add, size: 18),
+                                            SizedBox(width: 6),
+                                            Text('Create'),
+                                            Icon(Icons.expand_more, size: 18),
+                                          ],
+                                        ),
                                 ),
                               ),
                             IconButton(

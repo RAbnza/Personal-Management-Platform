@@ -140,6 +140,16 @@ Ordinary reading, entry, reporting, and local-only management must operate offli
 
 ### 4.2 Shared Expenses
 
+> **P6 private-release exception, approved by the owner on 28 October 2026:**
+> M14 may launch with encrypted **device-local attachment bytes only** for this
+> private release. Metadata can synchronize, but original bytes require independent
+> protected backup and exact original reselection on another device. Standard
+> portable archives exclude original bytes; local files remain unscanned.
+> Controlled cloud-byte upload/download and production scanning remain future
+> work, not certified availability. This exception does not waive lifecycle,
+> recovery, signing, native accessibility or other release gates. See
+> [P6 acceptance](salapiya/P6_PRIVATE_RELEASE_HANDOFF.md).
+
 | ID | Existing capability | Launch treatment |
 | --- | --- | --- |
 | S01 | Groups, owner/member roles, manual/registered/deleted participants, invitations and membership intervals | Retain; replace web-account linkage with Google-connected identity and deliberate claims. |

@@ -170,7 +170,7 @@ void main() {
         // Genuine SDK disconnect: the ordinary purchase remains durable locally
         // and becomes accepted only through the existing connector and CDC path.
         await tester.runAsync(() => runtime.connected.pause(true));
-        await localTap(tester, find.text('Add expense').first);
+        await localAction(tester, 'Add expense');
         await localEnter(tester, 'name', purchaseName);
         await localEnter(tester, 'amount', '1200.00');
         await localTap(tester, find.byKey(const ValueKey('select-funding')));
@@ -288,7 +288,7 @@ void main() {
         expect(adopted.actionId, purchase);
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
         await localTap(tester, find.text('Cards').first);
-        await localTap(tester, find.text('Card refund'));
+        await localAction(tester, 'Card refund');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,

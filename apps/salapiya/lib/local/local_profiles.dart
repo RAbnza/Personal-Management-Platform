@@ -246,25 +246,10 @@ class LocalProfiles {
       );
       // Replay accepted local commands to validate every financial recipe, version,
       // source dependency and original ID; never import an arbitrary posting dump.
-      for (final row in bundle['commands'] as List) {
-        final r = row as Map;
-        final command = LocalCommand.decode(
-          r['id'] as String,
-          r['payload'] as String,
-        );
-        if ([2, 3].contains(bundle['format'])) {
-          await store.db.writeTransaction(
-            (tx) => store.commitAccepted(
-              tx,
-              command,
-              fromServer: true,
-              recordedAt: r['recorded_at'] as String,
-            ),
-          );
-        } else {
-          await store.commit(command, recordedAt: r['recorded_at'] as String);
-        }
-      }
+      await store.replayFinancialArchive([
+        for (final row in bundle['commands'] as List)
+          Map<String, dynamic>.from(row as Map),
+      ], fromServer: [2, 3].contains(bundle['format']));
       for (final row in bundle['drafts'] as List) {
         final r = row as Map;
         await store.saveDraft(

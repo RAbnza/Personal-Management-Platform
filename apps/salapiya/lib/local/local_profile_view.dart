@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../app/demo_routes.dart';
 import '../app/shell.dart';
+import '../app/release_identity.dart';
 import '../design_system/craft.dart';
 import '../design_system/editorial.dart';
 import '../design_system/theme.dart';
@@ -562,6 +563,7 @@ class _LocalProfileViewState extends State<LocalProfileView> {
                 onPressed: () => showLicensePage(
                   context: context,
                   applicationName: 'Salapiya',
+                  applicationVersion: salapiyaReleaseVersion,
                 ),
                 child: const Text('Licenses'),
               ),

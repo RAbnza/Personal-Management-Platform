@@ -41,12 +41,12 @@ Future<void> nativeSave(WidgetTester tester) async {
     tester,
     () => find.text('Save reviewed values').evaluate().isNotEmpty,
   );
-  await localTap(tester, find.text('Save reviewed values'));
+  await localAction(tester, 'Save reviewed values');
   await localWait(
     tester,
     () => find.text('Saved locally.').evaluate().isNotEmpty,
   );
-  await localTap(tester, find.text('Done'));
+  await localAction(tester, 'Done');
 }
 
 void main() {
@@ -73,19 +73,19 @@ void main() {
         ),
       );
       await localSettle(tester);
-      await localTap(tester, find.text('Create a local offline profile'));
+      await localAction(tester, 'Create a local offline profile');
       await tester.enterText(find.byType(TextField), 'P4 synthetic owner');
-      await localTap(tester, find.text('Create local profile'));
+      await localAction(tester, 'Create local profile');
       await localWait(tester, () => runtime.session != null);
       await localTap(tester, find.byKey(const ValueKey('nav-money')));
-      await localTap(tester, find.byTooltip('Create account'));
+      await localAction(tester, 'Add account');
       await localEnter(tester, 'name', 'P4 wallet');
       await localEnter(tester, 'amount', '5000.00');
       await localConfirm(tester);
       final c = runtime.session!.localFinance;
       final account = c.snapshot.accounts.single.id;
-      await localTap(tester, find.text('Cards').first);
-      await localTap(tester, find.text('Add credit card'));
+      await localAction(tester, 'Cards');
+      await localAction(tester, 'Add credit card');
       await localWait(
         tester,
         () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -97,7 +97,7 @@ void main() {
       final card = c.snapshot.current
           .singleWhere((r) => financeType(r) == 'creditCard')
           .actionId;
-      await localTap(tester, find.text('Add expense').first);
+      await localAction(tester, 'Add expense');
       await localEnter(tester, 'name', 'Native card dinner');
       await localEnter(tester, 'amount', '1200.00');
       await localTap(tester, find.byKey(const ValueKey('select-funding')));
@@ -109,7 +109,7 @@ void main() {
         BigInt.from(-120000),
       );
       expect(c.recognizedSpending, BigInt.from(120000));
-      await localTap(tester, find.text('Pay credit card'));
+      await localAction(tester, 'Pay credit card');
       await localWait(
         tester,
         () => find.byKey(const ValueKey('native-amount')).evaluate().isNotEmpty,
@@ -137,7 +137,8 @@ void main() {
         BigInt.from(30000),
       );
       expect(c.recognizedSpending, BigInt.from(120000));
-      expect(find.textContaining('Card credit: 300.00 PHP'), findsOneWidget);
+      expect(find.text('CARD CREDIT'), findsOneWidget);
+      expect(find.text('300.00 PHP'), findsOneWidget);
       Future<void> select(String key, String label) async {
         await localTap(tester, find.byKey(ValueKey('native-select-$key')));
         await localTap(tester, find.textContaining(label).last);
@@ -150,7 +151,7 @@ void main() {
         Map<String, String> choices = const {},
         bool verified = false,
       }) async {
-        await localTap(tester, find.text(button).first);
+        await localAction(tester, button);
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -232,8 +233,8 @@ void main() {
         },
         verified: true,
       );
-      await localTap(tester, find.text('Native installment application').first);
-      await localTap(tester, find.text('Correct with reason'));
+      await localAction(tester, 'Native installment application');
+      await localAction(tester, 'Correct with reason');
       await localWait(
         tester,
         () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -281,10 +282,11 @@ void main() {
         BigInt.from(36000),
       );
       await localTap(tester, find.byKey(const ValueKey('nav-overview')));
-      expect(find.text('Cards: liability and noncash credit'), findsOneWidget);
-      expect(find.textContaining('credit ₱360.00'), findsOneWidget);
-      await localTap(tester, find.text('Cards: liability and noncash credit'));
-      expect(find.textContaining('Card credit: 360.00 PHP'), findsOneWidget);
+      expect(find.text('Credit cards'), findsOneWidget);
+      expect(find.textContaining('₱360.00 credit'), findsOneWidget);
+      await localAction(tester, 'Credit cards');
+      expect(find.text('CARD CREDIT'), findsOneWidget);
+      expect(find.text('360.00 PHP'), findsOneWidget);
       await tester.runAsync(c.store.integrity);
       expect(network.attempts, 0);
       await tester.pumpWidget(const SizedBox.shrink());

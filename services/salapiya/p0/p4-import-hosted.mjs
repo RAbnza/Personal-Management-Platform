@@ -20,13 +20,26 @@ try {
  const stable=(batch,key)=>{const b=createHash('sha256').update(`pmp/import/v1/${profile}/${batch}/${key}`).digest().subarray(0,16);b[6]=(b[6]&15)|80;b[8]=(b[8]&63)|128;const h=b.toString('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;};
  const fixture=JSON.parse(await readFile(new URL('../../../contracts/salapiya/p4_import.json',import.meta.url),'utf8'));
  const values=kind=>JSON.parse(fixture.commands.find(c=>JSON.parse(c.payload).kind===kind).payload).values;
- const account=(await post('account',{...values('account'),name:'P4 hosted atomic CSV wallet'})).id;
+ // Each bounded run appends to the dedicated fixture; never delete earlier proof.
+ const account=(await post('account',{...values('account'),name:`P4 hosted CSV ${randomUUID()}`})).id;
  const head={...values('cashImport'),date:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'})};
  const assumptions=JSON.parse(head.assumptions);assumptions.account=account;head.assumptions=JSON.stringify(assumptions);
  const batch=(await post('cashImport',head)).id;
  await post('cashImportChunk',{...values('cashImportChunk'),batch},stable(batch,'stage/0'));
  const preview=(await post('cashImportPreview',{name:'Hosted current reviewed preview',date:head.date,batch})).id;
- const decision=(await post('cashImportDecision',{...values('cashImportDecision'),preview,date:head.date})).id;
+ const choices={...values('cashImportDecision'),preview,date:head.date};
+ const previewPlan=JSON.parse((await rest(`p2_command?id=eq.${preview}`,session,keys.client))[0].plan);
+ const warningRows=Object.entries(previewPlan.revision.values).filter(([key])=>/^row\d+$/.test(key)).map(([key,value])=>[key,JSON.parse(value)]);
+ if(warningRows.some(([,row])=>row.warnings.length)){
+  // A repeated historical checksum must demand explicit review, even in a new account.
+  const rejectedEnvelope=JSON.stringify({contract:2,profile_id:profile,payload:canonical('cashImportDecision',choices),base_revision:(await boundary()).revision});
+  assert.equal((await rpc('p2_submit_command',{command_id:randomUUID(),command_payload:rejectedEnvelope})).outcome,'rejected');
+  for(const [key,row] of warningRows){
+   assert.deepEqual(row.errors,[]);
+   const choice=JSON.parse(choices[key]);choice.acknowledgeDuplicates=true;choices[key]=JSON.stringify(choice);
+  }
+ }
+ const decision=(await post('cashImportDecision',choices)).id;
  const process=await post('cashImportProcess',{...values('cashImportProcess'),date:head.date,decision});
  assert.deepEqual(await rpc('p2_submit_command',{command_id:process.id,command_payload:process.envelope}),process.result);
  const balance=await db.query("SELECT salapiya_p2.balance($1,$2,'9999-12-31')::text AS amount",[profile,account]);assert.equal(balance.rows[0].amount,'100000');

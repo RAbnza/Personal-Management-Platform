@@ -42,19 +42,19 @@ void main() {
           ),
         );
         await localSettle(tester);
-        await localTap(tester, find.text('Create a local offline profile'));
+        await localAction(tester, 'Create a local offline profile');
         await tester.enterText(find.byType(TextField), 'P4 debt owner');
-        await localTap(tester, find.text('Create local profile'));
+        await localAction(tester, 'Create local profile');
         await localWait(tester, () => runtime.session != null);
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
-        await localTap(tester, find.byTooltip('Create account'));
+        await localAction(tester, 'Add account');
         await localEnter(tester, 'name', 'Debt wallet');
         await localEnter(tester, 'amount', '10000.00');
         await localConfirm(tester);
         final c = runtime.session!.localFinance,
             account = c.snapshot.accounts.single.id;
         await localTap(tester, find.byKey(const ValueKey('nav-debts')));
-        await localTap(tester, find.text('Add existing debt').first);
+        await localAction(tester, 'Add existing debt');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -67,7 +67,7 @@ void main() {
             .singleWhere((r) => financeType(r) == 'debtImport')
             .actionId;
         expect(c.snapshot.balance(account), BigInt.from(1000000));
-        await localTap(tester, find.text('Provider schedule').first);
+        await localAction(tester, 'Provider schedule');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -82,7 +82,7 @@ void main() {
         await nativeEnter(tester, 'reference', 'Provider schedule');
         await debtSelect(tester, 'verified', 'I confirm these provider facts');
         await nativeSave(tester);
-        await localTap(tester, find.text('Record debt payment').first);
+        await localAction(tester, 'Record debt payment');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -104,7 +104,7 @@ void main() {
           financeBalance(c.snapshot, 'debt_clearing', 'debt', debt),
           BigInt.from(100000),
         );
-        await localTap(tester, find.text('Classify payment').first);
+        await localAction(tester, 'Classify payment');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -121,8 +121,8 @@ void main() {
           financeBalance(c.snapshot, 'debt_clearing', 'debt', debt),
           BigInt.zero,
         );
-        await localTap(tester, find.text('Synthetic schedule').first);
-        await localTap(tester, find.text('Correct with reason'));
+        await localAction(tester, 'Synthetic schedule');
+        await localAction(tester, 'Correct with reason');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -139,7 +139,7 @@ void main() {
         );
         await nativeSave(tester);
         await localTap(tester, find.byType(BackButton).first);
-        await localTap(tester, find.text('Early settlement').first);
+        await localAction(tester, 'Early settlement');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -160,7 +160,7 @@ void main() {
           BigInt.zero,
         );
         expect(c.recognizedSpending, BigInt.from(10000));
-        await localTap(tester, find.text('Add existing debt').first);
+        await localAction(tester, 'Add existing debt');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -180,10 +180,7 @@ void main() {
           String amount, {
           String? source,
         }) async {
-          await localTap(
-            tester,
-            find.text('Provider charge / waiver / residual').first,
-          );
+          await localAction(tester, 'Provider charge / waiver / residual');
           await localWait(
             tester,
             () =>
@@ -232,7 +229,7 @@ void main() {
           'recognized_charge',
           '100.00',
         );
-        await localTap(tester, find.text('Record debt payment').first);
+        await localAction(tester, 'Record debt payment');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
@@ -278,7 +275,7 @@ void main() {
           '0.01',
           source: 'Native residual charge',
         );
-        await localTap(tester, find.text('Early settlement').first);
+        await localAction(tester, 'Early settlement');
         await localWait(
           tester,
           () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,

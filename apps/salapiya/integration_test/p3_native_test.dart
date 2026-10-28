@@ -385,7 +385,7 @@ void main() {
         // Exercise private funding and recipient confirmation in the normal app
         // using a new isolated synthetic private account.
         await localTap(tester, find.byKey(const ValueKey('nav-money')));
-        await localTap(tester, find.byTooltip('Create account'));
+        await localTap(tester, find.text('Add account'));
         final accountName = 'P3 cash $role ${newLocalId().substring(0, 8)}';
         await localEnter(tester, 'name', accountName);
         await localEnter(tester, 'amount', '2000.00');

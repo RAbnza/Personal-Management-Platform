@@ -61,10 +61,10 @@ Future<void> shellJourney(WidgetTester tester) async {
 
   await tester.tap(find.byTooltip('Quick actions'));
   await tester.pumpAndSettle();
-  expect(find.byKey(const ValueKey('quick-actions-menu')), findsOneWidget);
+  expect(find.text('Transfer money'), findsOneWidget);
   await tester.binding.handlePopRoute();
   await tester.pumpAndSettle();
-  expect(find.byKey(const ValueKey('quick-actions-menu')), findsNothing);
+  expect(find.text('Transfer money'), findsNothing);
   await tester.tap(find.byTooltip('Quick actions'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Add expense').last);

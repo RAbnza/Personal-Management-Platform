@@ -6,6 +6,33 @@ import 'package:salapiya/local/local_runtime.dart';
 import 'package:salapiya/local/local_profiles.dart';
 import 'package:salapiya/gallery/settings.dart';
 
+/// Follow the approved task group's visible action or its real More menu.
+/// This never invokes a controller or bypasses review/confirmation.
+Future<void> localAction(WidgetTester tester, String label) async {
+  final target = find.text(label);
+  if (target.evaluate().isEmpty) {
+    final groups = find.byWidgetPredicate(
+      (widget) =>
+          widget is WorkspaceActionGroup &&
+          widget.actions.values.contains(label),
+    );
+    if (groups.evaluate().isNotEmpty) {
+      await localTap(
+        tester,
+        find.descendant(
+          of: groups.first,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuButton<String>,
+          ),
+        ),
+      );
+    } else {
+      await localTap(tester, find.byTooltip('Quick actions'));
+    }
+  }
+  await localTap(tester, target.first);
+}
+
 Future<void> localSettle(WidgetTester tester) async {
   bool loading() =>
       tester
@@ -115,13 +142,13 @@ Future<void> localMoneyJourney(
   expect(find.textContaining('Tala reported'), findsNothing);
   expect(find.textContaining('DEMO ·'), findsNothing);
   await localTap(tester, find.byKey(const ValueKey('nav-money')));
-  await localTap(tester, find.byTooltip('Create account'));
+  await localTap(tester, find.text('Add account'));
   await localEnter(tester, 'name', 'Cash wallet');
   await localEnter(tester, 'amount', '1250.00');
   await localEnter(tester, 'cutoff', '2026-10-14');
   await localConfirm(tester);
   final cash = runtime.session!.finance.accounts.single.id;
-  await localTap(tester, find.byTooltip('Create account'));
+  await localTap(tester, find.text('Add account'));
   await localEnter(tester, 'name', 'Bank');
   await localEnter(tester, 'amount', '1000.00');
   await localEnter(tester, 'cutoff', '2026-10-14');
@@ -258,7 +285,7 @@ Future<void> localMoneyJourney(
   expect(find.text('Your day, in balance.'), findsOneWidget);
   expect(find.text('Create a local offline profile'), findsNothing);
   await localTap(tester, find.byKey(const ValueKey('nav-debts')));
-  expect(find.text('Your space is ready to grow.'), findsOneWidget);
+  expect(find.text('A clear view of what you owe'), findsOneWidget);
   expect(find.text('Home essentials loan'), findsNothing);
   expect(tester.takeException(), isNull);
   await tester.pumpWidget(const SizedBox.shrink());

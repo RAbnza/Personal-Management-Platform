@@ -1,13 +1,19 @@
 name: Salapiya Flutter validation
 on:
   push:
-    branches: [main, feat/salapiya-p0-foundation]
+    branches: [main, 'feat/salapiya-*']
     paths:
       - "apps/salapiya/**"
+      - "services/salapiya/**"
+      - "contracts/salapiya/**"
+      - "scripts/salapiya/**"
       - ".github/workflows/salapiya-flutter.yml"
   pull_request:
     paths:
       - "apps/salapiya/**"
+      - "services/salapiya/**"
+      - "contracts/salapiya/**"
+      - "scripts/salapiya/**"
       - ".github/workflows/salapiya-flutter.yml"
   workflow_dispatch:
 permissions:
@@ -18,7 +24,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: apps/salapiya
@@ -36,4 +42,25 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib test integration_test
       - run: flutter analyze --no-pub
-      - run: flutter test --no-pub
+      - run: flutter test --no-pub --concurrency=1
+      - name: Validate official native icon derivatives
+        working-directory: .
+        run: |
+          python -m pip install Pillow==11.2.1
+          python scripts/salapiya/generate-native-icons.py --check
+          python scripts/salapiya/verify-release-source.py
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services/salapiya/p0
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 24.21.0
+      - run: npm ci --ignore-scripts
+      - run: node --test *.test.mjs

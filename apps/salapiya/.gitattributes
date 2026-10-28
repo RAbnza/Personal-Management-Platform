@@ -1,0 +1,2 @@
+# The generated manifest is compared byte-for-byte on Windows and Linux.
+assets/branding/native-icons.json text eol=lf

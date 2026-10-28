@@ -86,6 +86,7 @@ class LocalStore {
       await _migrateFinance(tx);
       await _migrateCashImport(tx);
       await _migrateLife(tx);
+      await _migrateJournalIndexes(tx);
       if (versions.single['version'] != localSchemaVersion) {
         if (interrupt) {
           throw StateError('Injected connected migration interruption');
@@ -120,6 +121,7 @@ class LocalStore {
     await _migrateFinance(tx);
     await _migrateCashImport(tx);
     await _migrateLife(tx);
+    await _migrateJournalIndexes(tx);
     if (interrupt) {
       throw StateError('Injected migration interruption');
     }
@@ -320,6 +322,77 @@ class LocalStore {
     String? recordedAt,
     Future<void> Function()? afterRevision,
     bool fromServer = false,
+  }) => _commitAccepted(
+    tx,
+    command,
+    interrupt: interrupt,
+    recordedAt: recordedAt,
+    afterRevision: afterRevision,
+    fromServer: fromServer,
+  );
+
+  // Recovery alone owns an unpublished, empty staging database and one write
+  // transaction. Reuse the already validated in-memory prefix instead of loading
+  // its entire journal from SQLite before every archived command. The normal
+  // command path never uses this cache; every recipe still uses planLocal and
+  // the same immutable SQL/seal implementation. Check the complete SQL result
+  // against the validated projection before allowing recovery to continue.
+  Future<void> replayFinancialArchive(
+    List<Map<String, dynamic>> rows, {
+    required bool fromServer,
+  }) => db.writeTransaction((tx) async {
+    var snapshot = await _snapshot(tx);
+    if (snapshot.version != 0 ||
+        snapshot.accounts.isNotEmpty ||
+        await connectionIn(tx) != null) {
+      reject(
+        'Archive replay requires an empty, unconnected recovery database.',
+      );
+    }
+    for (final row in rows) {
+      await _commitAccepted(
+        tx,
+        LocalCommand.decode(row['id'] as String, row['payload'] as String),
+        fromServer: fromServer,
+        recordedAt: row['recorded_at'] as String,
+        replaySnapshot: snapshot,
+        onReplayPlan: (plan) => snapshot = applyFinancialPlan(snapshot, plan),
+      );
+    }
+    Map<String, dynamic> evidence(LocalSnapshot s) => {
+      'owner': s.owner,
+      'version': s.version,
+      'accounts': [
+        for (final a in s.accounts)
+          [a.id, a.name, a.kind, a.cutoff, a.archived, a.institution, a.notes],
+      ],
+      'categories': [
+        for (final c in s.categories) [c.id, c.name, c.kind],
+      ],
+      'revisions': [
+        for (final r in s.revisions)
+          financialPlanJson(
+            LocalPlan(revision: r, effects: const []),
+          )['revision'],
+      ],
+    };
+    if (canonicalJson(evidence(snapshot)) !=
+        canonicalJson(evidence(await _snapshot(tx)))) {
+      reject(
+        'Recovered financial evidence differs from its validated commands.',
+      );
+    }
+  });
+
+  Future<String> _commitAccepted(
+    SqliteWriteContext tx,
+    LocalCommand command, {
+    bool interrupt = false,
+    String? recordedAt,
+    Future<void> Function()? afterRevision,
+    bool fromServer = false,
+    LocalSnapshot? replaySnapshot,
+    void Function(LocalPlan)? onReplayPlan,
   }) async {
     if (command.owner != owner) {
       reject('Wrong profile owner.');
@@ -334,7 +407,7 @@ class LocalStore {
       }
       return old.single['result_id'] as String;
     }
-    final snap = await _snapshot(tx);
+    final snap = replaySnapshot ?? await _snapshot(tx);
     if (!fromServer && recordedAt == null) _freshPlanningReview(snap, command);
     final plan = planLocal(
       snap,
@@ -437,6 +510,7 @@ class LocalStore {
       'DELETE FROM local_draft WHERE owner_id=? AND command_id=?',
       [owner, command.id],
     );
+    onReplayPlan?.call(plan);
     return command.id;
   }
 
@@ -535,6 +609,28 @@ class LocalStore {
   Future<void> close() => db.close();
 }
 
+// Additive, schema-7-compatible query maintenance. Both index creation and the
+// equivalent seal-trigger replacement share the existing migration transaction.
+Future<void> _migrateJournalIndexes(SqliteWriteContext tx) async {
+  await tx.execute(
+    'CREATE INDEX IF NOT EXISTS local_revision_command ON local_revision(command_id)',
+  );
+  await tx.execute(
+    'CREATE INDEX IF NOT EXISTS local_posting_revision ON local_posting(revision_id,effective_date)',
+  );
+  final trigger = await tx.get(
+    "SELECT sql FROM sqlite_master WHERE type='trigger' AND name='local_seal_balanced'",
+  );
+  if (!(trigger['sql'] as String).contains('CROSS JOIN local_posting')) {
+    await tx.execute('DROP TRIGGER local_seal_balanced');
+    await tx.execute(
+      _triggers.firstWhere(
+        (sql) => sql.startsWith('CREATE TRIGGER local_seal_balanced'),
+      ),
+    );
+  }
+}
+
 const _schema = [
   '''CREATE TABLE local_profile(id TEXT PRIMARY KEY, name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 200),
     revision INTEGER NOT NULL CHECK(revision>=0), preferences TEXT NOT NULL) STRICT''',
@@ -577,7 +673,7 @@ const _triggers = [
   "CREATE TRIGGER local_revision_sealed BEFORE INSERT ON local_revision WHEN EXISTS(SELECT 1 FROM local_seal WHERE command_id=NEW.command_id) BEGIN SELECT RAISE(ABORT,'sealed command'); END",
   "CREATE TRIGGER local_posting_sealed BEFORE INSERT ON local_posting WHEN EXISTS(SELECT 1 FROM local_revision r JOIN local_seal s ON s.command_id=r.command_id WHERE r.id=NEW.revision_id) BEGIN SELECT RAISE(ABORT,'sealed financial evidence'); END",
   "CREATE TRIGGER local_posting_classification BEFORE INSERT ON local_posting WHEN NEW.category_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM local_category c WHERE c.id=NEW.category_id AND c.owner_id=NEW.owner_id AND c.kind=NEW.ledger) BEGIN SELECT RAISE(ABORT,'category classification'); END",
-  "CREATE TRIGGER local_seal_balanced BEFORE INSERT ON local_seal WHEN EXISTS(SELECT p.effective_date FROM local_posting p JOIN local_revision r ON r.id=p.revision_id WHERE r.command_id=NEW.command_id GROUP BY p.effective_date HAVING SUM(p.amount_minor)<>0) BEGIN SELECT RAISE(ABORT,'unbalanced journal'); END",
+  "CREATE TRIGGER local_seal_balanced BEFORE INSERT ON local_seal WHEN EXISTS(SELECT p.effective_date FROM local_revision r CROSS JOIN local_posting p ON p.revision_id=r.id WHERE r.command_id=NEW.command_id GROUP BY p.effective_date HAVING SUM(p.amount_minor)<>0) BEGIN SELECT RAISE(ABORT,'unbalanced journal'); END",
   "CREATE TRIGGER local_account_metadata BEFORE UPDATE ON local_account WHEN NEW.id<>OLD.id OR NEW.owner_id<>OLD.owner_id OR NEW.name<>OLD.name OR NEW.kind<>OLD.kind OR NEW.cutoff<>OLD.cutoff OR NEW.institution<>OLD.institution OR NEW.notes<>OLD.notes OR NEW.archived<>1 BEGIN SELECT RAISE(ABORT,'account evidence requires command'); END",
   "CREATE TRIGGER local_account_delete BEFORE DELETE ON local_account BEGIN SELECT RAISE(ABORT,'account history retained'); END",
 ];

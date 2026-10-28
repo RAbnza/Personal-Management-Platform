@@ -83,7 +83,13 @@ void main() {
             }
           } finally {
             worker.kill();
-            await dir.delete(recursive: true);
+            try {
+              await dir.delete(recursive: true);
+            } on PathNotFoundException {
+              // SQLite may retire WAL/SHM while Windows enumerates this isolated
+              // directory. Ignore only a cleanup that actually removed it.
+              if (await dir.exists()) rethrow;
+            }
           }
         },
         timeout: const Timeout(Duration(minutes: 2)),
