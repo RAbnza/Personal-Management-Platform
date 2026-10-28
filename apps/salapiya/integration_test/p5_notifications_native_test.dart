@@ -230,6 +230,8 @@ void main() {
         settings.dispose();
       }
     },
-    timeout: const Timeout(Duration(minutes: 5)),
+    // Budget includes two genuine OS permission prompts and an optional tap.
+    // The separate scheduled-delivery deadline above remains unchanged.
+    timeout: const Timeout(Duration(minutes: 8)),
   );
 }

@@ -16,7 +16,8 @@ import 'package:salapiya/p0/google_auth_proof.dart';
 import 'package:salapiya/shared/shared_domain.dart';
 
 import '../test/local_money_journey.dart';
-import 'p3_native_test.dart' show p3Wait, p3Enter, p3Select, p3Choice, p3Save;
+import 'p3_native_test.dart'
+    show p3Wait, p3Enter, p3Select, p3Choice, p3Save, p3TapSource;
 import 'p4_cards_test.dart' show nativeEnter;
 
 Future<void> connectedFinanceSave(WidgetTester tester) async {
@@ -245,7 +246,7 @@ void main() {
                   (b.value['revisions'] as List).last['name'] == purchaseName,
             )
             .key;
-        await localTap(tester, find.byKey(ValueKey('private-bill-$bill')));
+        await p3TapSource(tester, 'Bills', 'private-bill-$bill');
         await p3Select(tester, 'existing', '$purchaseName · 1200.00 PHP');
         await p3Enter(
           tester,
@@ -260,7 +261,7 @@ void main() {
         );
         expect(adopted.actionId, purchase);
         expect(c.liquid, cashBefore);
-        await localTap(tester, find.byKey(ValueKey('correct-bill-$bill')));
+        await p3TapSource(tester, 'Bills', 'correct-bill-$bill');
         await p3Enter(tester, 'Description', '$purchaseName revised');
         await p3Enter(
           tester,
@@ -273,7 +274,7 @@ void main() {
           () async =>
               (await group()).revision(bill)['name'] == '$purchaseName revised',
         );
-        await localTap(tester, find.byKey(ValueKey('private-bill-$bill')));
+        await p3TapSource(tester, 'Bills', 'private-bill-$bill');
         await p3Enter(
           tester,
           'Reason / source review',
@@ -324,7 +325,7 @@ void main() {
           ),
         );
         await p3Choice(tester, config['name'] as String);
-        await localTap(tester, find.byKey(ValueKey('refund-bill-$bill')));
+        await p3TapSource(tester, 'Bills', 'refund-bill-$bill');
         await p3Enter(tester, 'Refund total (PHP)', '90.00');
         await p3Enter(
           tester,
@@ -351,7 +352,7 @@ void main() {
         final refund =
             ((await group()).bills[bill]['refunds'] as List).last['id']
                 as String;
-        await localTap(tester, find.byKey(ValueKey('private-refund-$refund')));
+        await p3TapSource(tester, 'Bills', 'private-refund-$refund');
         await p3Select(
           tester,
           'existingCardRefund',

@@ -35,6 +35,7 @@ for configuration in ("Debug", "Release"):
     files.update(native.rglob("app.so"))
 files.update((app / "build/app/outputs/flutter-apk").glob("*.apk"))
 files.update((app / "build/private-release").glob("*.apk"))
+files.update((app / "build/private-release").glob("*.zip"))
 
 def contains_secret(stream):
     prior = b""
@@ -55,7 +56,7 @@ for file in sorted(files):
     with file.open("rb") as stream:
         if contains_secret(stream):
             hits.append(label)
-    if file.suffix == ".apk":
+    if file.suffix in (".apk", ".zip"):
         with zipfile.ZipFile(file) as archive:
             for member in archive.infolist():
                 if member.is_dir():

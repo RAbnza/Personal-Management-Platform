@@ -2,6 +2,7 @@ param(
   [Parameter(Mandatory=$true)][string]$Keytool,
   [Parameter(Mandatory=$true)][string]$AndroidBuildTools,
   [string]$ApplicationDirectory,
+  [string]$ExpectedCertificateSha256,
   [switch]$WaitForChecks
 )
 # Run in a local interactive console. Never use Start-Transcript for this session.
@@ -10,6 +11,7 @@ $ErrorActionPreference = 'Stop'
 $signingMutex = New-Object System.Threading.Mutex($false, 'Local\SalapiyaOwnerAndroidRelease')
 $ownsSigningMutex = $false
 $password = $null
+if ($ExpectedCertificateSha256 -and $ExpectedCertificateSha256 -notmatch '^[0-9a-fA-F]{64}$') { throw 'Expected certificate fingerprint must be 64 hexadecimal characters.' }
 try {
 try { $ownsSigningMutex = $signingMutex.WaitOne(0) }
 catch [System.Threading.AbandonedMutexException] { $ownsSigningMutex = $true }
@@ -94,6 +96,13 @@ try {
   $certificate = Join-Path $signingDirectory 'salapiya-private-release.cer'
   & $Keytool -exportcert -keystore $keystore -storetype PKCS12 -alias $alias -storepass:env SALAPIYA_STORE_PASSWORD -file $certificate
   if ($LASTEXITCODE -ne 0) { throw 'Could not unlock the selected signing identity.' }
+  $expected = (Get-FileHash -LiteralPath $certificate -Algorithm SHA256).Hash.ToLowerInvariant()
+  $identityFile = Join-Path $signingDirectory 'salapiya-private-release-identity.json'
+  if ($ExpectedCertificateSha256 -and $expected -ne $ExpectedCertificateSha256.ToLowerInvariant()) { throw 'Signing identity differs from the approved update certificate.' }
+  if (Test-Path -LiteralPath $identityFile) {
+    $identity = Get-Content -LiteralPath $identityFile -Raw | ConvertFrom-Json
+    if ($identity.alias -ne $alias -or $identity.certificateSha256 -ne $expected) { throw 'Signing identity changed. Preserve the original key and investigate before updating.' }
+  }
   Push-Location $app
   try {
     Write-Host 'Do not run another Flutter build/test in this checkout until signing finishes.'
@@ -118,6 +127,10 @@ try {
   $text = $verification -join "`n"
   if ($text -notmatch ('certificate SHA-256 digest:\s*' + $expected)) { throw 'APK is not signed by the selected owner certificate.' }
   if ($text -match 'Android Debug') { throw 'Debug certificate cannot certify a private release.' }
+  if (-not (Test-Path -LiteralPath $identityFile)) {
+    @{alias=$alias; certificateSha256=$expected} | ConvertTo-Json |
+      Set-Content -LiteralPath $identityFile -Encoding UTF8
+  }
   $verification | Set-Content -LiteralPath (Join-Path $out 'android-signature.txt') -Encoding UTF8
   @{ alias=$alias; certificateSha256=$expected; apkSha256=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant(); signed=$true; inspectedAt=[DateTime]::UtcNow.ToString('o') } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $out 'android-signing.json') -Encoding UTF8

@@ -66,12 +66,31 @@ Future<void> p3Enter(WidgetTester tester, String label, String value) async {
 }
 
 Future<void> p3Select(WidgetTester tester, String key, String label) async {
-  await localWait(
+  await p3Wait(
     tester,
     () => find.byKey(ValueKey('shared-field-$key')).evaluate().isNotEmpty,
   );
   await localTap(tester, find.byKey(ValueKey('shared-field-$key')));
   await p3Choice(tester, label);
+}
+
+/// Use the real workspace tab and its bounded pager after asynchronous CDC.
+Future<void> p3TapSource(WidgetTester tester, String tab, String key) async {
+  await localTap(tester, find.text(tab));
+  final target = find.byKey(ValueKey(key));
+  final next = find.widgetWithText(TextButton, 'Next page');
+  bool more() =>
+      next.evaluate().isNotEmpty &&
+      tester.widget<TextButton>(next.first).onPressed != null;
+  for (var page = 0; page < 20; page++) {
+    await p3Wait(tester, () => target.evaluate().isNotEmpty || more());
+    if (target.evaluate().isNotEmpty) {
+      await localTap(tester, target);
+      return;
+    }
+    await localTap(tester, next.first);
+  }
+  fail('Fixture source was not found through the normal bounded pager.');
 }
 
 Future<void> p3Choice(WidgetTester tester, String label) async {
@@ -99,7 +118,7 @@ Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
   await localTap(tester, find.text('Save reviewed values'));
   if (private) {
     try {
-      await localWait(
+      await p3Wait(
         tester,
         () => find.text('Save my private action').evaluate().isNotEmpty,
       );
@@ -111,6 +130,15 @@ Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
     }
     await localTap(tester, find.text('Save my private action'));
   }
+  // Saving is asynchronous even when no progress spinner is shown. Wait for
+  // the submitted form to close before reading its intent or opening a source.
+  await p3Wait(
+    tester,
+    () =>
+        find.text('Save reviewed values').evaluate().isEmpty &&
+        find.text('Saving…').evaluate().isEmpty &&
+        find.text('Save my private action').evaluate().isEmpty,
+  );
 }
 
 void main() {
@@ -219,7 +247,7 @@ void main() {
         final baseline = (await store.db.get(
           'SELECT count(*) n FROM local_command',
         ))['n'];
-        await localTap(tester, find.text('Shared Expenses').first);
+        await localTap(tester, find.byKey(const ValueKey('nav-shared')));
         await localWait(
           tester,
           () => find.byType(NativeSharedScreen).evaluate().isNotEmpty,
@@ -437,10 +465,7 @@ void main() {
               .last,
         );
         await localTap(tester, find.text('Bills'));
-        await localTap(
-          tester,
-          find.byKey(ValueKey('private-bill-$nativeBill')),
-        );
+        await p3TapSource(tester, 'Bills', 'private-bill-$nativeBill');
         await p3Select(tester, 'account', accountName);
         await p3Save(tester, private: true);
         await p3Wait(
@@ -473,10 +498,19 @@ void main() {
                 .text =
             '1.00';
         await p3Save(tester);
-        final intent = await reopened.db.get(
-          "SELECT id FROM shared_intent WHERE json_extract(payload,'\$.op')='report' AND group_id=? ORDER BY recorded_at DESC LIMIT 1",
+        final reports = await reopened.db.getAll(
+          "SELECT id,payload FROM shared_intent WHERE json_extract(payload,'\$.op')='report' AND group_id=?",
           [config['nativeGroup']],
         );
+        final intent = reports.singleWhere((row) {
+          final values = object(
+            object(jsonDecode(row['payload'] as String))['values'],
+          );
+          final allocations = values['allocations'];
+          return allocations is Map &&
+              allocations[nativeBill] is Map &&
+              object(allocations[nativeBill])['amount'] == '100';
+        });
         final payment = intent['id'] as String;
         Future<SharedGroup> current() async => SharedGroup(
           object(
@@ -498,10 +532,7 @@ void main() {
           isNot((await current()).positions(projected: true)),
         );
         await localTap(tester, find.text('Payments'));
-        await localTap(
-          tester,
-          find.byKey(ValueKey('private-payment-$payment')),
-        );
+        await p3TapSource(tester, 'Payments', 'private-payment-$payment');
         await p3Select(tester, 'account', accountName);
         await p3Save(tester, private: true);
         await p3Wait(
@@ -512,7 +543,7 @@ void main() {
         );
         var cash = (await reopened.snapshot()).balance(account);
         expect(cash, BigInt.from(190100));
-        await localTap(tester, find.byKey(ValueKey('payment-$payment')));
+        await p3TapSource(tester, 'Payments', 'payment-$payment');
         await p3Save(tester);
         await p3Wait(
           tester,
@@ -520,14 +551,7 @@ void main() {
               (await current()).settlements[payment]['state'] == 'confirmed',
         );
         expect((await reopened.snapshot()).balance(account), cash);
-        await localWait(
-          tester,
-          () => find
-              .byKey(ValueKey('private-clear-$payment'))
-              .evaluate()
-              .isNotEmpty,
-        );
-        await localTap(tester, find.byKey(ValueKey('private-clear-$payment')));
+        await p3TapSource(tester, 'Payments', 'private-clear-$payment');
         await p3Save(tester, private: true);
         await p3Wait(
           tester,
@@ -535,7 +559,7 @@ void main() {
             "SELECT id FROM connected_intent WHERE state IN ('pending','accepted')",
           )).isEmpty,
         );
-        await localTap(tester, find.byKey(ValueKey('payment-$payment')));
+        await p3TapSource(tester, 'Payments', 'payment-$payment');
         await p3Select(
           tester,
           'state',
@@ -552,17 +576,7 @@ void main() {
           () async =>
               (await current()).settlements[payment]['state'] == 'reversed',
         );
-        await localWait(
-          tester,
-          () => find
-              .byKey(ValueKey('private-unclear-$payment'))
-              .evaluate()
-              .isNotEmpty,
-        );
-        await localTap(
-          tester,
-          find.byKey(ValueKey('private-unclear-$payment')),
-        );
+        await p3TapSource(tester, 'Payments', 'private-unclear-$payment');
         await p3Enter(
           tester,
           'Reason / source review',
@@ -580,10 +594,7 @@ void main() {
         // Correct and refund the accepted group source through the real editor.
         // The private adoption is deliberately retained at its prior revision.
         await localTap(tester, find.text('Bills'));
-        await localTap(
-          tester,
-          find.byKey(ValueKey('correct-bill-$nativeBill')),
-        );
+        await p3TapSource(tester, 'Bills', 'correct-bill-$nativeBill');
         await p3Enter(tester, 'Description', '$title corrected');
         await p3Enter(
           tester,
@@ -599,7 +610,7 @@ void main() {
               2,
         );
         expect((await reopened.snapshot()).balance(account), cash);
-        await localTap(tester, find.byKey(ValueKey('refund-bill-$nativeBill')));
+        await p3TapSource(tester, 'Bills', 'refund-bill-$nativeBill');
         await p3Enter(tester, 'Refund total (PHP)', '3.00');
         await p3Enter(
           tester,
@@ -626,10 +637,7 @@ void main() {
         final refundId =
             ((await current()).bills[nativeBill]['refunds'] as List)
                 .single['id'];
-        await localTap(
-          tester,
-          find.byKey(ValueKey('private-refund-$refundId')),
-        );
+        await p3TapSource(tester, 'Bills', 'private-refund-$refundId');
         await p3Select(tester, 'account', accountName);
         await p3Save(tester, private: true);
         await p3Wait(
@@ -693,10 +701,7 @@ void main() {
             )
             .key;
         await localTap(tester, find.text('Bills'));
-        await localTap(
-          tester,
-          find.byKey(ValueKey('private-bill-$integratedBill')),
-        );
+        await p3TapSource(tester, 'Bills', 'private-bill-$integratedBill');
         await p3Select(tester, 'account', accountName);
         await p3Enter(
           tester,

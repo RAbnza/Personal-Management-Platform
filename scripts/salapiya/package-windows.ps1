@@ -16,6 +16,9 @@ if ($info.ProductVersion -ne "$version+$buildNumber") { throw "Stale executable 
 foreach ($required in @('flutter_windows.dll','vcruntime140.dll','vcruntime140_1.dll','msvcp140.dll','data/icudtl.dat','data/app.so')) {
   if (-not (Test-Path -LiteralPath (Join-Path $source $required))) { throw "Incomplete release bundle: $required" }
 }
+foreach ($developmentFile in @('data/flutter_assets/kernel_blob.bin','integration_test_plugin.dll')) {
+  if (Test-Path -LiteralPath (Join-Path $source $developmentFile)) { throw "Development output remains in the release bundle: $developmentFile. Rebuild the normal release entry point before packaging." }
+}
 $output = Join-Path $app 'build/private-release'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $bundle = Join-Path $output "Salapiya-$version-$buildNumber-windows-x64-UNSIGNED-STAGING.zip"
