@@ -23,8 +23,15 @@ flutter pub get --enforce-lockfile
 dart format --output=none --set-exit-if-changed lib test integration_test tool
 flutter analyze --no-pub
 flutter test --no-pub --concurrency=1
-flutter build windows --no-pub --dart-define-from-file=build/p2-public-defines.json
+flutter build windows --dart-define-from-file=build/p2-public-defines.json
 ```
+
+Run native builds/tests serially within each checkout. Flutter 3.47 filters
+development-only plugins while regenerating platform tooling during the build
+pub phase. Keep the locked resolution above, allow that phase for native builds,
+and review any lockfile change. Do not reuse `--no-pub` after switching between
+integration/debug and release configurations. Use a separate validated worktree
+for concurrent platforms; never share generated release caches.
 
 Windows staging: `scripts/salapiya/package-windows.ps1 -BundleOnly` packages the
 complete Release folder, including Flutter data and native plugins. The ZIP is
@@ -66,6 +73,9 @@ on an isolated device before planning any explicit owner-authorized transition.
 The owner authorized key creation during P6. Use
 `scripts/salapiya/sign-android-interactive.ps1 -Keytool <Android-Studio-JDK-keytool>
 -AndroidBuildTools <installed-build-tools>` in a local interactive console.
+For a validated isolated worktree inside `out`, pass
+`-ApplicationDirectory <worktree/apps/salapiya>`; place only public client defines
+in that application build directory. The same external keystore remains in use.
 It permits one signing session at a time, creates a protected per-user directory
 outside Git, preserves an existing key,
 uses RSA 3072/SHA256withRSA/PKCS12 with 10,000-day validity, and requests an
@@ -83,7 +93,7 @@ future updates. Do not send the file/password to chat or commit it.
 
 ```powershell
 # With the four environment variables securely provisioned:
-flutter build apk --release --no-pub --dart-define-from-file=build/p2-public-defines.json
+flutter build apk --release --dart-define-from-file=build/p2-public-defines.json
 # Verify with the installed Android build-tools apksigner:
 apksigner verify --verbose --print-certs build/app/outputs/flutter-apk/app-release.apk
 ```

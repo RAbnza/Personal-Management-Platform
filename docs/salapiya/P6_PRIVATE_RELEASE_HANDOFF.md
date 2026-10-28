@@ -8,7 +8,7 @@ count is not certification of installation, financial safety, recovery or author
 - Branch: `feat/salapiya-p6-private-release`. Fetch/remote inspection confirmed
   the supplied base `a2f68978a334b8076812f0c643c5377303343808` on
   `feat/salapiya-android-overview-polish`; no advanced baseline was discarded.
-- App version: `0.6.0+6`. Engineering checkpoint: PENDING_CHECKPOINT. The final
+- App version: `0.6.0+6`. Engineering checkpoint: `d189eb7848963f0afaf33a29b67548b9a09e78be`. The final
   report commit is identified by `git log -1 --format=%H --
   docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md`; the final response supplies the
   final pushed SHA, avoiding a self-referential hash inside its own commit.
@@ -16,12 +16,12 @@ count is not certification of installation, financial safety, recovery or author
   design-system/platform rules, financial/file/lifecycle source references and
   actual native/backend/test/release implementation. The final approved UI remains
   authoritative. Web source, tests, migrations and pnpm tooling are preserved.
-- Native schema7 reads schemas1–7; local command/calculation contract1, connected
-  transport2, Shared contract3 and Life contract5. Archive writers local1/connected3
-  read formats1–3, with validated P4/P5 coverage. Bounds remain32MiB plaintext,
-  20,000 accepted commands/retained intents and100 drafts; original file bytes,
+- Native schema 7 reads schemas 1–7; local command/calculation contract 1, connected
+  transport 2, Shared contract 3 and Life contract 5. Archive writers local 1/connected 3
+  read formats 1–3, with validated P4/P5 coverage. Bounds remain 32 MiB plaintext,
+  20,000 accepted commands/retained intents and 100 drafts; original file bytes,
   sessions, OS keys, notification consent and group authority are excluded.
-- Server baseline:42 immutable forward migrations `20261024000100` through
+- Server baseline: 42 immutable forward migrations `20261024000100` through
   `20261027003700`; hosted catalog count matches the source inventory. P6 adds no
   database migration and never replays web migrations into SQLite.
 - **Owner approval received during P6:** local-only attachments for this private
@@ -120,11 +120,11 @@ Paths in test columns are relative to `apps/salapiya/` unless stated otherwise.
 | A12 | U/H owner-independent cloud/group and same-identity contracts | Sole-owner identity loss recovery/drill BLOCKED G8 |
 | A13 | H removal denies stale writes; former history excludes later activity | Native former-member SDK below; physical stale-device drill NE |
 | A14 | H real JWT RLS/foreign/forged IDs/direct writes; restricted publication audit | Independent actual SDK stream results below; final expired-token subscription replay NE |
-| A15 | H revoked session denied; U preserves locally available records/intent | Native controlled503 below; actual provider suspension/reactivation NE |
+| A15 | H revoked session denied; U preserves locally available records/intent | Native controlled 503 below; actual provider suspension/reactivation NE |
 | A16 | U/H exact debt import/net proceeds/components/schedules/payoff graph | Native debt journey below; every advanced combination NE |
 | A17 | U/H statements/allocations/installments/overpayment and exact source caps | Native cards below; signed update dependency preservation NE |
 | A18 | U/H recurrence/budget/savings; U forecasts/exclusions/nonmutation | Native planning below; expected/hypothetical never post automatically |
-| A19 | U/H reviewed import/replay/cutoff conservation; U500-row export cap | Signed native document-provider and real disk-full NE |
+| A19 | U/H reviewed import/replay/cutoff conservation; U 500-row export cap | Signed native document-provider and real disk-full NE |
 | A20 | U/H full Life graph and authoritative Agenda/reminder sources | Native Life below; final installed OS reminders NE |
 | A21 | U accepted/pending handoff and initial incomplete financial/Life coverage | All native incomplete-download/report variants not exhaustively tested |
 | A22 | U independent-key restore/wrong-secret/corruption/activation faults | Native new-device final-release restore without original OS keys still required |
@@ -186,21 +186,21 @@ Names/contracts retained from [P3](P3_SHARED_EXPENSES_HANDOFF.md) and the [histo
 
 | Gate | Release status | Actual evidence and remaining prerequisite |
 |---|---|---|
-| G0 | Partial, tested development envelope | Critical pinned native plugins/encrypted persistence exercised on Windows11 x64/API37 emulator. Physical ARM64/minimum OS matrix NE. |
+| G0 | Partial, tested development envelope | Critical pinned native plugins/encrypted persistence exercised on Windows 11 x64/API 37 emulator. Physical ARM64/minimum OS matrix NE. |
 | G1 | Bounded proof, signed acceptance open | U/H durable queue, immutable receipts/source-version review; native actual CDC/fault results below. Provider suspension/checkpoint-loss certification NE. |
 | G2 | Historical Google proof, final package open | H/U enrollment/identity/collision; fresh interactive Google on final installed packages NE. |
 | G3 | U/H financial fixtures passed | Canonical exact Dart/PostgreSQL plans, independent races and owner/group isolation. All advanced native options/signed-device races not individually certified. |
 | G4 | Cryptographic/recovery proof, release drill open | U wrong-key/tamper/independent-key archives/files/SQLite and capacity recovery below. Fresh native final-package new-device restore still required. |
 | G5 | BLOCKED | Trusted Windows signing/installed update/cold activation; Android provisioning/signature results below. APK signature alone does not prove safe update. |
-| G6 | BLOCKED | Human Narrator/TalkBack, physical device/minimum OS, complete mixed-domain10k capacity and installed release cold startup not certified. |
+| G6 | BLOCKED | Human Narrator/TalkBack, physical device/minimum OS, complete mixed-domain 10k capacity and installed release cold startup not certified. |
 | G7 | BLOCKED | Instant storage/health measured; billed monthly traffic/peak clients/history growth, pilot isolation and recovery operations unverified. |
 | G8 | BLOCKED | Local-only attachment policy approved, but full device/account deletion/revocation, sole-owner recovery and independent hosted backup/retention/restore are incomplete. |
 
 ## Fresh runs, reproduced failures and corrections
 
-Initial broad Flutter run:211 passed,5 failures. Three failures were stale approved
+Initial broad Flutter run: 211 passed, 5 failures. Three failures were stale approved
 presentation expectations (old 24-to-20 px panel padding, former Windows floating dock,
-former quick-menu implementation). One was a real3.5px overflow in the constrained
+former quick-menu implementation). One was a real 3.5 px overflow in the constrained
 Windows toolbar. One was an isolated Windows WAL-cleanup race after the financial
 assertions. The source/tests now reflect the approved layout, with a compact
 accessible Create control only under constrained width/text. No monetary expected
@@ -213,13 +213,13 @@ are rejected, and reviews the warnings before posting. Exact cutoff conservation
 stable row IDs, immutable metadata/source linkage and original receipt checks
 passed; no hosted history was deleted to reset a fixture.
 
-All43 local PostgreSQL/parity tests passed on the current42-migration baseline.
+All 43 local PostgreSQL/parity tests passed on the current 42-migration baseline.
 Fresh hosted checks: P2 eight, P3 seven, P4 five, debt-component twelve-command
 plan parity, import atomic/replay check and P5 six. These execute actual signed
 API/PostgreSQL boundaries and competing independent backend sessions, not RLS
 stubs. Linked migration dry-run reports up to date, no pending migrations/seeds/roles.
 
-The10k probe reproduced repeated complete-journal loading during archive replay.
+The 10k probe reproduced repeated complete-journal loading during archive replay.
 The recovery-only unpublished staging database now uses the existing validated
 in-memory financial projection inside one transaction, through the same planner,
 SQL writes and immutable seals. It compares every account/category/revision/posting
@@ -269,13 +269,13 @@ Exports use its existing source-faithful transparent PNG
 `f8139c0a613fd040d0534927bf4c2c6c59e756f144b28ceb6cbce3fb7e519029`.
 No source geometry/colors or in-app wordmark were changed.
 
-`generate-native-icons.py` (Pillow11.2.1) contains rather than stretches the original.
-Windows ICO has16/20/24/32/40/48/64/128/256px frames and transparency. Android has
-five legacy densities, adaptive foreground/background `#F3F4F6`, API26 adaptive
-and API33 themed XML. The P6 request explicitly authorizes a monochrome alpha
+`generate-native-icons.py` (Pillow 11.2.1) contains rather than stretches the original.
+Windows ICO has 16/20/24/32/40/48/64/128/256px frames and transparency. Android has
+five legacy densities, adaptive foreground/background `#F3F4F6`, API 26 adaptive
+and API 33 themed XML. The P6 request explicitly authorizes a monochrome alpha
 silhouette, superseding the historical no-monochrome note **for launcher assets**.
-The mark fits46dp on108dp; every nontransparent foreground pixel is asserted inside
-the66dp circular safe zone for circle/rounded-square/OEM masks. The native icon
+The mark fits 46 dp on 108 dp; every nontransparent foreground pixel is asserted inside
+the 66 dp circular safe zone for circle/rounded-square/OEM masks. The native icon
 manifest records all output hashes. No screenshot-based review was used.
 
 Package/application ID, Google callback, Windows company/internal names, existing
@@ -306,9 +306,9 @@ Inno compilation/install/update remains blocked as described in P6-01.
 
 Android signing/package and final native results are recorded below.
 
-Evidence envelope: Windows11 Home Single Language25H2 build26200.9711, x64,
+Evidence envelope: Windows 11 Home Single Language25H2 build26200.9711, x64,
 Acer Predator PHN16-72, Intel Core i5-14500HX/20 logical CPUs,16GiB RAM;
-Android17/API37 Pixel9-profile emulator x86_64, configured4vCPU/4GiB.
+Android17/API 37 Pixel9-profile emulator x86_64, configured4vCPU/4GiB.
 Physical Android/ARM64, Windows10/ARM64 and minimum supported dependency OS
 versions remain NE. Framework compatibility claims do not certify this application.
 
@@ -358,13 +358,13 @@ metadata at10k scale, concurrent clients and actual storage exhaustion. G6 is op
 H covers real signed-JWT private isolation, forged/foreign IDs, denied direct
 writes, revoked current sessions, independent correction/allocation races,
 removed-member uploads, former entitlements, original receipts and changed-payload
-denial. The read-only hosted catalog audit found42 migrations,27 security-definer
+denial. The read-only hosted catalog audit found 42 migrations, 27 security-definer
 functions with explicit search paths and no anonymous execution, and no inspected
 tables granting direct client writes or anonymous reads. Internal schemas rely on
 revoked schema/table access plus narrow authorized RPCs; not every internal table
 has forced RLS. Client RLS is not presumed to filter replication.
 
-The restricted publication has8 tables. PowerSync streams use trusted
+The restricted publication has 8 tables. PowerSync streams use trusted
 `auth.user_id()` rather than caller profile/group parameters. Actual SDK isolation
 is reported separately below; injected download rows remain U evidence. A copied,
 unexpired JWT can retain read access until expiry; current-session RPC rejection
@@ -372,7 +372,7 @@ does not promise immediate global read revocation. Cloud data is not end-to-end
 encrypted against authorized infrastructure administrators.
 
 Local inspection preserves opaque path-safe IDs, AES-GCM AAD/checksum validation,
-bounded native reads,10MiB file caps, truthful unscanned/absent-byte states and no
+bounded native reads, 10 MiB file caps, truthful unscanned/absent-byte states and no
 automatic unsafe document preview. Archives are authenticated bounded JSON, not
 path-extracting ZIPs. U tests cover wrong keys, tamper, unsupported formats,
 interrupted transactions/migrations/activation and independently keyed restore.
@@ -380,7 +380,7 @@ Real child process kills are not hardware power-loss tests. Physical disk-full (
 document-provider interruption and failed package upgrade are NE. No actual user
 profile, OS key, hosted dataset or immutable history was reset.
 
-Dependency audit:610 locked Pub/npm/Maven package-version queries to OSV, containing
+Dependency audit: 610 locked Pub/npm/Maven package-version queries to OSV, containing
 package names/versions only. No Pub advisory match returned. PowerSync admin CLI's
 bundled npm contains `ip-address@10.7.2` (moderate DoS) and `undici@6.29.0`
 (including high TLS-validation/DoS advisories). These are administrative tools,
@@ -406,18 +406,18 @@ and provider database backup remain three distinct mechanisms.
 ## Cloud sustainability, local-only attachments and disaster recovery
 
 Existing healthy `salapiya-dev` Tokyo Supabase and PowerSync JP Development were
-reused for bounded synthetic checks. No10k fixture was uploaded; no provider reset,
+reused for bounded synthetic checks. No 10k fixture was uploaded; no provider reset,
 paid service, replacement project or keep-alive traffic was introduced.
-Read-only snapshot2026-10-28T04:34:57Z: database17,798,835B; Salapiya tables/indexes
-4,898,816B; storage buckets0/objects0; source connected, initial replication done,
-stream errors0, reserved active WAL56B. These are instant measurements, not monthly
-usage. P3 bounded command p95 was508ms; four-audience API documents33,661B and
-CDC resources28,625B exclude protocol/compression/reconnect overhead.
+Read-only snapshot 2026-10-28T04:34:57Z: database 17,798,835 B; Salapiya tables/indexes
+4,898,816 B; storage buckets 0/objects 0; source connected, initial replication done,
+stream errors 0, reserved active WAL 56 B. These are instant measurements, not monthly
+usage. P3 bounded command p95 was 508 ms; four-audience API documents 33,661 B and
+CDC resources 28,625 B exclude protocol/compression/reconnect overhead.
 
 [Supabase Free](https://supabase.com/pricing) and
 [PowerSync Free](https://powersync.com/pricing) quotas/inactivity were rechecked.
-The runbook records limits, monitoring and proposed alert thresholds.20 people
-with2 devices estimate40 concurrent clients before extra devices, near the50
+The runbook records limits, monitoring and proposed alert thresholds. 20 people
+with 2 devices estimate 40 concurrent clients before extra devices, near the 50
 client limit. Local bytes/action cannot certify server sizing: receipts/indexes,
 group projections, backups and full downloads all consume capacity. Monthly billed
 egress/sync, hosted PowerSync bytes/peak clients and retention growth remain NE.
@@ -437,10 +437,15 @@ This does not certify cloud file safety or close lifecycle/retention G8.
 ## CI, reproducibility and artifacts
 
 `salapiya-flutter.yml` now covers Salapiya feature branches, serial unit tests,
-icon verification and a Node24.21 isolated backend migration/parity job. No hosted
+icon verification and a Node 24.21 isolated backend migration/parity job. No hosted
 credentials, signing keys, paid native runners or screenshot targets were added.
-The10k probe is opt-in under `tool/`, not a long routine CI gate. A remote workflow
-result is recorded separately from successful local commands.
+The 10k probe is opt-in under `tool/`, not a long routine CI gate. The first remote run
+passed locked resolution, format, analysis, **219 Flutter tests** (including the
+new SQLite FULL test), and all **43 backend tests**. Its icon step exposed
+platform-dependent PNG compression in the Windows ICO. The verifier now checks
+every committed SHA-256 and exact regenerated RGBA pixels at every size; it does
+not require different platform zlib builds to emit identical compressed bytes.
+No icon pixels or geometry changed. Final remote workflow status follows below.
 
 Runbook commands cover locked resolution, format/analysis/regression, native
 production builds, Inno staging, secure interactive Android signing, resource
@@ -458,7 +463,7 @@ PENDING_ARTIFACTS
 | P6-03 | High lifecycle/data | Complete A12/A28 device/account deletion, stale restore/tombstone/revocation, sole-owner recovery and retained shared evidence procedures/drills. Dedicated identities and safe recovery targets needed. |
 | P6-04 | High recovery/operations | Independent hosted backup, retention agreement and isolated restore/resync/deletion-register drill. Operator encrypted storage and independent target needed. |
 | P6-05 | Mandatory G6 | Human Narrator/TalkBack and physical device/OS inventory/acceptance; emulator/component evidence cannot replace them. |
-| P6-06 | Mandatory G6/G7 | Full mixed-domain10k capacity, release cold start, actual low storage/failed upgrade and billed usage/concurrency/retention measurements. |
+| P6-06 | Mandatory G6/G7 | Full mixed-domain 10k capacity, release cold start, actual low storage/failed upgrade and billed usage/concurrency/retention measurements. |
 | P6-07 | High tooling advisory | Bundled administrative npm/undici advisories; effective upstream fix/review remains. Installed Flutter app does not contain npm. |
 | P6-08 | Resolved policy | Explicit owner approval of local-only attachments, independent original-file backup; cloud-byte adapter deferred. |
 | P6-09 | Fixed defect | Broad suite reproduced narrow Windows toolbar overflow; constrained Create control fixed. Verification below. |

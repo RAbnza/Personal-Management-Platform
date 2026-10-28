@@ -1,6 +1,6 @@
 """Export native resources from the approved PNG; never capture a UI surface.
 
-Requires Pillow 11.2.1. Run from any directory; --check verifies committed bytes.
+Requires Pillow 11.2.1. --check verifies committed hashes and regenerated pixels.
 The Android monochrome derivative is explicitly authorized by the P6 assignment.
 """
 import argparse
@@ -66,10 +66,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    for name, data in generate().items():
+    generated = generate()
+    manifest_name = "assets/branding/native-icons.json"
+    if args.check:
+        committed = json.loads((APP / manifest_name).read_text(encoding="utf-8"))
+        regenerated = json.loads(generated[manifest_name])
+        assert {k: v for k, v in committed.items() if k != "outputs"} == {
+            k: v for k, v in regenerated.items() if k != "outputs"
+        }, "Stale native icon metadata"
+        assert set(committed["outputs"]) == set(generated) - {manifest_name}
+    for name, data in generated.items():
         path = APP / name
         if args.check:
-            assert path.read_bytes() == data, f"Stale native icon: {name}"
+            if name == manifest_name:
+                continue
+            actual = path.read_bytes()
+            assert hashlib.sha256(actual).hexdigest() == committed["outputs"][name], f"Changed committed icon: {name}"
+            # Pillow wheels can use different zlib builds on Windows and Linux.
+            # Preserve strict pixel equality and committed byte hashes rather
+            # than requiring identical compression across those platforms.
+            expected_image = Image.open(io.BytesIO(data))
+            actual_image = Image.open(io.BytesIO(actual))
+            if name.endswith(".ico"):
+                assert actual_image.ico.sizes() == expected_image.ico.sizes()
+                pairs = [(actual_image.ico.getimage(size), expected_image.ico.getimage(size))
+                         for size in expected_image.ico.sizes()]
+            else:
+                pairs = [(actual_image, expected_image)]
+            for packed, expected in pairs:
+                assert packed.size == expected.size and packed.convert("RGBA").tobytes() == expected.convert("RGBA").tobytes(), f"Stale native icon pixels: {name}"
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)

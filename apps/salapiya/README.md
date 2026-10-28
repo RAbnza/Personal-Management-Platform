@@ -48,10 +48,10 @@ profiles and use `--no-uninstall` for native integration tests:
 dart format --output=none --set-exit-if-changed lib test integration_test tool
 flutter analyze --no-pub
 flutter test --no-pub --concurrency=1
-flutter test --no-pub --no-uninstall integration_test/p6_local_regression_test.dart -d windows
-flutter test --no-pub --no-uninstall integration_test/p6_local_regression_test.dart -d <actual-android-device-id>
-flutter build windows --no-pub
-flutter build apk --debug --no-pub
+flutter test --no-uninstall integration_test/p6_local_regression_test.dart -d windows
+flutter test --no-uninstall integration_test/p6_local_regression_test.dart -d <actual-android-device-id>
+flutter build windows
+flutter build apk --debug
 ```
 
 Heavy native runs share build assets; run them serially or in isolated validation

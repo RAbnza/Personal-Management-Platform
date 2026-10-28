@@ -1,6 +1,7 @@
 param(
   [Parameter(Mandatory=$true)][string]$Keytool,
   [Parameter(Mandatory=$true)][string]$AndroidBuildTools,
+  [string]$ApplicationDirectory,
   [switch]$WaitForChecks
 )
 # Run in a local interactive console. Never use Start-Transcript for this session.
@@ -15,6 +16,12 @@ catch [System.Threading.AbandonedMutexException] { $ownsSigningMutex = $true }
 if (-not $ownsSigningMutex) { throw 'Another Salapiya signing session is active. Finish or close that session before retrying.' }
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $app = Join-Path $repo 'apps/salapiya'
+if ($ApplicationDirectory) {
+  $app = [IO.Path]::GetFullPath($ApplicationDirectory)
+  $isolatedRoot = [IO.Path]::GetFullPath((Join-Path $repo 'out')) + [IO.Path]::DirectorySeparatorChar
+  if (-not $app.StartsWith($isolatedRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'An alternate application must be an isolated checkout inside this repository out directory.' }
+  if (-not (Test-Path -LiteralPath (Join-Path $app 'pubspec.lock')) -or -not (Test-Path -LiteralPath (Join-Path $app 'lib/main.dart'))) { throw 'Select the checked Salapiya application directory.' }
+}
 $signingDirectory = Join-Path $env:LOCALAPPDATA 'Salapiya/signing'
 $keystore = Join-Path $signingDirectory 'salapiya-private-release.p12'
 $alias = 'salapiya-private-release'
@@ -82,13 +89,27 @@ try {
   $env:SALAPIYA_UNSIGNED_STAGING = $null
   $env:JAVA_HOME = Split-Path (Split-Path $Keytool -Parent) -Parent
   $env:GRADLE_OPTS = "$previousGradleOptions -Dorg.gradle.daemon=false"
+  $out = Join-Path $app 'build/private-release'
+  New-Item -ItemType Directory -Force -Path $out | Out-Null
   $certificate = Join-Path $signingDirectory 'salapiya-private-release.cer'
   & $Keytool -exportcert -keystore $keystore -storetype PKCS12 -alias $alias -storepass:env SALAPIYA_STORE_PASSWORD -file $certificate
   if ($LASTEXITCODE -ne 0) { throw 'Could not unlock the selected signing identity.' }
   Push-Location $app
   try {
-    & flutter.bat build apk --release --no-pub --dart-define-from-file=build/p2-public-defines.json
-    if ($LASTEXITCODE -ne 0) { throw 'Android release compilation failed.' }
+    Write-Host 'Do not run another Flutter build/test in this checkout until signing finishes.'
+    $lockBefore = (Get-FileHash -LiteralPath (Join-Path $app 'pubspec.lock') -Algorithm SHA256).Hash
+    $previousErrorAction = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = 'Continue'
+      # Flutter 3.47 regenerates release-only plugin registrants during its pub
+      # phase. --no-pub can retain integration_test after a development run.
+      & flutter.bat build apk --release --dart-define-from-file=build/p2-public-defines.json 2>&1 |
+        ForEach-Object { $_.ToString() } |
+        Tee-Object -FilePath (Join-Path $out 'android-build.log')
+      $buildExit = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousErrorAction }
+    if ($buildExit -ne 0) { throw 'Android release compilation failed. Inspect build/private-release/android-build.log.' }
+    if ((Get-FileHash -LiteralPath (Join-Path $app 'pubspec.lock') -Algorithm SHA256).Hash -ne $lockBefore) { throw 'Dependency lock changed. Review it before certifying the release.' }
   } finally { Pop-Location }
   $apk = Join-Path $app 'build/app/outputs/flutter-apk/app-release.apk'
   $verification = & (Join-Path $AndroidBuildTools 'apksigner.bat') verify --verbose --print-certs $apk
@@ -97,8 +118,6 @@ try {
   $text = $verification -join "`n"
   if ($text -notmatch ('certificate SHA-256 digest:\s*' + $expected)) { throw 'APK is not signed by the selected owner certificate.' }
   if ($text -match 'Android Debug') { throw 'Debug certificate cannot certify a private release.' }
-  $out = Join-Path $app 'build/private-release'
-  New-Item -ItemType Directory -Force -Path $out | Out-Null
   $verification | Set-Content -LiteralPath (Join-Path $out 'android-signature.txt') -Encoding UTF8
   @{ alias=$alias; certificateSha256=$expected; apkSha256=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant(); signed=$true; inspectedAt=[DateTime]::UtcNow.ToString('o') } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $out 'android-signing.json') -Encoding UTF8

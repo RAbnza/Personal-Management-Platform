@@ -25,6 +25,8 @@ files.update((app / "build").glob("p3-*.log"))
 files.update((app / "build").glob("p4-*.log"))
 files.update((app / "build").glob("p5-*.log"))
 files.update((app / "build").glob("p6-*.log"))
+for extension in ("*.log", "*.txt", "*.json"):
+    files.update((app / "build/private-release").glob(extension))
 for configuration in ("Debug", "Release"):
     native = app / "build/windows/x64/runner" / configuration
     files.update(native.glob("*.exe"))
