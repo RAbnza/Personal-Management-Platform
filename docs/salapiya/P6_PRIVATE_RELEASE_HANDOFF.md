@@ -707,32 +707,43 @@ Windows signing/tooling choices and actual lifecycle/operational decisions. No
 routine technical permission, paid commitment or distribution is inferred.
 Local-only approval has already been received and is not requested again.
 
-### Git provenance after approved title correction
+### Git provenance after requested title corrections
 
-The owner explicitly authorized one protected `--force-with-lease` push to rename
-the three initial P6 titles to `feat(salapiya): ...`. Only those three existing
-messages changed; the two later checkpoint messages are unchanged. All five
-replacement commits preserve their original file trees, author/committer identity
-and dates. Their parent chain still begins at the unchanged predecessor
-`a2f68978a334b8076812f0c643c5377303343808`. The two descendant SHAs change because
-their parents changed. A separate documentation commit records this correction.
+The owner first authorized one protected `--force-with-lease` push for the three
+initial P6 titles, then requested the same `feat(salapiya): ...` convention for
+these three predecessor titles: Android Overview baseline documentation, Android
+Overview polish, and the native workspace/onboarding redesign. This additional
+rewrite changes only those three existing messages. The six P6 descendant
+messages remain unchanged; all nine replacement commits preserve file trees,
+author/committer identity and dates. Descendant SHAs change with their parents.
+The unchanged boundary is the P5 checkpoint
+`5ed1785af22b250074da849f399498674ed2785a`.
 
-Historical tested source/CI SHAs above remain the exact evidence references; use
-these equivalent conventional-history commits when navigating the branch:
+The original verified P6 starting tree at
+`a2f68978a334b8076812f0c643c5377303343808` is preserved exactly in its renamed
+counterpart below. Historical tested source/CI SHAs above remain exact evidence
+references. These are their current conventional-history equivalents:
 
-| Original tested/checkpoint SHA | Conventional-history SHA (identical tree) |
+| Original tested/checkpoint SHA | Current conventional-history SHA (identical tree) |
 |---|---|
-| `d189eb7848963f0afaf33a29b67548b9a09e78be` | `cced46e1edc9dd4edc32d3e8bca20adc4ff41001` |
-| `f26d014ad2630ac2a12747606422ad8820072129` | `9607b0652cdcb88b5f47e9ee5ec9febbbb3f70d7` |
-| `f4050eb60cf82368d98fbfe8064cd99811cc6cb8` | `a6f881175db987ffaf28f5801a135deeb6c06e4e` |
-| `2f9a39e65c450e8225f88e9e022a787ea84e1447` | `94211d2bc27990c56b064f0cf056241d6bed4de2` |
-| `e9ef336ab9218efc800bb814c1f94593d6b33309` | `af627f8113fc7551c16f387640c531915ea4c967` |
+| `0b29fa38c1dcd59bc71a8342397b9f40ae9646bd` | `a624282331a902f8a6a829a7c023aa8ed077d57d` |
+| `c3814631042137609bb71aad4d7df6b7aff4ac6f` | `446636fd1d75000dc42320d3dd5f23adcc338917` |
+| `a2f68978a334b8076812f0c643c5377303343808` | `05398c1fdd9c1fc13b40694c6d5696fdcd2a7daf` |
+| `d189eb7848963f0afaf33a29b67548b9a09e78be` | `5bfb448f61e358b22f9e7b681aac5b0db5422c34` |
+| `f26d014ad2630ac2a12747606422ad8820072129` | `718c3021590e839b9a09e2aa736fb7ef795042dd` |
+| `f4050eb60cf82368d98fbfe8064cd99811cc6cb8` | `1daefaba93494349a546c590a44352d0e5a2a6ed` |
+| `2f9a39e65c450e8225f88e9e022a787ea84e1447` | `a03ece67d0b7a5782b19059093d03b1cc14d8403` |
+| `e9ef336ab9218efc800bb814c1f94593d6b33309` | `65561f80f917f74af3e361415a52d2f6086bdf57` |
+| `d3193c1e8dafac9de3c1091abe9d0ad23fbaa20a` | `148a0832c8a621adf80a2b3b37cf1ed4a4e3724c` |
 
-The push lease requires the previously verified remote tip
-`e9ef336ab9218efc800bb814c1f94593d6b33309`; any unexpected remote advancement aborts
-the update. Application payloads, artifact hashes, financial history and release
-classification remain unchanged. No application test is reclassified merely
-because its source commit received a conventional message.
+Each correction has a separate documentation follow-up. The additional push lease
+requires the previously verified remote tip
+`d3193c1e8dafac9de3c1091abe9d0ad23fbaa20a`; unexpected advancement aborts the update.
+The first correction was leased against
+`e9ef336ab9218efc800bb814c1f94593d6b33309`. Only the current P6 branch is updated.
+Application payloads, artifact hashes, financial history and release classification
+remain unchanged. Existing test evidence is preserved by the tree comparisons;
+commit-message changes do not reclassify any application test.
 
 ## Release decision
 
