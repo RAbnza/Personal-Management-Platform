@@ -55,6 +55,8 @@ class Win32Window {
   // Return a RECT representing the bounds of the current client area.
   RECT GetClientArea();
 
+  bool SetCaptionTheme(bool dark, COLORREF background, COLORREF text, COLORREF border);
+
  protected:
   // Processes and route salient window messages for mouse handling,
   // size change and DPI. Delegates handling of these to member overloads that
@@ -88,7 +90,11 @@ class Win32Window {
   static Win32Window* GetThisFromHandle(HWND const window) noexcept;
 
   // Update the window frame's theme to match the system theme.
-  static void UpdateTheme(HWND const window);
+  void UpdateTheme(HWND const window);
+  bool caption_theme_applied_ = false;
+  bool app_theme_set_ = false;
+  bool app_dark_ = false;
+  COLORREF caption_color_ = 0, caption_text_ = 0, caption_border_ = 0;
 
   bool quit_on_close_ = false;
 

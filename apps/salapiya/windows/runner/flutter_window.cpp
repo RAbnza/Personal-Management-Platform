@@ -80,6 +80,26 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  window_chrome_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "dev.salapiya/window_chrome",
+      &flutter::StandardMethodCodec::GetInstance());
+  window_chrome_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() != "theme") { result->NotImplemented(); return; }
+    const auto args = call.arguments() ? std::get_if<flutter::EncodableList>(call.arguments()) : nullptr;
+    if (!args || args->size() != 4 || !std::holds_alternative<bool>((*args)[0])) {
+      result->Error("invalid_theme", "Expected caption theme colors."); return;
+    }
+    COLORREF colors[3];
+    for (size_t i = 1; i < 4; ++i) {
+      const auto value = std::get_if<int32_t>(&(*args)[i]);
+      if (!value || *value < 0 || *value > 0xFFFFFF) {
+        result->Error("invalid_color", "Expected an RGB color."); return;
+      }
+      colors[i-1] = RGB((*value >> 16) & 255, (*value >> 8) & 255, *value & 255);
+    }
+    result->Success(flutter::EncodableValue(
+        SetCaptionTheme(std::get<bool>((*args)[0]), colors[0], colors[1], colors[2])));
+  });
   // Narrow permission-status/lifecycle adapter. The maintained notification
   // plugin owns registration, scheduling, cancellation and activation.
   notification_status_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
@@ -188,6 +208,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  window_chrome_ = nullptr;
   notification_status_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;

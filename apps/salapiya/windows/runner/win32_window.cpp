@@ -213,6 +213,11 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_SETTINGCHANGE:
+    case WM_THEMECHANGED:
+      UpdateTheme(hwnd);
+      return DefWindowProc(hwnd, message, wparam, lparam);
+
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;
@@ -272,17 +277,38 @@ void Win32Window::OnDestroy() {
   // No-op; provided for subclasses.
 }
 
-void Win32Window::UpdateTheme(HWND const window) {
-  DWORD light_mode;
-  DWORD light_mode_size = sizeof(light_mode);
-  LSTATUS result = RegGetValue(HKEY_CURRENT_USER, kGetPreferredBrightnessRegKey,
-                               kGetPreferredBrightnessRegValue,
-                               RRF_RT_REG_DWORD, nullptr, &light_mode,
-                               &light_mode_size);
+bool Win32Window::SetCaptionTheme(bool dark, COLORREF background,
+                                  COLORREF text, COLORREF border) {
+  app_theme_set_ = true;
+  app_dark_ = dark;
+  caption_color_ = background;
+  caption_text_ = text;
+  caption_border_ = border;
+  UpdateTheme(window_handle_);
+  return caption_theme_applied_;
+}
 
-  if (result == ERROR_SUCCESS) {
-    BOOL enable_dark_mode = light_mode == 0;
-    DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                          &enable_dark_mode, sizeof(enable_dark_mode));
-  }
+void Win32Window::UpdateTheme(HWND const window) {
+  if (!window) return;
+  DWORD light_mode = 1;
+  DWORD size = sizeof(light_mode);
+  RegGetValue(HKEY_CURRENT_USER, kGetPreferredBrightnessRegKey,
+              kGetPreferredBrightnessRegValue, RRF_RT_REG_DWORD, nullptr,
+              &light_mode, &size);
+  HIGHCONTRAST contrast = {sizeof(HIGHCONTRAST)};
+  SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0);
+  const bool high_contrast = (contrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
+  BOOL dark = !high_contrast && (app_theme_set_ ? app_dark_ : light_mode == 0);
+  const auto dark_result = DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+  // Windows 11 caption colors; earlier Windows versions simply retain native
+  // defaults. Never change window styles, hit testing, DPI or caption geometry.
+  const COLORREF system_default = 0xFFFFFFFF;
+  const COLORREF background = app_theme_set_ && !high_contrast ? caption_color_ : system_default;
+  const COLORREF text = app_theme_set_ && !high_contrast ? caption_text_ : system_default;
+  const COLORREF border = app_theme_set_ && !high_contrast ? caption_border_ : system_default;
+  const auto caption_result = DwmSetWindowAttribute(window, 35 /* DWMWA_CAPTION_COLOR */, &background, sizeof(background));
+  const auto text_result = DwmSetWindowAttribute(window, 36 /* DWMWA_TEXT_COLOR */, &text, sizeof(text));
+  const auto border_result = DwmSetWindowAttribute(window, 34 /* DWMWA_BORDER_COLOR */, &border, sizeof(border));
+  caption_theme_applied_ = SUCCEEDED(dark_result) && SUCCEEDED(caption_result) &&
+      SUCCEEDED(text_result) && SUCCEEDED(border_result);
 }

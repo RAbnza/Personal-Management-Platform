@@ -6,6 +6,7 @@ import 'design_system/theme.dart';
 import 'gallery/gallery.dart';
 import 'gallery/settings.dart';
 import 'app/shell.dart';
+import 'app/window_chrome.dart';
 import 'prototype/scenarios.dart';
 import 'local/local_profile_view.dart';
 import 'local/local_runtime.dart';
@@ -116,7 +117,7 @@ class _SalapiyaAppState extends State<SalapiyaApp> {
                   production:
                       widget.production ||
                       (widget.session?.production ?? false),
-                  child: child!,
+                  child: WindowChrome(child: child!),
                 ),
               ),
             ),
