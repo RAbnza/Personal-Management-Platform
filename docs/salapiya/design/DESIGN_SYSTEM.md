@@ -2,6 +2,23 @@
 
 > **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
 
+## Post-P6 presentation additions (29 October 2026)
+
+The [post-P6 handoff](../POST_P6_PRESENTATION_POLISH_HANDOFF.md) adds shared
+`ReviewRow`, `ReviewNotes`, `FormStatus`, `FormSyncStatus` and `FormEvidence`.
+Use semantic success/error/warning roles with named status and icon; local save,
+remote acceptance, downloaded reconciliation and business confirmation are separate.
+The final form step is Result, including failed/uncertain outcomes. Technical IDs
+and exact financial evidence are selectable disclosures; consequential amounts,
+dates, source changes and coverage limitations stay visible. Financial review reads
+typed validated plans and retains credit/debit meanings and correction evidence.
+
+Android Overview measures full exact amounts, uses 26-to-18 logical-pixel amount
+sizes with system scaling, and switches to one column when needed. Extreme values
+use an explicit horizontal-scroll hint, never abbreviations or truncated centavos.
+Windows metric typography remains unchanged. Native Windows caption colors follow
+the resolved canvas/text/divider tokens; high contrast uses system colors.
+
 ## Current implemented rules
 
 - Use the existing Geist family and semantic `CraftTheme`/`ThemeData`; no new font, asset generation or dependency was introduced.

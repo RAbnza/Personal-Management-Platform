@@ -2,6 +2,26 @@
 
 > **Presentation baseline superseded - 27 October 2026.** The [final UI/UX redesign handoff](../FINAL_UI_UX_REDESIGN_HANDOFF.md) is the current implementation baseline for owner review and subsequent P6 work. Its neutral workspace, compact Windows sidebar/toolbar, Android navigation and shared form system replace D0-D5 presentation choices. Historical approvals and screenshots below remain context, not instructions to restore the former design. P0-P5 financial, identity, privacy, persistence and synchronization contracts remain authoritative. This change does not start or certify P6.
 
+## Post-P6 review and native caption (29 October 2026)
+
+See the [post-P6 handoff](../POST_P6_PRESENTATION_POLISH_HANDOFF.md). Reviewed
+forms retain their controllers, draft/exit guards and original-result recovery.
+Shared forms still close their route where appropriate. Result panels announce
+truthful local, pending, failed and uncertain states; technical evidence expands
+without replacing required review or recovery. Review rows stack at constrained
+width/large text, and completed forms give Done clear priority.
+
+Android Overview chooses card columns from measured exact amounts and actual text
+scale, retaining matched row heights. It never shrinks below 18 logical pixels;
+full-width extreme values can scroll horizontally with a visible hint.
+
+Windows retains its native caption, icon, system menu, controls, window styles,
+resize/hit testing and DPI handling. A small DWM adapter applies app-theme colors
+without a second Flutter title bar or window-management dependency. Standard OS
+geometry/font and fallback remain intentional. Snap/keyboard/multiple-monitor and
+human accessibility acceptance remain separately required; compilation and native
+state probes do not close P6's blocked release gates.
+
 ## Current implemented behavior
 
 Windows uses a theme-aware 204-wide sidebar at sufficient width (1000 logical pixels), a 76-wide collapsed rail, page-level actions and a top Create menu. There is no Windows floating bottom quick-action tray, including constrained Windows windows. The sidebar keeps all five destinations and profile/settings access.
