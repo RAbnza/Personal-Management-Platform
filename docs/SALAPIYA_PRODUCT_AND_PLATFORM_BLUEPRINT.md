@@ -744,3 +744,49 @@ Official documentation checked during the October 19, 2026 workshop/doc preparat
 This version records the approved workshop direction and final Salapiya name. It adds no application code, schema migration, cloud service, logo, subscription or deployment. Repository inspection and official documentation checks informed the plan; native builds, sync prototypes, security tests, physical-device checks and restore drills remain future work at the named gates.
 
 The intended next step is a separately assigned architecture feasibility milestone with concrete evidence, followed by the complete approved financial and Life release scope.
+
+## 25. Post-P6 approved operational refinements (29 October 2026)
+
+The owner approved the following private-release policies in the release-closure
+assignment. They refine the earlier deferred operational decisions without changing
+financial semantics, private/group ownership or the approved presentation:
+
+- Windows trusted signing is unpaid/deferred. Complete feasible unsigned staging
+  engineering; trusted signing remains an original mandatory gate, with no release
+  scope waiver, SmartScreen/trust-store bypass or signing purchase authorized.
+- Backup retention is seven recent generations and four weekly generations, with
+  two independent protected destinations, pre-upgrade/maintenance backups and
+  periodic isolated restores. Permanent destinations are not yet selected. Local
+  storage, portable archives, hosted PostgreSQL exports, sync and original local
+  attachment bytes are five separate mechanisms.
+- Local removal, provider-session/device revocation, connected deletion, group
+  departure and authorized ownership transfer are separate operations. A revoked
+  session/old archive cannot restore cloud authority; offline copies cannot be
+  remotely erased. Deletion removes unrelated private records while retaining
+  minimum necessary shared bills, settlements, participant intervals and audit
+  evidence belonging to peers. Current independent deletion/revocation state is
+  mandatory before bringing an old database restore online.
+- Same-Google-identity owner recovery and explicit authorized transfer are allowed.
+  Permanent sole-owner identity loss requires separately verified authority and a
+  reviewed procedure; no automatic takeover, impersonation or unrestricted recovery
+  backdoor is permitted. An unimplemented/unrehearsed privileged path stays blocked.
+- Prepare a separate free-tier pilot for the owner and brothers only, after actual
+  entitlements/costs and OAuth/operational prerequisites are verified. No automatic
+  real-data migration or paid activation. Friends are a later expansion decision.
+- Operator thresholds are 70% monitor/review, 85% investigate and 90% pause audience
+  expansion for each relevant quota. They are policies, not provider limits. No
+  artificial keep-alive traffic or assumed unlimited free capacity.
+- Advertise only specific device/OS combinations with actual acceptance evidence.
+  Physical Android and human Narrator/TalkBack are distinct from emulator/widgets.
+- Preserve the existing owner-backed-up Android keystore and certificate. Do not
+  generate a replacement, rotate it or request signing passwords in chat.
+- Initial private-release original attachment bytes remain local-only, encrypted
+  and unscanned. Metadata availability must stay separate from bytes; independent
+  protected originals and exact-original reselection remain necessary. Cloud byte
+  synchronization/scanning is deferred for this private-release boundary.
+
+Current implementation/evidence and remaining gates are recorded in
+[post-P6 release gate closure](salapiya/POST_P6_RELEASE_GATE_CLOSURE_HANDOFF.md).
+The [operations guide](salapiya/PRIVATE_RELEASE_OPERATIONS.md) specifies retention,
+security, environment pairing and fail-closed restore procedures. These policy
+approvals do not themselves provision storage/services or certify release readiness.

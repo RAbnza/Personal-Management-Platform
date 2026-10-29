@@ -1,20 +1,37 @@
 # Salapiya private release operations
 
-Status: P6 staging procedures, 28 October 2026 (Asia/Manila). The central decision
-and executed evidence are in [P6 handoff](P6_PRIVATE_RELEASE_HANDOFF.md).
-These procedures do not authorize distribution. No public store release or paid
-service is selected. Source version is `0.6.0+7`; retain
-`dev.salapiya.salapiya`, callback `dev.salapiya.p0://auth/callback`, existing
-Windows company/internal names and notification AUMID/CLSID.
+Current post-P6 procedures, 29 October 2026 (Asia/Manila). Version `0.6.1+8`.
+The evidence and release decision are in [release gate closure](POST_P6_RELEASE_GATE_CLOSURE_HANDOFF.md).
+The original complete Windows + Android release remains **BLOCKED** until its mandatory
+gates pass. These procedures do not authorize distribution, paid services or migration
+of real records. Historical [P6](P6_PRIVATE_RELEASE_HANDOFF.md) results remain unchanged.
 
-## Build, signing and installation
+## Build and environment boundaries
 
-Use Flutter 3.47.7 / Dart 3.13.5, Node 24.21.0, pinned lockfiles and the tested
-Windows/Android toolchains in the handoff. From the backend directory, run
-`npm ci --ignore-scripts`, then `node prepare-p2.mjs`. This creates ignored public
-client defines; it must never contain sessions, signing passwords, database keys
-or administrator credentials. Builds against this configuration connect to the
-existing development service, **not an isolated real-data pilot**.
+Use the pinned Flutter 3.47.7 / Dart 3.13.5 toolchain and committed lockfiles.
+Preserve `dev.salapiya.salapiya`, `dev.salapiya.p0://auth/callback`, Windows
+`dev.salapiya` / `Salapiya`, AppId `{6345880B-55F4-478B-BB8C-60D67321621C}`,
+notification AUMID `Salapiya.Private.Development` and CLSID
+`{a64517d4-7ea1-49e7-bad5-c3d00db31c1d}`. Naming does not certify a pilot.
+
+From `services/salapiya/p0`, run `npm ci --ignore-scripts` and `node prepare-p2.mjs`.
+This guarded command writes ignored **public** development client defines. Never add
+sessions, OAuth secrets, service-role/database credentials or signing passwords.
+The normal app validates the paired Supabase project and PowerSync instance:
+`development` accepts only the existing development pair; `pilot` requires explicit
+`SALAPIYA_ENVIRONMENT=pilot`, `SALAPIYA_EXPECTED_PROJECT` and
+`SALAPIYA_EXPECTED_SYNC_INSTANCE`, both different from development, with matching HTTPS
+URLs. Unknown or mixed environments fail closed for connection; local use remains available.
+
+No pilot has been provisioned. The initial audience is the owner and brothers only.
+Verify actual subscription entitlements, usage and free project/instance headroom in both
+provider accounts before creation. Public pricing alone is insufficient. Confirm separate
+OAuth provider/callback configuration, administrator credentials, database migrations,
+PowerSync connection/streams and protected backup storage. Never point fixture scripts at
+pilot records or copy development identities/data into it. Do not migrate personal data
+automatically. Keep real use local-only with independently tested protected archives until
+the separate pilot and mandatory release gates are verified. Trusted friends require a
+later audience-expansion decision.
 
 From `apps/salapiya`:
 
@@ -26,223 +43,276 @@ flutter test --no-pub --concurrency=1
 flutter build windows --dart-define-from-file=build/p2-public-defines.json
 ```
 
-Run native builds/tests serially within each checkout. Flutter 3.47 filters
-development-only plugins while regenerating platform tooling during the build
-pub phase. Keep the locked resolution above, allow that phase for native builds,
-and review any lockfile change. Do not reuse `--no-pub` after switching between
-integration/debug and release configurations. Use a separate validated worktree
-for concurrent platforms; never share generated release caches.
+Run native builds/tests serially in one checkout. Allow Flutter's pub/tooling regeneration
+when switching debug/integration and normal release entry points; do not reuse stale
+`--no-pub` registrants for final releases. Retain earlier versioned packages. Rebuild
+normal `lib/main.dart`; integration binaries are not distribution artifacts. Preserve
+immutable original IDs and schema/archive compatibility. No web migration runs in SQLite.
+No screenshots or image goldens belong in this release-closure workflow.
 
-Windows staging: `scripts/salapiya/package-windows.ps1 -BundleOnly` packages the
-complete Release folder, including Flutter data and native plugins. The ZIP is
-unsigned staging and is not an installer. The Inno Setup 6.7.3 recipe is
-`apps/salapiya/windows/packaging/salapiya.iss`. Set `SALAPIYA_ISCC` to a locally
-verified compiler and run the wrapper without `-BundleOnly` to compile it.
-Compiler download: [official Inno Setup page](https://jrsoftware.org/isdl.php).
-The 6.7.3 installer release SHA-256 reported by the official GitHub release is
-`9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732`;
-verify its Authenticode signature/publisher independently. Installing the compiler
-was rejected by automatic approval review in this environment ("blocked by
-policy"); installer compilation and execution are unexecuted.
+## Windows staging installer
 
-The per-user installer preserves app-support data, registers the existing callback,
-adds Start/optional desktop shortcuts, and refuses a lower installed version/build.
-Its signature configuration is deliberately staging-only. Before release, use an
-owner-approved trusted signing identity to sign the application executable and
-installer, enable signed uninstall support and verify timestamp/signature with
-the Windows SDK SignTool and `Get-AuthenticodeSignature`. Retain the full bundle;
-do not copy only `salapiya.exe`. Verify supported machines have the required VC++
-runtime. Do not disable SmartScreen or add certificates to a trust store as a
-test shortcut. [Microsoft signing guidance](https://learn.microsoft.com/en-us/windows/msix/package/signing-package-overview)
-distinguishes trusted production signing from self-signed development. No
-certificate purchase or trust-store change is authorized here.
-
-Android release signing uses four process environment variables:
-`SALAPIYA_KEYSTORE` (absolute external path), `SALAPIYA_STORE_PASSWORD`,
-`SALAPIYA_KEY_ALIAS`, `SALAPIYA_KEY_PASSWORD`. Supply **all four**. Obtain passwords
-from an owner-controlled password manager in the local build session; never pass
-them in shell history, chat, Dart defines, CI logs or Git. The Gradle release
-task fails without credentials. Keep the keystore outside the repository and
-retain encrypted, separately stored recovery copies and certificate fingerprint.
-Use the same signing certificate for every update. A first private release cannot
-update a development APK signed by a different debug certificate; do not uninstall
-an existing profile to get past this error. First demonstrate portable recovery
-on an isolated device before planning any explicit owner-authorized transition.
-[Android signing requirements](https://developer.android.com/studio/publish/app-signing).
-
-The owner authorized key creation during P6. Use
-`scripts/salapiya/sign-android-interactive.ps1 -Keytool <Android-Studio-JDK-keytool>
--AndroidBuildTools <installed-build-tools>` in a local interactive console.
-For a validated isolated worktree inside `out`, pass
-`-ApplicationDirectory <worktree/apps/salapiya>`; place only public client defines
-in that application build directory. The same external keystore remains in use.
-It permits one signing session at a time, creates a protected per-user directory
-outside Git, preserves an existing key,
-uses RSA 3072/SHA256withRSA/PKCS12 with 10,000-day validity, and requests an
-owner-chosen password through PowerShell's masked SecureString prompt, with
-confirmation before creating a key. Asterisks provide typing feedback. It passes
-the password to **keytool** through a temporary process environment variable,
-sets only process environment variables, builds without a persistent Gradle daemon,
-clears them afterward and compares the APK certificate digest with the exported
-public certificate. It generates no password and never puts one in argv/config.
-For updates, pass `-ExpectedCertificateSha256
-d45ef96f19ce9e9df9c23711bc9f843b2bb34350352f06aba347187980dc787e`.
-The script rejects a mismatched key before compiling and retains public alias and
-certificate metadata beside the external keystore; subsequent runs also check
-that identity record. Back up this public record with the key. Never replace the
-keystore or edit the identity record to bypass a mismatch.
-No transcript should be enabled. The alias is `salapiya-private-release` and the
-owner-controlled location is `%LOCALAPPDATA%\Salapiya\signing\salapiya-private-release.p12`.
-Preserve this keystore and password separately in two encrypted backup locations;
-verify a recovery copy using keytool locally. Loss of this identity can prevent
-future updates. Do not send the file/password to chat or commit it.
+The per-user Inno Setup 6.7.3 compiler was installed through the normal winget source.
+Its Authenticode signature must validate. The recipe is
+`apps/salapiya/windows/packaging/salapiya.iss`; its corrected GUID syntax preserves the
+same toast CLSID. Version checks use suppressible errors so unattended downgrade tests
+reject safely. App support/key directories are deliberately absent from uninstall deletion.
 
 ```powershell
-# With the four environment variables securely provisioned:
-flutter build apk --release --dart-define-from-file=build/p2-public-defines.json
-# Verify with the installed Android build-tools apksigner:
-apksigner verify --verbose --print-certs build/app/outputs/flutter-apk/app-release.apk
+# Repository root, after the normal Windows release build:
+.\scripts\salapiya\package-windows.ps1 -Compiler "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
 ```
 
-Reject a debug certificate, unexpected package ID/version or missing signature.
-For packaging inspection only, setting `SALAPIYA_UNSIGNED_STAGING=true` explicitly
-permits an **unsigned** optimized APK. This cannot pass signed-release acceptance
-or install as an update. Clear that environment variable after the staging build.
-Debug/emulator acceptance also cannot certify a release APK.
+The wrapper validates version, complete Flutter/native/VC++ runtime payload and absence of
+development kernel/test-plugin assets. ZIP and installer are **UNSIGNED STAGING**. An
+unsigned or self-signed package is not a publicly trusted signed release. Do not buy a
+certificate, activate paid signing, disable SmartScreen or alter trust stores. Trusted
+Windows signing remains an owner-deferred original mandatory gate; no scope waiver exists.
 
-Before any real update: create a portable encrypted backup and independently test
-its recovery; record package/certificate/version hashes; retain the previous
-installer and compatible archive; install a higher version **without uninstall**;
-reopen and compare exact profile/financial/Life IDs, original pending envelopes
-and receipts; exercise callback/notifications/files; restart and repeat the
-comparison. On failure preserve database/WAL/SHM, activation descriptor and keys.
-Do not force a downgrade or reset a profile. Android's normal package manager
-rejects lower version codes; never use `adb install -d` as a release procedure.
-P6 verified an ordinary same-certificate Android build 6 to 7 update on an
-isolated API 37 emulator, with exact cash/spending preserved and ordinary downgrade
-rejected. Pending connected envelopes, compatible backups and interrupted updates
-remain unverified in that signed package. Windows installed updates remain open.
+`test-windows-installer.ps1` performs real fresh baseline installation, package upgrade,
+payload comparison, ordinary downgrade rejection and uninstallation in a new directory
+under repository `out`. It refuses an existing installed AppId, preserves the original
+callback/shortcuts and verifies unchanged production profile/key bytes. It does not launch
+an unknown owner's profile. A reconstructed installer for the retained P6 build-7 bundle
+is an update baseline; it is not a historically distributed P6 installer. Complete
+synthetic-profile installed upgrades, failure/interruption, cold activation, notifications
+and trusted signing still require their explicit evidence.
+The final local staging run installed/compared all 49 payload files, upgraded to 0.6.1+8,
+rejected a downgrade, uninstalled and verified protected profile/key bytes unchanged.
 
-## Portable backup and recovery
+## Android signing and updates
 
-Cloud synchronization, portable archives and hosted database backups have different
-purposes. Sync copies accepted state; it is not an independent historical backup.
-The app's portable archive contains private commands/drafts/preferences and declared
-Life/financial metadata, encrypted with a separately generated recovery secret.
-It does **not** contain OS keys, sessions, group authority, notification permissions
-or original attachment bytes. Retain original financial and Career documents
-independently; an archive alone cannot recover them. Do not call metadata a file
-backup. Restore originals only after exact size/checksum verification.
+Use the **existing** owner-controlled PKCS12 key:
+`%LOCALAPPDATA%\Salapiya\signing\salapiya-private-release.p12`, alias
+`salapiya-private-release`. Approved SHA-256 certificate:
+`d45ef96f19ce9e9df9c23711bc9f843b2bb34350352f06aba347187980dc787e`.
+Never generate a replacement, rotate it or edit its identity record to bypass a mismatch.
+The owner has backed up the key and uses a password manager; do not request passwords in chat.
 
-Save the archive and recovery secret in separate owner-controlled locations. A
-recommended pilot policy, **pending owner agreement**, is a backup after meaningful
-changes and before each update, with seven recent and four weekly generations on
-two independent storage locations. Quotas/privacy determine actual retention.
-Periodically test a fresh-profile restore using only archive plus secret, compare
-exact command/source IDs and balances, and verify wrong-secret/corrupted archives
-fail without activating an empty replacement. Never test by removing a real
-profile's key. A wrong/missing protected descriptor is a recovery condition, not
-permission to create another empty database.
+Run `scripts/salapiya/sign-android-interactive.ps1` in a local interactive PowerShell console,
+with the installed JDK `-Keytool` and Android SDK `-AndroidBuildTools` paths. The updated
+workflow refuses a missing existing key, uses masked input and process-only environment
+variables, verifies the certificate **before** compiling and checks the APK signature
+against it. Never enable a transcript. Do not pass passwords in argv, Dart defines, CI,
+logs or Git. `-WaitForChecks` is an assignment-local coordination option: use a new verified
+signing-ready marker after checks, never an old marker as fresh evidence.
 
-Connected restores hold old intent for current authenticated original-receipt
-review and current downloads. Do not re-enqueue an accepted action under a fresh
-ID or overwrite newer cloud history. Reauthentication is necessary for current
-group authority; an old archive cannot grant removed membership. Restore to a
-fresh isolated profile/device, never merge into an active private database.
+The four secure build variables remain `SALAPIYA_KEYSTORE`, `SALAPIYA_STORE_PASSWORD`,
+`SALAPIYA_KEY_ALIAS`, `SALAPIYA_KEY_PASSWORD`. Supply all four or none. Release builds fail
+without them unless the explicit `SALAPIYA_UNSIGNED_STAGING=true` diagnostic option is used;
+that output cannot pass signed acceptance. Clear it afterward. Normal owner signing saves
+versioned logs, public signature metadata and a uniquely named retained APK under
+`build/private-release/0.6.1-8/`, preserving P6 builds 6/7. Credentials are cleared afterward.
 
-The operator must also establish encrypted off-site PostgreSQL logical backups,
-include the Salapiya schemas, receipts, entitlements, migrations and required
-roles/auth relationships, and demonstrate restore to an **isolated** PostgreSQL
-instance. Keep provider secrets out of command arguments/logs. Validate RLS,
-grants, receipt uniqueness and a bounded independent client resync after restore.
-Do not restore into the live development/pilot database as a drill. No hosted
-restore drill was performed in P6. Supabase Free does not include automatic
-database backups; its [backup guide](https://supabase.com/docs/guides/platform/backups)
-recommends independent exports and explains that database backups exclude object
-bytes. A provider export is sensitive data, not a repository artifact.
+Before updating any real device: test an independently keyed encrypted archive restore;
+retain the previous package and archive; verify package/certificate/version hashes; install
+higher version code **without uninstall**; compare financial/Life IDs, pending envelopes,
+accepted receipts, exact totals and backup compatibility after restart. Never use
+`adb install -d`, replace the signing key or uninstall a real profile to force success.
+An emulator update is not physical-phone acceptance. The owner's assisted checklist is in
+the closure handoff; do not advertise untested Android/ARM64 or OS compatibility.
+The final build 7-to-8 release-emulator update preserved UID and exact financial/Life
+IDs/payloads; a fresh temporary Android user also activated the build-7 archive with its
+separate OS keystore and re-exported matching records. These local-only archive results do
+not certify nonempty connected pending/accepted receipts or interrupted updates.
 
-## Service operation and incidents
+## Local profile, device and account lifecycle
 
-The owner/operator controls Supabase, Google OAuth, PowerSync and signing keys.
-Application group ownership never grants provider administration or private
-ledger access. Before admitting real users, establish an isolated pilot boundary
-or approve and document a safe separation strategy. Existing hosted acceptance
-scripts deliberately append to dedicated synthetic profiles; **never point them
-at a pilot dataset**. Do not reset hosted resources, prune immutable receipts,
-clear replication slots or create keep-alive traffic to make a check pass.
+These are separate operations in Profile / Devices:
 
-Read-only diagnostics: `node p6-audit.mjs`, `node p2-inspect-health.mjs`, and
-`node inspect-health.mjs` from `services/salapiya/p0`. They verify the intended
-project/instance before querying and emit aggregate counts/health rather than
-financial contents. Preserve original command IDs and failure categories when
-diagnosing waiting/rejected work. Do not paste tokens, account notes, provider
-secrets or raw financial payloads into support reports. Ask the user to keep a
-portable backup before consequential repair. An uncertain result is resolved by
-the original receipt, never a duplicate submission.
+- **Local removal** requires typed confirmation, explains the local/connected distinction,
+  unsynchronized-work loss, archive/file coverage and cloud preservation. It works offline,
+  clears only the reviewed profile's encrypted database, WAL/SHM and attachment directories,
+  cancels only its recorded OS notifications and removes the current protected descriptor.
+  A `removing` checkpoint retains the key until erasure finishes; restart resumes an
+  interrupted erase. Preserved profiles/keys, external archives and cloud history remain.
+  This is logical local deletion, not forensic secure erase or remote device revocation.
+- **Device revocation** identifies authenticated provider sessions, not attested hardware.
+  A reinstall or new Google sign-in can create another session on the same physical device.
+  Earlier sessions with unknown hardware are labelled honestly. Registration uses the signed
+  provider `session_id`; a caller-selected UUID or label cannot grant authority. Revocation
+  records that session, deletes its provider refresh-session chain and leaves peers intact.
+  Already-issued commands finish before the revocation transaction commits; subsequent RPCs
+  and RLS reads reject it. PowerSync filters all eight data streams through a restricted CDC
+  session-entitlement index using signed `sub` and `session_id`, independently of RLS.
+  Stream revocation follows the source/replication checkpoint; no instantaneous deadline is
+  promised during lag/outage. Copied offline records cannot be erased remotely. Fresh Google
+  authentication is separate authorization; also secure the Google account after device loss.
+- **Connected deletion** requires online current-session authorization, an exact typed phrase
+  and OAuth reauthentication within five minutes. Refresh-token exchange alone does not
+  satisfy this. The atomic RPC records a permanent owner/profile deletion marker, closes
+  group authority, purges private financial/Life commands, receipts, postings, enrollment snapshots and private review projections, and revokes sessions. Group
+  bills, settlements, participant intervals and minimal audit identifiers remain for peers;
+  current deleted-participant names become neutral and invitations/private ledgers do not
+  become shared retention. Sole-owner administration is archived without takeover.
+  Provider-side authorized identity deletion follows the same erasure policy. The Edge
+  function derives its target only from online verified identity and then uses the official
+  Auth admin deletion API. It accepts no caller-provided target user ID. If provider cleanup
+  fails, application authority is already permanently blocked and cleanup stays explicitly
+  pending; retry/verify the original operation, never recreate the account or financial IDs.
+  A read-only signed-subject deletion-status RPC can verify the original outcome after
+  Auth cleanup even when its success response was lost; it cannot initiate another deletion.
+  Local copies, original documents and retained encrypted backups are separate and are not
+  remotely/instantaneously erased. Deleting Salapiya never deletes the Google account.
 
-During an outage keep encrypted local data/queues available. Confirm provider
-health and current session, then use Sync now and verify receipt **and** downloaded
-coverage. After inactivity, reactivate through provider controls; a full download
-may be necessary. Do not replace keys or accounts. Watch retained WAL/replication
-lag while the consumer is unavailable; escalate storage pressure before quotas
-are exhausted. Partial downloads must retain incomplete balance labels.
+Do not claim a successful real-Google deletion acceptance from a signed password fixture:
+the latter is an intentional negative. The handoff distinguishes local PostgreSQL proof,
+live negatives, actual SDK revocation and remaining positive OAuth/installed acceptance.
 
-For suspected unauthorized access: stop distribution; preserve protected evidence;
-revoke affected sessions through the provider; rotate the specific compromised
-credential, redeploy only affected adapters, and verify foreign-access negatives.
-A still-valid copied JWT may retain read access until expiry even after session
-revocation. Do not promise immediate device-read revocation. Remote device/account
-deletion, key rotation and owner-loss recovery require a documented, rehearsed
-operator procedure; current UI is not a complete device administration service.
-Group ownership can be transferred by an authorized owner; loss of the only owner
-identity has no certified administrative recovery path. Do not impersonate an
-owner or rewrite private/shared evidence as a support shortcut.
+The lifecycle schema is not in the replication publication. Only `p7_sync_session` is added
+as an authorization index; authenticated clients cannot select/write it. Default internal
+schema/table/function access remains revoked. Do not disable immutable triggers, RLS or
+stream filters. Deleted profile IDs cannot be recycled. An archive contains no sessions,
+device authorization, signing keys or current group entitlements.
 
-## Quotas, files and maintenance
+## Group departure and owner loss
 
-Checked 28 October 2026: [Supabase Free](https://supabase.com/pricing) lists a
-500 MB database, 5 GB uncached egress, 1 GB file storage and inactivity pausing.
-[PowerSync Free](https://powersync.com/pricing) lists 500 MB hosted data,
-2 GB monthly synchronization and 50 peak clients, with inactivity deactivation.
-Check actual dashboards monthly and before new devices/full resyncs; aggregate
-database bytes and logical payload bytes do not equal billed usage. Alert at
-70%, investigate at 85%, and stop audience expansion at 90% of a relevant limit.
-These thresholds are proposed operator policy, not provider enforcement.
+Ordinary departure, former-member source entitlements and explicit owner-to-active-registered-
+member transfer retain the existing versioned command/receipt rules. An owner must transfer
+administration before ordinary departure; peers cannot appoint themselves. Recover a lost
+owner device by authenticating the **same** recoverable Google identity, then revoking old
+sessions from a verified device. Other active members can continue permitted group work.
 
-Fewer than 20 users with two devices each can approach the client limit, and
-10,000-action histories plus immutable receipts/indexes, repeated downloads and
-backup exports consume bytes regardless of user count. No paid tier is approved.
-Do not auto-upgrade or use artificial traffic to avoid inactivity. Obtain a
-specific budget decision if measurements exceed free limits.
+Permanent sole-owner identity loss has no automatic takeover or unrestricted admin recovery
+RPC. Open a security incident; establish provider/account-recovery failure, independently
+verify the requesters and their existing group roles, preserve only their already-entitled
+shared evidence, and obtain explicit authority for a named test/non-test group and proposed
+successor before any privileged action. The operator must not impersonate the missing user
+or read private ledgers. Until a reviewed privileged recovery procedure is implemented and
+rehearsed, ownership transfer is unavailable in this case. Provider deletion archives
+ownerless administration and retains peer history. A newly consented successor group cannot
+silently repost old money or settlements. No privileged non-test recovery is authorized here.
 
-The owner explicitly approved **local-only attachments for this private release**
-during P6 on 28 October 2026. This supersedes the blueprint's cloud-byte launch
-requirement for this private release only; it does not certify a cloud adapter.
-Financial/Career metadata may sync, original bytes stay device-local and unscanned,
-and portable archives contain no original files. Back up originals independently;
-other devices require exact original reselection. Cloud attachments are deferred
-outside this private-release boundary and must not be advertised as available.
+## Five distinct backup mechanisms
 
-No private object bucket, upload/download, quarantine scanner or cross-device byte
-recovery has been certified. A mature scanner such as ClamAV
-still requires maintained signatures, execution capacity, quarantine, ownership
-checks, content integrity and fail-closed release. Supabase's private-bucket RLS
-and type/size restrictions are [access controls](https://supabase.com/docs/guides/storage/buckets/fundamentals),
-not a malware verdict. No unattended free scanning service is configured here.
-Future options are a separately scoped, measured private storage/quarantine adapter,
-owner-approved managed scanning/budget, or an **explicitly approved** local-only
-launch policy with independent original-file backup (now explicitly approved here).
+1. Encrypted local SQLite, protected descriptor and encrypted attachment copies protect a
+   running device. They are not an independent backup; losing the OS key may require recovery.
+2. Portable encrypted archives contain supported private immutable commands, drafts,
+   preferences, financial metadata and Life history. Writers local 1 / connected 3 read
+   formats 1-3 under the existing 32 MiB / command bounds. Archives contain **no original
+   attachment bytes**, OS keys, sessions, notification consent or group authority.
+3. Independent hosted PostgreSQL exports cover `public`, `auth`, `supabase_migrations` and
+   `salapiya*` schemas, immutable receipts/evidence, group state, deletion/revocation state,
+   ACL/RLS dependencies and migration hashes. They contain sensitive managed Auth data and
+   must stay encrypted. Provider OAuth/JWT secrets/configuration, replication credentials,
+   provider services and PowerSync storage are not restored by a database dump.
+4. Synchronization is current authorized replication, not independent historical retention.
+5. Original financial/Career documents remain device-local and unscanned. Maintain independent
+   protected originals; another device must reselect the exact original size/checksum.
 
-Before each candidate, run `node scripts/salapiya/audit-dependencies.mjs` from the
-root and review upstream advisories. It fails when matching advisories exist.
-The scope excludes the full OS/JDK/NDK/Flutter-engine/SQLite supply chain; maintain
-those toolchains separately. Never run blanket dependency upgrades or alter
-financial fixtures just to obtain a green result. Pin reviewed fixes and rerun
-the affected security/native boundaries. The current CLI's bundled npm advisories
-remain recorded in the central handoff; an installed app does not contain npm.
+## Approved backup schedule, retention and storage
 
-Verify actual packaged icons with `scripts/salapiya/verify-packaged-icons.py`,
-binary Android XML with `aapt2 dump xmltree`, manifest/version/signing metadata,
-and artifact SHA-256. The icon generator uses only the committed official mark;
-it creates native release resources and never captures application UI.
-No screenshots, goldens or image-based test reports are part of P6.
+The owner/operator owns this procedure. Policy is approved: after meaningful personal changes
+and **before** upgrades/consequential maintenance; hosted export nightly while operated;
+seven recent generations plus the latest generation in each of four completed weekly buckets;
+two independent protected destinations; a monthly isolated restore and an additional drill
+after schema, provider, key or consequential release changes. Recent/weekly sets may overlap;
+missing weeks are not fabricated. Retention is generation-based and must not be described as
+an automatic time-purge guarantee when backups stop.
+
+Proposed concrete arrangement: a dedicated folder on an already owner-controlled encrypted
+removable drive, rotated offline, plus a separate owner-controlled private NAS/off-site
+storage location containing client-encrypted archives. Verify independent device/site/failure
+boundaries, ACLs, capacity and provider entitlements. Keep the encryption/recovery secrets in
+the password manager, separate from both archive copies. No drive purchase, storage account,
+paid tier or external destination is provisioned by this guide. Two temporary directories on
+this laptop prove copy/retention mechanics only. Permanent backup operation is **unconfigured**.
+
+`release-backup-cli.mjs` accepts one external, private JSON configuration path. Supported
+`kind` values are `portable` and `development-postgres`; no pilot source is inferred. The
+configuration names two dedicated `destinations`, the portable `archive` / `profileScope`,
+or the development `expectedProject` / installed `pgDump` executable. Keep it outside Git.
+Hosted encryption requires a separately provisioned 256-bit base64url
+`SALAPIYA_BACKUP_KEY` in the current process; obtain it locally from the password manager,
+never argv/chat/logs. Clear that process variable after use. The portable source must already
+be an encrypted Salapiya archive; keep its own separate recovery secret.
+
+```powershell
+# From services/salapiya/p0; paths/config are deliberately owner-selected:
+node release-backup-cli.mjs C:\OwnerProtectedBackupConfig\salapiya-backup.json
+```
+
+The implementation uses AES-256-GCM, bounded authenticated envelopes and PostgreSQL custom
+archives, verified TLS to the development pooler, and a repeatable-read exported snapshot
+for matching schema/data/security metadata. No plaintext dump is written to disk. It checks
+both encrypted copies before retention deletion, preserves unrelated scopes and refuses
+linked/non-dedicated destinations. Windows DACLs allow only the operator and SYSTEM; POSIX
+directories require operator ownership and mode 0700. Do not assume an unconfigured task or
+key-retrieval mechanism is operational. Initial scheduling is operator-run; create a Task
+Scheduler entry only after protected key retrieval and both real destinations are verified.
+
+After each run inspect the non-secret JSON success/failure record and copy hashes; an exit
+failure means no operational success. Alert the operator immediately on missing/failed nightly
+runs, copy mismatch, authentication failure, storage pressure, stale weekly generations or
+retention failure. Do not prune after a failed second copy. A lost backup key/recovery secret
+cannot be reconstructed by synchronization or the operator.
+
+## Isolated restore and stale-security reconciliation
+
+`release-disaster-recovery.mjs` only creates a new password-protected loopback PostgreSQL
+cluster in a protected temporary directory. It accepts no target DSN or existing cluster,
+uses a fresh database, imports the encrypted custom archive, verifies exact immutable table
+fingerprints and RLS, then clears restored sessions. Required role names/grants are restored
+as NOLOGIN without copying provider privileges/passwords. Successful temporary targets are
+removed; failures remain protected for diagnosis. It never restores into development/pilot.
+
+```powershell
+$env:SALAPIYA_POSTGRES_BIN = 'C:\Program Files\PostgreSQL\18\bin'
+node release-disaster-recovery.mjs
+```
+
+A restore to another Supabase project additionally needs reviewed managed-schema/Auth import,
+current OAuth/JWT configuration and secrets, role mapping, replication/publication setup,
+PowerSync service configuration, fresh authorized sessions and a bounded actual SDK resync.
+The local PostgreSQL drill is not that end-to-end provider recovery.
+
+**Keep service ingress closed after an old restore.** Reapply current migrations and obtain
+the latest independently authenticated deletion/revocation journal, including changes later
+than the database snapshot. `reconcileSecurityJournal` checks freshness, applies permanent
+erasures/revocations and clears restored Auth sessions/CDC entitlements. It cannot infer
+missing later deletions from an old backup. Without a trustworthy current independent
+register, recovery remains blocked; do not accept new logins or revive old entitlements.
+Permanent independent register durability/freshness and actual client resync remain release
+gates until configured/rehearsed. No operator impersonation is a recovery shortcut.
+
+## Quotas, monitoring and maintenance
+
+Published offerings checked 29 October 2026: [Supabase](https://supabase.com/pricing) lists
+500 MB database, 5 GB uncached egress, 1 GB file storage, two active free projects across
+owner/admin organizations, one-week inactivity pausing and no automatic Free backups.
+[PowerSync](https://powersync.com/pricing) lists 500 MB hosted data, 2 GB monthly sync,
+50 peak clients, up to two instances and one-week inactivity deactivation. Actual account
+entitlements and billed usage must still be verified; do not create paid resources or
+artificial keep-alive traffic. Alert/review at 70%, investigate at 85%, and pause audience
+expansion at 90% of each relevant quota. These are operator policies, not provider enforcement.
+
+Read-only checks: `node release-provider-inventory.mjs`,
+`SALAPIYA_AUDIT_DIRECTORY=release-gate` with `node p6-audit.mjs` (set the environment in
+PowerShell syntax), `node p2-inspect-health.mjs`, `node inspect-health.mjs` and
+`node powersync-state.mjs`. They verify the development identity and emit aggregate health,
+storage, WAL/replication, publication, grants and current client counts. Review provider
+dashboards weekly, before new devices/full resyncs and before expansion. Current clients
+are not historical peak clients; database bytes are not billed egress. Monitor retained WAL,
+lag, incomplete downloads, rejected original commands, backup freshness and version windows.
+
+During outages retain local encrypted records and queues; verify health/session, then Sync
+now and receipt **plus** downloaded coverage. Do not reset databases, replace accounts/keys,
+clear receipts or manufacture complete balances. Reactivate through provider controls after
+inactivity; no artificial traffic. For an incident stop distribution, preserve protected
+original evidence, revoke the affected sessions, secure Google credentials if needed and
+rotate only an actually compromised administrator credential under explicit authority.
+
+The vulnerable PowerSync CLI/plugin-manager bundled npm path was removed. The reviewed
+administration path pins the official management SDK and existing provider identity:
+`node deploy-powersync.mjs` validates development streams; `--apply` deploys only reviewed
+stream content while retaining configuration/secret references. Historical bootstrap/reset
+scripts are not pilot procedures. No blanket Pub/Gradle upgrade was applied. Review advisories
+monthly and before releases; npm/OSV success is scoped evidence, not a claim that Flutter
+engine, SQLite, JDK/NDK, every transitive Gradle dependency or the OS was exhaustively audited.
+
+Useful authoritative references: [Supabase sessions](https://supabase.com/docs/guides/auth/sessions),
+[backups](https://supabase.com/docs/guides/platform/backups),
+[PowerSync auth parameters](https://docs.powersync.com/sync/streams/parameters),
+[stream queries](https://docs.powersync.com/sync/streams/queries),
+[Inno shortcut GUID syntax](https://jrsoftware.org/ishelp/topic_iconssection.htm),
+and [suppressible installer errors](https://jrsoftware.org/ishelp/topic_isxfunc_suppressiblemsgbox.htm).
