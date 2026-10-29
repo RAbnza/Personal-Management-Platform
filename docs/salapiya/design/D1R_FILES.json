@@ -1,0 +1,176 @@
+{
+  "baseline": "e34056e7c6861f6cedc73be0d5accefdc91eaf2b",
+  "note": "Hashes describe local bytes; Git may normalize line endings. Inventory omits its own recursive hash.",
+  "codeFilesInSnapshot": [
+    "apps/salapiya/integration_test/refinement_test.dart",
+    "apps/salapiya/integration_test/startup_test.dart",
+    "apps/salapiya/lib/design_system/components.dart",
+    "apps/salapiya/lib/design_system/craft.dart",
+    "apps/salapiya/lib/design_system/floating_actions.dart",
+    "apps/salapiya/lib/design_system/navigation.dart",
+    "apps/salapiya/lib/design_system/theme.dart",
+    "apps/salapiya/lib/gallery/gallery.dart",
+    "apps/salapiya/lib/gallery/navigation_study.dart",
+    "apps/salapiya/lib/gallery/specimens.dart",
+    "apps/salapiya/test/floating_actions_test.dart",
+    "apps/salapiya/test_driver/refinement_driver.dart"
+  ],
+  "files": [
+    {
+      "path": "apps/salapiya/README.md",
+      "status": "modified",
+      "bytes": 1878,
+      "sha256": "01dd62f101cdfff3286268b09f4961f685f1d748834e836ad5cb7a3aa8e4f066"
+    },
+    {
+      "path": "apps/salapiya/integration_test/refinement_test.dart",
+      "status": "created",
+      "bytes": 5899,
+      "sha256": "5c247d944cb69eda41603d95fe5460dfe6bc1c2aa7392e3af79db8b7156ed80f"
+    },
+    {
+      "path": "apps/salapiya/integration_test/startup_test.dart",
+      "status": "modified",
+      "bytes": 8876,
+      "sha256": "6bc22e0f06d1091c029a2e50b43f1241d3d549f4716c7ea8f9ee431178dd63eb"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/components.dart",
+      "status": "modified",
+      "bytes": 12311,
+      "sha256": "9f10add956866bc2f6807ba407c5289156e503a06ed68bbc4405b4e229380f23"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/craft.dart",
+      "status": "modified",
+      "bytes": 5093,
+      "sha256": "47fcf8d7dee2406a5261319c7daaff90634c1dbc9f2af28863147810c4908ecb"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/floating_actions.dart",
+      "status": "created",
+      "bytes": 13005,
+      "sha256": "1c3a0f8e427cf21809d0cef863d5d129256c5bb3bff54627a591dc99c9e9825b"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/navigation.dart",
+      "status": "modified",
+      "bytes": 1950,
+      "sha256": "2f68414edf3b0c9a85a9d65826d8fa3bb6e78a760e0a2a0c37f1cf860dfb4f79"
+    },
+    {
+      "path": "apps/salapiya/lib/design_system/theme.dart",
+      "status": "modified",
+      "bytes": 9297,
+      "sha256": "92d525fd62e36fe8d6685d18ac4e009724c97f6d2b60d2dba2dce1df653c8cbf"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/gallery.dart",
+      "status": "modified",
+      "bytes": 13995,
+      "sha256": "4d1ff40e50405a404b8602ab6e314f52c60fc4d1a683e94ddb494413008976dd"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/navigation_study.dart",
+      "status": "modified",
+      "bytes": 7154,
+      "sha256": "8cda1cc1fac1b0e78b40a769d337d6b027dd2e7e10e321b95e47d0f9f52d7a08"
+    },
+    {
+      "path": "apps/salapiya/lib/gallery/specimens.dart",
+      "status": "modified",
+      "bytes": 32551,
+      "sha256": "9c596e604e7d2aeeb5e1835fe5a0e9b2f26cfc4ee7e4cbfb08e43414d0fc074c"
+    },
+    {
+      "path": "apps/salapiya/test/floating_actions_test.dart",
+      "status": "created",
+      "bytes": 12206,
+      "sha256": "771cbc987a28c4d3b1a1995a87b730a45b9cc1af224576d4f653d2c06fdc0e20"
+    },
+    {
+      "path": "apps/salapiya/test_driver/refinement_driver.dart",
+      "status": "created",
+      "bytes": 582,
+      "sha256": "b716c72e71a8dd5da32a16a15decc732334128fe78dd8403db003df80af1ece5"
+    },
+    {
+      "path": "docs/salapiya/design/CREATIVE_DIRECTION.md",
+      "status": "modified",
+      "bytes": 19219,
+      "sha256": "a8f0c3ad4f7b7340306f7188464ad4b93c3d7e15a00093cc2da2320cb0a50bd4"
+    },
+    {
+      "path": "docs/salapiya/design/D1R_FILES.json",
+      "status": "created",
+      "bytes": null,
+      "sha256": null
+    },
+    {
+      "path": "docs/salapiya/design/D1R_IMPLEMENTATION.md",
+      "status": "created",
+      "bytes": 13548,
+      "sha256": "a177330d0bb553744cf08bd5c10f80c7534b614a86322cb9351150a3531efaa1"
+    },
+    {
+      "path": "docs/salapiya/design/D1R_SOURCE_SNAPSHOT.md",
+      "status": "created",
+      "bytes": 125453,
+      "sha256": "43fbb705adf12f723cf04d84d05f6f907297ab2302e8d374939c87b6ffb36890"
+    },
+    {
+      "path": "docs/salapiya/design/DESIGN_SYSTEM.md",
+      "status": "modified",
+      "bytes": 23114,
+      "sha256": "060d28482840ca54f76fc7b61248342f16f6030c994ea3e68eaa1fba88b57d8d"
+    },
+    {
+      "path": "docs/salapiya/design/PLATFORM_UX.md",
+      "status": "modified",
+      "bytes": 19528,
+      "sha256": "b443385ee28c71ea4e0f5fa82ecd40d02c41eb3308cf908cf2ac1dd524f0e6b3"
+    },
+    {
+      "path": "docs/salapiya/design/PROTOTYPE_ROADMAP.md",
+      "status": "modified",
+      "bytes": 27520,
+      "sha256": "13024122a53a2ec4e6e50071f68da105438feefbbd25f183f26ba2e66a60a337"
+    },
+    {
+      "path": "docs/salapiya/design/README.md",
+      "status": "modified",
+      "bytes": 17729,
+      "sha256": "93412107c3b240717666f7f9dfd695cf58f9bc8a59c8b5e9040be1944dbe7035"
+    },
+    {
+      "path": "docs/salapiya/design/SCREEN_STATE_INVENTORY.md",
+      "status": "modified",
+      "bytes": 23375,
+      "sha256": "5efdf193578de6ddfd6df65f1dc41c3a3f15da985689245545021524a7c7b5dc"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1r/android-debug.json",
+      "status": "created",
+      "bytes": 1134,
+      "sha256": "ad51b232db759a5a7aa391bffd538395d1e16f6b363dff4b8af98b79ee91f69a"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1r/android-profile.json",
+      "status": "created",
+      "bytes": 1134,
+      "sha256": "f883bd508332ae09dabb51c4e4439b955880efa35d913180d6ebba02d9032e7f"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1r/windows-debug.json",
+      "status": "created",
+      "bytes": 1136,
+      "sha256": "6b29262f02e053e4632a2decc31a1fc6a6c406b7953f71757fafbf42f7883bef"
+    },
+    {
+      "path": "docs/salapiya/design/review/d1r/windows-profile.json",
+      "status": "created",
+      "bytes": 1137,
+      "sha256": "9cc8cbb2eedf695f0489f39a2a6257d042f8cc66815bf13fe564aea263b0702e"
+    }
+  ]
+}

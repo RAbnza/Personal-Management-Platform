@@ -1,0 +1,652 @@
+{
+  "profile": "60000000-0000-4000-8000-000000000000",
+  "commands": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":0,\"kind\":\"account\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"5000.00\",\"cutoff\":\"2026-10-01\",\"date\":\"2026-10-21\",\"debtComponentContract\":\"1\",\"kind\":\"Cash\",\"name\":\"Component wallet\"}}",
+      "plan": {
+        "account": {
+          "id": "60000000-0000-4000-8000-000000000001",
+          "name": "Component wallet",
+          "kind": "Cash",
+          "cutoff": "2026-10-01",
+          "institution": "",
+          "notes": ""
+        },
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000001",
+          "actionId": "60000000-0000-4000-8000-000000000001",
+          "kind": "opening",
+          "change": "create",
+          "date": "2026-10-01",
+          "title": "Opening balance · Component wallet",
+          "amount": "500000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-01",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Opening balance · Component wallet",
+            "kind": "Cash",
+            "cutoff": "2026-10-01",
+            "amount": "5000.00"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "500000",
+              "date": "2026-10-01",
+              "account": "60000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-500000",
+              "date": "2026-10-01",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000002",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":1,\"kind\":\"debtImport\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"1000.00\",\"date\":\"2026-10-21\",\"debtComponentContract\":\"1\",\"debtType\":\"personal_loan\",\"lender\":\"Provider\",\"name\":\"Known imported components\",\"outstandingPrincipal\":\"800.00\",\"principal\":\"2000.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000002",
+          "actionId": "60000000-0000-4000-8000-000000000002",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Known imported components",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Known imported components",
+            "lender": "Provider",
+            "debtType": "personal_loan",
+            "amount": "1000.00",
+            "principal": "2000.00",
+            "outstandingPrincipal": "800.00",
+            "financeType": "debtImport",
+            "financeContract": "1",
+            "debt": "60000000-0000-4000-8000-000000000002"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-100000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "100000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000003",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":2,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"recognized_charge\",\"amount\":\"100.00\",\"category\":\"category-fees\",\"chargeType\":\"interest\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"name\":\"Recognized provider interest\",\"reason\":\"Confirmed separately recognized interest\",\"reference\":\"charge-1\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000003",
+          "actionId": "60000000-0000-4000-8000-000000000003",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Recognized provider interest",
+          "amount": "10000",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000002",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Recognized provider interest",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "amount": "100.00",
+            "adjustmentKind": "recognized_charge",
+            "chargeType": "interest",
+            "category": "category-fees",
+            "reason": "Confirmed separately recognized interest",
+            "reference": "charge-1",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000004",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":3,\"kind\":\"debtPayment\",\"values\":{\"account\":\"60000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"300.00\",\"certainty\":\"known_components\",\"clearing\":\"0.00\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"externalFee\":\"0.00\",\"fee\":\"0.00\",\"feeCategory\":\"category-fees\",\"interest\":\"50.00\",\"interestCategory\":\"category-fees\",\"name\":\"Known component payment\",\"principalReduction\":\"200.00\",\"reduction\":\"250.00\",\"reductionSources\":\"60000000-0000-4000-8000-000000000003,50.00\",\"unapplied\":\"300.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000004",
+          "actionId": "60000000-0000-4000-8000-000000000004",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Known component payment",
+          "amount": "30000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Known component payment",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "account": "60000000-0000-4000-8000-000000000001",
+            "amount": "300.00",
+            "reduction": "250.00",
+            "principalReduction": "200.00",
+            "reductionSources": "60000000-0000-4000-8000-000000000003,50.00",
+            "interest": "50.00",
+            "fee": "0.00",
+            "externalFee": "0.00",
+            "clearing": "0.00",
+            "certainty": "known_components",
+            "interestCategory": "category-fees",
+            "feeCategory": "category-fees",
+            "unapplied": "300.00",
+            "financeType": "debtPayment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-30000",
+              "date": "2026-10-21",
+              "account": "60000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "25000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "5000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000005",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":4,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"recognized_waiver\",\"amount\":\"50.00\",\"chargeSource\":\"60000000-0000-4000-8000-000000000003\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"name\":\"Recognized interest waiver\",\"reason\":\"Provider waived remaining recognized interest\",\"reference\":\"waiver-1\",\"verified\":\"true\",\"waiverBasis\":\"recognized_charge\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000005",
+          "actionId": "60000000-0000-4000-8000-000000000005",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Recognized interest waiver",
+          "amount": "5000",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000003",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Recognized interest waiver",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "amount": "50.00",
+            "adjustmentKind": "recognized_waiver",
+            "waiverBasis": "recognized_charge",
+            "chargeSource": "60000000-0000-4000-8000-000000000003",
+            "reason": "Provider waived remaining recognized interest",
+            "reference": "waiver-1",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "expense",
+              "amount": "-5000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "5000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000006",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":5,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"avoided_future\",\"amount\":\"200.00\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"name\":\"Avoided unposted interest\",\"reason\":\"Future interest is not recognized\",\"reference\":\"avoided-1\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000006",
+          "actionId": "60000000-0000-4000-8000-000000000006",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Avoided unposted interest",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000002",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Avoided unposted interest",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "amount": "200.00",
+            "adjustmentKind": "avoided_future",
+            "reason": "Future interest is not recognized",
+            "reference": "avoided-1",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000007",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":6,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"rounding_charge\",\"amount\":\"0.01\",\"category\":\"category-fees\",\"chargeType\":\"fee\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"name\":\"Confirmed residual charge\",\"reason\":\"Provider confirmed one-cent residual\",\"reference\":\"residual-1\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000007",
+          "actionId": "60000000-0000-4000-8000-000000000007",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Confirmed residual charge",
+          "amount": "1",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000002",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Confirmed residual charge",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "amount": "0.01",
+            "adjustmentKind": "rounding_charge",
+            "chargeType": "fee",
+            "category": "category-fees",
+            "reason": "Provider confirmed one-cent residual",
+            "reference": "residual-1",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-1",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "1",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000008",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":7,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"rounding_waiver\",\"amount\":\"0.01\",\"chargeSource\":\"60000000-0000-4000-8000-000000000007\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"name\":\"Confirmed residual waiver\",\"reason\":\"Provider waived exact residual\",\"reference\":\"residual-waiver-1\",\"verified\":\"true\",\"waiverBasis\":\"recognized_charge\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000008",
+          "actionId": "60000000-0000-4000-8000-000000000008",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Confirmed residual waiver",
+          "amount": "1",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000007",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Confirmed residual waiver",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "amount": "0.01",
+            "adjustmentKind": "rounding_waiver",
+            "waiverBasis": "recognized_charge",
+            "chargeSource": "60000000-0000-4000-8000-000000000007",
+            "reason": "Provider waived exact residual",
+            "reference": "residual-waiver-1",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "expense",
+              "amount": "-1",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "1",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000009",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":8,\"kind\":\"debtPayoff\",\"values\":{\"account\":\"60000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"800.00\",\"avoided\":\"0.00\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000002\",\"debtComponentContract\":\"1\",\"fee\":\"0.00\",\"interest\":\"0.00\",\"name\":\"Reconciled payoff\",\"providerPayoff\":\"800.00\",\"reason\":\"Exact confirmed provider payoff\",\"reduction\":\"800.00\",\"reference\":\"payoff-1\",\"verified\":\"true\",\"waiver\":\"0.00\",\"waiverBasis\":\"imported_unknown\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000009",
+          "actionId": "60000000-0000-4000-8000-000000000009",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Reconciled payoff",
+          "amount": "80000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Reconciled payoff",
+            "debt": "60000000-0000-4000-8000-000000000002",
+            "account": "60000000-0000-4000-8000-000000000001",
+            "amount": "800.00",
+            "providerPayoff": "800.00",
+            "reduction": "800.00",
+            "interest": "0.00",
+            "fee": "0.00",
+            "waiver": "0.00",
+            "avoided": "0.00",
+            "waiverBasis": "imported_unknown",
+            "reason": "Exact confirmed provider payoff",
+            "reference": "payoff-1",
+            "verified": "true",
+            "financeType": "debtPayoff",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-80000",
+              "date": "2026-10-21",
+              "account": "60000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "80000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000010",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":9,\"kind\":\"borrowing\",\"values\":{\"account\":\"60000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"1000.00\",\"date\":\"2026-10-21\",\"debtComponentContract\":\"1\",\"debtType\":\"personal_loan\",\"feeCategory\":\"category-fees\",\"financedFee\":\"100.00\",\"fundingUse\":\"cash\",\"lender\":\"Provider\",\"name\":\"Financed fee source\",\"withheld\":\"50.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000010",
+          "actionId": "60000000-0000-4000-8000-000000000010",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Financed fee source",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Financed fee source",
+            "lender": "Provider",
+            "debtType": "personal_loan",
+            "amount": "1000.00",
+            "withheld": "50.00",
+            "financedFee": "100.00",
+            "fundingUse": "cash",
+            "account": "60000000-0000-4000-8000-000000000001",
+            "feeCategory": "category-fees",
+            "financeType": "borrowing",
+            "financeContract": "1",
+            "debt": "60000000-0000-4000-8000-000000000010"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-110000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "cash",
+              "amount": "95000",
+              "date": "2026-10-21",
+              "account": "60000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "15000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000011",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":10,\"kind\":\"debtAdjustment\",\"values\":{\"acknowledge\":\"false\",\"adjustmentKind\":\"recognized_waiver\",\"amount\":\"100.00\",\"chargeSource\":\"60000000-0000-4000-8000-000000000010\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000010\",\"debtComponentContract\":\"1\",\"name\":\"Waive unpaid financed fee only\",\"reason\":\"Original financed fee source, excluding already paid withheld fee\",\"reference\":\"financed-waiver\",\"verified\":\"true\",\"waiverBasis\":\"recognized_charge\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000011",
+          "actionId": "60000000-0000-4000-8000-000000000011",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Waive unpaid financed fee only",
+          "amount": "10000",
+          "number": 1,
+          "previous": null,
+          "source": "60000000-0000-4000-8000-000000000010",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Waive unpaid financed fee only",
+            "debt": "60000000-0000-4000-8000-000000000010",
+            "amount": "100.00",
+            "adjustmentKind": "recognized_waiver",
+            "waiverBasis": "recognized_charge",
+            "chargeSource": "60000000-0000-4000-8000-000000000010",
+            "reason": "Original financed fee source, excluding already paid withheld fee",
+            "reference": "financed-waiver",
+            "verified": "true",
+            "financeType": "debtAdjustment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "expense",
+              "amount": "-10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000012",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"60000000-0000-4000-8000-000000000000\",\"expectedVersion\":11,\"kind\":\"debtPayoff\",\"values\":{\"account\":\"60000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"1000.00\",\"avoided\":\"0.00\",\"date\":\"2026-10-21\",\"debt\":\"60000000-0000-4000-8000-000000000010\",\"debtComponentContract\":\"1\",\"fee\":\"0.00\",\"interest\":\"0.00\",\"name\":\"Close borrowing principal\",\"providerPayoff\":\"1000.00\",\"reason\":\"Exact remaining principal\",\"reduction\":\"1000.00\",\"reference\":\"principal-payoff\",\"verified\":\"true\",\"waiver\":\"0.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "60000000-0000-4000-8000-000000000012",
+          "actionId": "60000000-0000-4000-8000-000000000012",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Close borrowing principal",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "debtComponentContract": "1",
+            "name": "Close borrowing principal",
+            "debt": "60000000-0000-4000-8000-000000000010",
+            "account": "60000000-0000-4000-8000-000000000001",
+            "amount": "1000.00",
+            "providerPayoff": "1000.00",
+            "reduction": "1000.00",
+            "interest": "0.00",
+            "fee": "0.00",
+            "waiver": "0.00",
+            "avoided": "0.00",
+            "reason": "Exact remaining principal",
+            "reference": "principal-payoff",
+            "verified": "true",
+            "financeType": "debtPayoff",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-100000",
+              "date": "2026-10-21",
+              "account": "60000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "100000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

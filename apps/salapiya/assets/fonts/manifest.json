@@ -1,0 +1,74 @@
+[
+  {
+    "family": "nunitosans",
+    "sourceCommit": "8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5",
+    "sourceFilename": "NunitoSans[YTLC,opsz,wdth,wght].ttf",
+    "version": "Version 3.101;gftools[0.9.27]",
+    "bytes": 571240,
+    "sha256": "f934d7142fb4784bf828da485b7dcbd90c0c80d514e9d49a5da0ed3a1ae2491d",
+    "axes": [
+      {
+        "tag": "wght",
+        "default": 200.0,
+        "min": 200.0,
+        "max": 1000.0
+      },
+      {
+        "tag": "wdth",
+        "default": 100.0,
+        "min": 75.0,
+        "max": 125.0
+      },
+      {
+        "tag": "opsz",
+        "default": 12.0,
+        "min": 6.0,
+        "max": 12.0
+      },
+      {
+        "tag": "YTLC",
+        "default": 500.0,
+        "min": 440.0,
+        "max": 540.0
+      }
+    ],
+    "tnum": false,
+    "missingGlyphs": []
+  },
+  {
+    "family": "geist",
+    "sourceCommit": "718e1db4deb9e4d9d85a0ead1b9f5fde2761ccfd",
+    "sourceFilename": "Geist[wght].ttf",
+    "version": "Version 1.800",
+    "bytes": 169056,
+    "sha256": "73894e0448cae90a92b6c2f8732b7bb9acb7b94c418bff559dad4a18e1de9659",
+    "axes": [
+      {
+        "tag": "wght",
+        "default": 400.0,
+        "min": 100.0,
+        "max": 900.0
+      }
+    ],
+    "tnum": true,
+    "missingGlyphs": []
+  },
+  {
+    "family": "sourcesans3",
+    "sourceCommit": "914ec116571b1162d886aa402e715552221f0b77",
+    "sourceFilename": "SourceSans3[wght].ttf",
+    "version": "Version 3.052;hotconv 1.1.0;makeotfexe 2.6.0",
+    "bytes": 646340,
+    "sha256": "042fe2cc0b933e328410d7acbd0aa6a1873dca5aef81875f4bc214b08825c7b9",
+    "axes": [
+      {
+        "tag": "wght",
+        "default": 200.0,
+        "min": 200.0,
+        "max": 900.0
+      }
+    ],
+    "tnum": false,
+    "missingGlyphs": []
+  }
+]

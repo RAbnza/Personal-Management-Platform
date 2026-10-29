@@ -1,0 +1,14 @@
+{
+  "platform": "windows",
+  "mode": "profile",
+  "status": "passed",
+  "layoutCases": 24,
+  "viewportEvidence": "Flutter constrained logical surfaces; not OS window resizing or physical device acceptance",
+  "performance": {
+    "scenario": "10 menu cycles, 30 tab selections and 10 scenario changes; one second drain and one second idle",
+    "frames": 250,
+    "buildP95Ms": 20.102,
+    "rasterP95Ms": 14.153,
+    "idleFrames": 0
+  }
+}

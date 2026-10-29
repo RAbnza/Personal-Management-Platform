@@ -5,7 +5,7 @@
 **Repository:** `RAbnza/Personal-Management-Platform`  
 **Document version:** 1.0  
 **Decision/documentation date:** October 19, 2026 (Asia/Manila)  
-**Status:** Owner-approved product direction and launch scope; architectural baseline subject to the explicit technical gates in this document. No native implementation or platform acceptance is claimed.  
+**Current status (29 October 2026):** Salapiya `0.6.1+8` is **OWNER-APPROVED FULL RELEASE** for the owner and three brothers; development **COMPLETE**. [Final release and project closure](salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md) and section 26 supersede historical gate/release-blocker language within this audience and accepted scope. Earlier evidence and unexecuted tests are preserved.
 **Inspected web baseline:** `b721b0c6ef4c102a351e30df107b8f9b86ede588` — merged M6 redesign acceptance. Local HEAD and GitHub `main` matched when checked for this document.
 
 ## Contents
@@ -139,6 +139,16 @@ Every financial row below is a launch requirement. Later implementation must mai
 Ordinary reading, entry, reporting, and local-only management must operate offline. Connected operations whose validity depends on another device's current state follow Section 8; a preview/draft may be offline even when finalization requires connectivity.
 
 ### 4.2 Shared Expenses
+
+> **P6 private-release exception, approved by the owner on 28 October 2026:**
+> M14 may launch with encrypted **device-local attachment bytes only** for this
+> private release. Metadata can synchronize, but original bytes require independent
+> protected backup and exact original reselection on another device. Standard
+> portable archives exclude original bytes; local files remain unscanned.
+> Controlled cloud-byte upload/download and production scanning remain future
+> work, not certified availability. This exception does not waive lifecycle,
+> recovery, signing, native accessibility or other release gates. See
+> [P6 acceptance](salapiya/P6_PRIVATE_RELEASE_HANDOFF.md).
 
 | ID | Existing capability | Launch treatment |
 | --- | --- | --- |
@@ -734,3 +744,74 @@ Official documentation checked during the October 19, 2026 workshop/doc preparat
 This version records the approved workshop direction and final Salapiya name. It adds no application code, schema migration, cloud service, logo, subscription or deployment. Repository inspection and official documentation checks informed the plan; native builds, sync prototypes, security tests, physical-device checks and restore drills remain future work at the named gates.
 
 The intended next step is a separately assigned architecture feasibility milestone with concrete evidence, followed by the complete approved financial and Life release scope.
+
+## 25. Post-P6 approved operational refinements (29 October 2026)
+
+The owner approved the following private-release policies in the release-closure
+assignment. They refine the earlier deferred operational decisions without changing
+financial semantics, private/group ownership or the approved presentation:
+
+- Windows trusted signing is unpaid/deferred. Complete feasible unsigned staging
+  engineering; trusted signing remains an original mandatory gate, with no release
+  scope waiver, SmartScreen/trust-store bypass or signing purchase authorized.
+- Backup retention is seven recent generations and four weekly generations, with
+  two independent protected destinations, pre-upgrade/maintenance backups and
+  periodic isolated restores. Permanent destinations are not yet selected. Local
+  storage, portable archives, hosted PostgreSQL exports, sync and original local
+  attachment bytes are five separate mechanisms.
+- Local removal, provider-session/device revocation, connected deletion, group
+  departure and authorized ownership transfer are separate operations. A revoked
+  session/old archive cannot restore cloud authority; offline copies cannot be
+  remotely erased. Deletion removes unrelated private records while retaining
+  minimum necessary shared bills, settlements, participant intervals and audit
+  evidence belonging to peers. Current independent deletion/revocation state is
+  mandatory before bringing an old database restore online.
+- Same-Google-identity owner recovery and explicit authorized transfer are allowed.
+  Permanent sole-owner identity loss requires separately verified authority and a
+  reviewed procedure; no automatic takeover, impersonation or unrestricted recovery
+  backdoor is permitted. An unimplemented/unrehearsed privileged path stays blocked.
+- Prepare a separate free-tier pilot for the owner and brothers only, after actual
+  entitlements/costs and OAuth/operational prerequisites are verified. No automatic
+  real-data migration or paid activation. Friends are a later expansion decision.
+- Operator thresholds are 70% monitor/review, 85% investigate and 90% pause audience
+  expansion for each relevant quota. They are policies, not provider limits. No
+  artificial keep-alive traffic or assumed unlimited free capacity.
+- Advertise only specific device/OS combinations with actual acceptance evidence.
+  Physical Android and human Narrator/TalkBack are distinct from emulator/widgets.
+- Preserve the existing owner-backed-up Android keystore and certificate. Do not
+  generate a replacement, rotate it or request signing passwords in chat.
+- Initial private-release original attachment bytes remain local-only, encrypted
+  and unscanned. Metadata availability must stay separate from bytes; independent
+  protected originals and exact-original reselection remain necessary. Cloud byte
+  synchronization/scanning is deferred for this private-release boundary.
+
+Current implementation/evidence and remaining gates are recorded in
+[post-P6 release gate closure](salapiya/POST_P6_RELEASE_GATE_CLOSURE_HANDOFF.md).
+The [operations guide](salapiya/PRIVATE_RELEASE_OPERATIONS.md) specifies retention,
+security, environment pairing and fail-closed restore procedures. These policy
+approvals do not themselves provision storage/services or certify release readiness.
+
+## 26. Final owner-approved full release and project closure (29 October 2026)
+
+The owner's final release assignment explicitly approves Salapiya `0.6.1+8` as
+**OWNER-APPROVED FULL RELEASE** for the owner and their three brothers. Project
+development is **COMPLETE**. This is not a beta/trial or another P6 assignment.
+
+The owner accepts the existing encrypted backup/recovery, existing Supabase/PowerSync
+pair, financial/authentication/synchronization/device evaluation, unsigned Inno Setup
+Windows distribution, manual free-tier monitoring, local-only attachments and narrow
+device support. Advanced permanent sole-owner recovery is deferred. A separate pilot,
+trusted Windows signing and additional acceptance campaigns are not release prerequisites
+under this final scope. No services are added or purchased, no UI/financial logic is
+rewritten, and no binaries are automatically published or sent to other people.
+
+This decision supersedes the earlier release-gate classification and release-blocking
+requirements in sections 16-22 and 25 only within the defined audience and accepted
+scope. Original P6/post-P6 test evidence, partial results and unexecuted checks remain
+historical facts. Existing financial/privacy/authentication/synchronization/encryption,
+backup, database and fail-closed recovery safeguards remain unchanged and mandatory.
+
+[Final release and project closure](salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md)
+records the exact local artifact paths, sizes/hashes, preserved signing identity,
+installation/update and recovery instructions, accepted limitations and repository
+release reference. Future enhancements are optional and do not block this release.

@@ -1,0 +1,1368 @@
+{
+  "profile": "40000000-0000-4000-8000-000000000000",
+  "commands": [
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":0,\"kind\":\"account\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"10000.00\",\"cutoff\":\"2026-10-01\",\"date\":\"2026-10-21\",\"kind\":\"Cash\",\"name\":\"Parity wallet\"}}",
+      "plan": {
+        "account": {
+          "id": "40000000-0000-4000-8000-000000000001",
+          "name": "Parity wallet",
+          "kind": "Cash",
+          "cutoff": "2026-10-01",
+          "institution": "",
+          "notes": ""
+        },
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000001",
+          "actionId": "40000000-0000-4000-8000-000000000001",
+          "kind": "opening",
+          "change": "create",
+          "date": "2026-10-01",
+          "title": "Opening balance · Parity wallet",
+          "amount": "1000000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-01",
+            "acknowledge": "false",
+            "name": "Opening balance · Parity wallet",
+            "kind": "Cash",
+            "cutoff": "2026-10-01",
+            "amount": "10000.00"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "1000000",
+              "date": "2026-10-01",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-1000000",
+              "date": "2026-10-01",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":1,\"kind\":\"creditCard\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"200.00\",\"date\":\"2026-10-21\",\"issuer\":\"Test\",\"limit\":\"10000.00\",\"name\":\"Parity card\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000002",
+          "actionId": "40000000-0000-4000-8000-000000000002",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Parity card",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Parity card",
+            "issuer": "Test",
+            "amount": "200.00",
+            "limit": "10000.00",
+            "financeType": "creditCard",
+            "financeContract": "1",
+            "card": "40000000-0000-4000-8000-000000000002"
+          },
+          "postings": [
+            {
+              "ledger": "card_liability",
+              "amount": "-20000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "20000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000003",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":2,\"kind\":\"expense\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"1200.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"category\":\"category-food\",\"date\":\"2026-10-21\",\"funding\":\"card\",\"name\":\"Card through expense\",\"postingDate\":\"2026-10-23\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000003",
+          "actionId": "40000000-0000-4000-8000-000000000003",
+          "kind": "expense",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Card through expense",
+          "amount": "120000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Card through expense",
+            "funding": "card",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "amount": "1200.00",
+            "postingDate": "2026-10-23",
+            "category": "category-food",
+            "financeType": "cardPurchase",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "card_liability",
+              "amount": "-120000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "120000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-food"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000004",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":3,\"kind\":\"statement\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"1400.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"due\":\"2026-11-10\",\"end\":\"2026-10-21\",\"issued\":\"2026-10-21\",\"minimum\":\"100.00\",\"name\":\"October\",\"reference\":\"fixture\",\"start\":\"2026-10-01\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000004",
+          "actionId": "40000000-0000-4000-8000-000000000004",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "October",
+          "amount": "140000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "October",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "start": "2026-10-01",
+            "end": "2026-10-21",
+            "issued": "2026-10-21",
+            "due": "2026-11-10",
+            "amount": "1400.00",
+            "minimum": "100.00",
+            "reference": "fixture",
+            "verified": "true",
+            "financeType": "statement",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":4,\"kind\":\"cardPayment\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"500.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"name\":\"Repayment\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000005",
+          "actionId": "40000000-0000-4000-8000-000000000005",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Repayment",
+          "amount": "50000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Repayment",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "500.00",
+            "financeType": "cardPayment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-50000",
+              "date": "2026-10-21",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "card_liability",
+              "amount": "50000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000006",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":5,\"kind\":\"cardAllocation\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"500.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"name\":\"Allocated\",\"payment\":\"40000000-0000-4000-8000-000000000005\",\"statement\":\"40000000-0000-4000-8000-000000000004\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000006",
+          "actionId": "40000000-0000-4000-8000-000000000006",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Allocated",
+          "amount": "50000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000005",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Allocated",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "payment": "40000000-0000-4000-8000-000000000005",
+            "statement": "40000000-0000-4000-8000-000000000004",
+            "amount": "500.00",
+            "verified": "true",
+            "financeType": "cardAllocation",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000007",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":6,\"kind\":\"installment\",\"values\":{\"acknowledge\":\"false\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"name\":\"Plan\",\"purchase\":\"40000000-0000-4000-8000-000000000003\",\"reference\":\"provider\",\"schedule\":\"one,2026-11-10,400.00\\ntwo,2026-12-10,800.00\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000007",
+          "actionId": "40000000-0000-4000-8000-000000000007",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Plan",
+          "amount": "120000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000003",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Plan",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "purchase": "40000000-0000-4000-8000-000000000003",
+            "schedule": "one,2026-11-10,400.00\ntwo,2026-12-10,800.00",
+            "reference": "provider",
+            "verified": "true",
+            "financeType": "installment",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000008",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":7,\"kind\":\"installmentApplication\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"400.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"name\":\"Applied\",\"payment\":\"40000000-0000-4000-8000-000000000006\",\"plan\":\"40000000-0000-4000-8000-000000000007\",\"row\":\"one\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000008",
+          "actionId": "40000000-0000-4000-8000-000000000008",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Applied",
+          "amount": "40000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000006",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Applied",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "plan": "40000000-0000-4000-8000-000000000007",
+            "row": "one",
+            "payment": "40000000-0000-4000-8000-000000000006",
+            "amount": "400.00",
+            "verified": "true",
+            "financeType": "installmentApplication",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000009",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":8,\"kind\":\"cardFee\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"10.01\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"category\":\"category-fees\",\"date\":\"2026-10-21\",\"name\":\"Fee\",\"postingDate\":\"2026-10-22\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000009",
+          "actionId": "40000000-0000-4000-8000-000000000009",
+          "kind": "expense",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Fee",
+          "amount": "1001",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Fee",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "amount": "10.01",
+            "postingDate": "2026-10-22",
+            "category": "category-fees",
+            "financeType": "cardFee",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "card_liability",
+              "amount": "-1001",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "1001",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000010",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":9,\"kind\":\"cardInterest\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"20.02\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"category\":\"category-fees\",\"date\":\"2026-10-21\",\"name\":\"Interest\",\"postingDate\":\"2026-10-22\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000010",
+          "actionId": "40000000-0000-4000-8000-000000000010",
+          "kind": "expense",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Interest",
+          "amount": "2002",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Interest",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "amount": "20.02",
+            "postingDate": "2026-10-22",
+            "category": "category-fees",
+            "financeType": "cardInterest",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "card_liability",
+              "amount": "-2002",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "2002",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000011",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":10,\"kind\":\"cardRefund\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"100.01\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"category\":\"category-food\",\"date\":\"2026-10-21\",\"name\":\"Refund\",\"purchase\":\"40000000-0000-4000-8000-000000000003\",\"reason\":\"Partial return\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000011",
+          "actionId": "40000000-0000-4000-8000-000000000011",
+          "kind": "refund",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Refund",
+          "amount": "10001",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000003",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Refund",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "purchase": "40000000-0000-4000-8000-000000000003",
+            "amount": "100.01",
+            "category": "category-food",
+            "reason": "Partial return",
+            "financeType": "cardRefund",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "card_liability",
+              "amount": "10001",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "-10001",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-food"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000012",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":11,\"kind\":\"cardAuthorization\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"200.00\",\"card\":\"40000000-0000-4000-8000-000000000002\",\"date\":\"2026-10-21\",\"name\":\"Pending\",\"reference\":\"auth-1\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000012",
+          "actionId": "40000000-0000-4000-8000-000000000012",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Pending",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Pending",
+            "card": "40000000-0000-4000-8000-000000000002",
+            "amount": "200.00",
+            "reference": "auth-1",
+            "financeType": "cardAuthorization",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000013",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":12,\"kind\":\"debtImport\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"6400.00\",\"date\":\"2026-10-21\",\"debtType\":\"installment_loan\",\"lender\":\"Synthetic lender\",\"name\":\"Imported provider debt\",\"principal\":\"\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000013",
+          "actionId": "40000000-0000-4000-8000-000000000013",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Imported provider debt",
+          "amount": "640000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Imported provider debt",
+            "lender": "Synthetic lender",
+            "debtType": "installment_loan",
+            "amount": "6400.00",
+            "principal": "",
+            "financeType": "debtImport",
+            "financeContract": "1",
+            "debt": "40000000-0000-4000-8000-000000000013"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-640000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "640000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000014",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":13,\"kind\":\"debtSchedule\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"debt\":\"40000000-0000-4000-8000-000000000013\",\"name\":\"Known provider schedule\",\"reference\":\"schedule\",\"schedule\":\"first,2026-11-01,3200.00,1000.00\\nsecond,2026-12-01,3200.00\",\"verified\":\"true\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000014",
+          "actionId": "40000000-0000-4000-8000-000000000014",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Known provider schedule",
+          "amount": "640000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Known provider schedule",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "schedule": "first,2026-11-01,3200.00,1000.00\nsecond,2026-12-01,3200.00",
+            "verified": "true",
+            "reference": "schedule",
+            "financeType": "debtSchedule",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000015",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":14,\"kind\":\"debtPayment\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"allocations\":\"\",\"amount\":\"1000.00\",\"certainty\":\"unresolved\",\"clearing\":\"1000.00\",\"date\":\"2026-10-21\",\"debt\":\"40000000-0000-4000-8000-000000000013\",\"externalFee\":\"0.00\",\"fee\":\"0.00\",\"interest\":\"0.00\",\"name\":\"Unknown breakdown\",\"reduction\":\"0.00\",\"unapplied\":\"1000.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000015",
+          "actionId": "40000000-0000-4000-8000-000000000015",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Unknown breakdown",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Unknown breakdown",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "1000.00",
+            "externalFee": "0.00",
+            "reduction": "0.00",
+            "interest": "0.00",
+            "fee": "0.00",
+            "clearing": "1000.00",
+            "certainty": "unresolved",
+            "allocations": "",
+            "unapplied": "1000.00",
+            "financeType": "debtPayment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-100000",
+              "date": "2026-10-21",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_clearing",
+              "amount": "100000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000016",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":15,\"kind\":\"debtClassification\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"debt\":\"40000000-0000-4000-8000-000000000013\",\"fee\":\"0.00\",\"interest\":\"100.00\",\"interestCategory\":\"category-fees\",\"name\":\"Provider classified payment\",\"payment\":\"40000000-0000-4000-8000-000000000015\",\"reason\":\"Provider breakdown received\",\"reduction\":\"900.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000016",
+          "actionId": "40000000-0000-4000-8000-000000000016",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Provider classified payment",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000015",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Provider classified payment",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "payment": "40000000-0000-4000-8000-000000000015",
+            "reduction": "900.00",
+            "interest": "100.00",
+            "fee": "0.00",
+            "interestCategory": "category-fees",
+            "reason": "Provider breakdown received",
+            "financeType": "debtClassification",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "debt_clearing",
+              "amount": "-100000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "90000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000017",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":16,\"kind\":\"debtPayment\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"allocations\":\"first,100.00\",\"amount\":\"100.00\",\"certainty\":\"confirmed_total\",\"clearing\":\"0.00\",\"date\":\"2026-10-21\",\"debt\":\"40000000-0000-4000-8000-000000000013\",\"externalFee\":\"0.00\",\"fee\":\"0.00\",\"interest\":\"0.00\",\"name\":\"Partial installment\",\"reduction\":\"100.00\",\"scheduleSource\":\"40000000-0000-4000-8000-000000000014\",\"unapplied\":\"0.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000017",
+          "actionId": "40000000-0000-4000-8000-000000000017",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Partial installment",
+          "amount": "10000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Partial installment",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "100.00",
+            "externalFee": "0.00",
+            "reduction": "100.00",
+            "interest": "0.00",
+            "fee": "0.00",
+            "clearing": "0.00",
+            "certainty": "confirmed_total",
+            "scheduleSource": "40000000-0000-4000-8000-000000000014",
+            "allocations": "first,100.00",
+            "unapplied": "0.00",
+            "financeType": "debtPayment",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-10000",
+              "date": "2026-10-21",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "10000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000018",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":17,\"kind\":\"financeCorrection\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"reason\":\"Retain allocation mapping under revised due dates\",\"replace\":\"40000000-0000-4000-8000-000000000014\",\"replaceVersion\":\"1\",\"schedule\":\"first,2026-11-05,3200.00,1000.00\\nsecond,2026-12-05,3200.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000018",
+          "actionId": "40000000-0000-4000-8000-000000000014",
+          "kind": "adjustment",
+          "change": "replace",
+          "date": "2026-10-21",
+          "title": "Known provider schedule",
+          "amount": "640000",
+          "number": 2,
+          "previous": "40000000-0000-4000-8000-000000000014",
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "replace": "40000000-0000-4000-8000-000000000014",
+            "replaceVersion": "1",
+            "reason": "Retain allocation mapping under revised due dates",
+            "schedule": "first,2026-11-05,3200.00,1000.00\nsecond,2026-12-05,3200.00",
+            "name": "Known provider schedule",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "verified": "true",
+            "reference": "schedule",
+            "financeType": "debtSchedule",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000019",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":18,\"kind\":\"debtPayoff\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"5000.00\",\"avoided\":\"200.00\",\"date\":\"2026-10-21\",\"debt\":\"40000000-0000-4000-8000-000000000013\",\"fee\":\"0.00\",\"interest\":\"0.00\",\"name\":\"Confirmed early payoff\",\"providerPayoff\":\"5000.00\",\"reason\":\"Provider closes obligation\",\"reduction\":\"5000.00\",\"reference\":\"payoff\",\"verified\":\"true\",\"waiver\":\"400.00\",\"waiverBasis\":\"imported_unknown\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000019",
+          "actionId": "40000000-0000-4000-8000-000000000019",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Confirmed early payoff",
+          "amount": "500000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Confirmed early payoff",
+            "debt": "40000000-0000-4000-8000-000000000013",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "5000.00",
+            "providerPayoff": "5000.00",
+            "reduction": "5000.00",
+            "interest": "0.00",
+            "fee": "0.00",
+            "waiver": "400.00",
+            "waiverBasis": "imported_unknown",
+            "avoided": "200.00",
+            "verified": "true",
+            "reference": "payoff",
+            "reason": "Provider closes obligation",
+            "financeType": "debtPayoff",
+            "financeContract": "1"
+          },
+          "postings": [
+            {
+              "ledger": "cash",
+              "amount": "-500000",
+              "date": "2026-10-21",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "debt_liability",
+              "amount": "540000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "equity",
+              "amount": "-40000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000020",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":19,\"kind\":\"borrowing\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"10000.00\",\"date\":\"2026-10-21\",\"debtType\":\"personal_loan\",\"feeCategory\":\"category-fees\",\"financedFee\":\"0.00\",\"fundingUse\":\"cash\",\"lender\":\"Synthetic lender\",\"name\":\"Net proceeds\",\"principal\":\"10000.00\",\"withheld\":\"200.00\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000020",
+          "actionId": "40000000-0000-4000-8000-000000000020",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Net proceeds",
+          "amount": "1000000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Net proceeds",
+            "lender": "Synthetic lender",
+            "debtType": "personal_loan",
+            "amount": "10000.00",
+            "principal": "10000.00",
+            "fundingUse": "cash",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "withheld": "200.00",
+            "financedFee": "0.00",
+            "feeCategory": "category-fees",
+            "financeType": "borrowing",
+            "financeContract": "1",
+            "debt": "40000000-0000-4000-8000-000000000020"
+          },
+          "postings": [
+            {
+              "ledger": "debt_liability",
+              "amount": "-1000000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": null
+            },
+            {
+              "ledger": "cash",
+              "amount": "980000",
+              "date": "2026-10-21",
+              "account": "40000000-0000-4000-8000-000000000001",
+              "category": null
+            },
+            {
+              "ledger": "expense",
+              "amount": "20000",
+              "date": "2026-10-21",
+              "account": null,
+              "category": "category-fees"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000021",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":20,\"kind\":\"budget\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"0.00\",\"basis\":\"net\",\"category\":\"category-food\",\"date\":\"2026-10-21\",\"endExclusive\":\"2026-11-01\",\"name\":\"October food allowance\",\"start\":\"2026-10-01\",\"status\":\"active\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000021",
+          "actionId": "40000000-0000-4000-8000-000000000021",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "October food allowance",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "October food allowance",
+            "amount": "0.00",
+            "category": "category-food",
+            "start": "2026-10-01",
+            "endExclusive": "2026-11-01",
+            "basis": "net",
+            "status": "active",
+            "financeType": "budget",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000022",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":21,\"kind\":\"savingsGoal\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"6000.00\",\"date\":\"2026-10-21\",\"name\":\"Safety buffer\",\"status\":\"active\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000022",
+          "actionId": "40000000-0000-4000-8000-000000000022",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Safety buffer",
+          "amount": "600000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Safety buffer",
+            "amount": "6000.00",
+            "status": "active",
+            "financeType": "savingsGoal",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000023",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":22,\"kind\":\"savingsGoal\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"4000.00\",\"date\":\"2026-10-21\",\"name\":\"Equipment\",\"status\":\"active\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000023",
+          "actionId": "40000000-0000-4000-8000-000000000023",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Equipment",
+          "amount": "400000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Equipment",
+            "amount": "4000.00",
+            "status": "active",
+            "financeType": "savingsGoal",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000024",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":23,\"kind\":\"reservation\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"6000.00\",\"date\":\"2026-10-21\",\"goal\":\"40000000-0000-4000-8000-000000000022\",\"name\":\"Reserve buffer\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000024",
+          "actionId": "40000000-0000-4000-8000-000000000024",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Reserve buffer",
+          "amount": "600000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Reserve buffer",
+            "goal": "40000000-0000-4000-8000-000000000022",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "6000.00",
+            "financeType": "reservation",
+            "financeContract": "1",
+            "delta": "600000"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000025",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":24,\"kind\":\"reservation\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"4000.00\",\"date\":\"2026-10-21\",\"goal\":\"40000000-0000-4000-8000-000000000023\",\"name\":\"Reserve equipment\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000025",
+          "actionId": "40000000-0000-4000-8000-000000000025",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Reserve equipment",
+          "amount": "400000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Reserve equipment",
+            "goal": "40000000-0000-4000-8000-000000000023",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "4000.00",
+            "financeType": "reservation",
+            "financeContract": "1",
+            "delta": "400000"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000026",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":25,\"kind\":\"savingsReallocation\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"1000.00\",\"date\":\"2026-10-21\",\"fromAccount\":\"40000000-0000-4000-8000-000000000001\",\"fromGoal\":\"40000000-0000-4000-8000-000000000022\",\"goal\":\"40000000-0000-4000-8000-000000000023\",\"name\":\"Explicit reallocation\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000026",
+          "actionId": "40000000-0000-4000-8000-000000000026",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Explicit reallocation",
+          "amount": "100000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Explicit reallocation",
+            "fromGoal": "40000000-0000-4000-8000-000000000022",
+            "fromAccount": "40000000-0000-4000-8000-000000000001",
+            "goal": "40000000-0000-4000-8000-000000000023",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "1000.00",
+            "financeType": "savingsReallocation",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000027",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":26,\"kind\":\"financeCorrection\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"reason\":\"Explicit management completion\",\"replace\":\"40000000-0000-4000-8000-000000000022\",\"replaceVersion\":\"1\",\"status\":\"completed\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000027",
+          "actionId": "40000000-0000-4000-8000-000000000022",
+          "kind": "adjustment",
+          "change": "replace",
+          "date": "2026-10-21",
+          "title": "Safety buffer",
+          "amount": "600000",
+          "number": 2,
+          "previous": "40000000-0000-4000-8000-000000000022",
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "replace": "40000000-0000-4000-8000-000000000022",
+            "replaceVersion": "1",
+            "reason": "Explicit management completion",
+            "status": "completed",
+            "name": "Safety buffer",
+            "amount": "6000.00",
+            "financeType": "savingsGoal",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000028",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":27,\"kind\":\"reservation\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"4000.00\",\"date\":\"2026-10-21\",\"goal\":\"40000000-0000-4000-8000-000000000022\",\"name\":\"Release part of completed goal\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000028",
+          "actionId": "40000000-0000-4000-8000-000000000028",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Release part of completed goal",
+          "amount": "400000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Release part of completed goal",
+            "goal": "40000000-0000-4000-8000-000000000022",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "amount": "4000.00",
+            "financeType": "reservation",
+            "financeContract": "1",
+            "delta": "-100000"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000029",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":28,\"kind\":\"recurrence\",\"values\":{\"account\":\"40000000-0000-4000-8000-000000000001\",\"acknowledge\":\"false\",\"amount\":\"200.00\",\"date\":\"2026-10-21\",\"frequency\":\"monthly\",\"interval\":\"1\",\"monthDay\":\"21\",\"monthPolicy\":\"last_valid_day\",\"name\":\"Monthly utility\",\"recurringKind\":\"bill\",\"start\":\"2026-10-21\",\"status\":\"active\",\"timezone\":\"Asia/Manila\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000029",
+          "actionId": "40000000-0000-4000-8000-000000000029",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Monthly utility",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": null,
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Monthly utility",
+            "amount": "200.00",
+            "recurringKind": "bill",
+            "frequency": "monthly",
+            "interval": "1",
+            "start": "2026-10-21",
+            "monthDay": "21",
+            "monthPolicy": "last_valid_day",
+            "timezone": "Asia/Manila",
+            "status": "active",
+            "account": "40000000-0000-4000-8000-000000000001",
+            "financeType": "recurrence",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000030",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":29,\"kind\":\"recurrenceGenerate\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"from\":\"2026-10-21\",\"name\":\"Explicit two-month window\",\"rule\":\"40000000-0000-4000-8000-000000000029\",\"through\":\"2026-11-21\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000030",
+          "actionId": "40000000-0000-4000-8000-000000000030",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Explicit two-month window",
+          "amount": "0",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000029",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Explicit two-month window",
+            "rule": "40000000-0000-4000-8000-000000000029",
+            "from": "2026-10-21",
+            "through": "2026-11-21",
+            "financeType": "recurrenceGenerate",
+            "financeContract": "1",
+            "dates": "[\"2026-10-21\",\"2026-11-21\"]"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000031",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":30,\"kind\":\"recurrenceLink\",\"values\":{\"acknowledge\":\"false\",\"actual\":\"40000000-0000-4000-8000-000000000003\",\"amount\":\"50.00\",\"date\":\"2026-10-21\",\"logicalDate\":\"2026-10-21\",\"name\":\"Partial actual purchase evidence\",\"rule\":\"40000000-0000-4000-8000-000000000029\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000031",
+          "actionId": "40000000-0000-4000-8000-000000000031",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "Partial actual purchase evidence",
+          "amount": "5000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000003",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Partial actual purchase evidence",
+            "rule": "40000000-0000-4000-8000-000000000029",
+            "logicalDate": "2026-10-21",
+            "actual": "40000000-0000-4000-8000-000000000003",
+            "amount": "50.00",
+            "financeType": "recurrenceLink",
+            "financeContract": "1",
+            "occurrence": "9b6f726d-ab39-5bd9-ada3-e56ba5751ceb"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000032",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":31,\"kind\":\"recurrenceUnlink\",\"values\":{\"acknowledge\":\"false\",\"date\":\"2026-10-21\",\"link\":\"40000000-0000-4000-8000-000000000031\",\"name\":\"Reverse exact actual link\",\"reason\":\"Wrong occurrence\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000032",
+          "actionId": "40000000-0000-4000-8000-000000000031",
+          "kind": "adjustment",
+          "change": "reverse",
+          "date": "2026-10-21",
+          "title": "Reversal · Partial actual purchase evidence",
+          "amount": "5000",
+          "number": 2,
+          "previous": "40000000-0000-4000-8000-000000000031",
+          "source": "40000000-0000-4000-8000-000000000003",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "Reverse exact actual link",
+            "link": "40000000-0000-4000-8000-000000000031",
+            "reason": "Wrong occurrence",
+            "financeType": "recurrenceUnlink",
+            "financeContract": "1"
+          },
+          "postings": []
+        }
+      }
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000033",
+      "payload": "{\"contract\":1,\"authority\":\"local\",\"owner\":\"40000000-0000-4000-8000-000000000000\",\"expectedVersion\":32,\"kind\":\"occurrenceOverride\",\"values\":{\"acknowledge\":\"false\",\"amount\":\"200.00\",\"date\":\"2026-10-21\",\"due\":\"2026-11-22\",\"logicalDate\":\"2026-11-21\",\"name\":\"One due-date change\",\"reason\":\"Provider changed this due only\",\"rule\":\"40000000-0000-4000-8000-000000000029\",\"state\":\"planned\"}}",
+      "plan": {
+        "account": null,
+        "category": null,
+        "archiveId": null,
+        "revision": {
+          "id": "40000000-0000-4000-8000-000000000033",
+          "actionId": "40000000-0000-4000-8000-000000000033",
+          "kind": "adjustment",
+          "change": "create",
+          "date": "2026-10-21",
+          "title": "One due-date change",
+          "amount": "20000",
+          "number": 1,
+          "previous": null,
+          "source": "40000000-0000-4000-8000-000000000029",
+          "values": {
+            "date": "2026-10-21",
+            "acknowledge": "false",
+            "name": "One due-date change",
+            "rule": "40000000-0000-4000-8000-000000000029",
+            "logicalDate": "2026-11-21",
+            "amount": "200.00",
+            "due": "2026-11-22",
+            "state": "planned",
+            "reason": "Provider changed this due only",
+            "financeType": "occurrenceOverride",
+            "financeContract": "1",
+            "occurrence": "0929de91-4ffa-5209-a647-666448c82b83"
+          },
+          "postings": []
+        }
+      }
+    }
+  ]
+}

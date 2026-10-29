@@ -1,0 +1,15 @@
+{
+  "name": "salapiya-p0-server-proof",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test *.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "pg": "8.23.1",
+    "supabase": "2.122.0",
+    "@powersync/management-client": "0.1.7",
+    "@journeyapps-labs/common-sdk": "1.0.7"
+  }
+}

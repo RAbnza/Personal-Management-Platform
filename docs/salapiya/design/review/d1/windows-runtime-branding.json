@@ -1,0 +1,37 @@
+{
+  "platform": "windows",
+  "kind": "branding",
+  "metrics": {
+    "mark": {
+      "meanAbsoluteChannelDifference": 0.629215087890625,
+      "pixelsWithAnyChannelDifferenceAbove16": 3807,
+      "pixels": 204800
+    },
+    "horizontal-light": {
+      "meanAbsoluteChannelDifference": 0.595294189453125,
+      "pixelsWithAnyChannelDifferenceAbove16": 4287,
+      "pixels": 204800
+    },
+    "horizontal-dark": {
+      "meanAbsoluteChannelDifference": 0.78527587890625,
+      "pixelsWithAnyChannelDifferenceAbove16": 4287,
+      "pixels": 204800
+    },
+    "vertical-light": {
+      "meanAbsoluteChannelDifference": 0.558009033203125,
+      "pixelsWithAnyChannelDifferenceAbove16": 4169,
+      "pixels": 204800
+    },
+    "vertical-dark": {
+      "meanAbsoluteChannelDifference": 0.756634521484375,
+      "pixelsWithAnyChannelDifferenceAbove16": 4169,
+      "pixels": 204800
+    },
+    "original": {
+      "meanAbsoluteChannelDifference": 0.707322998046875,
+      "pixelsWithAnyChannelDifferenceAbove16": 4170,
+      "pixels": 204800
+    }
+  },
+  "note": "Identical 640x320 transparent contain rectangles on each native renderer. Pixel differences include normal resampling/antialiasing; inspect shape/gradient differences visually."
+}

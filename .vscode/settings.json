@@ -1,6 +1,14 @@
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "never"
+    }
+  },
+  "dart.flutterHotReloadOnSave": "manual",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },

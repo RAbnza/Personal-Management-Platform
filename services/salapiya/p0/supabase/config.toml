@@ -1,0 +1,19 @@
+project_id = "salapiya-p0"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+
+[auth]
+additional_redirect_urls = ["dev.salapiya.p0://auth/callback"]
+
+# The handler performs online getUser verification and a live-session/recent-OAuth
+# RPC check. Gateway legacy-JWT verification is not the authorization boundary.
+[functions.delete-account]
+verify_jwt = false

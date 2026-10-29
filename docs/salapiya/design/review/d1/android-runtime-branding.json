@@ -1,0 +1,37 @@
+{
+  "platform": "android",
+  "kind": "branding",
+  "metrics": {
+    "mark": {
+      "meanAbsoluteChannelDifference": 0.74444091796875,
+      "pixelsWithAnyChannelDifferenceAbove16": 4195,
+      "pixels": 204800
+    },
+    "horizontal-light": {
+      "meanAbsoluteChannelDifference": 0.662891845703125,
+      "pixelsWithAnyChannelDifferenceAbove16": 5018,
+      "pixels": 204800
+    },
+    "horizontal-dark": {
+      "meanAbsoluteChannelDifference": 0.886243896484375,
+      "pixelsWithAnyChannelDifferenceAbove16": 5019,
+      "pixels": 204800
+    },
+    "vertical-light": {
+      "meanAbsoluteChannelDifference": 0.55792236328125,
+      "pixelsWithAnyChannelDifferenceAbove16": 4161,
+      "pixels": 204800
+    },
+    "vertical-dark": {
+      "meanAbsoluteChannelDifference": 0.755926513671875,
+      "pixelsWithAnyChannelDifferenceAbove16": 4163,
+      "pixels": 204800
+    },
+    "original": {
+      "meanAbsoluteChannelDifference": 0.706712646484375,
+      "pixelsWithAnyChannelDifferenceAbove16": 4164,
+      "pixels": 204800
+    }
+  },
+  "note": "Identical 640x320 transparent contain rectangles on each native renderer. Pixel differences include normal resampling/antialiasing; inspect shape/gradient differences visually."
+}

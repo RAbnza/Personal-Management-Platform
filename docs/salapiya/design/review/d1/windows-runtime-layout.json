@@ -1,0 +1,71 @@
+{
+  "platform": "windows",
+  "kind": "layout",
+  "evidence": "Native Flutter constrained logical surfaces; not OS window resizing or device-density changes.",
+  "cases": [
+    {
+      "width": 640.0,
+      "height": 480.0,
+      "textScale": 1.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 640.0,
+      "height": 480.0,
+      "textScale": 2.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 900.0,
+      "height": 600.0,
+      "textScale": 1.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 900.0,
+      "height": 600.0,
+      "textScale": 2.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 1280.0,
+      "height": 800.0,
+      "textScale": 1.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 1280.0,
+      "height": 800.0,
+      "textScale": 2.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 1600.0,
+      "height": 900.0,
+      "textScale": 1.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    },
+    {
+      "width": 1600.0,
+      "height": 900.0,
+      "textScale": 2.0,
+      "themes": 2,
+      "sections": 8,
+      "result": "pass"
+    }
+  ]
+}

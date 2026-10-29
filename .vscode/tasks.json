@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Salapiya: start Android emulator",
+      "type": "process",
+      "command": "cmd.exe",
+      "args": [
+        "/d",
+        "/c",
+        "${workspaceFolder}/scripts/salapiya/start-emulator.cmd"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Salapiya: validate",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Salapiya: format check",
+        "Salapiya: analyze",
+        "Salapiya: test"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Salapiya: format check",
+      "type": "shell",
+      "command": "dart format --output=none --set-exit-if-changed lib test integration_test",
+      "options": { "cwd": "${workspaceFolder}/apps/salapiya" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Salapiya: analyze",
+      "type": "shell",
+      "command": "flutter analyze",
+      "options": { "cwd": "${workspaceFolder}/apps/salapiya" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Salapiya: test",
+      "type": "shell",
+      "command": "flutter test",
+      "options": { "cwd": "${workspaceFolder}/apps/salapiya" },
+      "problemMatcher": []
+    }
+  ]
+}

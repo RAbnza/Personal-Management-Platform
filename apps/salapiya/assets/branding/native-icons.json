@@ -1,0 +1,38 @@
+{
+  "source": "apps/salapiya/assets/branding/display/salapiya_mark.png",
+  "sourceSha256": "f8139c0a613fd040d0534927bf4c2c6c59e756f144b28ceb6cbce3fb7e519029",
+  "generator": "Pillow 11.2.1",
+  "windowsSizes": [
+    16,
+    20,
+    24,
+    32,
+    40,
+    48,
+    64,
+    128,
+    256
+  ],
+  "androidAdaptiveCanvasDp": 108,
+  "androidMarkBoxDp": 46,
+  "androidBackground": "#F3F4F6",
+  "monochrome": "original alpha silhouette; P6 authorized",
+  "outputs": {
+    "android/app/src/main/res/drawable-hdpi/ic_launcher_foreground.png": "f35538de87fb3604722d95df9a58e8820aea5aff640a08caa869105adda4797c",
+    "android/app/src/main/res/drawable-hdpi/ic_launcher_monochrome.png": "636bc0a7780fd3ab040b690e313fa55278d08bf0bc6b988ee4e2c5dc904d500d",
+    "android/app/src/main/res/drawable-mdpi/ic_launcher_foreground.png": "da01a47389a24dc521b1e0498b9f730bb38a2a5f5cd6f910e8cb3e6980b7bed8",
+    "android/app/src/main/res/drawable-mdpi/ic_launcher_monochrome.png": "33459cfcff6cadbb05d18d453e509b49ba07aac5d5f9088f2ee738deb344708a",
+    "android/app/src/main/res/drawable-xhdpi/ic_launcher_foreground.png": "e6070c34038f7791744f6a7f57380f086bebc8cf155a65c53b2917d2d5825c8e",
+    "android/app/src/main/res/drawable-xhdpi/ic_launcher_monochrome.png": "a03679d30f05cfe7dd9e15128deb0e9f597b42b708185dd7e06b68525e8e9d62",
+    "android/app/src/main/res/drawable-xxhdpi/ic_launcher_foreground.png": "16f38e7ce9786634c330bb86060cb0389605e7fc7f92f2d322e32236f092fbed",
+    "android/app/src/main/res/drawable-xxhdpi/ic_launcher_monochrome.png": "f2812494439fb1f82c9e588ea067aa33d0a36bd95bf249db29de0cef03e3993e",
+    "android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png": "4f9038a042a70bd0bcc3b8f46e04f135fa2f90a5bee440dd66868cf072be9aff",
+    "android/app/src/main/res/drawable-xxxhdpi/ic_launcher_monochrome.png": "6cb80b2ae1fc58f1c01c209c3fdb29c4fe9cb7c21c944228da8c794d809c60ad",
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": "0533a2ca2cb1a7fc33bf54b1449ea572ba24ac2b0e5defc111031cf8fba16e65",
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": "1962257d581d3dcd1609a6973ed48d348c19176c1fe5e8f5775e740e2718a036",
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": "937efbf43d5fa0b564629b896c9a8c26b6b293006d8b1028901583f40cc09d0b",
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": "ecb386ba4c278762ba93594095a437c02d1d45370a96f00449d0980150d08c44",
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": "4f67d010319a2480f4059116d3f0a9bf5078ac6cf83e52df50dc98a98e5bd482",
+    "windows/runner/resources/app_icon.ico": "95eca1e5ff54627ceebdf0379b13f090cab2c2d344a9f14cf61f15ea8e0ea932"
+  }
+}
