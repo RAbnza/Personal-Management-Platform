@@ -121,4 +121,24 @@ test('account deletion requires recent Google authentication, rolls back interru
   await assert.rejects(obsolete.query('INSERT INTO p2_profile VALUES($1,$2,$3,0)',[fixture.profile,randomUUID(),'Stale deleted identity']),/deleted profile identity/);
  } finally {await obsolete.close();}
 });
+test('provider soft/hard deletion registers erasure, removes private records and closes restored-session authority',async()=>{
+ const user=randomUUID(),session=randomUUID(),p=randomUUID(),id=randomUUID();
+ await db.query('INSERT INTO auth.users(id) VALUES($1)',[user]);
+ await db.query('INSERT INTO auth.sessions VALUES($1,$2)',[session,user]);
+ await db.query('INSERT INTO p2_profile VALUES($1,$2,$3,0)',[p,user,'Provider deletion fixture']);
+ const payload=(await db.query('SELECT salapiya_p2.canonical_payload($1::jsonb) payload',[JSON.stringify({
+  contract:1,authority:'local',owner:p,expectedVersion:0,kind:'account',values:{name:'Private owner wallet',kind:'Cash',amount:'100.00',cutoff:'2026-10-01',date:'2026-10-29',acknowledge:'false'},
+ })])).rows[0].payload;
+ assert.equal((await rpc(user,session,'p2_submit_command',[id,JSON.stringify({contract:2,profile_id:p,payload,base_revision:0})])).outcome,'accepted');
+ await db.query('UPDATE auth.users SET deleted_at=clock_timestamp() WHERE id=$1',[user]);
+ assert.equal((await db.query('SELECT count(*)::int n FROM p2_command WHERE owner_id=$1',[user])).rows[0].n,0);
+ assert.equal((await db.query('SELECT profile_id FROM salapiya_lifecycle.deleted_account WHERE owner_id=$1',[user])).rows[0].profile_id,p);
+ await db.query('DELETE FROM auth.users WHERE id=$1',[user]);
+ assert((await db.query('SELECT auth_cleanup_completed_at FROM salapiya_lifecycle.deleted_account WHERE owner_id=$1',[user])).rows[0].auth_cleanup_completed_at);
+ await db.query('INSERT INTO auth.users(id) VALUES($1)',[user]);
+ await db.query('INSERT INTO auth.sessions VALUES($1,$2)',[session,user]);
+ await assert.rejects(rpc(user,session,'p2_profile_boundary'),/deleted/);
+ assert.equal((await db.query('SELECT count(*)::int n FROM p7_sync_session WHERE owner_id=$1',[user])).rows[0].n,0);
+ assert.equal((await rpc(a,s1,'p2_profile_boundary')).id,profile);
+});
 after(()=>db.close());

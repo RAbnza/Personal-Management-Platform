@@ -10,7 +10,17 @@ test('deletion endpoint rejects foreign IDs, unsigned calls and failed reauthent
  assert.equal((await handle(request({confirmation:'DELETE CONNECTED ACCOUNT',user_id:id}))).status,400);
  assert.equal((await handle(new Request('https://test',{method:'POST',body:'{}'}))).status,401);
  assert.equal(calls,0);
- assert.equal((await handle(request())).status,401);assert.equal(calls,1);
+ assert.equal((await handle(request())).status,401);assert.equal(calls,2);
+});
+test('response loss after provider deletion reads only the original signed-subject outcome',async()=>{
+ const calls=[];
+ const handle=deletionHandler({url:'https://test',publicKey:'public',serviceKey:'synthetic-service',fetcher:async(url)=>{
+  calls.push(url);return url.endsWith('/user')?new Response('{}',{status:401}):Response.json({application_deleted:true,auth_cleanup_pending:false});
+ }});
+ const result=await handle(request());assert.equal(result.status,200);
+ assert.deepEqual(await result.json(),{application_deleted:true,auth_cleanup_pending:false});
+ assert.equal(calls.length,2);assert(calls[1].endsWith('/rpc/p7_deletion_status'));
+ assert(!calls.some(url=>url.includes('/admin/')));
 });
 test('provider cleanup uses only verified identity after committed application deletion; failure remains explicit and retryable',async()=>{
  for(const fail of [false,true]){

@@ -19,7 +19,14 @@ export function deletionHandler({url,publicKey,serviceKey,fetcher=fetch}) {
   const headers={apikey:publicKey,Authorization:authorization,'Content-Type':'application/json'};
   try {
    const userResponse=await fetcher(`${url}/auth/v1/user`,{headers,signal:AbortSignal.timeout(15000)});
-   if(!userResponse.ok)return reply(401,{error:'Online authentication required'});
+   if(!userResponse.ok){
+    // The previous request may have deleted Auth successfully before its response
+    // was lost. PostgREST verifies the signed JWT independently; this RPC only
+    // reads that subject's immutable deletion outcome and cannot initiate deletion.
+    const receipt=await fetcher(`${url}/rest/v1/rpc/p7_deletion_status`,{method:'POST',headers,body:'{}',signal:AbortSignal.timeout(15000)});
+    if(receipt.ok){const outcome=await receipt.json();if(outcome.application_deleted===true)return reply(outcome.auth_cleanup_pending?202:200,outcome);}
+    return reply(401,{error:'Online authentication required'});
+   }
    const user=await userResponse.json();
    if(typeof user.id!=='string'||!/^[0-9a-f-]{36}$/.test(user.id))return reply(401,{error:'Invalid authenticated identity'});
    const deletion=await fetcher(`${url}/rest/v1/rpc/p7_delete_account`,{
