@@ -93,8 +93,15 @@ try {
     $proof.uninstalled=$true
   }
   if($callbackExisted) {
-    & reg.exe import $callbackBackup | Out-Null
-    if($LASTEXITCODE -ne 0) { throw 'Restore the preserved callback registration before continuing.' }
+    # Windows PowerShell classifies reg.exe's successful stderr message as an
+    # error record. Inspect the native exit code without aborting cleanup.
+    $previousAction=$ErrorActionPreference
+    try {
+      $ErrorActionPreference='Continue'
+      & reg.exe import $callbackBackup 2>&1 | Out-Null
+      $registryExit=$LASTEXITCODE
+    } finally { $ErrorActionPreference=$previousAction }
+    if($registryExit -ne 0) { throw 'Restore the preserved callback registration before continuing.' }
   } elseif(Test-Path -LiteralPath $callback) { Remove-Item -LiteralPath $callback -Recurse }
   foreach($link in $links) {
     if($originalLinks.ContainsKey($link)) { Copy-Item -LiteralPath $originalLinks[$link] -Destination $link -Force }

@@ -25,8 +25,12 @@ files.update((app / "build").glob("p3-*.log"))
 files.update((app / "build").glob("p4-*.log"))
 files.update((app / "build").glob("p5-*.log"))
 files.update((app / "build").glob("p6-*.log"))
+files.update((app / "build").glob("release-*.log"))
+files.update((root / "out").glob("release-*.log"))
+for extension in ("*.log", "*.txt", "*.json", "*.xml"):
+    files.update((root / "out/release-gate").rglob(extension))
 for extension in ("*.log", "*.txt", "*.json"):
-    files.update((app / "build/private-release").glob(extension))
+    files.update((app / "build/private-release").rglob(extension))
 for configuration in ("Debug", "Release"):
     native = app / "build/windows/x64/runner" / configuration
     files.update(native.glob("*.exe"))
@@ -34,8 +38,9 @@ for configuration in ("Debug", "Release"):
     files.update(native.rglob("kernel_blob.bin"))
     files.update(native.rglob("app.so"))
 files.update((app / "build/app/outputs/flutter-apk").glob("*.apk"))
-files.update((app / "build/private-release").glob("*.apk"))
-files.update((app / "build/private-release").glob("*.zip"))
+files.update((app / "build/private-release").rglob("*.apk"))
+files.update((app / "build/private-release").rglob("*.zip"))
+files.update((app / "build/private-release").rglob("*.exe"))
 
 def contains_secret(stream):
     prior = b""
@@ -65,5 +70,5 @@ for file in sorted(files):
                     if contains_secret(stream):
                         hits.append(label + ":" + member.filename)
 print(json.dumps({"credentialScanFiles": scanned, "matchingPaths": hits,
-                  "scope": "working source, P0-P6 logs, Debug/Release Windows binaries and decompressed build APKs"}))
+                  "scope": "working source, P0-P6/release logs and proof metadata, Debug/Release Windows binaries, versioned installers and decompressed APK/ZIP contents"}))
 sys.exit(bool(hits))
