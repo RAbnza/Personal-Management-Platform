@@ -8,7 +8,8 @@
   "devDependencies": {
     "@electric-sql/pglite": "0.5.11",
     "pg": "8.23.1",
-    "powersync": "0.10.2",
-    "supabase": "2.122.0"
+    "supabase": "2.122.0",
+    "@powersync/management-client": "0.1.7",
+    "@journeyapps-labs/common-sdk": "1.0.7"
   }
 }

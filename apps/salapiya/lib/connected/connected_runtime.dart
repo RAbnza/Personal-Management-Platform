@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
@@ -13,6 +14,7 @@ import '../local/local_store.dart';
 import '../p0/auth_runtime.dart';
 import '../p0/google_auth_proof.dart';
 import 'command_connector.dart';
+import 'environment.dart';
 import '../shared/shared_domain.dart';
 import '../life/life_controller.dart';
 
@@ -24,8 +26,27 @@ class ConnectedRuntime extends ChangeNotifier {
   static const url = String.fromEnvironment('SALAPIYA_SUPABASE_URL');
   static const publicKey = String.fromEnvironment('SALAPIYA_PUBLIC_KEY');
   static const endpoint = String.fromEnvironment('SALAPIYA_POWERSYNC_URL');
+  static const environment = String.fromEnvironment(
+    'SALAPIYA_ENVIRONMENT',
+    defaultValue: 'development',
+  );
+  static const project = String.fromEnvironment(
+    'SALAPIYA_EXPECTED_PROJECT',
+    defaultValue: developmentProject,
+  );
+  static const syncInstance = String.fromEnvironment(
+    'SALAPIYA_EXPECTED_SYNC_INSTANCE',
+    defaultValue: developmentSyncInstance,
+  );
   bool get configured =>
-      url.isNotEmpty && publicKey.isNotEmpty && endpoint.isNotEmpty;
+      publicKey.isNotEmpty &&
+      allowedConnectionEnvironment(
+        environment: environment,
+        url: url,
+        endpoint: endpoint,
+        project: project,
+        syncInstance: syncInstance,
+      );
   GoogleAuthProof? flow;
   Future<void>? _authOpening;
   StreamSubscription<dynamic>? _downloads, _intents, _status, _lifeChanges;
@@ -102,7 +123,7 @@ class ConnectedRuntime extends ChangeNotifier {
   Future<void> _initializeAuth() async {
     if (!configured) {
       reject(
-        'Google connection is unavailable in this build. Your local profile remains available. Use the configured Salapiya development build.',
+        'Google connection is unavailable in this build. Your local profile remains available. Use the configured Salapiya build.',
       );
     }
     final auth = await initializeProofAuth(
@@ -362,6 +383,14 @@ class ConnectedRuntime extends ChangeNotifier {
     sessionExpired = false;
   });
   Future<Map<String, dynamic>?> boundary() async {
+    await flow!.client.rpc(
+      'p7_register_device',
+      params: {
+        'device_label': Platform.isWindows
+            ? 'Windows installation'
+            : 'Android installation',
+      },
+    );
     final result = await flow!.client.rpc('p2_profile_boundary');
     return result == null ? null : Map<String, dynamic>.from(result as Map);
   }
@@ -791,5 +820,86 @@ class ConnectedRuntime extends ChangeNotifier {
     await _attached?.db.disconnect();
     await flow?.close();
     dispose();
+  }
+
+  Future<void> detachForLocalRemoval() async {
+    if (busy) {
+      reject(
+        'Wait for the current connection request before removing this profile.',
+      );
+    }
+    await _downloads?.cancel();
+    await _intents?.cancel();
+    await _lifeChanges?.cancel();
+    await _status?.cancel();
+    await _refreshQueue;
+    await _attached?.db.disconnect();
+    if (flow?.pending == true) await flow!.cancel();
+    // The SDK clears its in-memory session before attempting the network logout.
+    // Local removal works offline and does not promise cloud device revocation.
+    try {
+      await flow?.client.auth
+          .signOut(scope: SignOutScope.local)
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // Explicit secure-storage cleanup below is still required and may fail.
+    }
+    if (flow != null) {
+      await vault.delete(key: '$scope.session');
+      await vault.delete(key: '$scope.attempt');
+      await vault.delete(key: flow!.verifierSlot);
+    }
+    _attached = null;
+    binding = cloud = null;
+    pendingCount = reviewCount = lifePendingCount = lifeReviewCount = 0;
+    sharedPendingCount = sharedReviewCount = 0;
+    reviews = [];
+    error = null;
+    sessionExpired = false;
+  }
+
+  Future<List<Map<String, dynamic>>> authorizedDevices() async {
+    await initializeAuth();
+    if (binding == null ||
+        flow!.client.auth.currentUser?.id != binding!['remote_owner']) {
+      reject('Reconnect with the Google identity bound to this profile.');
+    }
+    await boundary();
+    return [
+      for (final row in await flow!.client.rpc('p7_devices') as List)
+        Map<String, dynamic>.from(row as Map),
+    ];
+  }
+
+  Future<void> revokeDevice(String sessionId) async {
+    await authorizedDevices();
+    await flow!.client.rpc(
+      'p7_revoke_device',
+      params: {'target_session': sessionId},
+    );
+  }
+
+  Future<bool> deleteConnectedAccount() async {
+    await initializeAuth();
+    if (binding == null ||
+        flow!.client.auth.currentUser?.id != binding!['remote_owner']) {
+      reject('Reconnect with the Google identity bound to this profile.');
+    }
+    await _attached?.db.disconnect();
+    final response = await flow!.client.functions.invoke(
+      'delete-account',
+      body: {'confirmation': 'DELETE CONNECTED ACCOUNT'},
+    );
+    final result = response.data;
+    if (result is! Map || result['application_deleted'] != true) {
+      reject(
+        'Deletion is not verified. Reauthenticate with Google and review again. Local records are preserved.',
+      );
+    }
+    await _attached?.db.execute('UPDATE connected_profile SET paused=1');
+    sessionExpired = true;
+    error = 'Connected application data was deleted. This local copy remains until you remove it separately.';
+    changed();
+    return result['auth_cleanup_pending'] == true;
   }
 }

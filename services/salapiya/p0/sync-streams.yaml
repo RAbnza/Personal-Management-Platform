@@ -1,29 +1,30 @@
 # Paste only after the proof schema/publication and JWT validation are configured.
-# No client-controlled stream parameters confer ownership. RLS is NOT used by CDC.
+# Live provider-session entitlements filter CDC independently of RLS.
+# Both sub and session_id are signed JWT claims; client parameters grant nothing.
 config:
   edition: 3
 streams:
   private_profile:
     auto_subscribe: true
-    query: SELECT * FROM p0_profile WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p0_profile WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   private_actions:
     auto_subscribe: true
-    query: SELECT * FROM p0_accepted WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p0_accepted WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p2_private_profile:
     auto_subscribe: true
-    query: SELECT * FROM p2_profile WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p2_profile WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p2_private_commands:
     auto_subscribe: true
-    query: SELECT * FROM p2_command WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p2_command WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p5_private_life:
     auto_subscribe: true
-    query: SELECT * FROM p5_command WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p5_command WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p3_entitled_groups:
     auto_subscribe: true
-    query: SELECT id, owner_id, group_id, version, sync_document AS document FROM p3_group WHERE owner_id = auth.user_id()
+    query: SELECT id, owner_id, group_id, version, sync_document AS document FROM p3_group WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p3_entitled_resources:
     auto_subscribe: true
-    query: SELECT * FROM p3_resource WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p3_resource WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())
   p3_private_evidence_review:
     auto_subscribe: true
-    query: SELECT * FROM p3_private_review WHERE owner_id = auth.user_id()
+    query: SELECT * FROM p3_private_review WHERE owner_id = auth.user_id() AND owner_id IN (SELECT owner_id FROM p7_sync_session WHERE id = auth.parameter('session_id') AND owner_id = auth.user_id())

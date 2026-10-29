@@ -471,6 +471,14 @@ class DeviceReminders extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  Future<void> removeOwnedNotifications() async {
+    await stop();
+    final rows = await store.db.getAll('SELECT os_id FROM device_reminder');
+    for (final row in rows) {
+      await device.cancel(row['os_id'] as int);
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) unawaited(reconcile());

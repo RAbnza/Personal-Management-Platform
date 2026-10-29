@@ -331,7 +331,7 @@ class _ConnectionBodyState extends State<ConnectionBody> {
           ],
           const SizedBox(height: 24),
           const FinanceNotice(
-            'Pause stops synchronization. Sign out removes this installation’s online session while retaining private local data and waiting work. Neither action disconnects ownership, removes a device, or deletes local/cloud records. Device revocation and deletion are separate lifecycle work.',
+            'Pause stops synchronization. Sign out removes this installation’s online session while retaining private local data and waiting work. Neither action deletes your account or local records. Open Devices for session revocation, connected account deletion and separate local profile removal.',
           ),
         ],
       );

@@ -7,7 +7,8 @@ try {
     || command==='migration list --linked'
     || (args[0]==='db'&&args[1]==='push'&&args.includes('--linked')
       && args.slice(2).every(a=>['--linked','--dry-run','--yes'].includes(a)));
-  if(!allowed)throw Error('Only scoped link, migration list and reviewed linked db push are allowed');
+  const deletionDeploy=JSON.stringify(args)===JSON.stringify(['functions','deploy','delete-account','--project-ref',ref,'--use-api','--no-verify-jwt']);
+  if(!allowed&&!deletionDeploy)throw Error('Only scoped link, migration list and reviewed linked db push are allowed');
   const result=cli(process.execPath,['node_modules/supabase/dist/supabase.js',...args]);
   report({command:args.slice(0,2),stdout:result.stdout,stderr:result.stderr});
 }catch(error){report({failure:error.message});process.exitCode=1;}

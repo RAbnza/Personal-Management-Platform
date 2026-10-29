@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../gallery/settings.dart';
 import '../prototype/scenarios.dart';
 import 'local_finance_controller.dart';
+import 'finance_domain.dart';
 import 'local_profiles.dart';
 import 'local_store.dart';
 import '../life/life_controller.dart';
@@ -138,6 +139,23 @@ class LocalRuntime extends ChangeNotifier {
     await (session?.life as DurableLifeController?)?.close();
     await connected.close();
     await profiles.close();
+  }
+
+  Future<void> removeLocalProfile(String expectedOwner) async {
+    if (session?.localFinance.store.owner != expectedOwner) {
+      reject('The active profile changed. Review local removal again.');
+    }
+    settings.removeListener(_persist);
+    await flushPreferences();
+    await connected.detachForLocalRemoval();
+    await (session!.life as DurableLifeController).device
+        ?.removeOwnedNotifications();
+    await (session!.life as DurableLifeController).close();
+    await profiles.removeLocal(expectedOwner);
+    final previous = session;
+    session = null;
+    previous?.dispose();
+    notifyListeners();
   }
 
   @override

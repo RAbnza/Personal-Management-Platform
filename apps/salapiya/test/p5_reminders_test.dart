@@ -45,6 +45,36 @@ class FakeNotificationDevice implements NotificationDevice {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'local profile removal cancels only its recorded notification IDs',
+    () async {
+      final f = await LocalFixture.open(), native = FakeNotificationDevice();
+      final d = DeviceReminders(f.store, () => [], device: native);
+      try {
+        await f.store.db.execute(
+          'INSERT INTO device_reminder VALUES(?,?,?,?,?,?,?)',
+          [
+            'owned',
+            'owned-source',
+            '1',
+            101,
+            '2026-10-30T00:00:00Z',
+            'scheduled',
+            'owned',
+          ],
+        );
+        native.scheduled[101] = (DateTime.utc(2026, 10, 30), 'owned');
+        native.scheduled[202] = (DateTime.utc(2026, 10, 30), 'unrelated');
+        await d.removeOwnedNotifications();
+        expect(native.scheduled.containsKey(101), false);
+        expect(native.scheduled.containsKey(202), true);
+        expect(native.cancellations, 1);
+      } finally {
+        d.dispose();
+        await f.close();
+      }
+    },
+  );
   test('valid delayed OS alarms survive deadline passage, and stale shown generations are explicitly cancelled', () async {
     final f = await LocalFixture.open(), native = FakeNotificationDevice();
     var now = DateTime.utc(2026, 10, 26),

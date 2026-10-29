@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../connected/connection_view.dart';
+import '../connected/lifecycle_view.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -510,14 +511,7 @@ class _LocalProfileViewState extends State<LocalProfileView> {
             else if (section == 'Connection')
               ConnectionBody(runtime: s.runtime)
             else if (section == 'Devices')
-              ValueBlock(
-                'THIS INSTALLATION',
-                s.runtime.connected.connected
-                    ? 'Connected installation'
-                    : 'Local only.',
-                'The database key is protected by your operating system. Synchronization is scoped to your bound private profile. Remote device removal is not available in this milestone.',
-                color: Palette.mint,
-              )
+              DeviceLifecycleView(runtime: s.runtime)
             else if (section == 'Help') ...[
               const SectionHeading('Life, Calendar and device reminders'),
               TextButton(

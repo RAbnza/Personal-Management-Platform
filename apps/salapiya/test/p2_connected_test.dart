@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 import 'package:salapiya/connected/command_connector.dart';
 import 'package:salapiya/connected/financial_contract.dart';
 import 'package:salapiya/local/finance_domain.dart';
@@ -77,6 +78,47 @@ Future<void> enroll(LocalStore store) async {
 }
 
 void main() {
+  test('revoked-session upload keeps the original financial intent and transport for authenticated review', () async {
+    final f = await LocalFixture.open();
+    try {
+      final account = await f.account('Revocation queue fixture');
+      await enroll(f.store);
+      final id = await f.post('expense', {
+        'name': 'Waiting original intent',
+        'account': account,
+        'amount': '1.23',
+        'category': 'category-food',
+      });
+      final before = await f.store.db.get(
+        'SELECT * FROM connected_intent WHERE id=?',
+        [id],
+      );
+      final connector = FinancialConnector(
+        store: f.store,
+        actor: actor,
+        credentials: () async => null,
+        submit: (_, _) async => throw const PostgrestException(
+          message: 'current session revoked',
+          code: '42501',
+        ),
+      );
+      await expectLater(
+        connector.uploadData(f.store.db),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(
+        await f.store.db.get('SELECT * FROM connected_intent WHERE id=?', [id]),
+        before,
+      );
+      expect(before['state'], 'pending');
+      final queued = await f.store.db.getNextCrudTransaction();
+      expect(queued, isNotNull);
+      expect(queued!.crud.single.id, id);
+      expect(queued.crud.single.opData!['payload'], before['envelope']);
+    } finally {
+      await f.close();
+    }
+  });
   test('an unpublished enrollment archive preserves its frozen graph without granting authority to recreate published history', () async {
     final f = await LocalFixture.open();
     final dir = await Directory.systemTemp.createTemp(

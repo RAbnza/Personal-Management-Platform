@@ -55,6 +55,13 @@ class LocalProfiles {
         return null;
       }
       final descriptor = jsonDecode(encoded) as Map<String, dynamic>;
+      if (descriptor['version'] == 1 && descriptor['phase'] == 'empty') {
+        return null;
+      }
+      if (descriptor['version'] == 1 && descriptor['phase'] == 'removing') {
+        await _finishRemoval(descriptor);
+        return null;
+      }
       return await _open(descriptor);
     } finally {
       _opening = false;
@@ -152,7 +159,9 @@ class LocalProfiles {
     if (name.trim().isEmpty || name.trim().length > 200) {
       reject('Enter a display name (1–200 characters).');
     }
-    if (active != null || await vault.read() != null) {
+    final previous = await vault.read();
+    final old = previous == null ? null : jsonDecode(previous) as Map;
+    if (active != null || (old != null && old['phase'] != 'empty')) {
       reject('One profile is already initialized. Reopen it instead.');
     }
     await directory.create(recursive: true);
@@ -170,6 +179,7 @@ class LocalProfiles {
       'key': await PortableRecovery.newRecoverySecret(),
       'name': name.trim(),
       'preferences': preferences,
+      if (old?['preserved'] != null) 'preserved': old!['preserved'],
     };
     await vault.write(jsonEncode(d));
     return _open(d);
@@ -185,7 +195,9 @@ class LocalProfiles {
     bool preserveCurrent = false,
   }) async {
     final previous = await vault.read();
-    if (previous != null && !preserveCurrent) {
+    final prior = previous == null ? null : jsonDecode(previous) as Map;
+    final hasCurrent = prior != null && prior['phase'] != 'empty';
+    if (hasCurrent && !preserveCurrent) {
       reject('An active profile already exists. Review the safe switch first.');
     }
     if (!RegExp(r'^[0-9a-f-]{36}$').hasMatch(id) ||
@@ -208,7 +220,9 @@ class LocalProfiles {
       'name': name,
       'preferences': <String, String>{},
       'connected': {'owner': actor, 'email': email},
-      if (previous != null) 'preserved': jsonDecode(previous),
+      if (hasCurrent) 'preserved': prior,
+      if (!hasCurrent && prior?['preserved'] != null)
+        'preserved': prior!['preserved'],
     };
     // Save first: failure keeps the old profile active. Successful save is a
     // resumable activation checkpoint, never deletion of the old key or ledger.
@@ -226,7 +240,8 @@ class LocalProfiles {
   }) async {
     LocalBackup.validate(bundle);
     final previous = await vault.read();
-    if (active != null || previous != null) {
+    final old = previous == null ? null : jsonDecode(previous) as Map;
+    if (active != null || (old != null && old['phase'] != 'empty')) {
       reject(
         'Recovery activation requires a fresh installation. The current profile is preserved.',
       );
@@ -350,6 +365,7 @@ class LocalProfiles {
       'key': key,
       'name': bundle['name'],
       'preferences': bundle['preferences'],
+      if (old?['preserved'] != null) 'preserved': old!['preserved'],
     };
     await vault.write(jsonEncode(descriptor));
     if (interruptActivation) {
@@ -362,6 +378,94 @@ class LocalProfiles {
     final store = active;
     active = null;
     await store?.close();
+  }
+
+  /// Removes exactly one reviewed local profile. A protected checkpoint retains
+  /// its key until all owned files have gone, so restart resumes a partial erase.
+  /// Remote records, external archives and preserved profiles are never touched.
+  Future<void> removeLocal(String expectedOwner) async {
+    final raw = await vault.read();
+    if (raw == null) reject('No protected local profile is available.');
+    final d = jsonDecode(raw) as Map<String, dynamic>;
+    if (d['id'] != expectedOwner || d['phase'] != 'ready') {
+      reject('The active profile changed. Review local removal again.');
+    }
+    _validateRemovalPaths(d);
+    await vault.write(jsonEncode({...d, 'phase': 'removing'}));
+    await close();
+    await _finishRemoval(d);
+  }
+
+  List<String> _validateRemovalPaths(Map<String, dynamic> d) {
+    final id = d['id'];
+    if (id is! String ||
+        !RegExp(
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        ).hasMatch(id)) {
+      reject('Invalid profile identity. Existing files are preserved.');
+    }
+    final root = p.normalize(p.absolute(directory.path));
+    final paths = [
+      for (final suffix in [
+        '.sqlite',
+        '.sqlite-wal',
+        '.sqlite-shm',
+        '.attachments',
+        '.career-attachments',
+      ])
+        p.normalize(p.join(root, '$id$suffix')),
+    ];
+    if (paths.any((path) => !p.isWithin(root, path))) {
+      reject('Local removal path is outside this profile.');
+    }
+    return paths;
+  }
+
+  Future<void> _finishRemoval(Map<String, dynamic> d) async {
+    final paths = _validateRemovalPaths(d);
+    if (await FileSystemEntity.type(directory.path, followLinks: false) !=
+            FileSystemEntityType.directory ||
+        !p.equals(
+          await directory.resolveSymbolicLinks(),
+          p.join(
+            await directory.parent.resolveSymbolicLinks(),
+            p.basename(directory.path),
+          ),
+        )) {
+      reject('Local removal cannot follow a redirected profile directory.');
+    }
+    // Validate every target before deleting any; never traverse a link/junction.
+    for (final path in paths) {
+      final type = await FileSystemEntity.type(path, followLinks: false);
+      if (type == FileSystemEntityType.link) {
+        reject('Local removal cannot follow linked files.');
+      }
+      if (type == FileSystemEntityType.directory) {
+        await for (final entity in Directory(
+          path,
+        ).list(recursive: true, followLinks: false)) {
+          if (await FileSystemEntity.type(entity.path, followLinks: false) ==
+              FileSystemEntityType.link) {
+            reject('Local removal cannot follow linked attachments.');
+          }
+        }
+      }
+    }
+    for (final path in paths) {
+      final type = await FileSystemEntity.type(path, followLinks: false);
+      if (type == FileSystemEntityType.directory) {
+        await Directory(path).delete(recursive: true);
+      } else if (type == FileSystemEntityType.file) {
+        await File(path).delete();
+      }
+    }
+    await vault.write(
+      jsonEncode({
+        'version': 1,
+        'phase': 'empty',
+        if (d['preserved'] != null) 'preserved': d['preserved'],
+      }),
+    );
   }
 }
 
