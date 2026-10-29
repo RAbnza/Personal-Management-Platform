@@ -240,7 +240,12 @@ finance-rule files were run only because shared rule messages changed.
 
 ## 8. Git Delivery
 
-Pending.
+- Remote: `origin` (`https://github.com/RAbnza/Personal-Management-Platform.git`)
+- Branch: `main`
+- Feature commit: `48847cf050ce985d3e3f1535f41c33e891d65bc1`, message `feat(salapiya): add debt payment scheduling`. It contains the 12 files listed in section 5 as intended changes plus `CLAUDE.md`, which the owner approved including. The three `windows/flutter/generated_plugin*` files were not committed.
+- Push result: succeeded as a normal push (`d1e6667..48847cf  main -> main`), no force, no history rewriting. Verified afterwards: local `HEAD`, `origin/main` and `git ls-remote origin refs/heads/main` all returned `48847cf050ce985d3e3f1535f41c33e891d65bc1`.
+- This section was added in a follow-up commit (documentation only) and pushed normally; its hash is the branch tip on `origin/main` after the feature commit.
+- Blockers: none.
 
 ## 9. Final Assessment
 
