@@ -1,0 +1,162 @@
+# V3 Development Handoff
+
+> **Historical record:** preserved development evidence. Current summary: [Development history](../../DEVELOPMENT_HISTORY.md).
+
+**Native continuation (October 20, 2026):** The [Salapiya blueprint](../../PRODUCT_AND_FEATURES.md#salapiya--product-revision-and-windowsandroid-migration-blueprint)
+governs the new Windows/Android direction. See the [P0 foundation](../../OPERATIONS_AND_RELEASE.md#salapiya-native-development-foundation)
+and [actual native verification](../salapiya/P0_VERIFICATION.md). This document
+retains historical web contracts/evidence; its web architecture and earlier stop
+instructions do not select or accept the native implementation. G0-G4 remain open.
+
+**Date:** October 16, 2026 (Asia/Manila)\
+**Branch:** `feat/v3-a-b-trackers`\
+**A/B checkpoint:** `6e4a000d30b82e04c8a2d0a9d2ed8d3679732ab4`\
+**Status:** V3-A through V3-D locally accepted under approved targeted verification. Verified Git/CI results are recorded in the completion report.
+
+## Current V3 delivery
+
+| Milestone                        | Status                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V3-A foundation/presets          | Implemented; immutable private tracker model retained.                                                                                                                                              |
+| V3-B custom templates/migrations | Implemented; explicit review, bounded batches, partial cancellation/resume retained.                                                                                                                |
+| V3-C reports and integration     | Implemented: reports/CSV, Calendar, reminders/worker, Dashboard, navigation/preferences/onboarding/help, complete private graph replacement/recovery and lifecycle.                                 |
+| V3-D targeted acceptance         | Accepted within the targeted local scope; new/impacted correctness, security, static and production-build checks pass. Hosted CI is reported separately. Comprehensive regression was not repeated. |
+
+Assignment 2 explicitly supersedes the earlier comprehensive verification strategy. [The change-impact matrix](../../OPERATIONS_AND_RELEASE.md#v3-change-impact-acceptance) records selected checks, actual results, fixes and exclusions. [Tracker workflows](../../PRODUCT_AND_FEATURES.md#adaptable-trackers-workflows) document use and semantics; [manual/deferred gates](../../OPERATIONS_AND_RELEASE.md#v3-manual-actions-and-deferred-gates) identify conditional steps without requesting production credentials.
+
+## Final architecture and inventory
+
+There are **125 declarative tables and 206 migrations through `0205`**. Assignment 2 adds no tables or dependencies. Published `0000`?`0201` SQL/snapshots and original journal entries remain unchanged.
+
+| New migration                      | Contract                                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0202_v3_tracker_reminder_sources` | Concrete same-workspace tracker FKs, closed reminder source unions/uniques and Trackers module key.                                                   |
+| `0203_v3_tracker_time`             | Invoker-security Agenda projection, minimal worker read grants/policies, stale reminder identity extension and archive epochs.                        |
+| `0204_v3_tracker_restore`          | Closed tracker restore graph/policies, deferred same-entry predecessor FK, original V2-I fingerprint support and safe partial migration cancellation. |
+| `0205_v3_tracker_receipt_values`   | Preserve literal tracker preview values in command/audit JSON during privileged ownership remapping.                                                  |
+
+The completed domain is normally available; `TRACKERS_ENABLED=false` is an optional operational disable. This switch never activates external delivery. The A/B `TRACKER_PORTABILITY_PENDING` guard was removed only after real nine-table graph, legacy H/I, recovery and notification-retirement verification.
+
+Reports separate current snapshots from recorded immutable activity in workspace civil dates. Receipt command types distinguish migrations from editable reasons. Manual completion dates never manufacture transitions; definitions without completion mapping are excluded from the denominator. Calendar projects authoritative entries once, with concrete reminder references and generation changes for resolution/deadline/archival. Navigation hiding, Agenda visibility and reminder preferences remain independent.
+
+All nine tracker tables retain forced RLS. Worker access is restricted to scoped SELECT on current entries and tracker parents; immutable definition/value histories remain unavailable to that role. Restore uses the existing authorized migration-owner bridge and active restore-transaction policy; constraints, financial balance checks, trusted shared history and provider provenance remain enforced. Dynamic literal field values and preview samples are preserved during ID remapping. Restored running/failed plans become cancelled; partial plans retain locks until explicit resume. Old unprocessed foreign previews can require fresh review.
+
+The lifecycle operator was verified to purge all nine populated private tracker tables while preserving another owner's private/shared evidence. Development and synthetic test databases received the additive migrations. No production system was deployed or provider activated.
+
+## Acceptance and continuation
+
+The selected API/component/PostgreSQL/browser/static/schema checks are detailed in the matrix. The supported Linux production build passes with the existing local-file adapter tracing warning; the receipt-value correction is included in the final passing artifact. Three new browser flows cover custom migration, reports/CSV/restore, mobile light/dark/keyboard/axe and hide/restore. Original V1/V2 evidence remains authoritative for untouched behavior.
+
+Conventional Commit: `feat(trackers): complete V3 integration and targeted acceptance`. Push this feature branch, verify its remote SHA, integrate into `main` without force or discarding work, and report the exact remote SHA plus automatically triggered CI result. Do not begin redesign, future platforms, offline/provider sync or deployment.
+
+## Historical Assignment 1 checkpoint
+
+Everything below records the earlier checkpoint as historical evidence. Its then-pending C/D items, preview flag, portability guard and stop boundary are superseded by Assignment 2 and the current sections above; they are not active instructions.
+
+# Assignment 1 record
+
+**Date:** October 16, 2026 (Asia/Manila)\
+**Phase:** Assignment 1 of 2 — V3-A and V3-B implementation checkpoint\
+**Branch:** `feat/v3-a-b-trackers`\
+**Starting main:** `4db895325210d76e7d9456c5639b837b38943987` (V3 documentation preparation), fetched and verified equal to `origin/main` before branching\
+**Accepted V2 implementation:** `54a08d67c4ef7f5be01f5eaf63ba5c071e708b93`\
+**Status:** V3-A and V3-B implemented and focused checks passed. This is an intermediate development checkpoint, not comprehensive V3 acceptance. No merge to `main` is included.
+
+## 1. Authority and stop boundary
+
+Follow the [V3 plan](V3_DEVELOPMENT_PLAN.md), [ADR 0005](../../adr/0005-v3-scope-and-platform-transition.md), [database Section 14](../../DATABASE.md#14-trackers-and-template-evolution-t3), existing design guidelines and `AGENTS.md`. The installed Next.js layouts/pages, route-handler and server/client-component guides were read before application code changes. Existing [V2 completion evidence](V2_DEVELOPMENT_HANDOFF.md) is unchanged.
+
+Assignment 1 implements V3-A — Tracker Foundation and Presets, and V3-B — Custom Templates and Versioned Migrations. V3-C/D, full-domain acceptance, redesign, external calendar synchronization, deployment and the Windows/Android transition have not begun. Existing web/PostgreSQL/auth/worker architecture remains in place. No dependency or future-platform technology was added or selected.
+
+## 2. Delivered vertical workflows
+
+- Private Learning, Books and Personal Tasks presets are source-controlled version 1 content. Each instantiation creates an independently owned template/version and tracker; no global mutable template is shared between users.
+- `/trackers` lists owned active/archived trackers and templates with cursor pagination. Tracker detail supports title search, status/lifecycle filters and 50-entry pages; entry detail includes typed values, completion/deadline information and 50-revision history pages. Published definitions remain inspectable by version, with paginated template version history.
+- Entry creation/editing uses required/default/type/option validation, optimistic current-revision checks and immutable successor revisions. Entry/tracker/template archival retains evidence and supports restoration. Archived trackers and entries cannot accept ordinary entry edits.
+- The custom editor supports names, stable field identifiers, labels/order, required/retired states, defaults, allowlisted validation, select options and their retirement, title/status/deadline mappings and completion mappings. Publishing requires a separate review step. Published definitions never change existing tracker instances automatically.
+- Migration review includes target definition, explicit field/conversion/option mappings, defaults, total/valid/invalid counts, up to 50 invalid-entry links and five before/after samples. Invalid entries remain unchanged; revise the source data or mapping and prepare a new preview before confirming.
+- Confirmed migrations process at most 50 entries per command. Progress and committed batches survive interruption, cancellation and resumption. Prior definitions and every prior revision remain available. The tracker stays pinned to the source version until every entry, including archived entries, reaches the target.
+- Native labeled fields, fieldsets, keyboard controls, theme tokens, responsive grids and truthful error/progress states are used throughout. Unconfirmed form commands freeze their submitted payload and retry the same command ID. No comprehensive browser/accessibility acceptance is claimed yet.
+
+The template editor keeps unsubmitted drafts in component state; `building` database definitions exist only inside the atomic publish transaction. There is no separate saved-draft workflow. Field/option identifiers are generated for custom additions and stay fixed; label changes retain identity. Existing fields must remain in subsequent definitions, retired when removed. Retired field identities and retired select keys cannot be reused in the following version. Historical definitions retain their original interpretation after explicit type changes.
+
+## 3. Database and security inventory
+
+The actual baseline was verified as **116 declarative tables and 200 migrations through `0199`**. The checkpoint has **125 declarative tables and 202 migrations through `0201`**:
+
+| Migration                        | Responsibility                                                                                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0200_v3_tracker_foundation.sql` | Nine normalized tracker tables, scoped ownership/parent keys, receipt/actor evidence, JSON object/size checks, list/deadline indexes and single-active-migration uniqueness                    |
+| `0201_v3_tracker_security.sql`   | Deferred current/predecessor/mapping pointers, forced RLS on all nine tables, restricted grants, lifecycle/write locks, immutable evidence guards and commit-time mapping/derived-value checks |
+
+The tables are `tracker.template`, `template_version`, `field_identity`, `field_definition`, `field_option`, `tracker`, `entry`, `entry_revision`, and `template_migration`. Published migrations `0000`–`0199` and their original journal entries/snapshots are unchanged. Custom constraints and security functions are maintained in reviewed SQL, consistent with the repository's existing migration approach; schema generation reports no declarative changes.
+
+All commands use server-derived identity, scoped transactions, the existing private lifecycle guard, an owned workspace row lock, canonical command receipts and private audits. The lock serializes commands, publication, preview confirmation and migration batches without advancing financial revision or posting money. All nested relationships remain private and same-parent/version scoped. Published fields/options and entry revisions are immutable; ordinary runtime roles have no deletion permission. Invoker-security trigger functions use a fixed `pg_catalog` search path and do not bypass RLS. Auth, queue and worker roles receive no tracker schema access in this checkpoint.
+
+Extracted title/status/deadline/completion fields and current revision pointers update atomically. Database pointer checks reject incompatible versions and forged extracted values. Dynamic JSON schema validation belongs to the controlled version-aware service/migration validator; direct arbitrary SQL entry editing is not a supported product interface. The database additionally enforces JSON object/size, FK, role and immutability boundaries.
+
+## 4. Validation and migration decisions
+
+| Contract                | Implemented decision                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field/value bounds      | 30 fields per version, including retired identities; 40 options per field, including retired options; identifiers up to 40 characters; labels/names up to 120; text values up to 4,000; extracted title up to 200; entry JSON up to 16,000 characters and database serialized size up to 24,000 bytes; command body up to the existing 64 KiB transport limit                                                             |
+| Number fields           | Decimal strings with up to 12 whole and four fractional digits. Compare limits using scaled bigint arithmetic; never parse these as financial Money or allow exponent/NaN/Infinity payloads.                                                                                                                                                                                                                              |
+| Dates                   | Valid `YYYY-MM-DD` civil dates from 1900 through 9999, without conversion to midnight UTC                                                                                                                                                                                                                                                                                                                                 |
+| Validation              | Only text length, decimal min/max and date earliest/latest rules for their matching field types. Strict definition/command schemas reject unknown types, executable configuration and arbitrary rules. Plain user text is inert content rendered through React escaping, never evaluated.                                                                                                                                 |
+| Completion              | A mapped checkbox or explicitly selected single-select completion keys determines completion. `completed_at` is recorded on the transition and preserved during subsequent completed edits; reopening clears the current timestamp while prior revisions remain. Preset manual completion-date fields are user data, not automatically inferred historical completion dates. Reporting must define that distinction in C. |
+| Conversions             | Same-type copying, explicit strict text-to-number, number-to-text and text-to-date; reviewed constants/defaults and select-key maps. No arbitrary transformation code or lossy implicit coercion.                                                                                                                                                                                                                         |
+| Preview identity        | Hash includes tracker/version identity, target version, mappings and every current entry revision/version. Confirmation rechecks current data under the workspace lock; stale or invalid previews fail before entry changes.                                                                                                                                                                                              |
+| Size/processing         | Preview supports up to 10,000 entries, including archived entries; processing uses batches of at most 50. Views and history use bounded pagination. Migration history shows the latest 50 records with active/partially cancelled work prioritized.                                                                                                                                                                       |
+| During migration        | Confirmed/running/failed migrations pause entry creation/editing and tracker/entry/template archival. A partially processed cancelled migration retains that lock until resumed and completed. Physical user deletion of tracker records is unsupported; authorized account lifecycle deletion remains separate.                                                                                                          |
+| Cancellation/resumption | Cancellation stops future batches and never reverses committed revisions. Before the first batch, edits may resume and a later confirmation must pass freshness checks. After partial execution, resumption uses the same immutable reviewed plan/hash. A new target cannot replace unresolved mixed-version work.                                                                                                        |
+| Replay/failure          | A repeated batch command returns its prior receipt without another successor. A new batch skips entries already on the target. Each batch commits all its revisions/progress together; a transaction failure rolls back that batch and leaves the previous durable state resumable. Errors are surfaced without falsely marking a batch complete; a failed transaction does not persist a separate `failed` marker.       |
+
+## 5. Incomplete cross-domain boundaries
+
+The preview is **default-off and local/test-only**: set `TRACKERS_PREVIEW_ENABLED=true` and `PMP_DEPLOYMENT_ENV=local` (or `test`) in the existing development process, then restart and open `/trackers`. Staging and production reject the preview even when the flag is true. The sample environment documents the flag; no secret environment file is committed. Development and synthetic-test databases received the two additive migrations. Production did not.
+
+Global navigation, onboarding, Dashboard, statistics/reports, Calendar projections, reminders and tracker attachment support are not advertised as completed. The tracker layout provides its own navigation and an explicit availability notice. No generic tracker replaces Finance, Career, shared-expense or Calendar source authority.
+
+Existing workspace graph export/restore cannot silently omit trackers. With tracker template records present, new bundle generation, replacement preview and replacement confirmation fail closed with `TRACKER_PORTABILITY_PENDING`. The confirmation check is made under the same workspace lock as tracker creation, including when the restore preview predates tracker creation. Existing completed export receipts still replay their original dated snapshots; existing stored exports remain downloadable subject to the original authorization/expiry rules. Recovery generation that depends on capturing the current unsupported tracker graph is also unavailable. Report CSV remains its existing explicitly limited domain export, not a tracker backup. C must implement complete tracker graph/format support before removing these guards.
+
+The existing dynamic deletion manifest and authorized purge inventory now recognize the tracker namespace so new records are neither omitted from scope nor orphaned. Pending deletion blocks tracker writes. This is necessary foundation safety, not the full C/D lifecycle/recovery acceptance campaign. No notifications are scheduled by trackers yet; current source/generation fields are seams for C. No worker privilege expansion or provider setup is included.
+
+## 6. Actual focused verification
+
+- `pnpm exec vitest run tests/unit/trackers.test.ts tests/unit/trackers.component.test.tsx tests/unit/api-v1-trackers.test.ts tests/unit/shared-portability-upgrade.test.ts`: **37 passing tests in four files** — 26 domain/gate cases, five API cases, five component cases and one affected existing portability-upgrade case.
+- `pnpm exec vitest run --config=vitest.integration.config.ts tests/integration/trackers.test.ts`: **15 passing scenarios**. Actual `app_domain` transactions cover forced RLS, foreign ownership/composite FKs, immutable definitions/options/history, wrong current pointers, forged derived values, exact existing financial postings, pending deletion, duplicate/competing commands, stale edits/previews, explicit conversions, required defaults, retired values, archive/restore, competing migrations and 51-entry batch interruption/cancellation/resumption with exactly 102 revisions. Pre-tracker restore confirmation is rejected without losing later entries; completed export replay is preserved.
+- Three affected existing `files-imports.test.ts` scenarios passed: private graph restore/recovery and retired-command replay, audited export/download authorization, and graph-column coverage. The other 19 cases in that file were deliberately not run; no full H/I regression is claimed.
+- `pnpm exec tsx scripts/db/verify-tracker-migrations.ts`: **202 migrations from empty**, accepted 116-table/200-migration V2 baseline, bigint sentinel preservation across the two new migrations, no-change migrator replay, nine forced-RLS tables, restricted grants and deferred entry-current FK. This is focused schema/upgrade evidence, not the full migration-chain business regression.
+- `pnpm db:generate`: **125 tables, no schema changes**. `pnpm typecheck`, final TypeScript, affected ESLint and changed-source/document formatting checks passed. Final whitespace, link, scope and credential review accompany the commit.
+
+Initial focused database runs found shared-trigger record-field and SQL-alias errors in the new unpublished migration; both were corrected and the affected suite and fresh-schema verifier passed. New synthetic test refinements respected the existing financial component limit and distinguished deferred commit errors from wrapped statement errors; no existing assertion, limit or test timeout was weakened.
+
+Full V1–V3 regression, comprehensive browser/manual accessibility acceptance, full production builds, container campaigns, large benchmarks, hosted CI acceptance and encrypted backup/restore drills were **not run** for this checkpoint. No production readiness, deployment, final V3 acceptance or real provider operation is claimed.
+
+## 7. Relevant file inventory
+
+| Area                      | Paths                                                                                                                                                                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typed domain and presets  | [validator/contracts](../../../src/modules/trackers/domain/tracker.ts), [presets](../../../src/modules/trackers/domain/presets.ts), [preview gate](../../../src/modules/trackers/feature.ts)                                                                                                                                           |
+| Persistence and workflows | [declarative schema](../../../src/platform/db/schema/trackers.ts), [repository](../../../src/modules/trackers/repositories/trackers.ts), [commands](../../../src/modules/trackers/services/commands.ts), [reads](../../../src/modules/trackers/services/reads.ts), `src/platform/db/migrations/0200_*`, `0201_*` and their snapshots/journal |
+| API and UI                | [private API](../../../src/app/api/v1/trackers/route.ts), [tracker page](../../../src/app/trackers/[[...path]]/page.tsx), [layout](../../../src/app/trackers/layout.tsx), [forms/editor](../../../src/components/trackers/forms.tsx), [migration UI](../../../src/components/trackers/migration.tsx)                                               |
+| Necessary safety guards   | [workspace bundles](../../../src/modules/portability/services/workspace-bundles.ts), [portable problem response](../../../src/platform/http/portability-problem.ts), [deletion manifest](../../../src/modules/core/repositories/lifecycle-repository.ts), [purge inventory](../../../src/platform/lifecycle/purge.ts)                        |
+| Focused verification      | [unit](../../../tests/unit/trackers.test.ts), [API](../../../tests/unit/api-v1-trackers.test.ts), [components](../../../tests/unit/trackers.component.test.tsx), [integration](../../../tests/integration/trackers.test.ts), [migration verifier](../../../scripts/db/verify-tracker-migrations.ts), guarded synthetic-fixture cleanup extension   |
+
+## 8. Assignment 2 prerequisites and remaining work
+
+Start on this feature branch from the pushed A/B checkpoint; inspect its verified commit and this handoff before proceeding. There is no unresolved local A/B correctness blocker within the documented bounds. Keep the preview gated and retain all original V1/V2 evidence.
+
+1. **V3-C reporting:** Define current-state/activity/completion semantics across versions, compatible field mappings, periods, archived/missing values and exact eligible-entry drilldowns. Manual completion-date values and recorded completion timestamps must not be conflated.
+2. **V3-C Time/notifications:** Add source-derived tracker deadlines to internal Agenda/Calendar with concrete owned references, stable occurrence keys, source-routed editing and current generation/eligibility handling. Review entry/tracker archival/reopening and migration-induced mapping changes. Reuse existing opt-in, snooze/dismiss, quiet-hour, privacy, worker freshness and external-effect replay rules without silently granting all tracker tables to workers.
+3. **V3-C connected experience:** Complete Dashboard, primary navigation, module preference/hide/restore semantics, onboarding/help and accessible cross-domain user flows. The current direct-route preview does not replace those integrations.
+4. **V3-C portability/lifecycle:** Add all nine tracker tables and versioned values/mapping evidence to the trusted graph, formats, type validation, dependency ordering and restore/recovery contracts. Define legacy compatibility and safe restoration of partial/cancelled migrations. Preserve H/I provenance, retired commands, notification-consent reset, group history and deletion protections. Only then remove the fail-closed guards. Verify complete deletion, recovery/deletion reapplication and backup inclusion.
+5. **V3-D acceptance/documentation:** After C is complete, perform the single consolidated full applicable V1–V3 phase in plan Section 7, including build/runtime, browser/accessibility, applicable capacity and isolated restore evidence. Adapt current schema inventory expectations to 125 tables/202 migrations (plus any reviewed C additions), preserving all earlier migration files and V1/V2 assertions. Record actual failures/fixes and affected reruns. Do not treat this checkpoint as a substitute for those checks.
+
+No external API key, cloud service, hosting, production sender or human-only infrastructure configuration is required to use the local/test preview. Existing production/manual checklists remain preserved historical/conditional guidance. Any later manual assistive-technology or platform acceptance requirement must be reported accurately in its own phase.
+
+## 9. Commit and continuation
+
+Checkpoint Conventional Commit: `feat(trackers): implement V3 tracker foundation and templates` on `feat/v3-a-b-trackers`. Resolve its immutable SHA through Git history; the completion report records the actual branch head and independent `git ls-remote` verification after push. It is intentionally not merged into accepted `main`.
+
+Stop after this checkpoint. Assignment 2 requires an explicit subsequent request. Do not begin V3-C/D, redesign, production deployment, external calendar synchronization or platform transition work automatically.

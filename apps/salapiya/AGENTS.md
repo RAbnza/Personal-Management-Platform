@@ -1,7 +1,7 @@
 # Salapiya Flutter application
 
-Read `../../docs/SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md` and
-`../../docs/salapiya/P0_FOUNDATION.md` before changing this application.
+Read `../../docs/PRODUCT_AND_FEATURES.md`, `../../docs/ARCHITECTURE.md` and
+`../../docs/OPERATIONS_AND_RELEASE.md` (P0 foundation) before changing this application.
 Use Flutter/Dart tooling here; Next.js, pnpm, ESLint and Prettier govern the web.
 
 - Maintain one shared codebase for Windows and Android. Windows is convenient for

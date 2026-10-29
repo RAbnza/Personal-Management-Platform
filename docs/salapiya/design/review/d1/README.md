@@ -3,7 +3,7 @@
 These are actual Flutter raster captures from Windows and the existing Android
 emulator, not HTML mockups. The gallery is synthetic and memory-only. Woven Calm
 and Nunito Sans are the approved starting direction; the rendered refinements
-await owner approval. [Implementation, commands and limitations](../../D1_IMPLEMENTATION.md).
+await approval. [Implementation, commands and limitations](../../../../archive/salapiya/design/D1_IMPLEMENTATION.md).
 
 ## Start here
 
@@ -53,7 +53,7 @@ expressions and enlarged text in the running app, not just screenshots.
 
 `*-runtime-debug.json` and `*-runtime-profile.json` contain measured digit advances
 at 400/600/700. Tabular alignment passes on both native text renderers. Subjective
-legibility remains an owner review decision.
+legibility remains an review decision.
 
 ## Navigation and constrained layouts
 
@@ -100,7 +100,7 @@ An image viewer may show transparent pixels as black/white; the image alpha is
 preserved. Gallery-context comparisons are [Windows export](windows-light-branding.png),
 [Windows SVG](windows-brand-svg.png), [Android export](android-light-branding.png)
 and [Android SVG](android-brand-svg.png). The source manifest, hashes, browser
-dimensions and placement caveats are in the [branding register](../../BRANDING_ASSETS.md).
+dimensions and placement caveats are in the [branding register](../../../../DESIGN_SYSTEM.md#existing-branding-asset-register).
 
 ## What this evidence does and does not establish
 
@@ -112,7 +112,7 @@ the Android status/navigation glyphs or the OS keyboard. The native resize JPEG
 and `android-native-*` artifacts are OS captures. Exact platform/view/DPR and
 frame metrics are in JSON.
 
-Native tests and captures prove rendering and exercised interactions, not owner
+Native tests and captures prove rendering and exercised interactions, not
 visual acceptance, manual Narrator/TalkBack usability, physical-device performance,
 production correctness or G0–G4/G6 closure. The profile scenario is deliberately
 small and synthetic; measurements are not a general 60fps promise.

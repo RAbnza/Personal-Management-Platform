@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Salapiya and repository boundaries
 
-- Read `docs/SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md` for approved native
+- Read `docs/PRODUCT_AND_FEATURES.md` and `docs/ARCHITECTURE.md` for approved native
   direction, scope, identity and synchronization contracts.
 - `apps/salapiya/` is one Flutter/Dart application for Windows and Android.
   Follow its scoped `AGENTS.md`; generated Next.js rules apply to web development,
@@ -18,7 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Preserve the web application, tests, migrations and pnpm tooling as an
   executable reference. Historical financial semantics remain authoritative
   unless explicitly superseded by the Salapiya blueprint.
-- Foundation evidence: `docs/salapiya/P0_FOUNDATION.md`. Successful builds alone
+- Foundation evidence: `docs/OPERATIONS_AND_RELEASE.md` (P0 foundation). Successful builds alone
   do not close G0-G4.
 - Implement shared behavior once and validate each vertical feature on Windows
   and the Android emulator. Isolate necessary platform adapters. Do not finish

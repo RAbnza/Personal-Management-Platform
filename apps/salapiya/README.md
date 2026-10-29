@@ -6,22 +6,22 @@ Supabase/PowerSync synchronization. Money, Debts, Shared Expenses and Life use r
 commands and immutable evidence. `SALAPIYA_DEMO=true` selects the separate synthetic
 demo; its scenarios are not production acceptance evidence.
 
-Version: `0.6.1+8`. **OWNER-APPROVED FULL RELEASE. Development COMPLETE.**
-The owner accepts the documented limitations for use by the owner and three brothers.
-[Final artifacts, hashes, installation and project closure](../../docs/salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md)
+Version: `0.6.1+8`. **APPROVED FULL RELEASE. Development COMPLETE.**
+It is released to a small private group of users with the documented limitations accepted.
+[Final artifacts, hashes, installation and project closure](../../docs/OPERATIONS_AND_RELEASE.md#salapiya--final-release-and-project-closure)
 supersede the earlier release-gate classification while preserving historical
-[P6 evidence](../../docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md). Read the
-[operations/signing/recovery guide](../../docs/salapiya/PRIVATE_RELEASE_OPERATIONS.md)
+[P6 evidence](../../docs/archive/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md). Read the
+[operations/signing/recovery guide](../../docs/OPERATIONS_AND_RELEASE.md#salapiya-private-release-operations)
 before packaging or updating. Final binaries stay local; no automatic public distribution.
 
-The [blueprint](../../docs/SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md), P0-P5 financial/
-identity contracts, [approved final redesign](../../docs/salapiya/FINAL_UI_UX_REDESIGN_HANDOFF.md)
-and [Android polish](../../docs/salapiya/ANDROID_OVERVIEW_POLISH_HANDOFF.md) govern this
+The [blueprint](../../docs/PRODUCT_AND_FEATURES.md#salapiya--product-revision-and-windowsandroid-migration-blueprint), P0-P5 financial/
+identity contracts, [approved final redesign](../../docs/DESIGN_SYSTEM.md#salapiya---final-uiux-redesign-handoff)
+and [Android polish](../../docs/archive/salapiya/ANDROID_OVERVIEW_POLISH_HANDOFF.md) govern this
 application. D0-D5/gallery records remain historical references, not a direction to
 restore old layouts. P6 prohibits new screenshots and golden/UI image artifacts;
 native application icon resources are the explicit exception.
 
-The owner approved local-only attachments for this private release. Metadata can
+Attachments are local-only for this private release. Metadata can
 sync, but originals remain encrypted on the selected device and unscanned. Portable
 archives exclude original bytes; back up originals independently. Another device
 needs exact original reselection. Do not advertise cloud file transfer or scanning.
@@ -40,10 +40,10 @@ For the existing development services, run `node prepare-p2.mjs` from
 `services/salapiya/p0`, then add
 `--dart-define-from-file=build/p2-public-defines.json` to build/run. Only public
 configuration belongs in defines. Never include provider secrets, user sessions,
-database keys or signing credentials. The owner accepts the existing hosted pair
-for this family release; its development label and pairing guards remain unchanged.
+database keys or signing credentials. The existing hosted pair is accepted
+for this private release; its development label and pairing guards remain unchanged.
 No separate pilot is provisioned. Never run destructive fixtures/reset scripts
-against family records.
+against real user records.
 
 Start the Android emulator with the root VS Code task or
 `scripts/salapiya/start-emulator.cmd`; discover the actual serial. Preserve existing
@@ -68,7 +68,7 @@ Keep application ID `dev.salapiya.salapiya`, callback
 `dev.salapiya.p0://auth/callback`, protected profile identities and existing Windows
 metadata stable. Native icons derive from the approved Salapiya mark; see the
 handoff for actual packaged verification. Android release builds require the
-owner-controlled signing environment; there is no debug-key release fallback.
+maintainer-controlled signing environment; there is no debug-key release fallback.
 An explicitly requested unsigned staging APK cannot satisfy private release.
 Signing keys/passwords, emulator state, SDK paths and generated build outputs stay
 outside Git. Never uninstall an existing profile to bypass a certificate mismatch.

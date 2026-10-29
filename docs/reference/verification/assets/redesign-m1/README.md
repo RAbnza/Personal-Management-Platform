@@ -1,8 +1,8 @@
-# M1 Round 3 — rendered owner review
+# M1 Round 3 — rendered review
 
 **Final visual approval is pending.** D06 replaces the rejected ivory/cream canvases and Round 2 capsules. Activity architecture, separate expense entry/review, migration and shared states are preserved. Everything here is an actual Edge/Chromium browser render with synthetic data.
 
-Open the [side-by-side visual comparison](review.html) for paired images, or follow the tables below. Recommend **Porcelain + Midnight spectrum + A, the adapted Magic UI Dock**. The alternatives remain functioning review choices, not saved workspace settings or owner-approved decisions.
+Open the [side-by-side visual comparison](review.html) for paired images, or follow the tables below. Recommend **Porcelain + Midnight spectrum + A, the adapted Magic UI Dock**. The alternatives remain functioning review choices, not saved workspace settings or approved decisions.
 
 ## Navigation choices in the same Home composition
 
@@ -11,7 +11,7 @@ Open the [side-by-side visual comparison](review.html) for paired images, or fol
 | **A — Magic UI Dock, recommended** | [1440px](concept-dock-light-1440.png) | [1440px](concept-dock-dark-1440.png) | [390px](concept-dock-light-390.png) | [390px](concept-dock-dark-390.png) |
 | **B — Radix floating segments / ink rail** | [1440px](concept-radix-light-1440.png) | [1440px](concept-radix-dark-1440.png) | [390px](concept-radix-light-390.png) | [390px](concept-radix-dark-390.png) |
 
-A uses raised icon tiles, persistent labels, a small current marker, desktop proximity springs and a static compact mobile dock. B uses separate desktop segments with an integrated Radix module panel; mobile is a compact dark rail with a filled active destination. These differ in structure, interaction and mobile treatment. A has more character and introduces the Motion runtime; B is quieter and avoids magnification. Both branches share the M1 comparison bundle; a future B-only route cost is not claimed. Both preserve Home / Calendar / Modules / More, native links, focus and current semantics. See the [library evaluation and licenses](../../../REDESIGN_M1_COMPONENT_GUIDE.md#navigation-library-evaluation--round-3) and [measured costs](../../REDESIGN_M1_RESULTS.md).
+A uses raised icon tiles, persistent labels, a small current marker, desktop proximity springs and a static compact mobile dock. B uses separate desktop segments with an integrated Radix module panel; mobile is a compact dark rail with a filled active destination. These differ in structure, interaction and mobile treatment. A has more character and introduces the Motion runtime; B is quieter and avoids magnification. Both branches share the M1 comparison bundle; a future B-only route cost is not claimed. Both preserve Home / Calendar / Modules / More, native links, focus and current semantics. See the [library evaluation and licenses](../../../../DESIGN_SYSTEM.md#navigation-library-evaluation--round-3) and [measured costs](../../../../archive/web/verification/REDESIGN_M1_RESULTS.md).
 
 Module switching: A [light](modules-dock-light-1440.png) / [dark](modules-dock-dark-1440.png) uses the existing accessible sheet; B [light](modules-radix-light-1440.png) / [dark](modules-radix-dark-1440.png) uses an integrated desktop panel. Keyboard, Escape restoration and pointer entry are exercised, including More.
 
@@ -49,4 +49,4 @@ Start `pnpm dev --port 3200`, open `http://localhost:3200/dev/design`, then expa
 
 Before/after history: [Round 2 Home](https://github.com/RAbnza/Personal-Management-Platform/blob/2b0a492be6c40b1068c312b49ce2acbfc3cca7f4/docs/reference/verification/assets/redesign-m1/home-light-1440.png) and [Round 2 mobile Home](https://github.com/RAbnza/Personal-Management-Platform/blob/2b0a492be6c40b1068c312b49ce2acbfc3cca7f4/docs/reference/verification/assets/redesign-m1/home-light-320.png) remain in Git history; they are not current recommendations.
 
-Recapture with `pnpm exec playwright test --config=playwright.redesign.config.ts` after stopping the review server. See [handoff](../../../REDESIGN_M1_HANDOFF.md) and [results/limits](../../REDESIGN_M1_RESULTS.md). **M2/M3 have not started.**
+Recapture with `pnpm exec playwright test --config=playwright.redesign.config.ts` after stopping the review server. See [handoff](../../../../archive/web/REDESIGN_M1_HANDOFF.md) and [results/limits](../../../../archive/web/verification/REDESIGN_M1_RESULTS.md). **M2/M3 have not started.**
