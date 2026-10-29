@@ -70,17 +70,15 @@ void main() {
         await localAction(tester, 'Provider schedule');
         await localWait(
           tester,
-          () => find.byKey(const ValueKey('native-name')).evaluate().isNotEmpty,
+          () => find
+              .byKey(const ValueKey('native-select-frequency'))
+              .evaluate()
+              .isNotEmpty,
         );
-        await nativeEnter(tester, 'name', 'Synthetic schedule');
         await debtSelect(tester, 'debt', 'Imported native debt ·');
-        await nativeEnter(
-          tester,
-          'schedule',
-          'first,2026-11-20,3200.00\nsecond,2026-12-20,3200.00',
-        );
-        await nativeEnter(tester, 'reference', 'Provider schedule');
-        await debtSelect(tester, 'verified', 'I confirm these provider facts');
+        await debtSelect(tester, 'frequency', 'Monthly');
+        await nativeEnter(tester, 'firstDue', '2026-11-20');
+        await nativeEnter(tester, 'installmentCount', '2');
         await nativeSave(tester);
         await localAction(tester, 'Record debt payment');
         await localWait(
@@ -92,8 +90,12 @@ void main() {
         await debtSelect(tester, 'account', 'Debt wallet');
         await nativeEnter(tester, 'amount', '1000.00');
         await nativeEnter(tester, 'clearing', '1000.00');
-        await debtSelect(tester, 'scheduleSource', 'Synthetic schedule ·');
-        await nativeEnter(tester, 'allocations', 'first,1000.00');
+        await debtSelect(
+          tester,
+          'scheduleSource',
+          'Imported native debt payment schedule ·',
+        );
+        await nativeEnter(tester, 'allocations', 'Installment 1,1000.00');
         await nativeSave(tester);
         expect(c.snapshot.balance(account), BigInt.from(900000));
         expect(
@@ -121,7 +123,7 @@ void main() {
           financeBalance(c.snapshot, 'debt_clearing', 'debt', debt),
           BigInt.zero,
         );
-        await localAction(tester, 'Synthetic schedule');
+        await localAction(tester, 'Imported native debt payment schedule');
         await localAction(tester, 'Correct with reason');
         await localWait(
           tester,
@@ -130,8 +132,9 @@ void main() {
         await nativeEnter(
           tester,
           'schedule',
-          'first,2026-11-25,3200.00\nsecond,2026-12-25,3200.00',
+          'Installment 1,2026-11-25,3200.00\nInstallment 2,2026-12-25,3200.00',
         );
+        await nativeEnter(tester, 'firstDue', '2026-11-25');
         await nativeEnter(
           tester,
           'reason',

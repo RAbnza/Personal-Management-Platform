@@ -55,13 +55,17 @@ BigInt sumMinor(Iterable<BigInt> values) =>
     values.fold(BigInt.zero, (a, b) => a + b);
 
 class LocalRuleException implements Exception {
-  const LocalRuleException(this.message);
+  const LocalRuleException(this.message, {this.field});
   final String message;
+
+  /// The form input this message is about, when one input caused it.
+  final String? field;
   @override
   String toString() => message;
 }
 
-Never reject(String message) => throw LocalRuleException(message);
+Never reject(String message, {String? field}) =>
+    throw LocalRuleException(message, field: field);
 
 class LocalAccount {
   const LocalAccount(

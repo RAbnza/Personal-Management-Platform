@@ -11,6 +11,7 @@ import '../design_system/editorial.dart';
 import '../features/finance/presentation/financial_widgets.dart';
 import '../local/finance_domain.dart';
 import '../local/local_finance_controller.dart';
+import '../p0/exact_money.dart';
 import '../features/finance/presentation/financial_editor.dart';
 import '../features/finance/contracts/financial_models.dart';
 
@@ -21,18 +22,105 @@ class FinanceInput {
     this.value = '',
     this.options,
     this.lines = 1,
+    this.help,
   });
   final String key, label, value;
   final Map<String, String>? options;
   final int lines;
+  final String? help;
 }
+
+/// A popup for a form problem. The caller marks the offending input.
+Future<void> showFormError(
+  BuildContext context,
+  String message, {
+  String? fieldLabel,
+}) => showDialog<void>(
+  context: context,
+  builder: (context) => AlertDialog(
+    icon: const Icon(Icons.error_outline),
+    title: const Text('Please check the form'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(message),
+        if (fieldLabel != null) ...[
+          const SizedBox(height: 12),
+          Text('Check “$fieldLabel”. It is marked in red.'),
+        ],
+      ],
+    ),
+    actions: [
+      FilledButton(
+        autofocus: true,
+        onPressed: () => Navigator.pop(context),
+        child: const Text('OK'),
+      ),
+    ],
+  ),
+);
+
+/// Plain-language payment schedule questions. [editing] revises the dates of
+/// an existing schedule; amounts are set while creating it, or later through
+/// Update amounts. The payments always add up to the debt.
+List<FinanceInput> debtCadenceInputs({
+  required bool editing,
+  required bool embedded,
+}) => [
+  FinanceInput(
+    'frequency',
+    'How often do you pay?',
+    help: embedded
+        ? 'Optional. Skip it and add the schedule later from Debts.'
+        : null,
+    options: {
+      if (embedded) '': 'Not now · I will set it later',
+      if (editing) '': 'No repeating pattern · dates listed below',
+      'weekly': 'Weekly',
+      'monthly': 'Monthly',
+      'yearly': 'Yearly',
+      'custom': 'Custom',
+    },
+  ),
+  const FinanceInput(
+    'intervalDays',
+    'Pay every how many days?',
+    help: 'For example, type 14 for every two weeks.',
+  ),
+  const FinanceInput(
+    'firstDue',
+    'When is your next payment due?',
+    help: 'Tap the calendar, or type it like 2026-11-30 (year-month-day).',
+  ),
+  if (!editing) ...[
+    const FinanceInput(
+      'installmentCount',
+      'How many payments are left?',
+      help: 'Count from the next payment, for example 12. Up to 120.',
+    ),
+    const FinanceInput(
+      'splitMode',
+      'How are the payments split?',
+      value: 'divide',
+      options: {
+        'divide': 'Divide the debt evenly',
+        'varied': 'Different amount each time',
+      },
+    ),
+  ],
+];
 
 Map<String, String> financeChoices(LocalSnapshot s, Set<String> types) => {
   for (final r in s.current.where((r) => types.contains(financeType(r))))
     r.id: '${r.title} · ${r.date} · v${r.number}',
 };
 
-List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
+List<FinanceInput> financeInputs(
+  LocalSnapshot s,
+  String op, {
+  bool editing = false,
+}) {
   FinanceInput ref(String key, String label, Set<String> types) =>
       FinanceInput(key, label, options: financeChoices(s, types));
   final card = ref('card', 'Credit card', {'creditCard'});
@@ -298,6 +386,7 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
           options: category.options,
         ),
       ],
+      if (!editing) ...debtCadenceInputs(editing: false, embedded: true),
     ],
     'debtPayment' || 'debtClassification' || 'debtPayoff' => [
       debt,
@@ -408,9 +497,10 @@ List<FinanceInput> financeInputs(LocalSnapshot s, String op) {
     ],
     'debtSchedule' => [
       debt,
+      ...debtCadenceInputs(editing: editing, embedded: false),
       const FinanceInput(
         'schedule',
-        'Provider rows: label,YYYY-MM-DD,PHP amount[,historically paid PHP]',
+        'Payment dates, one per line: name,YYYY-MM-DD,PHP amount[,already paid PHP]',
         lines: 6,
       ),
       verified,
@@ -571,6 +661,7 @@ Future<void> openNativeFinance(
   String op,
   String title, {
   LocalRevision? replacing,
+  Map<String, String> initial = const {},
 }) => openDemoPage<void>(
   context,
   NativeFinanceEditor(
@@ -578,6 +669,7 @@ Future<void> openNativeFinance(
     operation: op,
     title: title,
     replacing: replacing,
+    initial: initial,
   ),
   'finance/$op',
 );
@@ -589,10 +681,12 @@ class NativeFinanceEditor extends StatefulWidget {
     required this.operation,
     required this.title,
     this.replacing,
+    this.initial = const {},
   });
   final LocalFinancialController controller;
   final String operation, title;
   final LocalRevision? replacing;
+  final Map<String, String> initial;
   @override
   State<NativeFinanceEditor> createState() => _NativeFinanceEditorState();
 }
@@ -603,9 +697,11 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
     widget.replacing == null
         ? widget.operation
         : financeType(widget.replacing!),
+    editing: widget.replacing != null,
   );
   late final values = {
     for (final f in inputs) f.key: f.value,
+    ...widget.initial,
     ...?widget.replacing?.values,
     if (nativeDebtCommands.contains(
       widget.replacing == null
@@ -627,6 +723,10 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
     },
   };
   final fields = <String, TextEditingController>{};
+  String? schedulePreview, scheduleNote, embeddedRows;
+  String? errorField, errorMessage;
+  final anchors = <String, GlobalKey>{};
+  bool scheduleFailed = false;
   late String id = newLocalId();
   late final draftKey =
       'finance:${widget.operation}:${widget.replacing?.id ?? ''}';
@@ -691,18 +791,24 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
     setState(() {
       busy = true;
       error = null;
+      errorField = errorMessage = null;
     });
+    String? problem, problemField;
     try {
       await writes;
       if (draftFailed) reject('Save the retained input before submitting.');
       if (reviewed == null) {
         await c.reload();
+        schedulePreview = embeddedRows = null;
+        final rows = simpleSchedule || embeddedSchedule ? cadenceRows() : null;
+        if (rows != null) schedulePreview = previewRows(rows);
+        if (embeddedSchedule) embeddedRows = rows;
         reviewed = LocalCommand(
           id: id,
           owner: c.store.owner,
           expectedVersion: c.snapshot.version,
           kind: widget.operation,
-          values: Map.unmodifiable(values),
+          values: Map.unmodifiable(commandValues(rows)),
         );
         reviewSnapshot = c.snapshot;
         plan = planLocal(reviewSnapshot!, reviewed!);
@@ -710,6 +816,7 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
         await c.store.commit(reviewed!);
         await c.reload();
         await c.store.discardDraft(draftKey);
+        await saveEmbeddedSchedule();
         result = c.connected
             ? 'Saved on this device. Server acceptance and downloaded reconciliation are still required.'
             : 'Saved locally.';
@@ -729,14 +836,508 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
         }
       }
       if (result == null) {
-        error = e is LocalRuleException
-            ? e.message
-            : e is FormatException
-            ? e.message
-            : 'The save could not be verified. Input and original command identity are retained.';
+        if (e is LocalRuleException) {
+          problem = e.message;
+          problemField = e.field;
+        } else if (e is FormatException) {
+          problem = e.message;
+        } else {
+          error = 'The save could not be verified. Input and original command identity are retained.';
+        }
       }
     }
-    if (mounted) setState(() => busy = false);
+    if (mounted) {
+      setState(() {
+        busy = false;
+        errorField = problemField;
+        errorMessage = problem;
+      });
+    }
+    if (problem != null && mounted) await showProblem(problem, problemField);
+  }
+
+  /// A popup with the message, then the offending input is marked in red and
+  /// scrolled into view.
+  Future<void> showProblem(String message, String? field) async {
+    await showFormError(
+      context,
+      message,
+      fieldLabel: field == null ? null : labelFor(field),
+    );
+    final target = field == null ? null : anchors[field]?.currentContext;
+    if (target != null && target.mounted) {
+      await Scrollable.ensureVisible(
+        target,
+        alignment: .15,
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+  }
+
+  String? labelFor(String field) {
+    if (field == 'paymentTotal') return 'Payment amounts';
+    if (field.startsWith('payment-')) {
+      return 'Payment ${(int.tryParse(field.substring(8)) ?? 0) + 1}';
+    }
+    for (final input in inputs) {
+      if (input.key == field) return input.label;
+    }
+    return null;
+  }
+
+  String? problemFor(String key) => errorField == key ? errorMessage : null;
+
+  GlobalKey anchor(String key) => anchors.putIfAbsent(key, () => GlobalKey());
+
+  static const cadenceKeys = [
+    'frequency',
+    'intervalDays',
+    'firstDue',
+    'installmentCount',
+    'splitMode',
+    'installmentAmount',
+    'totalAmount',
+    'paymentAmounts',
+  ];
+
+  /// A new schedule is created from plain answers; the dates are built at
+  /// Review and the Review step is the confirmation.
+  bool get simpleSchedule =>
+      widget.operation == 'debtSchedule' && widget.replacing == null;
+  bool get embeddedSchedule =>
+      widget.replacing == null &&
+      ['debtImport', 'borrowing'].contains(widget.operation) &&
+      (values['frequency'] ?? '').isNotEmpty;
+
+  /// How many payments are left, once a usable number has been entered.
+  int? get paymentCount {
+    final n = int.tryParse(answer('installmentCount'));
+    return n != null && n >= 1 && n <= 120 ? n : null;
+  }
+
+  /// Cadence inputs appear only when they apply to the answers so far.
+  bool visible(FinanceInput input) {
+    if (simpleSchedule &&
+        const {
+          'name',
+          'schedule',
+          'verified',
+          'reference',
+          'notes',
+          'acknowledge',
+          'date',
+        }.contains(input.key)) {
+      return false;
+    }
+    return switch (input.key) {
+      'intervalDays' => values['frequency'] == 'custom',
+      'firstDue' ||
+      'installmentCount' ||
+      'splitMode' => (values['frequency'] ?? '').isNotEmpty,
+      _ => true,
+    };
+  }
+
+  void clearCadence(Iterable<String> keys) {
+    for (final key in keys) {
+      values[key] = '';
+      fields[key]?.text = '';
+    }
+    if (keys.contains('paymentAmounts')) {
+      for (final entry in fields.entries) {
+        if (entry.key.startsWith('payment-')) entry.value.text = '';
+      }
+    }
+  }
+
+  String answer(String key) => (values[key] ?? '').trim();
+
+  List<String> get payments => (values['paymentAmounts'] ?? '').split('\n');
+
+  BigInt amountOf(String text, String message, {String? field}) {
+    try {
+      return parsePhp(text.trim());
+    } on FormatException {
+      reject(message, field: field);
+    }
+  }
+
+  LocalRevision? debtFor(String? ref) => ref == null || ref.isEmpty
+      ? null
+      : c.snapshot.current
+            .where((r) => r.id == ref || r.actionId == ref)
+            .firstOrNull;
+
+  /// The exact amount the schedule must add up to: what is still owed on an
+  /// existing debt, or the recognized liability being entered right now.
+  BigInt debtTarget() {
+    if (simpleSchedule) {
+      final debt = debtFor(values['debt']);
+      if (debt == null) {
+        reject('Choose the debt this schedule belongs to.', field: 'debt');
+      }
+      final owed = -financeBalance(
+        c.snapshot,
+        'debt_liability',
+        'debt',
+        debt.actionId,
+        through: civilToday(),
+      );
+      if (owed <= BigInt.zero) {
+        reject(
+          'This debt has nothing left to pay, so there is nothing to schedule.',
+          field: 'debt',
+        );
+      }
+      return owed;
+    }
+    final amount = amountOf(
+      answer('amount'),
+      'Enter the debt amount above first.',
+      field: 'amount',
+    );
+    if (amount <= BigInt.zero) {
+      reject('Enter the debt amount above first.', field: 'amount');
+    }
+    final fee = answer('financedFee').isEmpty
+        ? BigInt.zero
+        : amountOf(
+            answer('financedFee'),
+            'Enter the financed fee like 0.00.',
+            field: 'financedFee',
+          );
+    return widget.operation == 'borrowing' ? amount + fee : amount;
+  }
+
+  /// Installment rows from the plain answers, with plain-language errors.
+  String cadenceRows() {
+    if (answer('frequency').isEmpty) {
+      reject('Choose how often you pay.', field: 'frequency');
+    }
+    if (answer('frequency') == 'custom') {
+      try {
+        debtIntervalDays(answer('intervalDays'));
+      } on LocalRuleException catch (e) {
+        reject(e.message, field: 'intervalDays');
+      }
+    }
+    if (answer('firstDue').isEmpty) {
+      reject('Enter the date of your next payment.', field: 'firstDue');
+    }
+    try {
+      civilDate(answer('firstDue'));
+    } on FormatException catch (e) {
+      reject(e.message, field: 'firstDue');
+    }
+    final count = paymentCount;
+    if (count == null) {
+      reject(
+        'Enter how many payments are left, a whole number from 1 to 120.',
+        field: 'installmentCount',
+      );
+    }
+    final split = answer('splitMode');
+    if (split.isEmpty) {
+      reject('Choose how the payments are split.', field: 'splitMode');
+    }
+    final target = debtTarget();
+    List<BigInt> amounts;
+    if (split == 'varied') {
+      final entered = payments;
+      amounts = [
+        for (var i = 0; i < count; i++)
+          amountOf(
+            i < entered.length ? entered[i] : '',
+            'Enter the amount for payment ${i + 1}, like 2000.00.',
+            field: 'payment-$i',
+          ),
+      ];
+      for (var i = 0; i < count; i++) {
+        if (amounts[i] <= BigInt.zero) {
+          reject(
+            'Payment ${i + 1} must be more than zero.',
+            field: 'payment-$i',
+          );
+        }
+      }
+      final sum = sumMinor(amounts);
+      if (sum != target) {
+        reject(
+          'The payments add up to ${c.decimal(sum)} PHP, but the debt is ${c.decimal(target)} PHP. The payments must add up to the debt exactly.',
+          field: 'paymentTotal',
+        );
+      }
+    } else {
+      try {
+        amounts = debtSplitAmounts(target, count);
+      } on LocalRuleException catch (e) {
+        reject(e.message, field: 'installmentCount');
+      }
+    }
+    try {
+      return debtScheduleRows(
+        firstDue: answer('firstDue'),
+        frequency: answer('frequency'),
+        amounts: amounts,
+        intervalDays: answer('intervalDays'),
+      );
+    } on FormatException catch (e) {
+      reject(e.message, field: 'firstDue');
+    }
+  }
+
+  String previewRows(String rows) {
+    final list = financeSchedule(rows);
+    final amounts = list.map((r) => r.amount).toList();
+    final total = sumMinor(amounts);
+    final same = amounts.every((a) => a == amounts.first);
+    final lo = amounts.reduce((a, b) => a < b ? a : b);
+    final hi = amounts.reduce((a, b) => a > b ? a : b);
+    final every = switch (answer('frequency')) {
+      'custom' => 'every ${answer('intervalDays')} days',
+      final f => f,
+    };
+    final money = same
+        ? '${list.length} payments of ${c.decimal(amounts.first)} PHP'
+        : '${list.length} payments totaling ${c.decimal(total)} PHP (${c.decimal(lo)} to ${c.decimal(hi)} each)';
+    return '$money · $every · first ${list.first.date} · last ${list.last.date}';
+  }
+
+  /// Only the cadence facts worth keeping on the schedule record.
+  Map<String, String> cadenceStored(String rows) {
+    final split = answer('splitMode');
+    return {
+      'frequency': answer('frequency'),
+      'firstDue': answer('firstDue'),
+      'splitMode': split,
+      'installmentAmount': split == 'divide'
+          ? phpDecimal(financeSchedule(rows).first.amount)
+          : '',
+      if (answer('frequency') == 'custom')
+        'intervalDays': answer('intervalDays'),
+    };
+  }
+
+  Map<String, String> commandValues(String? rows) {
+    final v = Map<String, String>.from(values)
+      ..remove('installmentCount')
+      ..remove('totalAmount')
+      ..remove('paymentAmounts');
+    if (widget.replacing == null &&
+        ['debtImport', 'borrowing'].contains(widget.operation)) {
+      v.removeWhere((k, _) => cadenceKeys.contains(k));
+    } else if (simpleSchedule) {
+      final debt = debtFor(values['debt']);
+      if (debt == null) {
+        reject('Choose the debt this schedule belongs to.', field: 'debt');
+      }
+      final today = civilToday();
+      v['schedule'] = rows!;
+      v['verified'] = 'true';
+      v['reference'] = 'Entered by me';
+      v['name'] = '${debt.title} payment schedule';
+      v['date'] = debt.date.compareTo(today) > 0 ? debt.date : today;
+      v['acknowledge'] = 'false';
+      v.addAll(cadenceStored(rows));
+    } else if (answer('frequency').isNotEmpty &&
+        answer('splitMode').isNotEmpty &&
+        answer('splitMode') != 'equal') {
+      v['installmentAmount'] = '';
+    }
+    return v;
+  }
+
+  /// The schedule is its own immutable record, saved right after the debt.
+  Future<void> saveEmbeddedSchedule() async {
+    final rows = embeddedRows;
+    if (rows == null) return;
+    scheduleFailed = false;
+    try {
+      final schedule = LocalCommand(
+        id: newLocalId(),
+        owner: c.store.owner,
+        expectedVersion: c.snapshot.version,
+        kind: 'debtSchedule',
+        values: {
+          'name': '${values['name']} payment schedule',
+          'debt': id,
+          'schedule': rows,
+          'verified': 'true',
+          'reference': 'Entered by me',
+          'date': answer('date'),
+          'acknowledge': 'false',
+          'debtComponentContract': '1',
+          ...cadenceStored(rows),
+        },
+      );
+      planLocal(c.snapshot, schedule);
+      await c.store.commit(schedule);
+      await c.reload();
+      scheduleNote = 'Payment schedule saved: $schedulePreview.';
+    } catch (e) {
+      scheduleFailed = true;
+      final why = e is LocalRuleException
+          ? e.message
+          : e is FormatException
+          ? e.message
+          : 'it could not be verified';
+      scheduleNote =
+          'The debt was saved, but its payment schedule was not: $why '
+          'Open the debt in Debts and choose Set schedule.';
+    }
+  }
+
+  Future<void> pickDate(String key) async {
+    final typed = DateTime.tryParse(answer(key));
+    final today = DateTime.parse('${civilToday()}T00:00:00');
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: typed != null && typed.year >= 2000 && typed.year <= 2100
+          ? typed
+          : today,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    final text =
+        '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    values[key] = text;
+    fields[key]?.text = text;
+    retain();
+  }
+
+  /// One amount per payment, labeled with the date it falls on.
+  Widget paymentAmountFields() {
+    final count = paymentCount;
+    List<String>? dates;
+    if (count != null) {
+      try {
+        dates = [
+          for (var i = 0; i < count; i++)
+            debtOccurrence(
+              answer('firstDue'),
+              answer('frequency'),
+              i,
+              intervalDays: answer('intervalDays'),
+            ),
+        ];
+      } on FormatException {
+        dates = null;
+      } on LocalRuleException {
+        dates = null;
+      }
+    }
+    if (count == null || dates == null) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 18),
+        child: Text(
+          'Enter the next payment date and how many payments are left, and a box for each payment will appear here.',
+        ),
+      );
+    }
+    BigInt? target;
+    try {
+      target = debtTarget();
+    } on LocalRuleException {
+      target = null;
+    }
+    final entered = payments;
+    var total = BigInt.zero, filled = 0;
+    for (var i = 0; i < count; i++) {
+      final amount = i < entered.length ? entered[i].trim() : '';
+      try {
+        total += parsePhp(amount);
+        filled++;
+      } on FormatException {
+        // Counted as not yet entered.
+      }
+    }
+    final totalProblem = problemFor('paymentTotal');
+    final error = Theme.of(context).colorScheme.error;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            target == null
+                ? 'Enter the amount for each payment. Together they must add up to the whole debt.'
+                : 'Enter the amount for each payment. Together they must add up to the whole debt of ${c.decimal(target)} PHP.',
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < count; i++)
+            Padding(
+              key: anchor('payment-$i'),
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                key: ValueKey('native-payment-$i'),
+                controller: fields.putIfAbsent(
+                  'payment-$i',
+                  () => TextEditingController(
+                    text: i < entered.length ? entered[i] : '',
+                  ),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Payment ${i + 1} · due ${dates[i]} (PHP)',
+                  errorText: problemFor('payment-$i'),
+                ),
+                onChanged: (x) {
+                  final list = payments.toList();
+                  while (list.length <= i) {
+                    list.add('');
+                  }
+                  list[i] = x.trim();
+                  values['paymentAmounts'] = list.join('\n');
+                  if (errorField == 'payment-$i' ||
+                      errorField == 'paymentTotal') {
+                    errorField = null;
+                  }
+                  retain();
+                },
+              ),
+            ),
+          Text(
+            key: anchor('paymentTotal'),
+            '$filled of $count amounts entered · total ${c.decimal(total)} PHP'
+            '${target == null
+                ? ''
+                : total == target
+                ? ' · adds up to the debt'
+                : total < target
+                ? ' · ${c.decimal(target - total)} PHP still to assign'
+                : ' · ${c.decimal(total - target)} PHP over the debt'}',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: totalProblem != null ? error : null,
+            ),
+          ),
+          if (totalProblem != null)
+            Text(totalProblem, style: TextStyle(color: error)),
+        ],
+      ),
+    );
+  }
+
+  /// What "divide the debt evenly" will do, from the debt's own amount.
+  Widget divideSummary() {
+    final count = paymentCount;
+    String text;
+    try {
+      final target = debtTarget();
+      final parts = debtSplitAmounts(target, count!);
+      text = parts.first == parts.last
+          ? 'Your debt of ${c.decimal(target)} PHP will be paid in ${parts.length} equal payments of ${c.decimal(parts.first)} PHP.'
+          : 'Your debt of ${c.decimal(target)} PHP will be paid in ${parts.length} payments of ${c.decimal(parts.first)} PHP, with the last payment ${c.decimal(parts.last)} PHP so the total is exact.';
+    } on LocalRuleException catch (e) {
+      text = e.message;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Text(text),
+    );
   }
 
   @override
@@ -782,6 +1383,16 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                 message: 'Saved securely on this device.',
                 tone: NoticeTone.success,
               ),
+              if (scheduleNote != null)
+                FormStatus(
+                  title: scheduleFailed
+                      ? 'Schedule not saved'
+                      : 'Schedule saved',
+                  message: scheduleNote!,
+                  tone: scheduleFailed
+                      ? NoticeTone.warning
+                      : NoticeTone.success,
+                ),
               if (c.connected)
                 FormSyncStatus(state: c.synchronizationStates[id]),
               if (plan != null)
@@ -824,14 +1435,16 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                 ),
               if (reviewed == null) ...[
                 for (final input in [
-                  if (widget.operation != 'financeReversal') ...inputs,
+                  if (widget.operation != 'financeReversal')
+                    ...inputs.where(visible),
                   if (widget.replacing != null)
                     const FinanceInput(
                       'reason',
                       'Correction / reversal reason',
                     ),
-                ])
+                ]) ...[
                   Padding(
+                    key: anchor(input.key),
                     padding: const EdgeInsets.only(bottom: 18),
                     child: input.options == null
                         ? TextField(
@@ -844,9 +1457,25 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                             ),
                             minLines: input.lines,
                             maxLines: input.lines,
-                            decoration: InputDecoration(labelText: input.label),
+                            decoration: InputDecoration(
+                              labelText: input.label,
+                              helperText: input.help,
+                              helperMaxLines: 3,
+                              errorText: problemFor(input.key),
+                              errorMaxLines: 3,
+                              suffixIcon: input.key == 'firstDue'
+                                  ? IconButton(
+                                      tooltip: 'Pick a date',
+                                      icon: const Icon(
+                                        Icons.calendar_today_outlined,
+                                      ),
+                                      onPressed: () => pickDate(input.key),
+                                    )
+                                  : null,
+                            ),
                             onChanged: (x) {
                               values[input.key] = x;
+                              if (errorField == input.key) errorField = null;
                               retain();
                             },
                           )
@@ -857,7 +1486,17 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                                 ? values[input.key]
                                 : null,
                             isExpanded: true,
-                            decoration: InputDecoration(labelText: input.label),
+                            decoration: InputDecoration(
+                              labelText: input.label,
+                              helperText:
+                                  input.key == 'splitMode' &&
+                                      paymentCount == null
+                                  ? 'Enter how many payments are left first.'
+                                  : input.help,
+                              helperMaxLines: 3,
+                              errorText: problemFor(input.key),
+                              errorMaxLines: 3,
+                            ),
                             items: [
                               for (final item in input.options!.entries)
                                 DropdownMenuItem(
@@ -868,12 +1507,44 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                                   ),
                                 ),
                             ],
-                            onChanged: (x) {
-                              values[input.key] = x ?? '';
-                              retain();
-                            },
+                            onChanged:
+                                input.key == 'splitMode' && paymentCount == null
+                                ? null
+                                : (x) {
+                                    values[input.key] = x ?? '';
+                                    if (errorField == input.key) {
+                                      errorField = null;
+                                    }
+                                    if (input.key == 'frequency') {
+                                      if (values['frequency'] == '') {
+                                        clearCadence([
+                                          'firstDue',
+                                          'intervalDays',
+                                          'installmentAmount',
+                                          'installmentCount',
+                                          'totalAmount',
+                                          'paymentAmounts',
+                                        ]);
+                                        values['splitMode'] =
+                                            widget.replacing == null
+                                            ? 'divide'
+                                            : '';
+                                      } else if (values['frequency'] !=
+                                          'custom') {
+                                        clearCadence(['intervalDays']);
+                                      }
+                                    }
+                                    retain();
+                                  },
                           ),
                   ),
+                  if (input.key == 'splitMode' &&
+                      answer('frequency').isNotEmpty &&
+                      paymentCount != null)
+                    answer('splitMode') == 'varied'
+                        ? paymentAmountFields()
+                        : divideSummary(),
+                ],
               ] else ...[
                 FinancialReview(
                   plan: plan!,
@@ -883,6 +1554,10 @@ class _NativeFinanceEditorState extends State<NativeFinanceEditor> {
                   commandId: id,
                   details: reviewDetails,
                 ),
+                if (schedulePreview != null)
+                  FinanceNotice(
+                    'Payment schedule to save: $schedulePreview.\nCheck these dates and amounts match your loan agreement or lender statement. A payment only counts toward a due date when you record it against that date.',
+                  ),
                 if (c.connected)
                   const FinanceNotice(
                     'Connected changes remain pending until server acceptance and complete downloaded reconciliation.',

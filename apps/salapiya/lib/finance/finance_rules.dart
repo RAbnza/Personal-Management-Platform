@@ -204,7 +204,8 @@ class FinanceRuleContext {
   String value(String key) => (v[key] ?? '').trim();
   String text(String key, {int max = 2000}) {
     final x = value(key);
-    if (x.isEmpty || x.length > max) reject('Enter $key (1–$max characters).');
+    if (x.isEmpty) reject('This field is required.', field: key);
+    if (x.length > max) reject('Use at most $max characters.', field: key);
     return x;
   }
 
@@ -214,17 +215,38 @@ class FinanceRuleContext {
     bool signed = false,
     bool wide = false,
   }) {
-    final n = signed ? signedPhp(value(key)) : parsePhp(value(key));
-    if ((!zero && n == BigInt.zero) ||
-        (!signed && n.isNegative) ||
-        n.abs() > (wide ? maxSqliteInteger : maxComponent)) {
-      reject('The $key amount is outside the supported exact range.');
+    final BigInt n;
+    try {
+      n = signed ? signedPhp(value(key)) : parsePhp(value(key));
+    } on FormatException {
+      reject(
+        value(key).isEmpty
+            ? 'This amount is required.'
+            : 'Enter an amount in pesos with up to two decimals, like 1500.00.',
+        field: key,
+      );
+    }
+    if (!zero && n == BigInt.zero) {
+      reject('Enter an amount greater than zero.', field: key);
+    }
+    if (!signed && n.isNegative) {
+      reject('The amount cannot be negative.', field: key);
+    }
+    if (n.abs() > (wide ? maxSqliteInteger : maxComponent)) {
+      reject('The amount is larger than the supported range.', field: key);
     }
     return n;
   }
 
-  LocalRevision ref(String key, Set<String> types) =>
-      financeSource(s, text(key), types);
+  LocalRevision ref(String key, Set<String> types) {
+    final id = text(key);
+    try {
+      return financeSource(s, id, types);
+    } on LocalRuleException catch (e) {
+      throw LocalRuleException(e.message, field: e.field ?? key);
+    }
+  }
+
   void post(String ledger, BigInt n, {String? account, String? category}) {
     if (n == BigInt.zero) return;
     component(n);

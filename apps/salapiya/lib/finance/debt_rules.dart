@@ -341,6 +341,7 @@ void planDebt(FinanceRuleContext c) {
         reject('Confirm provider dates, totals and historical satisfaction.');
       }
       c.text('reference');
+      validateDebtCadence(c, rows);
       c.effects.add(
         'Scheduled contractual payable is not recognized liability. Historical paid amounts do not deduct cash again.',
       );
@@ -651,4 +652,284 @@ Map<String, BigInt> debtAllocations(String input) {
     result[pair[0]] = component(parsePhp(pair[1]), positive: true);
   }
   return result;
+}
+
+const debtScheduleFrequencies = {'weekly', 'monthly', 'yearly', 'custom'};
+
+/// How installment amounts were chosen: the same each time, a total divided
+/// evenly, or a different amount for each payment.
+const debtSplitModes = {'equal', 'divide', 'varied'};
+const debtDueSoonDays = 7;
+
+/// Optional descriptive cadence on a debt schedule. The explicit rows remain the
+/// authority for dates, amounts and allocations; legacy schedules have none.
+void validateDebtCadence(FinanceRuleContext c, List<FinanceScheduleRow> rows) {
+  final frequency = c.value('frequency');
+  if (frequency.isEmpty) {
+    if ([
+      'firstDue',
+      'intervalDays',
+      'installmentAmount',
+      'splitMode',
+    ].any((k) => c.value(k).isNotEmpty)) {
+      reject('Choose a payment frequency for the schedule cadence.');
+    }
+    return;
+  }
+  if (!debtScheduleFrequencies.contains(frequency)) {
+    reject('Choose a weekly, monthly, yearly or custom frequency.');
+  }
+  if (c.value('firstDue').isEmpty) reject('Enter the first due date.');
+  if (civilDate(c.value('firstDue')) != rows.first.date) {
+    reject('The first due date must match the first scheduled installment.');
+  }
+  if (frequency == 'custom') {
+    debtIntervalDays(c.value('intervalDays'));
+  } else if (c.value('intervalDays').isNotEmpty) {
+    reject('Interval days apply only to a custom frequency.');
+  }
+  if (c.value('installmentAmount').isNotEmpty) c.money('installmentAmount');
+  final split = c.value('splitMode');
+  if (split.isNotEmpty && !debtSplitModes.contains(split)) {
+    reject('Choose equal, divided or different payment amounts.');
+  }
+  if (split == 'varied' && c.value('installmentAmount').isNotEmpty) {
+    reject('Different payment amounts have no single installment amount.');
+  }
+}
+
+int debtIntervalDays(String input) {
+  final days = RegExp(r'^\d{1,4}$').hasMatch(input) ? int.parse(input) : 0;
+  if (days < 1 || days > 3660) {
+    reject('Custom interval must be a whole number of days from 1 to 3660.');
+  }
+  return days;
+}
+
+/// Date-only due date of occurrence [index] (0 is the anchor). Every occurrence
+/// is derived from the anchor, so month-end clamping never drifts.
+String debtOccurrence(
+  String anchor,
+  String frequency,
+  int index, {
+  String intervalDays = '',
+}) {
+  final a = DateTime.parse('${civilDate(anchor)}T00:00:00Z');
+  if (index < 0) reject('Occurrences start at the first due date.');
+  DateTime monthsLater(int months) {
+    final last = DateTime.utc(a.year, a.month + months + 1, 0).day;
+    return DateTime.utc(a.year, a.month + months, a.day > last ? last : a.day);
+  }
+
+  final day = switch (frequency) {
+    'weekly' => a.add(Duration(days: 7 * index)),
+    'monthly' => monthsLater(index),
+    'yearly' => monthsLater(12 * index),
+    'custom' => a.add(Duration(days: debtIntervalDays(intervalDays) * index)),
+    _ => reject('Choose a weekly, monthly, yearly or custom frequency.'),
+  };
+  return civilDate(day.toIso8601String().substring(0, 10));
+}
+
+/// Splits [total] evenly; any leftover centavos go on the final payment.
+List<BigInt> debtSplitAmounts(BigInt total, int count) {
+  if (count < 1 || count > 120) reject('Generate 1–120 installments.');
+  final each = total ~/ BigInt.from(count);
+  if (each <= BigInt.zero || total > maxComponent) {
+    reject('The total is too small to divide into that many payments.');
+  }
+  return [
+    for (var i = 0; i < count; i++)
+      i == count - 1 ? total - each * BigInt.from(count - 1) : each,
+  ];
+}
+
+/// Explicit rows for review before saving, one amount per payment; never saved
+/// implicitly. Labels and dates come from the cadence.
+String debtScheduleRows({
+  required String firstDue,
+  required String frequency,
+  required List<BigInt> amounts,
+  String intervalDays = '',
+}) {
+  if (amounts.isEmpty || amounts.length > 120) {
+    reject('Generate 1–120 installments.');
+  }
+  for (final amount in amounts) {
+    if (amount <= BigInt.zero || amount > maxComponent) {
+      reject('Enter a positive amount for every payment.');
+    }
+  }
+  return [
+    for (var i = 0; i < amounts.length; i++)
+      'Installment ${i + 1},${debtOccurrence(firstDue, frequency, i, intervalDays: intervalDays)},${phpDecimal(amounts[i])}',
+  ].join('\n');
+}
+
+/// The same amount for [count] payments.
+String debtCadenceRows({
+  required String firstDue,
+  required String frequency,
+  required String installmentAmount,
+  required int count,
+  String intervalDays = '',
+}) {
+  if (count < 1 || count > 120) reject('Generate 1–120 installments.');
+  return debtScheduleRows(
+    firstDue: firstDue,
+    frequency: frequency,
+    amounts: List.filled(count, parsePhp(installmentAmount)),
+    intervalDays: intervalDays,
+  );
+}
+
+enum DebtDueStatus {
+  overdue('Overdue'),
+  dueToday('Due today'),
+  dueSoon('Due soon'),
+  upcoming('Upcoming'),
+  scheduleNotSet('Schedule not set');
+
+  const DebtDueStatus(this.label);
+  final String label;
+}
+
+DebtDueStatus debtDueStatus(
+  String? due,
+  String today, {
+  int soonDays = debtDueSoonDays,
+}) {
+  if (due == null) return DebtDueStatus.scheduleNotSet;
+  final days = DateTime.parse('${civilDate(due)}T00:00:00Z')
+      .difference(DateTime.parse('${civilDate(today)}T00:00:00Z'))
+      .inDays;
+  return days < 0
+      ? DebtDueStatus.overdue
+      : days == 0
+      ? DebtDueStatus.dueToday
+      : days <= soonDays
+      ? DebtDueStatus.dueSoon
+      : DebtDueStatus.upcoming;
+}
+
+/// Historical paid amount plus explicit due allocations from actual payments
+/// on any revision of [schedule]. Unapplied money satisfies no installment.
+BigInt debtInstallmentPaid(
+  LocalSnapshot s,
+  LocalRevision schedule,
+  FinanceScheduleRow row,
+  String through,
+) =>
+    row.paid +
+    sumMinor(
+      s.current
+          .where(
+            (r) =>
+                financeType(r) == 'debtPayment' &&
+                r.date.compareTo(through) <= 0 &&
+                (r.values['scheduleSource'] ?? '').isNotEmpty &&
+                s.revision(r.values['scheduleSource']!).actionId ==
+                    schedule.actionId,
+          )
+          .map(
+            (r) =>
+                debtAllocations(r.values['allocations'] ?? '')[row.id] ??
+                BigInt.zero,
+          ),
+    );
+
+class DebtDueSummary {
+  const DebtDueSummary(
+    this.schedule,
+    this.open,
+    this.today,
+    this.soonDays, {
+    this.closed = false,
+  });
+  final LocalRevision? schedule;
+
+  /// A provider payoff cancels every remaining installment.
+  final bool closed;
+
+  /// Unsatisfied installments in due order with their remaining amounts.
+  final List<(FinanceScheduleRow, BigInt)> open;
+  final String today;
+  final int soonDays;
+  (FinanceScheduleRow, BigInt)? get next => open.firstOrNull;
+
+  /// Last contractual row; not a provider maturity or payoff date.
+  String? get finalScheduledDue => schedule == null
+      ? null
+      : financeSchedule(schedule!.values['schedule']!).last.date;
+  Iterable<(FinanceScheduleRow, BigInt)> get overdue =>
+      open.where((o) => o.$1.date.compareTo(today) < 0);
+  BigInt get overdueAmount => sumMinor(overdue.map((o) => o.$2));
+
+  /// Each payment has its own amount, so the next one should be confirmed.
+  bool get amountsVary => schedule?.values['splitMode'] == 'varied';
+
+  /// Calendar days from today to the next installment; negative when overdue.
+  int? get daysUntilNext => next == null
+      ? null
+      : DateTime.parse('${next!.$1.date}T00:00:00Z')
+            .difference(DateTime.parse('${today}T00:00:00Z'))
+            .inDays;
+
+  /// Overdue first, then due today, upcoming/soon by date, unscheduled, and
+  /// finally settled or closed debts.
+  int get urgencyRank => switch (status) {
+    DebtDueStatus.overdue => 0,
+    DebtDueStatus.dueToday => 1,
+    DebtDueStatus.dueSoon || DebtDueStatus.upcoming => 2,
+    DebtDueStatus.scheduleNotSet => 3,
+    null => 4,
+  };
+
+  /// Null when a schedule exists but nothing remains (satisfied or closed).
+  DebtDueStatus? get status => schedule == null
+      ? DebtDueStatus.scheduleNotSet
+      : next == null
+      ? null
+      : debtDueStatus(next!.$1.date, today, soonDays: soonDays);
+}
+
+DebtDueSummary debtDueSummary(
+  LocalSnapshot s,
+  LocalRevision debt,
+  String today, {
+  int soonDays = debtDueSoonDays,
+}) {
+  final schedule = s.current
+      .where(
+        (r) =>
+            financeType(r) == 'debtSchedule' &&
+            r.values['debt'] == debt.actionId,
+      )
+      .firstOrNull;
+  if (schedule == null) return DebtDueSummary(null, const [], today, soonDays);
+  final closed = s.current.any(
+    (r) =>
+        financeType(r) == 'debtPayoff' &&
+        r.date.compareTo(today) <= 0 &&
+        r.values['debt'] == debt.actionId,
+  );
+  return DebtDueSummary(
+    schedule,
+    [
+      if (!closed)
+        for (final row in financeSchedule(schedule.values['schedule']!))
+          if (row.amount > debtInstallmentPaid(s, schedule, row, today))
+            (row, row.amount - debtInstallmentPaid(s, schedule, row, today)),
+    ],
+    today,
+    soonDays,
+    closed: closed,
+  );
+}
+
+/// Urgency ordering: most overdue first, then nearest due date.
+int compareDebtUrgency(DebtDueSummary a, DebtDueSummary b) {
+  final byRank = a.urgencyRank.compareTo(b.urgencyRank);
+  if (byRank != 0 || a.next == null || b.next == null) return byRank;
+  return a.next!.$1.date.compareTo(b.next!.$1.date);
 }
