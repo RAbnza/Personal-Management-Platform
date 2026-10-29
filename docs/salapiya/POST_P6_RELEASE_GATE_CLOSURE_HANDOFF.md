@@ -1,5 +1,11 @@
 # Salapiya - Post-P6 release gate closure
 
+> Historical post-P6 evidence. The owner's final release decision supersedes this
+> report's earlier BLOCKED classification for the defined personal/family audience.
+> See [final release and project closure](FINAL_RELEASE_AND_PROJECT_CLOSURE.md):
+> **OWNER-APPROVED FULL RELEASE**, development **COMPLETE**. Deferred requirements
+> are accepted limitations; the original test results below are preserved.
+
 29 October 2026, Asia/Manila. **Release classification: BLOCKED.**
 
 ## Provenance and approved boundary

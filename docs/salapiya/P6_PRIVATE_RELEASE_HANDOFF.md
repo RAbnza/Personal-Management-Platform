@@ -1,5 +1,10 @@
 # P6 — Complete private release
 
+> Historical P6 evidence. The later owner-approved release scope and current
+> **OWNER-APPROVED FULL RELEASE** classification are recorded in
+> [final release and project closure](FINAL_RELEASE_AND_PROJECT_CLOSURE.md).
+> Original results and unexecuted checks below remain unchanged.
+
 28 October 2026, Asia/Manila. **Release classification: BLOCKED.** A build or test
 count is not certification of installation, financial safety, recovery or authority.
 

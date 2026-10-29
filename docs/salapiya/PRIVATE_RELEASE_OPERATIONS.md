@@ -1,10 +1,19 @@
 # Salapiya private release operations
 
-Current post-P6 procedures, 29 October 2026 (Asia/Manila). Version `0.6.1+8`.
-The evidence and release decision are in [release gate closure](POST_P6_RELEASE_GATE_CLOSURE_HANDOFF.md).
-The original complete Windows + Android release remains **BLOCKED** until its mandatory
-gates pass. These procedures do not authorize distribution, paid services or migration
-of real records. Historical [P6](P6_PRIVATE_RELEASE_HANDOFF.md) results remain unchanged.
+Current procedures, 29 October 2026 (Asia/Manila). Version `0.6.1+8`.
+**OWNER-APPROVED FULL RELEASE. Development COMPLETE.** The
+[final release and project closure](FINAL_RELEASE_AND_PROJECT_CLOSURE.md) records
+the owner's acceptance, final local artifacts/hashes and installation instructions
+for the owner and three brothers. The existing infrastructure, backups and unsigned
+Windows distribution are explicitly accepted. No public binary publication, paid
+services, automatic migration or additional development milestone is authorized.
+
+Historical [P6](P6_PRIVATE_RELEASE_HANDOFF.md) and
+[post-P6](POST_P6_RELEASE_GATE_CLOSURE_HANDOFF.md) results remain unchanged.
+Earlier mandatory-release-gate wording in these procedures is superseded by the
+final scope decision; unexecuted checks remain unexecuted and deferred operational
+capabilities remain limitations. Fail-closed restore, authorization, signing-key,
+financial and data-preservation safeguards remain required and implemented.
 
 ## Build and environment boundaries
 
@@ -23,15 +32,19 @@ The normal app validates the paired Supabase project and PowerSync instance:
 `SALAPIYA_EXPECTED_SYNC_INSTANCE`, both different from development, with matching HTTPS
 URLs. Unknown or mixed environments fail closed for connection; local use remains available.
 
-No pilot has been provisioned. The initial audience is the owner and brothers only.
+No separate pilot has been provisioned. The final release uses the existing
+development-labelled pair accepted by the owner; do not change its environment
+identity or bypass the pairing guards. Never run destructive fixtures/reset or
+test-account deletion scripts against family records. The following separate-pilot
+procedure is optional future infrastructure work, not a release prerequisite.
+The initial audience is the owner and brothers only.
 Verify actual subscription entitlements, usage and free project/instance headroom in both
 provider accounts before creation. Public pricing alone is insufficient. Confirm separate
 OAuth provider/callback configuration, administrator credentials, database migrations,
 PowerSync connection/streams and protected backup storage. Never point fixture scripts at
 pilot records or copy development identities/data into it. Do not migrate personal data
-automatically. Keep real use local-only with independently tested protected archives until
-the separate pilot and mandatory release gates are verified. Trusted friends require a
-later audience-expansion decision.
+automatically. Keep independent protected archives for local and connected use.
+Trusted friends require a later audience-expansion decision.
 
 From `apps/salapiya`:
 
@@ -50,7 +63,7 @@ normal `lib/main.dart`; integration binaries are not distribution artifacts. Pre
 immutable original IDs and schema/archive compatibility. No web migration runs in SQLite.
 No screenshots or image goldens belong in this release-closure workflow.
 
-## Windows staging installer
+## Windows unsigned installer
 
 The per-user Inno Setup 6.7.3 compiler was installed through the normal winget source.
 Its Authenticode signature must validate. The recipe is
@@ -64,10 +77,14 @@ reject safely. App support/key directories are deliberately absent from uninstal
 ```
 
 The wrapper validates version, complete Flutter/native/VC++ runtime payload and absence of
-development kernel/test-plugin assets. ZIP and installer are **UNSIGNED STAGING**. An
-unsigned or self-signed package is not a publicly trusted signed release. Do not buy a
-certificate, activate paid signing, disable SmartScreen or alter trust stores. Trusted
-Windows signing remains an owner-deferred original mandatory gate; no scope waiver exists.
+development kernel/test-plugin assets. Its historical output names/messages still say
+**UNSIGNED STAGING**; final approval promotes the verified byte-identical packages into
+the final local release directory under descriptive unsigned release filenames.
+The installer and application remain unsigned; the owner explicitly accepts the
+Unknown publisher/SmartScreen warning for this full release. Verify the exact package
+hash and use the ordinary per-file confirmation if offered. Do not buy a certificate,
+activate paid signing, disable SmartScreen or alter trust stores. Trusted Windows
+signing is optional future work, not a current release blocker.
 
 `test-windows-installer.ps1` performs real fresh baseline installation, package upgrade,
 payload comparison, ordinary downgrade rejection and uninstallation in a new directory
@@ -75,8 +92,8 @@ under repository `out`. It refuses an existing installed AppId, preserves the or
 callback/shortcuts and verifies unchanged production profile/key bytes. It does not launch
 an unknown owner's profile. A reconstructed installer for the retained P6 build-7 bundle
 is an update baseline; it is not a historically distributed P6 installer. Complete
-synthetic-profile installed upgrades, failure/interruption, cold activation, notifications
-and trusted signing still require their explicit evidence.
+synthetic-profile installed upgrades, failure/interruption, cold activation and notifications
+are not newly certified; their remaining evidence gaps are accepted for this release.
 The final local staging run installed/compared all 49 payload files, upgraded to 0.6.1+8,
 rejected a downgrade, uninstalled and verified protected profile/key bytes unchanged.
 
@@ -272,8 +289,10 @@ than the database snapshot. `reconcileSecurityJournal` checks freshness, applies
 erasures/revocations and clears restored Auth sessions/CDC entitlements. It cannot infer
 missing later deletions from an old backup. Without a trustworthy current independent
 register, recovery remains blocked; do not accept new logins or revive old entitlements.
-Permanent independent register durability/freshness and actual client resync remain release
-gates until configured/rehearsed. No operator impersonation is a recovery shortcut.
+Permanent independent register durability/freshness and managed-provider client resync
+remain unconfigured/unrehearsed limitations accepted for this release. An attempted old
+server restore must still fail closed without current security evidence. No operator
+impersonation is a recovery shortcut.
 
 ## Quotas, monitoring and maintenance
 

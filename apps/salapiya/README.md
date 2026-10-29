@@ -6,10 +6,13 @@ Supabase/PowerSync synchronization. Money, Debts, Shared Expenses and Life use r
 commands and immutable evidence. `SALAPIYA_DEMO=true` selects the separate synthetic
 demo; its scenarios are not production acceptance evidence.
 
-Version: `0.6.0+7`. **Private release is BLOCKED** pending the gates in the
-[P6 handoff](../../docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md). Read the
+Version: `0.6.1+8`. **OWNER-APPROVED FULL RELEASE. Development COMPLETE.**
+The owner accepts the documented limitations for use by the owner and three brothers.
+[Final artifacts, hashes, installation and project closure](../../docs/salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md)
+supersede the earlier release-gate classification while preserving historical
+[P6 evidence](../../docs/salapiya/P6_PRIVATE_RELEASE_HANDOFF.md). Read the
 [operations/signing/recovery guide](../../docs/salapiya/PRIVATE_RELEASE_OPERATIONS.md)
-before packaging or updating. Do not distribute staging builds or merge to main.
+before packaging or updating. Final binaries stay local; no automatic public distribution.
 
 The [blueprint](../../docs/SALAPIYA_PRODUCT_AND_PLATFORM_BLUEPRINT.md), P0-P5 financial/
 identity contracts, [approved final redesign](../../docs/salapiya/FINAL_UI_UX_REDESIGN_HANDOFF.md)
@@ -37,8 +40,10 @@ For the existing development services, run `node prepare-p2.mjs` from
 `services/salapiya/p0`, then add
 `--dart-define-from-file=build/p2-public-defines.json` to build/run. Only public
 configuration belongs in defines. Never include provider secrets, user sessions,
-database keys or signing credentials. Development fixture services are not an
-approved isolated pilot for real users.
+database keys or signing credentials. The owner accepts the existing hosted pair
+for this family release; its development label and pairing guards remain unchanged.
+No separate pilot is provisioned. Never run destructive fixtures/reset scripts
+against family records.
 
 Start the Android emulator with the root VS Code task or
 `scripts/salapiya/start-emulator.cmd`; discover the actual serial. Preserve existing

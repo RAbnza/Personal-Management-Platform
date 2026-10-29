@@ -5,7 +5,7 @@
 **Repository:** `RAbnza/Personal-Management-Platform`  
 **Document version:** 1.0  
 **Decision/documentation date:** October 19, 2026 (Asia/Manila)  
-**Status:** Owner-approved product direction and launch scope; architectural baseline subject to the explicit technical gates in this document. No native implementation or platform acceptance is claimed.  
+**Current status (29 October 2026):** Salapiya `0.6.1+8` is **OWNER-APPROVED FULL RELEASE** for the owner and three brothers; development **COMPLETE**. [Final release and project closure](salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md) and section 26 supersede historical gate/release-blocker language within this audience and accepted scope. Earlier evidence and unexecuted tests are preserved.
 **Inspected web baseline:** `b721b0c6ef4c102a351e30df107b8f9b86ede588` — merged M6 redesign acceptance. Local HEAD and GitHub `main` matched when checked for this document.
 
 ## Contents
@@ -790,3 +790,28 @@ Current implementation/evidence and remaining gates are recorded in
 The [operations guide](salapiya/PRIVATE_RELEASE_OPERATIONS.md) specifies retention,
 security, environment pairing and fail-closed restore procedures. These policy
 approvals do not themselves provision storage/services or certify release readiness.
+
+## 26. Final owner-approved full release and project closure (29 October 2026)
+
+The owner's final release assignment explicitly approves Salapiya `0.6.1+8` as
+**OWNER-APPROVED FULL RELEASE** for the owner and their three brothers. Project
+development is **COMPLETE**. This is not a beta/trial or another P6 assignment.
+
+The owner accepts the existing encrypted backup/recovery, existing Supabase/PowerSync
+pair, financial/authentication/synchronization/device evaluation, unsigned Inno Setup
+Windows distribution, manual free-tier monitoring, local-only attachments and narrow
+device support. Advanced permanent sole-owner recovery is deferred. A separate pilot,
+trusted Windows signing and additional acceptance campaigns are not release prerequisites
+under this final scope. No services are added or purchased, no UI/financial logic is
+rewritten, and no binaries are automatically published or sent to other people.
+
+This decision supersedes the earlier release-gate classification and release-blocking
+requirements in sections 16-22 and 25 only within the defined audience and accepted
+scope. Original P6/post-P6 test evidence, partial results and unexecuted checks remain
+historical facts. Existing financial/privacy/authentication/synchronization/encryption,
+backup, database and fail-closed recovery safeguards remain unchanged and mandatory.
+
+[Final release and project closure](salapiya/FINAL_RELEASE_AND_PROJECT_CLOSURE.md)
+records the exact local artifact paths, sizes/hashes, preserved signing identity,
+installation/update and recovery instructions, accepted limitations and repository
+release reference. Future enhancements are optional and do not block this release.
