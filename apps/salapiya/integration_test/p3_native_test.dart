@@ -28,11 +28,12 @@ import 'p2_native_test.dart' show PrivateDownload;
 
 Future<void> p3Wait(
   WidgetTester tester,
-  FutureOr<bool> Function() ready,
-) async {
+  FutureOr<bool> Function() ready, {
+  bool settle = true,
+}) async {
   for (var i = 0; i < 400; i++) {
     if (await tester.runAsync(() async => await ready()) == true) {
-      await localSettle(tester);
+      if (settle) await localSettle(tester);
       return;
     }
     await tester.pump(const Duration(milliseconds: 30));
@@ -115,12 +116,16 @@ Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
     tester,
     () => find.text('Save reviewed values').evaluate().isNotEmpty,
   );
-  await localTap(tester, find.text('Save reviewed values'));
   if (private) {
+    // The parent form stays busy while awaiting the second, private-money
+    // confirmation. Wait for that modal, not global animation idleness behind it.
+    await tester.ensureVisible(find.text('Save reviewed values'));
+    await tester.runAsync(() => tester.tap(find.text('Save reviewed values')));
     try {
       await p3Wait(
         tester,
         () => find.text('Save my private action').evaluate().isNotEmpty,
+        settle: false,
       );
     } catch (_) {
       debugPrint(
@@ -128,7 +133,15 @@ Future<void> p3Save(WidgetTester tester, {bool private = false}) async {
       );
       rethrow;
     }
-    await localTap(tester, find.text('Save my private action'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Review private money effects'), findsOneWidget);
+    expect(find.text('Save my private action'), findsOneWidget);
+    await tester.ensureVisible(find.text('Save my private action'));
+    await tester.runAsync(
+      () => tester.tap(find.text('Save my private action')),
+    );
+  } else {
+    await localTap(tester, find.text('Save reviewed values'));
   }
   // Saving is asynchronous even when no progress spinner is shown. Wait for
   // the submitted form to close before reading its intent or opening a source.

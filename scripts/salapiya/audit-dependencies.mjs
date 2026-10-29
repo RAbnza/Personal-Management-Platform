@@ -1,6 +1,7 @@
 // Query OSV with package names/versions only. No source, records or credentials.
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 const root=new URL('../../',import.meta.url);
+const auditDirectory=process.env.SALAPIYA_AUDIT_DIRECTORY==='release-gate'?'release-gate':'p6';
 const lock=await readFile(new URL('apps/salapiya/pubspec.lock',root),'utf8');
 const packages=[];
 for(const match of lock.matchAll(/^  ([a-zA-Z0-9_]+):\r?\n([\s\S]*?)(?=^  [a-zA-Z0-9_]+:|^sdks:)/gm)){
@@ -27,7 +28,7 @@ for(let start=0;start<packages.length;start+=100){
 }
 const result={measuredAt:new Date().toISOString(),source:'https://api.osv.dev/v1/querybatch',queried:packages.length,hits,
  scope:'Hosted Pub lock + server npm lock including development tools + Android desugaring; excludes Flutter engine, bundled SQLite, JDK/NDK/OS and complete transitive Gradle inventory.'};
-await mkdir(new URL('out/p6/',root),{recursive:true});
-await writeFile(new URL('out/p6/dependency-audit.json',root),JSON.stringify(result,null,2)+'\n');
+await mkdir(new URL(`out/${auditDirectory}/`,root),{recursive:true});
+await writeFile(new URL(`out/${auditDirectory}/dependency-audit.json`,root),JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(result));
 if(hits.length)process.exitCode=1;

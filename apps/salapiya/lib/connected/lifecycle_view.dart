@@ -106,7 +106,11 @@ class _LocalRemovalButtonState extends State<LocalRemovalButton> {
         onPressed: busy ? null : remove,
         child: Text(busy ? 'Removing local profile…' : 'Remove local profile'),
       ),
-      if (error != null) FinanceNotice(error!, warning: true),
+      if (error != null)
+        Semantics(
+          liveRegion: true,
+          child: FinanceNotice(error!, warning: true),
+        ),
     ],
   );
 }

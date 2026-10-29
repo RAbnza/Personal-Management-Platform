@@ -17,9 +17,16 @@ void main() {
     'reviewed offline local removal requires exact confirmation and keeps cancellation safe',
     releaseRemovalJourney,
   );
+  testWidgets(
+    'local removal remains reachable at 200 percent text',
+    (tester) => releaseRemovalJourney(tester, scale: 2),
+  );
 }
 
-Future<void> releaseRemovalJourney(WidgetTester tester) async {
+Future<void> releaseRemovalJourney(
+  WidgetTester tester, {
+  double scale = 1,
+}) async {
   final directory = (await tester.runAsync(
     () => Directory.systemTemp.createTemp('salapiya-removal-ui-'),
   ))!;
@@ -36,6 +43,11 @@ Future<void> releaseRemovalJourney(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: SalapiyaTheme.build(Brightness.dark),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!,
+        ),
         home: Scaffold(
           body: SingleChildScrollView(
             child: ListenableBuilder(

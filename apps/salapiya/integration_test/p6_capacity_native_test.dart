@@ -21,9 +21,17 @@ void main() {
     'P6 real native production UI and commands over the isolated 10,000-action encrypted fixture',
     (tester) async {
       final support = await getApplicationSupportDirectory();
+      const androidFixture = String.fromEnvironment(
+        'SALAPIYA_ANDROID_CAPACITY_DIRECTORY',
+        defaultValue: 'p6-native-capacity',
+      );
+      expect([
+        'p6-native-capacity',
+        'release-mixed-capacity',
+      ], contains(androidFixture));
       final fixture = Platform.isWindows
           ? const String.fromEnvironment('P6_CAPACITY_DIRECTORY')
-          : '${support.path}/p6-native-capacity';
+          : '${support.path}/$androidFixture';
       final manifest = jsonDecode(
         await File('$fixture/manifest.json').readAsString(),
       ) as Map;
@@ -108,6 +116,7 @@ void main() {
           'platform': Platform.operatingSystem,
           'os': Platform.operatingSystemVersion,
           'fixtureCommands': manifest['commands'],
+          'mixedGroups': manifest['mixedGroups'] ?? 0,
           'encryptedOpenIntegrityAndSnapshotMs': openMs,
           'activationAndOverviewMs': overviewMs,
           'saveAtCapacity': distribution(saves),
@@ -117,8 +126,12 @@ void main() {
           'imageCapture': false,
           'limits': 'Debug integration engine; copied synthetic encrypted fixture, warm OS caches, no signed installed cold start; navigation includes test settling.',
         };
+        const outputPrefix = String.fromEnvironment(
+          'SALAPIYA_CAPACITY_OUTPUT_PREFIX',
+          defaultValue: 'p6',
+        );
         await File(
-          '${support.path}/p6-capacity-${Platform.operatingSystem}.json',
+          '${support.path}/$outputPrefix-capacity-${Platform.operatingSystem}.json',
         ).writeAsString(jsonEncode(result));
         binding.reportData = result;
         debugPrint('P6_NATIVE_CAPACITY ${jsonEncode(result)}');

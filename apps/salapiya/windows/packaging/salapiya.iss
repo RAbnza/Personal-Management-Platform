@@ -47,7 +47,7 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 
 [Icons]
-Name: "{autoprograms}\Salapiya"; Filename: "{app}\salapiya.exe"; WorkingDir: "{app}"; AppUserModelID: "Salapiya.Private.Development"; AppUserModelToastActivatorCLSID: "{{a64517d4-7ea1-49e7-bad5-c3d00db31c1d}"
+Name: "{autoprograms}\Salapiya"; Filename: "{app}\salapiya.exe"; WorkingDir: "{app}"; AppUserModelID: "Salapiya.Private.Development"; AppUserModelToastActivatorCLSID: "a64517d4-7ea1-49e7-bad5-c3d00db31c1d"
 Name: "{autodesktop}\Salapiya"; Filename: "{app}\salapiya.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
@@ -68,16 +68,16 @@ begin
     if (not StrToVersion(InstalledVersion, InstalledPacked)) or
        (not StrToVersion('{#AppVersion}.{#BuildNumber}', CandidatePacked)) then
     begin
-      MsgBox('Installed version cannot be verified. Preserve this installation for operator review.', mbError, MB_OK);
+      SuppressibleMsgBox('Installed version cannot be verified. Preserve this installation for operator review.', mbError, MB_OK, IDOK);
       Result := False;
       Exit;
     end;
     if ComparePackedVersion(InstalledPacked, CandidatePacked) > 0 then
     begin
-      MsgBox('A newer Salapiya version is installed. Preserve your profile and use the same or a newer version.', mbError, MB_OK);
+      SuppressibleMsgBox('A newer Salapiya version is installed. Preserve your profile and use the same or a newer version.', mbError, MB_OK, IDOK);
       Result := False;
     end;
   end;
 end;
-; Deliberately no deletion of app-support data, keys, archives or user documents.
-; G5 still requires compiled installer, interrupted upgrade and signed update drills.
+// Deliberately no deletion of app-support data, keys, archives or user documents.
+// G5 still requires trusted signing and complete data/activation/update drills.

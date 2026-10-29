@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory=$true)][string]$Keytool,
   [Parameter(Mandatory=$true)][string]$AndroidBuildTools,
   [string]$ApplicationDirectory,
-  [string]$ExpectedCertificateSha256,
+  [string]$ExpectedCertificateSha256 = 'd45ef96f19ce9e9df9c23711bc9f843b2bb34350352f06aba347187980dc787e',
   [switch]$WaitForChecks
 )
 # Run in a local interactive console. Never use Start-Transcript for this session.
@@ -48,32 +48,11 @@ Write-Host "Keystore: $keystore"
 Write-Host "Alias: $alias"
 Write-Host 'Use a strong unique password from your password manager. Do not send it to chat.'
 $password = Read-Host 'Keystore password (asterisks show your typing)' -AsSecureString
-if (-not (Test-Path -LiteralPath $keystore)) {
-  if ($password.Length -lt 12) { $password.Dispose(); throw 'Choose a unique password of at least 12 characters, then rerun.' }
-  $confirmation = Read-Host 'Confirm password (asterisks)' -AsSecureString
-  $keyPointer = [IntPtr]::Zero
-  $confirmationPointer = [IntPtr]::Zero
-  try {
-    $keyPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-    $confirmationPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirmation)
-    if ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer) -cne [Runtime.InteropServices.Marshal]::PtrToStringBSTR($confirmationPointer)) {
-      throw 'Passwords did not match. No key was created. Rerun the script.'
-    }
-    $env:SALAPIYA_STORE_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer)
-    & $Keytool -genkeypair -keystore $keystore -storetype PKCS12 -alias $alias -keyalg RSA -keysize 3072 -sigalg SHA256withRSA -validity 10000 -dname 'CN=Salapiya Private Release' -storepass:env SALAPIYA_STORE_PASSWORD
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $keystore)) { throw 'Key creation did not complete. No release build started.' }
-  } finally {
-    if ($keyPointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($keyPointer) }
-    if ($confirmationPointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($confirmationPointer) }
-    $confirmation.Dispose()
-    $env:SALAPIYA_STORE_PASSWORD = $null
-  }
-} else {
-  Write-Host 'Existing keystore preserved. This script will never replace or rotate it.'
-}
+if (-not (Test-Path -LiteralPath $keystore)) { throw 'The existing owner-controlled release key is required. No key will be generated or replaced.' }
+Write-Host 'Existing signing identity preserved; key creation and rotation are disabled.'
 if ($WaitForChecks) {
-  $gate = Join-Path $app 'build/p6-signing-ready'
-  Write-Host 'Key created. Waiting for Codex to finish native checks before compiling the release APK.'
+  $gate = Join-Path $app 'build/release-gate-signing-ready'
+  Write-Host 'Existing key unlocked. Waiting for Codex to finish native checks before compiling the release APK.'
   $deadline = [DateTime]::UtcNow.AddHours(2)
   while (-not (Test-Path -LiteralPath $gate)) {
     if ([DateTime]::UtcNow -gt $deadline) { $password.Dispose(); throw 'Checks are not ready. Keystore preserved; rerun this script later.' }
@@ -91,7 +70,11 @@ try {
   $env:SALAPIYA_UNSIGNED_STAGING = $null
   $env:JAVA_HOME = Split-Path (Split-Path $Keytool -Parent) -Parent
   $env:GRADLE_OPTS = "$previousGradleOptions -Dorg.gradle.daemon=false"
-  $out = Join-Path $app 'build/private-release'
+  $pubspec = Get-Content -LiteralPath (Join-Path $app 'pubspec.yaml') -Raw
+  if ($pubspec -notmatch '(?m)^version:\s*(\d+\.\d+\.\d+)\+(\d+)\s*$') { throw 'Application version is required.' }
+  $releaseVersion = $Matches[1]
+  $releaseBuild = $Matches[2]
+  $out = Join-Path $app "build/private-release/$releaseVersion-$releaseBuild"
   New-Item -ItemType Directory -Force -Path $out | Out-Null
   $certificate = Join-Path $signingDirectory 'salapiya-private-release.cer'
   & $Keytool -exportcert -keystore $keystore -storetype PKCS12 -alias $alias -storepass:env SALAPIYA_STORE_PASSWORD -file $certificate
@@ -134,6 +117,9 @@ try {
   $verification | Set-Content -LiteralPath (Join-Path $out 'android-signature.txt') -Encoding UTF8
   @{ alias=$alias; certificateSha256=$expected; apkSha256=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant(); signed=$true; inspectedAt=[DateTime]::UtcNow.ToString('o') } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $out 'android-signing.json') -Encoding UTF8
+  $retainedApk = Join-Path $out "Salapiya-$releaseVersion-$releaseBuild-android-owner-signed.apk"
+  if (Test-Path -LiteralPath $retainedApk) { throw 'A retained candidate already exists. Preserve it and review before producing another.' }
+  Copy-Item -LiteralPath $apk -Destination $retainedApk
   Write-Host 'APK signature matches the owner-controlled release certificate.' -ForegroundColor Green
   Write-Host 'Back up the PKCS12 file to two encrypted owner-controlled locations. Store its password separately in your password manager.'
   Write-Host 'Keep alias, certificate fingerprint and key-generation details. Never rotate/delete this key as an update shortcut.'
